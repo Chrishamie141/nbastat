@@ -1,6 +1,12 @@
 import pandas as pd
 
-def prepare_features(df):
+
+def prepare_features(regular_df, playoff_df):
+    if playoff_df is not None and not playoff_df.empty:
+        df = pd.concat([regular_df, playoff_df], ignore_index=True)
+    else:
+        df = regular_df.copy()
+
     df = df.copy()
 
     df["GAME_DATE_SORT"] = pd.to_datetime(df["GAME_DATE"])
@@ -30,7 +36,6 @@ def prepare_features(df):
     ]
 
     opponent_features = [col for col in df.columns if col.startswith("OPPONENT_")]
-
     features = base_features + opponent_features
 
     return df, features, opponent_features

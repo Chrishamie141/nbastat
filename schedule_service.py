@@ -1,42 +1,40 @@
-from nba_api.stats.endpoints import leaguegamefinder
+from nba_api.stats.static import teams
 
-def get_next_game_context(player_team, opponent=None, playoff_game=True):
-    player_team = player_team.upper().strip()
-    opponent = opponent.upper().strip() if opponent else None
 
-    if not opponent:
+def infer_team_from_logs(regular_df, playoff_df):
+    df = playoff_df if playoff_df is not None and not playoff_df.empty else regular_df
+
+    if df is None or df.empty:
+        return None
+
+    latest_matchup = df.iloc[0]["MATCHUP"]
+    return latest_matchup.split()[0].upper()
+
+
+def get_next_game_context(player_team, playoff_game=False):
+    if not player_team:
         return {
             "opponent": None,
             "home": False,
             "playoff_game": playoff_game,
-            "source": "No opponent provided"
+            "source": "Could not infer player team; used general estimate."
         }
 
-    gamefinder = leaguegamefinder.LeagueGameFinder(
-        team_abbreviation_nullable=player_team
-    )
+    player_team = player_team.upper().strip()
 
-    games = gamefinder.get_data_frames()[0]
+    valid_teams = [team["abbreviation"] for team in teams.get_teams()]
 
-    possible_games = games[
-        games["MATCHUP"].str.contains(opponent, case=False, na=False)
-    ]
-
-    if possible_games.empty:
+    if player_team not in valid_teams:
         return {
-            "opponent": opponent,
+            "opponent": None,
             "home": False,
             "playoff_game": playoff_game,
-            "source": "Opponent not found, defaulting to away"
+            "source": f"Could not validate team {player_team}; used general estimate."
         }
 
-    latest_matchup = possible_games.iloc[0]["MATCHUP"]
-
-    home = "vs." in latest_matchup
-
     return {
-        "opponent": opponent,
-        "home": home,
+        "opponent": None,
+        "home": False,
         "playoff_game": playoff_game,
-        "source": latest_matchup
+        "source": "Schedule API skipped to avoid timeout; used general estimate."
     }

@@ -2,61 +2,63 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 
-from data_service import get_player_logs
+from data_service import get_player_logs, season_summary
 from feature_engineering import prepare_features
-from schedule_service import get_next_game_context
+
 
 class PlayerStatPredictor:
     def __init__(self, player_name, season="2025-26"):
         self.player_name = player_name
         self.season = season
         self.player = None
-        self.df = None
-        self.features = None
-        self.opponent_features = None
+        self.regular_df = pd.DataFrame()
+        self.playoff_df = pd.DataFrame()
+        self.model_df = pd.DataFrame()
+        self.features = []
+        self.opponent_features = []
         self.models = {}
 
     def load_data(self):
-        self.player, raw_df = get_player_logs(self.player_name, self.season)
-        self.df, self.features, self.opponent_features = prepare_features(raw_df)
+        self.player, self.regular_df, self.playoff_df = get_player_logs(
+            self.player_name,
+            self.season
+        )
+
+        self.model_df, self.features, self.opponent_features = prepare_features(
+            self.regular_df,
+            self.playoff_df
+        )
+
+        if len(self.model_df) < 8:
+            raise ValueError("Not enough games to train model.")
 
     def train(self):
-        X = self.df[self.features]
+        X = self.model_df[self.features]
+        split_index = int(len(self.model_df) * 0.8)
 
-        targets = ["PTS", "REB", "AST"]
-
-        for target in targets:
-            y = self.df[target]
-
-            split_index = int(len(self.df) * 0.8)
+        for stat in ["PTS", "REB", "AST"]:
+            y = self.model_df[stat]
 
             X_train = X.iloc[:split_index]
             X_test = X.iloc[split_index:]
-
             y_train = y.iloc[:split_index]
             y_test = y.iloc[split_index:]
 
-            model = RandomForestRegressor(
-                n_estimators=300,
-                random_state=42
-            )
-
+            model = RandomForestRegressor(n_estimators=300, random_state=42)
             model.fit(X_train, y_train)
 
             predictions = model.predict(X_test)
-            error = mean_absolute_error(y_test, predictions)
+            mae = mean_absolute_error(y_test, predictions)
 
             model.fit(X, y)
 
-            self.models[target] = {
+            self.models[stat] = {
                 "model": model,
-                "mae": error
+                "mae": mae
             }
 
-    def build_next_game_input(self, opponent=None, home=False, playoff_game=True):
-        context = get_next_game_context(opponent, home, playoff_game)
-
-        latest = self.df.iloc[-1]
+    def build_next_game_input(self, opponent=None, home=False, playoff_game=False):
+        latest = self.model_df.iloc[-1]
 
         row = {
             "PTS_last": latest["PTS"],
@@ -64,23 +66,23 @@ class PlayerStatPredictor:
             "AST_last": latest["AST"],
             "MIN_last": latest["MIN"],
 
-            "PTS_avg3": self.df["PTS"].tail(3).mean(),
-            "REB_avg3": self.df["REB"].tail(3).mean(),
-            "AST_avg3": self.df["AST"].tail(3).mean(),
-            "MIN_avg3": self.df["MIN"].tail(3).mean(),
+            "PTS_avg3": self.model_df["PTS"].tail(3).mean(),
+            "REB_avg3": self.model_df["REB"].tail(3).mean(),
+            "AST_avg3": self.model_df["AST"].tail(3).mean(),
+            "MIN_avg3": self.model_df["MIN"].tail(3).mean(),
 
-            "PTS_avg5": self.df["PTS"].tail(5).mean(),
-            "REB_avg5": self.df["REB"].tail(5).mean(),
-            "AST_avg5": self.df["AST"].tail(5).mean(),
-            "MIN_avg5": self.df["MIN"].tail(5).mean(),
+            "PTS_avg5": self.model_df["PTS"].tail(5).mean(),
+            "REB_avg5": self.model_df["REB"].tail(5).mean(),
+            "AST_avg5": self.model_df["AST"].tail(5).mean(),
+            "MIN_avg5": self.model_df["MIN"].tail(5).mean(),
 
-            "PTS_trend": self.df["PTS"].tail(3).mean() - self.df["PTS"].tail(5).mean(),
-            "REB_trend": self.df["REB"].tail(3).mean() - self.df["REB"].tail(5).mean(),
-            "AST_trend": self.df["AST"].tail(3).mean() - self.df["AST"].tail(5).mean(),
-            "MIN_trend": self.df["MIN"].tail(3).mean() - self.df["MIN"].tail(5).mean(),
+            "PTS_trend": self.model_df["PTS"].tail(3).mean() - self.model_df["PTS"].tail(5).mean(),
+            "REB_trend": self.model_df["REB"].tail(3).mean() - self.model_df["REB"].tail(5).mean(),
+            "AST_trend": self.model_df["AST"].tail(3).mean() - self.model_df["AST"].tail(5).mean(),
+            "MIN_trend": self.model_df["MIN"].tail(3).mean() - self.model_df["MIN"].tail(5).mean(),
 
-            "HOME": context["home"],
-            "PLAYOFF_GAME": context["playoff_game"]
+            "HOME": int(home),
+            "PLAYOFF_GAME": int(playoff_game)
         }
 
         for col in self.opponent_features:
@@ -88,17 +90,17 @@ class PlayerStatPredictor:
 
         if opponent:
             opponent_col = f"OPPONENT_{opponent.upper()}"
-
             if opponent_col in row:
                 row[opponent_col] = 1
 
         return pd.DataFrame([row])[self.features]
 
-    def predict_next_game(self, opponent=None, home=False, playoff_game=True):
-        if self.df is None:
+    def predict_next_game(self, opponent=None, home=False, playoff_game=False):
+        if self.model_df.empty:
             self.load_data()
 
-        self.train()
+        if not self.models:
+            self.train()
 
         next_game_input = self.build_next_game_input(
             opponent=opponent,
@@ -107,20 +109,29 @@ class PlayerStatPredictor:
         )
 
         prediction = {}
+        prediction_range = {}
 
         for stat, model_data in self.models.items():
-            model = model_data["model"]
-            prediction[stat] = round(model.predict(next_game_input)[0], 1)
+            pred = model_data["model"].predict(next_game_input)[0]
+            mae = model_data["mae"]
+
+            prediction[stat] = round(pred, 1)
+            prediction_range[stat] = (
+                round(pred - mae, 1),
+                round(pred + mae, 1)
+            )
 
         return {
-            "player": self.player_name,
+            "player": self.player["full_name"],
             "season": self.season,
-            "opponent": opponent if opponent else "General Estimate",
-            "home": home,
-            "playoff_game": playoff_game,
+            "regular_summary": season_summary(self.regular_df),
+            "playoff_summary": season_summary(self.playoff_df),
             "prediction": prediction,
             "model_error": {
                 stat: round(model_data["mae"], 2)
                 for stat, model_data in self.models.items()
-            }
+            },
+            "range": prediction_range,
+            "regular_logs": self.regular_df,
+            "playoff_logs": self.playoff_df
         }
