@@ -1,187 +1,85 @@
 from predictor import PlayerStatPredictor
-from schedule_service import infer_team_from_logs, get_next_game_context
+from roster_service import get_team_roster
+from schedule_service import get_next_game_context
+from ranking_service import build_rankings, STAT_LABELS
 
 DEFAULT_ROSTER_FILE = "roster.txt"
 
 
-def run_prediction(player_name, season="2025-26", display=True):
+def run_prediction(player_name, season="2025-26", opponent=None, home=False, playoff_game=False):
     predictor = PlayerStatPredictor(player_name=player_name, season=season)
     predictor.load_data()
-
-    player_team = infer_team_from_logs(
-        predictor.regular_df,
-        predictor.playoff_df
-    )
-
-    playoff_game = not predictor.playoff_df.empty
-
-    context = get_next_game_context(
-        player_team=player_team,
-        playoff_game=playoff_game
-    )
-
-    result = predictor.predict_next_game(
-        opponent=context["opponent"],
-        home=context["home"],
-        playoff_game=context["playoff_game"]
-    )
-
-    if display:
-        print_player_report(result, player_team, context)
-
-    return result, player_team, context
+    return predictor.predict_next_game(opponent=opponent, home=home, playoff_game=playoff_game)
 
 
-def print_player_report(result, player_team, context):
-    print("\nNBA PLAYER STAT REPORT")
-    print("----------------------")
-    print(f"Player: {result['player']}")
-    print(f"Season: {result['season']}")
-    print(f"Team: {player_team}")
-    print(f"Opponent: {context['opponent'] if context['opponent'] else 'General Estimate'}")
-    print(f"Home Game: {context['home']}")
-    print(f"Playoff Game: {context['playoff_game']}")
-    print(f"Schedule Context: {context['source']}")
-
-    regular = result["regular_summary"]
-    print("\nREGULAR SEASON")
-    print(f"Games Played: {regular['games']}")
-    print(f"PTS: {regular['PTS']}")
-    print(f"REB: {regular['REB']}")
-    print(f"AST: {regular['AST']}")
-
-    playoffs = result["playoff_summary"]
-    print("\nPLAYOFFS")
-    if playoffs["games"] == 0:
-        print("No playoff games available.")
-    else:
-        print(f"Games Played: {playoffs['games']}")
-        print(f"PTS: {playoffs['PTS']}")
-        print(f"REB: {playoffs['REB']}")
-        print(f"AST: {playoffs['AST']}")
-
-    print("\nPREDICTED NEXT GAME")
-    print(f"Points: {result['prediction']['PTS']}")
-    print(f"Rebounds: {result['prediction']['REB']}")
-    print(f"Assists: {result['prediction']['AST']}")
-
-    print("\nMODEL ERROR / CONFIDENCE RANGE")
-    print(f"Points: ±{result['model_error']['PTS']}")
-    print(f"Rebounds: ±{result['model_error']['REB']}")
-    print(f"Assists: ±{result['model_error']['AST']}")
-
-    print("\nPREDICTION RANGE")
-    print(f"Points: {result['range']['PTS'][0]} - {result['range']['PTS'][1]}")
-    print(f"Rebounds: {result['range']['REB'][0]} - {result['range']['REB'][1]}")
-    print(f"Assists: {result['range']['AST'][0]} - {result['range']['AST'][1]}")
+def print_player_result(result, team, context):
+    print(f"\nPlayer: {result['player']}")
+    print(f"Team: {team}")
+    print(f"Next Opponent: {context['opponent'] or 'General Estimate'}")
+    print(f"Home/Away: {'Home' if context['home'] else 'Away/Unknown'}")
+    print(f"Game Date: {context['game_date'] or 'Unknown'}")
+    print(f"Regular season games: {result['regular_summary']['games']}")
+    print(f"Playoff games: {result['playoff_summary']['games']}")
+    print(f"Overall averages: {result['overall_summary']}")
+    print(f"Opponent-specific averages: {result['opponent_summary']}")
+    for stat in STAT_LABELS:
+        print(f"{stat} ML: {result['model_prediction'][stat]} | Blended: {result['blended_prediction'][stat]} | Range: {result['range'][stat]}")
 
 
-def load_roster(file_path=DEFAULT_ROSTER_FILE):
-    with open(file_path, "r", encoding="utf-8") as file:
-        return [
-            line.strip()
-            for line in file
-            if line.strip() and not line.strip().startswith("#")
-        ]
+def print_top3(rankings):
+    for stat, label in STAT_LABELS.items():
+        top_reliable = sorted(rankings[stat], key=lambda x: x['score'], reverse=True)[:3]
+        print(f"\nTOP 3 MOST RELIABLE {label} PREDICTIONS")
+        for i, row in enumerate(top_reliable, 1):
+            print(f"{i}. {row['player']} - {row['prediction']} - {row['range'][0]} to {row['range'][1]} - {row['score']} ({row['label']})")
+
+        top_raw = sorted(rankings[stat], key=lambda x: x['prediction'], reverse=True)[:3]
+        print(f"TOP 3 HIGHEST {stat} PREDICTIONS")
+        for i, row in enumerate(top_raw, 1):
+            print(f"{i}. {row['player']} - {row['prediction']}")
 
 
-def confidence_label(mae):
-    if mae <= 2:
-        return "HIGH"
-    if mae <= 5:
-        return "MEDIUM"
-    return "LOW"
-
-
-def run_roster_predictions(season="2025-26"):
+def run_team_mode(season="2025-26"):
+    team = input("Enter team abbreviation: ").strip().upper()
     try:
-        player_names = load_roster()
-    except FileNotFoundError:
-        print(f"\nCould not find {DEFAULT_ROSTER_FILE}. Create it in the same folder as app.py.")
+        _, roster = get_team_roster(team, season=season)
+    except Exception as exc:
+        print(f"Roster lookup failed: {exc}")
         return
 
-    if not player_names:
-        print(f"\n{DEFAULT_ROSTER_FILE} is empty.")
-        return
+    context = get_next_game_context(team, season=season)
+    print(f"\nSchedule context: {context['source']}")
 
-    print("\nRUNNING DEFAULT ROSTER PREDICTIONS")
-    print("----------------------------------")
-    print(f"Roster File: {DEFAULT_ROSTER_FILE}")
-    print(f"Players Found: {len(player_names)}")
-
-    confidence_rankings = []
-    successful = 0
-    failed = 0
-
-    for player_name in player_names:
-        print("\n================================")
-        print(f"PLAYER: {player_name}")
-        print("================================")
-
+    results, failed = [], []
+    for player in roster:
         try:
-            result, player_team, context = run_prediction(
-                player_name,
-                season=season,
-                display=True
-            )
+            result = run_prediction(player, season, context['opponent'], context['home'], context['playoff_game'])
+            print_player_result(result, team, context)
+            results.append({"player": player, "result": result})
+        except Exception as exc:
+            failed.append((player, str(exc)))
 
-            for stat in ["PTS", "REB", "AST"]:
-                confidence_rankings.append({
-                    "player": result["player"],
-                    "team": player_team,
-                    "stat": stat,
-                    "prediction": result["prediction"][stat],
-                    "mae": result["model_error"][stat],
-                    "range": result["range"][stat],
-                    "confidence": confidence_label(result["model_error"][stat])
-                })
-
-            successful += 1
-
-        except Exception as error:
-            print(f"\nError processing {player_name}: {error}")
-            failed += 1
-
-    print("\nBATCH COMPLETE")
-    print("--------------")
-    print(f"Successful predictions: {successful}")
-    print(f"Failed predictions: {failed}")
-
-    print_ranked_confidence(confidence_rankings)
-
-
-def print_ranked_confidence(confidence_rankings):
-    if not confidence_rankings:
-        return
-
-    confidence_rankings.sort(key=lambda item: item["mae"])
-
-    print("\nMOST RELIABLE PREDICTIONS")
-    print("-------------------------")
-    print("Ranked by lowest model error. Lower ± means stronger confidence.\n")
-
-    for index, item in enumerate(confidence_rankings, start=1):
-        low, high = item["range"]
-
-        print(
-            f"{index}. {item['player']} - {item['stat']} "
-            f"Prediction: {item['prediction']} "
-            f"| Range: {low} - {high} "
-            f"| ±{item['mae']} "
-            f"| Confidence: {item['confidence']}"
-        )
+    print_top3(build_rankings(results))
+    if failed:
+        print("\nFailed players:")
+        for player, err in failed:
+            print(f"- {player}: {err}")
 
 
 if __name__ == "__main__":
     print("NBA Player Stat Prediction System")
-    print("---------------------------------")
     print("1. Single Player Prediction")
-    print("2. Default Roster Prediction")
+    print("2. Default roster.txt Prediction")
+    print("3. Team Auto-Roster Prediction")
+    mode = input("Select mode 1, 2, or 3: ").strip()
 
-    mode = input("Select mode 1 or 2: ").strip()
-
-    if mode == "2":
-        run_roster_predictions()
+    if mode == "3":
+        run_team_mode()
+    elif mode == "2":
+        print("Mode 2 currently redirects to team mode improvements.")
+        run_team_mode()
     else:
         player_name = input("Enter NBA player name: ").strip()
-        run_prediction(player_name)
+        context = {"opponent": None, "home": False, "playoff_game": False, "game_date": None}
+        result = run_prediction(player_name)
+        print_player_result(result, "Unknown", context)
