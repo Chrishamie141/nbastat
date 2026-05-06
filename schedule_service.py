@@ -1,40 +1,57 @@
+from datetime import datetime
 from nba_api.stats.static import teams
+from nba_api.stats.endpoints import leaguegamefinder
 
 
-def infer_team_from_logs(regular_df, playoff_df):
-    df = playoff_df if playoff_df is not None and not playoff_df.empty else regular_df
-
-    if df is None or df.empty:
-        return None
-
-    latest_matchup = df.iloc[0]["MATCHUP"]
-    return latest_matchup.split()[0].upper()
+def _abbr_to_id_map():
+    return {t["abbreviation"]: t["id"] for t in teams.get_teams()}
 
 
-def get_next_game_context(player_team, playoff_game=False):
-    if not player_team:
+def get_next_game_context(team_abbreviation, season="2025-26", timeout=20):
+    team_abbreviation = team_abbreviation.upper().strip()
+    team_map = _abbr_to_id_map()
+    if team_abbreviation not in team_map:
         return {
             "opponent": None,
             "home": False,
-            "playoff_game": playoff_game,
-            "source": "Could not infer player team; used general estimate."
+            "playoff_game": False,
+            "game_date": None,
+            "source": "Invalid team; used general estimate.",
         }
 
-    player_team = player_team.upper().strip()
+    try:
+        df = leaguegamefinder.LeagueGameFinder(
+            team_id_nullable=team_map[team_abbreviation],
+            season_nullable=season,
+            timeout=timeout,
+        ).get_data_frames()[0]
 
-    valid_teams = [team["abbreviation"] for team in teams.get_teams()]
+        if df.empty:
+            raise ValueError("No schedule rows")
 
-    if player_team not in valid_teams:
+        df["GAME_DATE_DT"] = df["GAME_DATE"].apply(lambda d: datetime.strptime(d, "%Y-%m-%d"))
+        upcoming = df[df["GAME_DATE_DT"] >= datetime.utcnow()].sort_values("GAME_DATE_DT")
+
+        if upcoming.empty:
+            raise ValueError("No upcoming game found")
+
+        game = upcoming.iloc[0]
+        matchup = game["MATCHUP"]
+        opponent = matchup.split()[-1]
+        home = "vs." in matchup
+
+        return {
+            "opponent": opponent,
+            "home": home,
+            "playoff_game": False,
+            "game_date": game["GAME_DATE"],
+            "source": "LeagueGameFinder schedule",
+        }
+    except Exception:
         return {
             "opponent": None,
             "home": False,
-            "playoff_game": playoff_game,
-            "source": f"Could not validate team {player_team}; used general estimate."
+            "playoff_game": False,
+            "game_date": None,
+            "source": "Schedule lookup failed; used general estimate.",
         }
-
-    return {
-        "opponent": None,
-        "home": False,
-        "playoff_game": playoff_game,
-        "source": "Schedule API skipped to avoid timeout; used general estimate."
-    }
