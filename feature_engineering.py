@@ -1,8 +1,17 @@
 import pandas as pd
 
-def prepare_features(df):
-    df = df.copy()
 
+def prepare_features(regular_df, playoff_df):
+    frames = []
+    if regular_df is not None and not regular_df.empty:
+        frames.append(regular_df)
+    if playoff_df is not None and not playoff_df.empty:
+        frames.append(playoff_df)
+
+    if not frames:
+        raise ValueError("No game logs available to build features.")
+
+    df = pd.concat(frames, ignore_index=True).copy()
     df["GAME_DATE_SORT"] = pd.to_datetime(df["GAME_DATE"])
     df = df.sort_values("GAME_DATE_SORT").reset_index(drop=True)
 
@@ -11,7 +20,6 @@ def prepare_features(df):
     df["OPPONENT"] = df["MATCHUP"].apply(lambda x: x.split()[-1])
 
     stat_cols = ["PTS", "REB", "AST", "MIN"]
-
     for stat in stat_cols:
         df[f"{stat}_last"] = df[stat].shift(1)
         df[f"{stat}_avg3"] = df[stat].rolling(3).mean().shift(1)
@@ -26,11 +34,9 @@ def prepare_features(df):
         "PTS_avg3", "REB_avg3", "AST_avg3", "MIN_avg3",
         "PTS_avg5", "REB_avg5", "AST_avg5", "MIN_avg5",
         "PTS_trend", "REB_trend", "AST_trend", "MIN_trend",
-        "HOME", "PLAYOFF_GAME"
+        "HOME", "PLAYOFF_GAME",
     ]
 
     opponent_features = [col for col in df.columns if col.startswith("OPPONENT_")]
-
     features = base_features + opponent_features
-
     return df, features, opponent_features
