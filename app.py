@@ -22,6 +22,10 @@ def print_player_result(result, team, context):
     print(f"Playoff games: {result['playoff_summary']['games']}")
     print(f"Overall averages: {result['overall_summary']}")
     print(f"Opponent-specific averages: {result['opponent_summary']}")
+    if context["opponent"] is None:
+        print("Opponent-specific model disabled because no opponent was found.")
+    else:
+        print(f"Opponent-specific sample size: {result['opponent_summary']['games']} games.")
     for stat in STAT_LABELS:
         print(f"{stat} ML: {result['model_prediction'][stat]} | Blended: {result['blended_prediction'][stat]} | Range: {result['range'][stat]}")
 
