@@ -60,5 +60,6 @@ def opponent_specific_summary(all_logs_df, opponent):
     if all_logs_df is None or all_logs_df.empty or not opponent:
         return {"games": 0, **{stat: 0.0 for stat in STAT_COLUMNS}}
 
-    vs_df = all_logs_df[all_logs_df["MATCHUP"].str.endswith(opponent.upper(), na=False)]
+    opp = opponent.upper().strip()
+    vs_df = all_logs_df[all_logs_df["MATCHUP"].str.contains(opp, na=False)]
     return season_summary(vs_df)

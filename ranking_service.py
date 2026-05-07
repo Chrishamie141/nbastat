@@ -1,9 +1,13 @@
 STAT_LABELS = {"PTS": "POINTS", "REB": "REBOUNDS", "AST": "ASSISTS", "STL": "STEALS", "BLK": "BLOCKS"}
 
 
-def confidence_from_mae(prediction, mae):
+def confidence_from_mae(prediction, mae, stat=None):
     normalized_error = mae / max(prediction, 1)
     score = max(0, round(100 - normalized_error * 100, 1))
+    if stat in {"STL", "BLK"} and prediction < 0.5:
+        score = min(score, 70)
+    if stat in {"STL", "BLK"} and prediction == 0:
+        score = min(score, 50)
     if score >= 80:
         label = "HIGH"
     elif score >= 60:
@@ -19,7 +23,7 @@ def build_rankings(player_results):
         for stat in STAT_LABELS:
             pred = item["result"]["blended_prediction"][stat]
             mae = item["result"]["model_error"][stat]
-            score, label = confidence_from_mae(pred, mae)
+            score, label = confidence_from_mae(pred, mae, stat)
             by_stat[stat].append({
                 "player": item["player"], "prediction": pred, "range": item["result"]["range"][stat],
                 "score": score, "label": label
