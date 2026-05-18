@@ -1,0 +1,306 @@
+diff a/app.py b/app.py	(rejected hunks)
+@@ -1,89 +1,291 @@
+ from predictor import PlayerStatPredictor
+ from roster_service import get_team_roster
+ from schedule_service import get_next_game_context
+ from ranking_service import build_rankings, STAT_LABELS
++from injury_service import InjuryService
++from odds_service import fetch_nba_odds, find_game_odds, TEAM_ALIASES
+ 
+ DEFAULT_ROSTER_FILE = "roster.txt"
++ROTATION_SIZE = 9
+ 
+ 
+ def run_prediction(player_name, season="2025-26", opponent=None, home=False, playoff_game=False):
+     predictor = PlayerStatPredictor(player_name=player_name, season=season)
+     predictor.load_data()
+     return predictor.predict_next_game(opponent=opponent, home=home, playoff_game=playoff_game)
+ 
+ 
+ def print_player_result(result, team, context):
+     print(f"\nPlayer: {result['player']}")
+     print(f"Team: {team}")
+     print(f"Next Opponent: {context['opponent'] or 'General Estimate'}")
+     print(f"Home/Away: {'Home' if context['home'] else 'Away/Unknown'}")
+     print(f"Game Date: {context['game_date'] or 'Unknown'}")
+     print(f"Regular season games: {result['regular_summary']['games']}")
+     print(f"Playoff games: {result['playoff_summary']['games']}")
+     print(f"Overall averages: {result['overall_summary']}")
+     print(f"Opponent-specific averages: {result['opponent_summary']}")
+     if context["opponent"] is None:
+         print("Opponent-specific model disabled because no opponent was found.")
+     else:
+         print(f"Opponent-specific sample size: {result['opponent_summary']['games']} games.")
+     for stat in STAT_LABELS:
+         print(f"{stat} ML: {result['model_prediction'][stat]} | Blended: {result['blended_prediction'][stat]} | Range: {result['range'][stat]}")
+ 
+ 
+ def print_top3(rankings):
+     for stat, label in STAT_LABELS.items():
+         top_reliable = sorted(rankings[stat], key=lambda x: x['score'], reverse=True)[:3]
+         print(f"\nTOP 3 MOST RELIABLE {label} PREDICTIONS")
+         for i, row in enumerate(top_reliable, 1):
+             print(f"{i}. {row['player']} - {row['prediction']} - {row['range'][0]} to {row['range'][1]} - {row['score']} ({row['label']})")
+ 
+         top_raw = sorted(rankings[stat], key=lambda x: x['prediction'], reverse=True)[:3]
+         print(f"TOP 3 HIGHEST {stat} PREDICTIONS")
+         for i, row in enumerate(top_raw, 1):
+             print(f"{i}. {row['player']} - {row['prediction']}")
+ 
+ 
++def _load_default_roster():
++    with open(DEFAULT_ROSTER_FILE, "r", encoding="utf-8") as roster_file:
++        return [line.strip() for line in roster_file if line.strip() and not line.startswith("#")]
++
++
++def _filter_injured_players(players, team_mode=False):
++    injury_service = InjuryService()
++    filtered = injury_service.exclude_injured(players, team_mode=team_mode)
++    removed = [player for player in players if player not in filtered]
++    if removed:
++        print("\nInjury filter removed:")
++        for player in removed:
++            print(f"- {player}")
++    return filtered
++
++
++def predict_roster_players(players, team, season="2025-26", context=None, print_results=True):
++    context = context or {"opponent": None, "home": False, "playoff_game": False, "game_date": None}
++    results, failed = [], []
++
++    for player in players:
++        try:
++            result = run_prediction(player, season, context['opponent'], context['home'], context['playoff_game'])
++            if print_results:
++                print_player_result(result, team, context)
++            results.append({"player": player, "result": result})
++        except Exception as exc:
++            failed.append((player, str(exc)))
++
++    return results, failed
++
++
++def run_roster_file_mode(season="2025-26"):
++    try:
++        roster = _load_default_roster()
++    except Exception as exc:
++        print(f"Could not read {DEFAULT_ROSTER_FILE}: {exc}")
++        return
++
++    roster = _filter_injured_players(roster)
++    context = {"opponent": None, "home": False, "playoff_game": False, "game_date": None}
++    results, failed = predict_roster_players(roster, "Default roster", season, context)
++
++    if results:
++        print_top3(build_rankings(results))
++    if failed:
++        print("\nFailed players:")
++        for player, err in failed:
++            print(f"- {player}: {err}")
++
++
+ def run_team_mode(season="2025-26"):
+     team = input("Enter team abbreviation: ").strip().upper()
+     try:
+         _, roster = get_team_roster(team, season=season)
+     except Exception as exc:
+         print(f"Roster lookup failed: {exc}")
+         return
+ 
++    roster = _filter_injured_players(roster, team_mode=True)
+     context = get_next_game_context(team, season=season)
+     print(f"\nSchedule context: {context['source']}")
+ 
+-    results, failed = [], []
+-    for player in roster:
+-        try:
+-            result = run_prediction(player, season, context['opponent'], context['home'], context['playoff_game'])
+-            print_player_result(result, team, context)
+-            results.append({"player": player, "result": result})
+-        except Exception as exc:
+-            failed.append((player, str(exc)))
++    results, failed = predict_roster_players(roster, team, season, context)
+ 
+-    print_top3(build_rankings(results))
++    if results:
++        print_top3(build_rankings(results))
+     if failed:
+         print("\nFailed players:")
+         for player, err in failed:
+             print(f"- {player}: {err}")
+ 
+ 
++def _team_context(opponent, home=False):
++    return {
++        "opponent": opponent,
++        "home": home,
++        "playoff_game": False,
++        "game_date": None,
++        "source": "Mode 4 head-to-head input",
++    }
++
++
++def _rotation_score(player_result):
++    summary = player_result["result"].get("overall_summary", {})
++    return float(summary.get("MIN", 0.0) or 0.0)
++
++
++def _predict_team_total(team, opponent, season="2025-26", home=False):
++    _, roster = get_team_roster(team, season=season)
++    active_roster = _filter_injured_players(roster, team_mode=True)
++    context = _team_context(opponent=opponent, home=home)
++    results, failed = predict_roster_players(
++        active_roster,
++        team,
++        season=season,
++        context=context,
++        print_results=False,
++    )
++    rotation = sorted(results, key=_rotation_score, reverse=True)[:ROTATION_SIZE]
++    projected_score = round(sum(item["result"]["blended_prediction"]["PTS"] for item in rotation), 1)
++    return {
++        "team": team,
++        "context": context,
++        "results": results,
++        "failed": failed,
++        "rotation": rotation,
++        "projected_score": projected_score,
++    }
++
++
++def _full_team_name(team_abbr):
++    return TEAM_ALIASES.get(team_abbr.upper(), team_abbr.upper())
++
++
++def _format_market_spread(odds, team_name):
++    spreads = odds.get("average_spread_by_team", {})
++    spread = spreads.get(team_name)
++    if spread is None:
++        return "Unavailable", None
++    return f"{team_name} {spread:+.1f}", spread
++
++
++def _market_margin_from_spread(spread):
++    # A +6.7 spread means the market implies this team loses by 6.7.
++    # A -5.5 spread means the market implies this team wins by 5.5.
++    return -spread
++
++
++def _print_market_comparison(team1, team2, team1_score, team2_score, odds):
++    team1_name = _full_team_name(team1)
++    team2_name = _full_team_name(team2)
++    model_total = round(team1_score + team2_score, 1)
++    model_margin_team1 = round(team1_score - team2_score, 1)
++    winner = team1 if model_margin_team1 >= 0 else team2
++    winner_name = _full_team_name(winner)
++    market_total = odds.get("average_total")
++    market_spread_label, market_spread_for_winner = _format_market_spread(odds, winner_name)
++    model_margin_for_winner = abs(model_margin_team1)
++
++    print("\nMARKET ODDS CONSENSUS")
++    print(f"Average Total: {market_total if market_total is not None else 'Unavailable'}")
++    print(f"Average Spread: {market_spread_label}")
++    sportsbooks = odds.get("sportsbooks", [])
++    print(f"Sportsbooks: {', '.join(sportsbooks) if sportsbooks else 'Unavailable'}")
++
++    print("\nMODEL EDGE")
++    if market_total is not None:
++        total_edge = round(model_total - market_total, 1)
++        direction = "over" if total_edge > 0 else "under"
++        print(f"Total Edge: Model is {abs(total_edge):.1f} points {direction} market")
++    else:
++        print("Total Edge: Unavailable")
++
++    if market_spread_for_winner is not None:
++        market_margin_for_winner = _market_margin_from_spread(market_spread_for_winner)
++        spread_edge = round(model_margin_for_winner - market_margin_for_winner, 1)
++        direction = "higher" if spread_edge >= 0 else "lower"
++        print(f"Spread Edge: Model is {abs(spread_edge):.1f} points {direction} on {winner} than market")
++    else:
++        print("Spread Edge: Unavailable")
++
++    print("\nBEST AVAILABLE LINES")
++    best_spreads = odds.get("best_spread_by_team", {})
++    for team_name in (team1_name, team2_name):
++        best = best_spreads.get(team_name)
++        if best:
++            print(f"Best Spread {team_name}: {best['point']:+.1f} at {best['sportsbook']}")
++    best_total = odds.get("best_total", {})
++    if best_total.get("over"):
++        over = best_total["over"]
++        print(f"Best Over Total: {over['point']:.1f} at {over['sportsbook']}")
++    if best_total.get("under"):
++        under = best_total["under"]
++        print(f"Best Under Total: {under['point']:.1f} at {under['sportsbook']}")
++
++
++def run_game_market_mode(season="2025-26"):
++    team1 = input("Enter Team 1 abbreviation: ").strip().upper()
++    team2 = input("Enter Team 2 abbreviation: ").strip().upper()
++
++    try:
++        team1_prediction = _predict_team_total(team1, team2, season=season, home=False)
++        team2_prediction = _predict_team_total(team2, team1, season=season, home=True)
++    except Exception as exc:
++        print(f"Team prediction failed: {exc}")
++        return
++
++    team1_score = team1_prediction["projected_score"]
++    team2_score = team2_prediction["projected_score"]
++    predicted_total = round(team1_score + team2_score, 1)
++    margin = round(abs(team1_score - team2_score), 1)
++    winner = team1 if team1_score >= team2_score else team2
++
++    print("\nMODEL GAME PREDICTION")
++    print(f"{team1}: {team1_score}")
++    print(f"{team2}: {team2_score}")
++    print(f"Predicted Total: {predicted_total}")
++    print(f"Projected Winner: {winner} by {margin}")
++
++    print("\nROTATION PLAYERS INCLUDED")
++    for team_prediction in (team1_prediction, team2_prediction):
++        names = [item["player"] for item in team_prediction["rotation"]]
++        print(f"{team_prediction['team']}: {', '.join(names) if names else 'None'}")
++
++    all_failed = team1_prediction["failed"] + team2_prediction["failed"]
++    if all_failed:
++        print("\nFailed players:")
++        for player, err in all_failed:
++            print(f"- {player}: {err}")
++
++    odds_response = fetch_nba_odds()
++    if not odds_response["ok"]:
++        print(f"\n{odds_response['message']}")
++        return
++
++    odds = find_game_odds(team1, team2, odds_response["games"])
++    if not odds:
++        print("\nSportsbook odds for this game were not found; market comparison skipped.")
++        return
++
++    _print_market_comparison(team1, team2, team1_score, team2_score, odds)
++
++
+ if __name__ == "__main__":
+     print("NBA Player Stat Prediction System")
+     print("1. Single Player Prediction")
+     print("2. Default roster.txt Prediction")
+     print("3. Team Auto-Roster Prediction")
+-    mode = input("Select mode 1, 2, or 3: ").strip()
++    print("4. Game Total + Market Odds Prediction")
++    mode = input("Select mode 1, 2, 3, or 4: ").strip()
+ 
+-    if mode == "3":
++    if mode == "4":
++        run_game_market_mode()
++    elif mode == "3":
+         run_team_mode()
+     elif mode == "2":
+-        print("Mode 2 currently redirects to team mode improvements.")
+-        run_team_mode()
++        run_roster_file_mode()
+     else:
+         player_name = input("Enter NBA player name: ").strip()
+         context = {"opponent": None, "home": False, "playoff_game": False, "game_date": None}
+         result = run_prediction(player_name)
+         print_player_result(result, "Unknown", context)
