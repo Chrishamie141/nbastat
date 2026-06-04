@@ -53,6 +53,7 @@ def _general_estimate(reason):
         "home": False,
         "playoff_game": False,
         "game_date": None,
+        "game_id": None,
         "source": f"{reason}; used general estimate.",
     }
 
@@ -117,6 +118,7 @@ def _find_with_espn(team_abbreviation, days_ahead=30, timeout=8):
                     "home": is_home,
                     "playoff_game": True,
                     "game_date": date.strftime("%Y-%m-%d"),
+                    "game_id": None,
                     "source": "ESPN Scoreboard",
                 }
 
@@ -182,6 +184,7 @@ def _find_with_nba_scoreboard(team_abbreviation, team_id, days_ahead=30, timeout
                 "home": home,
                 "playoff_game": True,
                 "game_date": date.strftime("%Y-%m-%d"),
+                "game_id": game_id,
                 "source": "NBA ScoreboardV2",
             }
 
@@ -220,6 +223,7 @@ def _find_with_league_gamefinder(team_id, season, timeout=8):
             "home": "vs." in matchup,
             "playoff_game": True,
             "game_date": game["GAME_DATE_DT"].strftime("%Y-%m-%d"),
+            "game_id": str(game["GAME_ID"]) if "GAME_ID" in game else None,
             "source": "LeagueGameFinder",
         }
 
@@ -236,15 +240,6 @@ def get_next_game_context(team_abbreviation, season="2025-26", timeout=8):
 
     team_id = team_map[team_abbreviation]
 
-    espn_result = _find_with_espn(
-        team_abbreviation=team_abbreviation,
-        days_ahead=30,
-        timeout=timeout,
-    )
-
-    if espn_result:
-        return espn_result
-
     nba_result = _find_with_nba_scoreboard(
         team_abbreviation=team_abbreviation,
         team_id=team_id,
@@ -254,6 +249,15 @@ def get_next_game_context(team_abbreviation, season="2025-26", timeout=8):
 
     if nba_result:
         return nba_result
+
+    espn_result = _find_with_espn(
+        team_abbreviation=team_abbreviation,
+        days_ahead=30,
+        timeout=timeout,
+    )
+
+    if espn_result:
+        return espn_result
 
     gamefinder_result = _find_with_league_gamefinder(
         team_id=team_id,
