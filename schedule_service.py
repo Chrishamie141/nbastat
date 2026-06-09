@@ -4,6 +4,8 @@ import pandas as pd
 from nba_api.stats.static import teams
 from nba_api.stats.endpoints import leaguegamefinder, scoreboardv2
 
+from team_utils import normalize_team_abbreviation
+
 
 ESPN_TEAM_MAP = {
     "ATL": "Atlanta Hawks",
@@ -101,8 +103,7 @@ def _find_with_espn(team_abbreviation, days_ahead=30, timeout=8):
 
             for competitor in competitors:
                 display_name = competitor.get("team", {}).get("displayName")
-                abbreviation = competitor.get("team", {}).get("abbreviation")
-                home_away = competitor.get("homeAway")
+                abbreviation = normalize_team_abbreviation(competitor.get("team", {}).get("abbreviation"))
 
                 if display_name == team_name or abbreviation == team_abbreviation:
                     found_team = competitor
@@ -110,7 +111,9 @@ def _find_with_espn(team_abbreviation, days_ahead=30, timeout=8):
                     opponent_team = competitor
 
             if found_team and opponent_team:
-                opponent_abbr = opponent_team.get("team", {}).get("abbreviation")
+                opponent_abbr = normalize_team_abbreviation(
+                    opponent_team.get("team", {}).get("abbreviation")
+                )
                 is_home = found_team.get("homeAway") == "home"
 
                 return {
@@ -166,7 +169,7 @@ def _find_with_nba_scoreboard(team_abbreviation, team_id, days_ahead=30, timeout
 
             opponent_row = opponent_rows.iloc[0]
             opponent_id = int(opponent_row["TEAM_ID"])
-            opponent = id_map.get(opponent_id)
+            opponent = normalize_team_abbreviation(id_map.get(opponent_id))
 
             home = False
 
@@ -216,7 +219,7 @@ def _find_with_league_gamefinder(team_id, season, timeout=8):
 
         game = upcoming.iloc[0]
         matchup = str(game["MATCHUP"])
-        opponent = matchup.split()[-1].upper() if matchup else None
+        opponent = normalize_team_abbreviation(matchup.split()[-1]) if matchup else None
 
         return {
             "opponent": opponent,
@@ -232,7 +235,7 @@ def _find_with_league_gamefinder(team_id, season, timeout=8):
 
 
 def get_next_game_context(team_abbreviation, season="2025-26", timeout=8):
-    team_abbreviation = team_abbreviation.upper().strip()
+    team_abbreviation = normalize_team_abbreviation(team_abbreviation)
     team_map = _abbr_to_id_map()
 
     if team_abbreviation not in team_map:

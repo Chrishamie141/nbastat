@@ -104,6 +104,45 @@ def _line_is_meaningful(prediction, edge):
     return stat in {"STL", "BLK"} and edge >= 0.12
 
 
+def sportsbook_line_coverage(predictions, sportsbook_lines):
+    """Summarize how completely sportsbook lines cover generated predictions."""
+    normalized_lines = {_normalize_name(player): lines for player, lines in sportsbook_lines.items()}
+    matched_lines = 0
+    missing_predictions = 0
+    players_without_lines = set()
+
+    for prediction in predictions:
+        player = prediction.get("player")
+        stat_type = str(prediction.get("stat_type", "")).upper()
+        player_lines = normalized_lines.get(_normalize_name(player))
+        if not player_lines:
+            missing_predictions += 1
+            players_without_lines.add(str(player))
+            continue
+        stat_lines = player_lines.get(stat_type, [])
+        if stat_lines:
+            matched_lines += len(stat_lines)
+        else:
+            missing_predictions += 1
+            players_without_lines.add(str(player))
+
+    return {
+        "matched_lines": matched_lines,
+        "missing_predictions": missing_predictions,
+        "players_without_lines": sorted(players_without_lines),
+    }
+
+
+def print_line_coverage_warning(coverage, threshold):
+    """Print line coverage diagnostics before betting/parlay reports."""
+    players = coverage.get("players_without_lines", [])
+    print(f"Matched sportsbook lines: {coverage.get('matched_lines', 0)}")
+    print(f"Missing sportsbook lines: {coverage.get('missing_predictions', 0)}")
+    print(f"Players without lines: {', '.join(players) if players else 'None'}")
+    if coverage.get("matched_lines", 0) < threshold:
+        print("WARNING: betting_lines.json may be too incomplete to build a meaningful parlay.")
+
+
 def recommend_bets(predictions, sportsbook_lines):
     """Match predictions to sportsbook lines and rank recommendations by edge."""
     normalized_lines = {_normalize_name(player): lines for player, lines in sportsbook_lines.items()}
@@ -174,50 +213,95 @@ def _decimal_to_american(decimal_odds):
     return round(-100 / (decimal_odds - 1))
 
 
-def build_parlay(recommended_bets, style):
-    """Build a parlay from ranked bet recommendations for a risk style."""
-    style_key = str(style or "balanced").strip().upper()
+def _parlay_rules(style):
     rules = {
         "SAFE": {"min_legs": 3, "max_legs": 5, "min_prob": 0.60, "min_edge": 0.0},
         "BALANCED": {"min_legs": 5, "max_legs": 8, "min_prob": 0.52, "min_edge": -0.03},
         "AGGRESSIVE": {"min_legs": 8, "max_legs": 12, "min_prob": 0.45, "min_edge": -0.05},
     }
+    style_key = str(style or "balanced").strip().upper()
     if style_key not in rules:
         raise ValueError("Parlay style must be SAFE, BALANCED, or AGGRESSIVE.")
+    return style_key, rules[style_key]
 
-    rule = rules[style_key]
+
+def _parlay_line_threshold(style_key):
+    return {"SAFE": 5, "BALANCED": 8, "AGGRESSIVE": 10}[style_key]
+
+
+def parlay_line_threshold(style):
+    """Return minimum matching sportsbook lines needed for a useful parlay style."""
+    style_key, _ = _parlay_rules(style)
+    return _parlay_line_threshold(style_key)
+
+
+def _qualifies_for_parlay(bet, style_key, rule, moderate_risk_used=False):
+    if bet.get("strength") == "AVOID":
+        return False, "not enough positive edge bets"
+    if bet["model_probability"] < rule["min_prob"]:
+        return False, "probability threshold too strict"
+    if bet["edge"] < rule["min_edge"]:
+        return False, "not enough positive edge bets"
+    if style_key == "SAFE" and bet["stat_type"] in VOLATILE_STATS and not (
+        bet["edge"] >= 0.08 and bet["model_probability"] >= 0.65
+    ):
+        return False, "probability threshold too strict"
+    if style_key == "BALANCED" and bet["edge"] < 0 and moderate_risk_used:
+        return False, "not enough positive edge bets"
+    if style_key == "AGGRESSIVE" and bet["edge"] < -0.03 and bet["model_probability"] < 0.50:
+        return False, "probability threshold too strict"
+    return True, None
+
+
+def build_parlay(recommended_bets, style, coverage=None):
+    """Build a parlay from ranked bet recommendations for a risk style."""
+    style_key, rule = _parlay_rules(style)
     selected = []
     used_players_stats = set()
     moderate_risk_used = False
+    rejection_reasons = {
+        "not enough sportsbook lines": 0,
+        "not enough positive edge bets": 0,
+        "probability threshold too strict": 0,
+        "duplicate player/stat already selected": 0,
+    }
+
+    if coverage and coverage.get("matched_lines", len(recommended_bets)) < _parlay_line_threshold(style_key):
+        rejection_reasons["not enough sportsbook lines"] += 1
 
     for bet in sorted(recommended_bets, key=lambda x: (x["edge"], x["model_probability"]), reverse=True):
-        if len(selected) >= rule["max_legs"]:
-            break
-        if bet.get("strength") == "AVOID":
-            continue
-        if bet["model_probability"] < rule["min_prob"] or bet["edge"] < rule["min_edge"]:
-            continue
-        if style_key == "SAFE" and bet["stat_type"] in VOLATILE_STATS and not (
-            bet["edge"] >= 0.08 and bet["model_probability"] >= 0.65
-        ):
-            continue
-        if style_key == "BALANCED" and bet["edge"] < 0:
-            if moderate_risk_used:
-                continue
-            moderate_risk_used = True
-        if style_key == "AGGRESSIVE" and bet["edge"] < -0.03 and bet["model_probability"] < 0.50:
+        qualifies, reason = _qualifies_for_parlay(bet, style_key, rule, moderate_risk_used)
+        if not qualifies:
+            rejection_reasons[reason] += 1
             continue
 
         key = (bet["player"], bet["stat_type"])
         if key in used_players_stats:
+            rejection_reasons["duplicate player/stat already selected"] += 1
             continue
-        used_players_stats.add(key)
-        selected.append(bet)
+
+        if len(selected) < rule["max_legs"]:
+            used_players_stats.add(key)
+            selected.append(bet)
+            if style_key == "BALANCED" and bet["edge"] < 0:
+                moderate_risk_used = True
 
     combined_probability = reduce(mul, (bet["model_probability"] for bet in selected), 1.0) if selected else 0.0
     decimal_odds = reduce(mul, (_american_to_decimal(bet["sportsbook_odds"]) for bet in selected), 1.0) if selected else 1.0
     estimated_odds = _decimal_to_american(decimal_odds) if selected and decimal_odds > 1 else 0
     risk = {"SAFE": "MEDIUM", "BALANCED": "MEDIUM-HIGH", "AGGRESSIVE": "HIGH"}[style_key]
+    matched_lines = coverage.get("matched_lines", len(recommended_bets)) if coverage else len(recommended_bets)
+
+    primary_reason = None
+    if len(selected) < rule["min_legs"]:
+        if matched_lines < _parlay_line_threshold(style_key):
+            primary_reason = "not enough sportsbook lines"
+        else:
+            primary_reason = max(
+                ((reason, count) for reason, count in rejection_reasons.items() if reason != "duplicate player/stat already selected"),
+                key=lambda item: item[1],
+                default=("not enough positive edge bets", 0),
+            )[0]
 
     return {
         "style": style_key,
@@ -229,4 +313,7 @@ def build_parlay(recommended_bets, style):
         "min_legs": rule["min_legs"],
         "max_legs": rule["max_legs"],
         "complete": len(selected) >= rule["min_legs"],
+        "matched_lines": matched_lines,
+        "rejection_reasons": rejection_reasons,
+        "primary_shortfall_reason": primary_reason,
     }

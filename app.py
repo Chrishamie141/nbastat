@@ -1,10 +1,17 @@
 import json
 from pathlib import Path
 
-from betting_engine import build_parlay, recommend_bets
+from betting_engine import (
+    build_parlay,
+    parlay_line_threshold,
+    print_line_coverage_warning,
+    recommend_bets,
+    sportsbook_line_coverage,
+)
 from predictor import PlayerStatPredictor
 from roster_service import get_team_roster
 from schedule_service import get_next_game_context
+from team_utils import normalize_team_abbreviation
 from ranking_service import build_rankings, STAT_LABELS, confidence_from_mae
 from prediction_tracker import grade_predictions_for_game, save_player_predictions, show_accuracy_report
 from prediction_storage import (
@@ -36,8 +43,8 @@ def prediction_rows_from_result(result, team, context, save_to_db=True):
         )
         row = {
             "game_date": context.get("game_date"),
-            "team": team,
-            "opponent": context.get("opponent"),
+            "team": normalize_team_abbreviation(team),
+            "opponent": normalize_team_abbreviation(context.get("opponent")) if context.get("opponent") else None,
             "player": result["player"],
             "stat_type": stat,
             "projection": projection,
@@ -140,10 +147,12 @@ def run_default_roster_mode(season="2025-26"):
         print(f"Default roster file not found: {DEFAULT_ROSTER_FILE}")
         return
 
-    team = input("Enter team abbreviation for schedule context, or press Enter to skip: ").strip().upper()
+    team = normalize_team_abbreviation(input("Enter team abbreviation for schedule context, or press Enter to skip: "))
     context = None
     if team:
         context = get_next_game_context(team, season=season)
+        if context.get("opponent"):
+            context["opponent"] = normalize_team_abbreviation(context["opponent"])
         print(f"\nSchedule context: {context['source']}")
     else:
         team = "Unknown"
@@ -152,7 +161,7 @@ def run_default_roster_mode(season="2025-26"):
 
 
 def run_team_mode(season="2025-26"):
-    team = input("Enter team abbreviation: ").strip().upper()
+    team = normalize_team_abbreviation(input("Enter team abbreviation: "))
     try:
         _, roster = get_team_roster(team, season=season)
     except Exception as exc:
@@ -160,6 +169,8 @@ def run_team_mode(season="2025-26"):
         return
 
     context = get_next_game_context(team, season=season)
+    if context.get("opponent"):
+        context["opponent"] = normalize_team_abbreviation(context["opponent"])
     print(f"\nSchedule context: {context['source']}")
     run_roster_predictions(roster, team=team, context=context, season=season)
 
@@ -178,7 +189,7 @@ def load_betting_lines(path=BETTING_LINES_FILE):
 
 
 def _load_roster_for_betting(season="2025-26"):
-    team = input("Enter team abbreviation for betting report: ").strip().upper()
+    team = normalize_team_abbreviation(input("Enter team abbreviation for betting report: "))
     if not team:
         print("A team abbreviation is required.")
         return [], "Unknown", default_context()
@@ -189,12 +200,16 @@ def _load_roster_for_betting(season="2025-26"):
         return [], team, default_context()
 
     context = get_next_game_context(team, season=season)
+    if context.get("opponent"):
+        context["opponent"] = normalize_team_abbreviation(context["opponent"])
     print(f"\nSchedule context: {context['source']}")
 
     include_opponent = input("Include opponent roster too? (y/N): ").strip().lower() == "y"
     if include_opponent and context.get("opponent"):
         try:
-            _, opponent_roster = get_team_roster(context["opponent"], season=season)
+            opponent = normalize_team_abbreviation(context["opponent"])
+            print(f"Opponent roster lookup: {context['opponent']} -> {opponent}")
+            _, opponent_roster = get_team_roster(opponent, season=season)
             roster = roster + opponent_roster
         except Exception as exc:
             print(f"Opponent roster lookup failed: {exc}")
@@ -242,6 +257,8 @@ def run_best_bets_mode(season="2025-26"):
     if not predictions:
         print("No predictions were generated for betting recommendations.")
         return []
+    coverage = sportsbook_line_coverage(predictions, sportsbook_lines)
+    print_line_coverage_warning(coverage, threshold=10)
     recommendations = recommend_bets(predictions, sportsbook_lines)
     if not recommendations:
         print("No matching sportsbook lines found for the generated predictions.")
@@ -259,6 +276,15 @@ def print_parlay(parlay, stake, target_payout):
     print("===============")
     if not parlay["legs"]:
         print("No qualifying legs were found for this parlay style.")
+        if not parlay["complete"]:
+            style_label = parlay["style"].title()
+            reason = parlay.get("primary_shortfall_reason") or "not enough positive edge bets"
+            print("WARNING: betting_lines.json may be too incomplete to build a meaningful parlay.")
+            print(
+                f"{style_label} parlay requested {parlay['min_legs']}-{parlay['max_legs']} legs, "
+                f"but only 0 qualified because {reason}; "
+                f"{parlay.get('matched_lines', 0)} sportsbook lines matched current predictions."
+            )
         return
     payout = stake * parlay["decimal_odds"]
     print(f"\nStake: ${stake:.2f}")
@@ -267,7 +293,15 @@ def print_parlay(parlay, stake, target_payout):
     if target_payout and payout < target_payout:
         print(f"Target Payout: ${target_payout:.2f} (not reached with qualifying legs)")
     if not parlay["complete"]:
+        print("WARNING: betting_lines.json may be too incomplete to build a meaningful parlay.")
         print(f"Warning: Found {len(parlay['legs'])} legs; target range starts at {parlay['min_legs']}.")
+        style_label = parlay["style"].title()
+        reason = parlay.get("primary_shortfall_reason") or "not enough positive edge bets"
+        print(
+            f"{style_label} parlay requested {parlay['min_legs']}-{parlay['max_legs']} legs, "
+            f"but only {len(parlay['legs'])} qualified because {reason}; "
+            f"{parlay.get('matched_lines', len(parlay['legs']))} sportsbook lines matched current predictions."
+        )
     for index, leg in enumerate(parlay["legs"], 1):
         line_label = int(leg["line"]) if float(leg["line"]).is_integer() else leg["line"]
         print(f"{index}. {leg['player']} {line_label}+ {leg['stat_type']} - {format_percent(leg['model_probability'])}")
@@ -291,10 +325,17 @@ def run_auto_parlay_mode(season="2025-26"):
     if not predictions:
         print("No predictions were generated for parlay building.")
         return
+    coverage = sportsbook_line_coverage(predictions, sportsbook_lines)
+    try:
+        coverage_threshold = parlay_line_threshold(style)
+    except ValueError as exc:
+        print(exc)
+        return
+    print_line_coverage_warning(coverage, threshold=coverage_threshold)
     recommendations = recommend_bets(predictions, sportsbook_lines)
     save_bet_recommendations(recommendations)
     try:
-        parlay = build_parlay(recommendations, style)
+        parlay = build_parlay(recommendations, style, coverage=coverage)
     except ValueError as exc:
         print(exc)
         return

@@ -1,9 +1,11 @@
 from nba_api.stats.static import teams
 from nba_api.stats.endpoints import commonteamroster
 
+from team_utils import normalize_team_abbreviation
+
 
 def get_team_id(team_abbreviation):
-    team_abbreviation = team_abbreviation.upper().strip()
+    team_abbreviation = normalize_team_abbreviation(team_abbreviation)
     for team in teams.get_teams():
         if team["abbreviation"] == team_abbreviation:
             return team["id"]
@@ -11,6 +13,7 @@ def get_team_id(team_abbreviation):
 
 
 def get_team_roster(team_abbreviation, season="2025-26", timeout=30):
+    team_abbreviation = normalize_team_abbreviation(team_abbreviation)
     team_id = get_team_id(team_abbreviation)
     try:
         roster_df = commonteamroster.CommonTeamRoster(
