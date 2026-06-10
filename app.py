@@ -230,6 +230,12 @@ def format_percent(value):
     return f"{value * 100:.1f}%"
 
 
+def high_probability_note(probability):
+    if probability > 0.85:
+        return "NOTE: High model probability. Verify this line is not too low or based on stale odds."
+    return None
+
+
 def print_best_bets_report(recommendations, show_all=False):
     display_bets = recommendations if show_all else [bet for bet in recommendations if bet["recommended"]]
     print("\n========================")
@@ -247,6 +253,9 @@ def print_best_bets_report(recommendations, show_all=False):
         print(f"   Book Probability: {format_percent(bet['sportsbook_probability'])}")
         print(f"   Edge: {bet['edge'] * 100:+.1f}%")
         print(f"   Strength: {bet['strength']}")
+        note = high_probability_note(bet["model_probability"])
+        if note:
+            print(f"   {note}")
 
 
 def run_best_bets_mode(season="2025-26"):
@@ -305,7 +314,13 @@ def print_parlay(parlay, stake, target_payout):
     for index, leg in enumerate(parlay["legs"], 1):
         line_label = int(leg["line"]) if float(leg["line"]).is_integer() else leg["line"]
         print(f"{index}. {leg['player']} {line_label}+ {leg['stat_type']} - {format_percent(leg['model_probability'])}")
-    print(f"\nCombined Probability: {format_percent(parlay['combined_probability'])}")
+        note = high_probability_note(leg["model_probability"])
+        if note:
+            print(f"   {note}")
+    print(f"\nRaw Combined Probability: {format_percent(parlay['raw_combined_probability'])}")
+    print(f"Adjusted Combined Probability: {format_percent(parlay['adjusted_combined_probability'])}")
+    if parlay["style"] == "AGGRESSIVE" and parlay["adjusted_combined_probability"] > 0.15:
+        print("WARNING: Aggressive parlay probability may still be overestimated. Treat as directional, not guaranteed.")
     print(f"Risk: {parlay['risk']}")
 
 

@@ -12,6 +12,41 @@ except ImportError:  # pragma: no cover - exercised when scipy is unavailable
     norm = None
 
 VOLATILE_STATS = {"3PM", "STL", "BLK"}
+STAT_MINIMUM_STD = {
+    "PTS": 5.5,
+    "REB": 3.0,
+    "AST": 2.2,
+    "STL": 1.0,
+    "BLK": 1.0,
+    "3PM": 1.5,
+}
+STAT_PROBABILITY_CAPS = {
+    "PTS": 0.88,
+    "REB": 0.86,
+    "AST": 0.84,
+    "STL": 0.72,
+    "BLK": 0.72,
+    "3PM": 0.70,
+}
+NEAR_PROJECTION_CAPS = {
+    "PTS": 0.58,
+    "REB": 0.57,
+    "AST": 0.56,
+}
+MIN_HIT_PROBABILITY = 0.03
+PARLAY_SIZE_PENALTIES = {
+    3: 0.90,
+    4: 0.82,
+    5: 0.74,
+    6: 0.66,
+    7: 0.58,
+    8: 0.50,
+    9: 0.43,
+    10: 0.36,
+    11: 0.30,
+    12: 0.25,
+}
+
 STAT_MINIMUM_PROJECTIONS = {
     "PTS": 5.0,
     "REB": 3.0,
@@ -51,20 +86,35 @@ def _normal_cdf(value, mean, std):
 
 
 def estimate_hit_probability(projection, low_range, high_range, target_line, stat_type=None):
-    """Estimate P(stat >= line) with a normal distribution approximation.
+    """Estimate P(stat >= line) with conservative normal-distribution guardrails.
 
-    The model range is treated as roughly a 95% interval, so four standard
-    deviations span low-to-high. For displayed alternate lines like 20+ points,
-    the target line is used directly and the returned probability is the upper
-    tail of the normal curve: 1 - CDF(line).
+    The projection range is intentionally widened into a larger standard
+    deviation than the raw model interval implies. Stat-specific minimum
+    standard deviations and probability caps prevent alternate lines near the
+    projection from being treated as near-certainties.
     """
+    stat_key = str(stat_type or "").upper()
     projection = float(projection)
     low_range = float(low_range)
     high_range = float(high_range)
     target_line = float(target_line)
-    std = max((high_range - low_range) / 4, 0.01)
-    probability = 1 - _normal_cdf(target_line, projection, std)
-    return min(max(probability, 0.0), 1.0)
+
+    range_width = max(high_range - low_range, 0.0)
+    base_std = range_width / 2.8 if range_width else 0.01
+    stat_min_std = STAT_MINIMUM_STD.get(stat_key, 1.0)
+    final_std = max(base_std, stat_min_std)
+
+    probability = 1 - _normal_cdf(target_line, projection, final_std)
+
+    cap = STAT_PROBABILITY_CAPS.get(stat_key, 0.88)
+    if target_line >= projection:
+        cap = min(cap, 0.52)
+    if abs(target_line - projection) <= 1:
+        cap = min(cap, NEAR_PROJECTION_CAPS.get(stat_key, cap))
+    if target_line > projection + 2:
+        cap = min(cap, 0.45)
+
+    return min(max(probability, MIN_HIT_PROBABILITY), cap)
 
 
 def calculate_edge(model_probability, sportsbook_probability):
@@ -109,36 +159,65 @@ def sportsbook_line_coverage(predictions, sportsbook_lines):
     normalized_lines = {_normalize_name(player): lines for player, lines in sportsbook_lines.items()}
     matched_lines = 0
     missing_predictions = 0
+    total_candidate_lines = 0
     players_without_lines = set()
+    players_with_partial_lines = set()
 
+    for lines_by_stat in sportsbook_lines.values():
+        for stat_lines in lines_by_stat.values():
+            total_candidate_lines += len(stat_lines or [])
+
+    predictions_by_player = {}
     for prediction in predictions:
-        player = prediction.get("player")
-        stat_type = str(prediction.get("stat_type", "")).upper()
+        player = str(prediction.get("player"))
+        predictions_by_player.setdefault(player, []).append(prediction)
+
+    for player, player_predictions in predictions_by_player.items():
         player_lines = normalized_lines.get(_normalize_name(player))
+        player_matched_lines = 0
+        player_missing_predictions = 0
+
         if not player_lines:
-            missing_predictions += 1
-            players_without_lines.add(str(player))
+            missing_predictions += len(player_predictions)
+            players_without_lines.add(player)
             continue
-        stat_lines = player_lines.get(stat_type, [])
-        if stat_lines:
-            matched_lines += len(stat_lines)
-        else:
-            missing_predictions += 1
-            players_without_lines.add(str(player))
+
+        for prediction in player_predictions:
+            stat_type = str(prediction.get("stat_type", "")).upper()
+            stat_lines = player_lines.get(stat_type, [])
+            if stat_lines:
+                stat_line_count = len(stat_lines)
+                matched_lines += stat_line_count
+                player_matched_lines += stat_line_count
+            else:
+                missing_predictions += 1
+                player_missing_predictions += 1
+
+        if player_matched_lines and player_missing_predictions:
+            players_with_partial_lines.add(player)
+        elif not player_matched_lines:
+            players_without_lines.add(player)
 
     return {
         "matched_lines": matched_lines,
         "missing_predictions": missing_predictions,
         "players_without_lines": sorted(players_without_lines),
+        "players_with_partial_lines": sorted(players_with_partial_lines),
+        "total_prediction_rows": len(predictions),
+        "total_candidate_lines": total_candidate_lines,
     }
 
 
 def print_line_coverage_warning(coverage, threshold):
     """Print line coverage diagnostics before betting/parlay reports."""
     players = coverage.get("players_without_lines", [])
+    partial_players = coverage.get("players_with_partial_lines", [])
+    print(f"Total prediction rows: {coverage.get('total_prediction_rows', 0)}")
+    print(f"Total sportsbook candidate lines: {coverage.get('total_candidate_lines', 0)}")
     print(f"Matched sportsbook lines: {coverage.get('matched_lines', 0)}")
     print(f"Missing sportsbook lines: {coverage.get('missing_predictions', 0)}")
     print(f"Players without lines: {', '.join(players) if players else 'None'}")
+    print(f"Players with partial lines: {', '.join(partial_players) if partial_players else 'None'}")
     if coverage.get("matched_lines", 0) < threshold:
         print("WARNING: betting_lines.json may be too incomplete to build a meaningful parlay.")
 
@@ -253,6 +332,16 @@ def _qualifies_for_parlay(bet, style_key, rule, moderate_risk_used=False):
     return True, None
 
 
+def _risk_from_adjusted_probability(adjusted_probability):
+    if adjusted_probability >= 0.25:
+        return "MEDIUM"
+    if adjusted_probability >= 0.10:
+        return "MEDIUM-HIGH"
+    if adjusted_probability >= 0.03:
+        return "HIGH"
+    return "VERY HIGH"
+
+
 def build_parlay(recommended_bets, style, coverage=None):
     """Build a parlay from ranked bet recommendations for a risk style."""
     style_key, rule = _parlay_rules(style)
@@ -286,10 +375,12 @@ def build_parlay(recommended_bets, style, coverage=None):
             if style_key == "BALANCED" and bet["edge"] < 0:
                 moderate_risk_used = True
 
-    combined_probability = reduce(mul, (bet["model_probability"] for bet in selected), 1.0) if selected else 0.0
+    raw_combined_probability = reduce(mul, (bet["model_probability"] for bet in selected), 1.0) if selected else 0.0
+    size_penalty = PARLAY_SIZE_PENALTIES.get(len(selected), 1.0)
+    adjusted_combined_probability = raw_combined_probability * size_penalty
     decimal_odds = reduce(mul, (_american_to_decimal(bet["sportsbook_odds"]) for bet in selected), 1.0) if selected else 1.0
     estimated_odds = _decimal_to_american(decimal_odds) if selected and decimal_odds > 1 else 0
-    risk = {"SAFE": "MEDIUM", "BALANCED": "MEDIUM-HIGH", "AGGRESSIVE": "HIGH"}[style_key]
+    risk = _risk_from_adjusted_probability(adjusted_combined_probability)
     matched_lines = coverage.get("matched_lines", len(recommended_bets)) if coverage else len(recommended_bets)
 
     primary_reason = None
@@ -306,7 +397,10 @@ def build_parlay(recommended_bets, style, coverage=None):
     return {
         "style": style_key,
         "legs": selected,
-        "combined_probability": combined_probability,
+        "raw_combined_probability": raw_combined_probability,
+        "adjusted_combined_probability": adjusted_combined_probability,
+        "combined_probability": adjusted_combined_probability,
+        "parlay_size_penalty": size_penalty,
         "decimal_odds": decimal_odds,
         "estimated_odds": estimated_odds,
         "risk": risk,
