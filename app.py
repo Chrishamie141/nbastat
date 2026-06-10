@@ -9,10 +9,10 @@ from betting_engine import (
     sportsbook_line_coverage,
 )
 from predictor import PlayerStatPredictor
-from roster_service import get_team_roster, get_roster_with_cache
+from roster_service import get_player_display_name, get_team_roster, get_roster_with_cache
 from schedule_service import get_next_game_context
 from team_utils import normalize_team_abbreviation
-from cache_service import load_prediction_cache, save_prediction_cache
+from cache_service import clear_cache_files, load_prediction_cache, save_prediction_cache
 from ranking_service import build_rankings, STAT_LABELS, confidence_from_mae
 from prediction_tracker import grade_predictions_for_game, save_player_predictions, show_accuracy_report
 from prediction_storage import (
@@ -120,22 +120,26 @@ def run_roster_predictions(roster, team="Unknown", context=None, season="2025-26
 
     results, failed, prediction_rows = [], [], []
     for player in roster:
+        player_name = get_player_display_name(player)
+        if not player_name:
+            failed.append((player, "player lookup error: missing player name"))
+            continue
         try:
-            result = run_prediction(player, season, context["opponent"], context["home"], context["playoff_game"])
+            result = run_prediction(player_name, season, context["opponent"], context["home"], context["playoff_game"])
             if emit_output:
                 print_player_result(result, team, context)
             else:
                 prediction_rows.extend(prediction_rows_from_result(result, team, context, save_to_db=True))
-            results.append({"player": player, "result": result})
+            results.append({"player": player_name, "result": result})
         except Exception as exc:
-            failed.append((player, str(exc)))
+            failed.append((player_name, str(exc)))
 
     if results and emit_output:
         print_top3(build_rankings(results))
     if failed:
         print("\nFailed players:")
         for player, err in failed:
-            print(f"- {player}: {err}")
+            print(f"- {get_player_display_name(player) or player}: {err}")
 
     return {"results": results, "failed": failed, "prediction_rows": prediction_rows}
 
@@ -191,7 +195,12 @@ def load_betting_lines(path=BETTING_LINES_FILE):
 
 def _load_roster_for_betting(season="2025-26"):
     team = normalize_team_abbreviation(input("Enter team abbreviation for betting report: "))
-    cache_status = {"rosters": {}, "predictions": "LIVE", "opponent_unavailable": False}
+    cache_status = {
+        "rosters": {},
+        "predictions": "LIVE",
+        "opponent_unavailable": False,
+        "cached_roster_players": [],
+    }
     if not team:
         print("A team abbreviation is required.")
         return [], "Unknown", default_context(), cache_status
@@ -203,6 +212,10 @@ def _load_roster_for_betting(season="2025-26"):
 
     _, roster, team_status = get_roster_with_cache(team, season=season)
     cache_status["rosters"][team] = team_status
+    if "CACHE" in team_status:
+        cache_status["cached_roster_players"].extend(
+            get_player_display_name(player) for player in roster
+        )
     if not roster:
         return [], team, context, cache_status
 
@@ -213,6 +226,10 @@ def _load_roster_for_betting(season="2025-26"):
         _, opponent_roster, opponent_status = get_roster_with_cache(opponent, season=season)
         cache_status["rosters"][opponent] = opponent_status
         if opponent_roster:
+            if "CACHE" in opponent_status:
+                cache_status["cached_roster_players"].extend(
+                    get_player_display_name(player) for player in opponent_roster
+                )
             roster = roster + opponent_roster
         else:
             cache_status["opponent_unavailable"] = True
@@ -234,6 +251,31 @@ def _load_cached_betting_predictions(team, context, cache_status):
     return []
 
 
+CACHE_ROSTER_FAILURE_MARKERS = (
+    "no regular season data found",
+    "not enough games",
+    "player lookup",
+    "lookup failed",
+)
+
+
+def _is_cache_roster_prediction_failure(error_message):
+    normalized_error = str(error_message or "").lower()
+    return any(marker in normalized_error for marker in CACHE_ROSTER_FAILURE_MARKERS)
+
+
+def _cached_roster_failure_rate(run_data, cached_player_names):
+    cached_names = {name for name in cached_player_names if name}
+    if not cached_names:
+        return 0
+    failed_count = 0
+    for player, error in run_data.get("failed", []):
+        player_name = get_player_display_name(player) or str(player).strip()
+        if player_name in cached_names and _is_cache_roster_prediction_failure(error):
+            failed_count += 1
+    return failed_count / len(cached_names)
+
+
 def collect_betting_predictions(season="2025-26"):
     roster, team, context, cache_status = _load_roster_for_betting(season=season)
     if not roster:
@@ -247,9 +289,19 @@ def collect_betting_predictions(season="2025-26"):
 
     print("\nRunning predictions for betting engine...")
     run_data = run_roster_predictions(roster, team=team, context=context, season=season, emit_output=False)
+    cached_failure_rate = _cached_roster_failure_rate(run_data, cache_status.get("cached_roster_players", []))
+    cached_roster_unreliable = cached_failure_rate > 0.40
+    if cached_roster_unreliable:
+        print("Cached roster appears unreliable; ignoring cached roster results.")
+        cached_predictions = _load_cached_betting_predictions(team, context, cache_status)
+        if cached_predictions:
+            return cached_predictions, cache_status
+        if cache_status.get("opponent_unavailable"):
+            return run_data["prediction_rows"], cache_status
+
     predictions = run_data["prediction_rows"]
     if predictions:
-        if not cache_status.get("opponent_unavailable"):
+        if not cache_status.get("opponent_unavailable") and not cached_roster_unreliable:
             save_prediction_cache(context.get("game_date"), team, context.get("opponent"), predictions)
         cache_status["predictions"] = "LIVE"
     else:
@@ -454,6 +506,11 @@ def print_model_grading_report(graded_rows):
         print(f"{index}. {stat} (${profit:+.2f})")
 
 
+def run_clear_cache_mode():
+    removed_count = clear_cache_files()
+    print(f"Removed {removed_count} cache file(s).")
+
+
 def run_grading_mode():
     print("\nGrade Predictions")
     print("1. Grade saved bet recommendations from CSV")
@@ -501,9 +558,12 @@ if __name__ == "__main__":
     print("4. Best Bets Report")
     print("5. Auto Parlay Builder")
     print("6. Grade Predictions")
-    mode = input("Select mode 1, 2, 3, 4, 5, or 6: ").strip()
+    print("7. Clear Cache")
+    mode = input("Select mode 1, 2, 3, 4, 5, 6, or 7: ").strip()
 
-    if mode == "6":
+    if mode == "7":
+        run_clear_cache_mode()
+    elif mode == "6":
         run_grading_mode()
     elif mode == "5":
         run_auto_parlay_mode()

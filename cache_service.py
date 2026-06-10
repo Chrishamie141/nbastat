@@ -147,3 +147,23 @@ def load_prediction_cache(game_date, team, opponent, max_age_hours=PREDICTION_CA
     payload["opponent"] = safe_cache_key(payload.get("opponent") or opponent)
     payload["prediction_rows"] = list(payload.get("prediction_rows") or [])
     return payload
+
+
+def clear_cache_files(cache_dir=None):
+    """Delete cache files while preserving repository keep files.
+
+    Returns the number of files removed. ``.gitignore`` and ``.gitkeep`` are
+    intentionally preserved so the cache directory remains tracked and useful.
+    """
+    root = Path(cache_dir) if cache_dir is not None else CACHE_DIR
+    if not root.exists():
+        return 0
+
+    removed = 0
+    preserved_names = {".gitignore", ".gitkeep"}
+    for path in root.rglob("*"):
+        if not path.is_file() or path.name in preserved_names:
+            continue
+        path.unlink()
+        removed += 1
+    return removed

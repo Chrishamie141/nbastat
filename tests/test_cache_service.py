@@ -9,9 +9,13 @@ import cache_service
 import roster_service
 
 
+def sample_roster(prefix="Player"):
+    return [f"{prefix} {index}" for index in range(1, 9)]
+
+
 def test_roster_cache_falls_back_when_live_lookup_fails(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
-    cache_service.save_roster_cache("SAS", ["Victor Wembanyama", "De'Aaron Fox"])
+    cache_service.save_roster_cache("SAS", sample_roster("Spur"))
 
     def fail_live_lookup(*args, **kwargs):
         raise ValueError("simulated timeout")
@@ -20,7 +24,7 @@ def test_roster_cache_falls_back_when_live_lookup_fails(tmp_path, monkeypatch, c
     team_id, roster, status = roster_service.get_roster_with_cache("SAS")
 
     assert team_id is not None
-    assert roster == ["Victor Wembanyama", "De'Aaron Fox"]
+    assert roster == sample_roster("Spur")
     assert status == "CACHE"
     assert "Using cached roster for SAS" in capsys.readouterr().out
 
@@ -29,7 +33,7 @@ def test_stale_roster_cache_is_used_when_live_lookup_fails(tmp_path, monkeypatch
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
     stale_time = (datetime.now(timezone.utc) - timedelta(hours=80)).isoformat()
     (tmp_path / "roster_SAS.json").write_text(
-        json.dumps({"team_abbr": "SAS", "cached_at": stale_time, "roster": ["Victor Wembanyama"]}),
+        json.dumps({"team_abbr": "SAS", "cached_at": stale_time, "roster": sample_roster("Spur")}),
         encoding="utf-8",
     )
 
@@ -39,7 +43,7 @@ def test_stale_roster_cache_is_used_when_live_lookup_fails(tmp_path, monkeypatch
     monkeypatch.setattr(roster_service, "get_team_roster", fail_live_lookup)
     _, roster, status = roster_service.get_roster_with_cache("SAS")
 
-    assert roster == ["Victor Wembanyama"]
+    assert roster == sample_roster("Spur")
     assert status == "STALE CACHE"
     assert "older than 72 hours; using stale cache" in capsys.readouterr().out
 
@@ -134,3 +138,119 @@ def test_collect_betting_predictions_uses_prediction_cache_when_opponent_roster_
     assert predictions == [{"player": "Victor Wembanyama", "stat_type": "PTS"}]
     assert status["rosters"] == {"NYK": "LIVE", "SAS": "UNAVAILABLE"}
     assert status["predictions"] == "CACHE"
+
+
+def test_validate_roster_cache_accepts_valid_dict_roster():
+    roster = [
+        {"player_name": f"Player {index}", "player_id": index}
+        for index in range(1, 9)
+    ]
+
+    is_valid, reason = roster_service.validate_roster_cache(roster)
+
+    assert is_valid is True
+    assert reason == "valid"
+
+
+def test_validate_roster_cache_accepts_valid_string_roster():
+    is_valid, _ = roster_service.validate_roster_cache(sample_roster("Knicks"))
+
+    assert is_valid is True
+
+
+def test_validate_roster_cache_rejects_empty_roster():
+    is_valid, reason = roster_service.validate_roster_cache([])
+
+    assert is_valid is False
+    assert "fewer than 8" in reason
+
+
+def test_validate_roster_cache_rejects_malformed_roster():
+    malformed_roster = ["123", "{}", "[]", "<bad>", "::::", "0", "99", "---"]
+
+    is_valid, reason = roster_service.validate_roster_cache(malformed_roster)
+
+    assert is_valid is False
+    assert "malformed" in reason
+
+
+def test_get_player_display_name_supports_multiple_formats():
+    cases = [
+        (" Jalen Brunson ", "Jalen Brunson"),
+        ({"player_name": "OG Anunoby"}, "OG Anunoby"),
+        ({"name": "Josh Hart"}, "Josh Hart"),
+        ({"full_name": "Mikal Bridges"}, "Mikal Bridges"),
+        ({"PLAYER": "Karl-Anthony Towns"}, "Karl-Anthony Towns"),
+        ({"PLAYER_NAME": "Mitchell Robinson"}, "Mitchell Robinson"),
+        ({"DISPLAY_FIRST_LAST": "Miles McBride"}, "Miles McBride"),
+    ]
+
+    for player, expected in cases:
+        assert roster_service.get_player_display_name(player) == expected
+
+
+def test_clear_cache_keeps_gitignore_and_gitkeep(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    (tmp_path / ".gitignore").write_text("*\n", encoding="utf-8")
+    (tmp_path / ".gitkeep").write_text("", encoding="utf-8")
+    (tmp_path / "roster_NYK.json").write_text("{}", encoding="utf-8")
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "predictions.json").write_text("{}", encoding="utf-8")
+
+    removed_count = cache_service.clear_cache_files()
+
+    assert removed_count == 2
+    assert (tmp_path / ".gitignore").exists()
+    assert (tmp_path / ".gitkeep").exists()
+    assert not (tmp_path / "roster_NYK.json").exists()
+    assert not (nested / "predictions.json").exists()
+
+
+def test_collect_betting_predictions_prefers_cached_rows_when_cached_roster_unreliable(monkeypatch, capsys):
+    import app
+
+    context = {
+        "opponent": "SAS",
+        "home": True,
+        "playoff_game": True,
+        "game_date": "2026-06-08",
+        "game_id": "1",
+    }
+    cached_roster_players = sample_roster("Cached")
+    monkeypatch.setattr(
+        app,
+        "_load_roster_for_betting",
+        lambda season="2025-26": (
+            cached_roster_players,
+            "NYK",
+            context,
+            {
+                "rosters": {"NYK": "CACHE"},
+                "predictions": "LIVE",
+                "opponent_unavailable": False,
+                "cached_roster_players": cached_roster_players,
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        app,
+        "run_roster_predictions",
+        lambda *args, **kwargs: {
+            "prediction_rows": [{"player": "Cached 1", "stat_type": "PTS"}],
+            "failed": [(player, "No regular season data found") for player in cached_roster_players[:4]],
+        },
+    )
+    monkeypatch.setattr(
+        app,
+        "load_prediction_cache",
+        lambda game_date, team, opponent: {
+            "prediction_rows": [{"player": "Cached Prediction", "stat_type": "PTS"}]
+        },
+    )
+
+    predictions, status = app.collect_betting_predictions()
+
+    assert predictions == [{"player": "Cached Prediction", "stat_type": "PTS"}]
+    assert status["predictions"] == "CACHE"
+    assert "Cached roster appears unreliable" in capsys.readouterr().out
