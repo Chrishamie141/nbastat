@@ -22,8 +22,10 @@ python app.py
 1. Single Player Prediction
 2. Default `roster.txt` Prediction
 3. Team Auto-Roster Prediction
-4. Grade Previous Predictions
-5. Show Model Accuracy Report
+4. Best Bets Report
+5. Auto Parlay Builder
+6. Grade Predictions
+7. Clear Cache
 
 ## Team auto-roster mode
 1. Select mode `3`.
