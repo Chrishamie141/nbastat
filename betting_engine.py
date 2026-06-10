@@ -55,6 +55,32 @@ STAT_MINIMUM_PROJECTIONS = {
     "BLK": 0.8,
 }
 
+STAR_PLAYERS = {
+    "jalen brunson",
+    "karl-anthony towns",
+    "victor wembanyama",
+    "de'aaron fox",
+}
+CORE_PLAYERS = {
+    "og anunoby",
+    "josh hart",
+    "mikal bridges",
+    "devin vassell",
+    "stephon castle",
+}
+VOLATILE_PLAYERS = {
+    "dylan harper",
+    "julian champagnie",
+    "landry shamet",
+    "miles mcbride",
+}
+ROLE_QUALITY_BONUSES = {
+    "STAR": 8,
+    "CORE": 3,
+    "VOLATILE": -8,
+    "UNKNOWN": -3,
+}
+
 
 def american_odds_to_implied_probability(odds):
     """Convert American odds into break-even implied probability."""
@@ -141,6 +167,131 @@ def classify_bet_strength(edge, model_probability, confidence):
 
 def _normalize_name(name):
     return " ".join(str(name).lower().replace(".", "").split())
+
+
+def _player_role_tier(player):
+    normalized = _normalize_name(player)
+    if normalized in STAR_PLAYERS:
+        return "STAR"
+    if normalized in CORE_PLAYERS:
+        return "CORE"
+    if normalized in VOLATILE_PLAYERS:
+        return "VOLATILE"
+    return "UNKNOWN"
+
+
+def parlay_leg_quality_score(bet, style):
+    """Score a parlay leg from 0-100 for style-aware selection quality."""
+    style_key = str(style or "balanced").strip().upper()
+    stat_type = str(bet.get("stat_type", "")).upper()
+    projection = float(bet.get("projection", 0) or 0)
+    line = float(bet.get("line", 0) or 0)
+    projection_gap = projection - line
+    role_tier = _player_role_tier(bet.get("player"))
+
+    score = float(bet.get("model_probability", 0) or 0) * 100
+    score += min(max(float(bet.get("edge", 0) or 0) * 100, 0), 15)
+
+    if stat_type == "PTS":
+        if projection_gap >= 5:
+            score += 12
+        elif projection_gap >= 3:
+            score += 8
+    elif stat_type in {"REB", "AST"}:
+        if projection_gap >= 2:
+            score += 10
+        elif projection_gap >= 1:
+            score += 6
+
+    if stat_type in {"PTS", "REB", "AST"}:
+        score += 5
+    elif stat_type in VOLATILE_STATS and style_key != "AGGRESSIVE":
+        score -= 15
+
+    score += ROLE_QUALITY_BONUSES.get(role_tier, ROLE_QUALITY_BONUSES["UNKNOWN"])
+
+    if line >= projection:
+        score -= 20
+    if abs(projection_gap) <= 1:
+        score -= 12
+
+    if stat_type == "PTS":
+        if role_tier != "STAR" and line >= 18:
+            score -= 12
+        if role_tier == "VOLATILE" and line >= 15:
+            score -= 10
+
+    return round(min(max(score, 0), 100))
+
+
+def _style_line_eligible(bet, style_key, quality_score):
+    stat_type = str(bet.get("stat_type", "")).upper()
+    projection = float(bet.get("projection", 0) or 0)
+    line = float(bet.get("line", 0) or 0)
+    projection_gap = projection - line
+    role_tier = _player_role_tier(bet.get("player"))
+
+    if style_key == "SAFE":
+        if stat_type in VOLATILE_STATS or role_tier == "VOLATILE":
+            return False, "probability threshold too strict"
+        if stat_type == "PTS":
+            if role_tier == "STAR":
+                return line <= 20, "probability threshold too strict"
+            return line <= 12, "probability threshold too strict"
+        if stat_type == "REB":
+            return projection_gap >= 1.0, "probability threshold too strict"
+        if stat_type == "AST":
+            return projection_gap >= 0.8, "probability threshold too strict"
+        return False, "probability threshold too strict"
+
+    if style_key == "BALANCED":
+        if stat_type == "PTS":
+            if role_tier == "STAR":
+                return line <= 25, "probability threshold too strict"
+            if role_tier == "CORE":
+                return line <= 15, "probability threshold too strict"
+            if role_tier == "VOLATILE":
+                return projection_gap >= 2.0, "probability threshold too strict"
+            return line <= 15 or projection_gap >= 2.0, "probability threshold too strict"
+        if stat_type in {"REB", "AST"}:
+            return projection_gap >= 0.3, "probability threshold too strict"
+        if stat_type in VOLATILE_STATS:
+            return quality_score >= 80, "probability threshold too strict"
+        return True, None
+
+    if style_key == "AGGRESSIVE":
+        if line > projection + 2:
+            return False, "probability threshold too strict"
+        return True, None
+
+    return True, None
+
+
+def _duplicate_player_allowed(bet, selected, player_counts, style_key):
+    player = bet.get("player")
+    stat_type = bet.get("stat_type")
+    quality_score = bet.get("quality_score", 0)
+    same_player_legs = [leg for leg in selected if leg.get("player") == player]
+
+    if any(leg.get("stat_type") == stat_type for leg in same_player_legs):
+        return False
+
+    current_count = player_counts.get(player, 0)
+    if style_key == "SAFE":
+        if current_count == 0:
+            return True
+        return quality_score >= 85 and all(
+            leg.get("quality_score", 0) >= 85 for leg in same_player_legs
+        )
+    if style_key == "BALANCED":
+        return current_count < 2
+    if style_key == "AGGRESSIVE":
+        if current_count < 2:
+            return True
+        if current_count == 2:
+            return quality_score >= 75 and all(leg.get("quality_score", 0) >= 75 for leg in same_player_legs)
+        return False
+    return True
 
 
 def _line_is_meaningful(prediction, edge):
@@ -294,9 +445,9 @@ def _decimal_to_american(decimal_odds):
 
 def _parlay_rules(style):
     rules = {
-        "SAFE": {"min_legs": 3, "max_legs": 5, "min_prob": 0.60, "min_edge": 0.0},
-        "BALANCED": {"min_legs": 5, "max_legs": 8, "min_prob": 0.52, "min_edge": -0.03},
-        "AGGRESSIVE": {"min_legs": 8, "max_legs": 12, "min_prob": 0.45, "min_edge": -0.05},
+        "SAFE": {"min_legs": 3, "max_legs": 4, "min_prob": 0.60, "min_edge": 0.0, "min_quality": 70},
+        "BALANCED": {"min_legs": 5, "max_legs": 7, "min_prob": 0.52, "min_edge": -0.03, "min_quality": 62},
+        "AGGRESSIVE": {"min_legs": 8, "max_legs": 12, "min_prob": 0.45, "min_edge": -0.05, "min_quality": 50},
     }
     style_key = str(style or "balanced").strip().upper()
     if style_key not in rules:
@@ -321,10 +472,13 @@ def _qualifies_for_parlay(bet, style_key, rule, moderate_risk_used=False):
         return False, "probability threshold too strict"
     if bet["edge"] < rule["min_edge"]:
         return False, "not enough positive edge bets"
-    if style_key == "SAFE" and bet["stat_type"] in VOLATILE_STATS and not (
-        bet["edge"] >= 0.08 and bet["model_probability"] >= 0.65
-    ):
-        return False, "probability threshold too strict"
+    if bet.get("quality_score", 0) < rule["min_quality"]:
+        return False, "quality score below style minimum"
+
+    style_eligible, style_reason = _style_line_eligible(bet, style_key, bet.get("quality_score", 0))
+    if not style_eligible:
+        return False, style_reason
+
     if style_key == "BALANCED" and bet["edge"] < 0 and moderate_risk_used:
         return False, "not enough positive edge bets"
     if style_key == "AGGRESSIVE" and bet["edge"] < -0.03 and bet["model_probability"] < 0.50:
@@ -333,6 +487,8 @@ def _qualifies_for_parlay(bet, style_key, rule, moderate_risk_used=False):
 
 
 def _risk_from_adjusted_probability(adjusted_probability):
+    if adjusted_probability >= 0.40:
+        return "LOW"
     if adjusted_probability >= 0.25:
         return "MEDIUM"
     if adjusted_probability >= 0.10:
@@ -346,32 +502,43 @@ def build_parlay(recommended_bets, style, coverage=None):
     """Build a parlay from ranked bet recommendations for a risk style."""
     style_key, rule = _parlay_rules(style)
     selected = []
-    used_players_stats = set()
+    player_counts = {}
     moderate_risk_used = False
     rejection_reasons = {
         "not enough sportsbook lines": 0,
         "not enough positive edge bets": 0,
         "probability threshold too strict": 0,
+        "quality score below style minimum": 0,
         "duplicate player/stat already selected": 0,
     }
 
     if coverage and coverage.get("matched_lines", len(recommended_bets)) < _parlay_line_threshold(style_key):
         rejection_reasons["not enough sportsbook lines"] += 1
 
-    for bet in sorted(recommended_bets, key=lambda x: (x["edge"], x["model_probability"]), reverse=True):
+    scored_bets = []
+    for bet in recommended_bets:
+        scored_bet = dict(bet)
+        scored_bet["quality_score"] = parlay_leg_quality_score(scored_bet, style_key)
+        scored_bets.append(scored_bet)
+
+    scored_bets.sort(
+        key=lambda x: (x["quality_score"], x["model_probability"], x["edge"]),
+        reverse=True,
+    )
+
+    for bet in scored_bets:
         qualifies, reason = _qualifies_for_parlay(bet, style_key, rule, moderate_risk_used)
         if not qualifies:
             rejection_reasons[reason] += 1
             continue
 
-        key = (bet["player"], bet["stat_type"])
-        if key in used_players_stats:
+        if not _duplicate_player_allowed(bet, selected, player_counts, style_key):
             rejection_reasons["duplicate player/stat already selected"] += 1
             continue
 
         if len(selected) < rule["max_legs"]:
-            used_players_stats.add(key)
             selected.append(bet)
+            player_counts[bet["player"]] = player_counts.get(bet["player"], 0) + 1
             if style_key == "BALANCED" and bet["edge"] < 0:
                 moderate_risk_used = True
 
@@ -410,4 +577,6 @@ def build_parlay(recommended_bets, style, coverage=None):
         "matched_lines": matched_lines,
         "rejection_reasons": rejection_reasons,
         "primary_shortfall_reason": primary_reason,
+        "conservative_warning": style_key == "SAFE"
+        and (len(selected) < rule["min_legs"] or risk not in {"LOW", "MEDIUM"}),
     }
