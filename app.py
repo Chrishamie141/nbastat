@@ -9,9 +9,10 @@ from betting_engine import (
     sportsbook_line_coverage,
 )
 from predictor import PlayerStatPredictor
-from roster_service import get_team_roster
+from roster_service import get_team_roster, get_roster_with_cache
 from schedule_service import get_next_game_context
 from team_utils import normalize_team_abbreviation
+from cache_service import load_prediction_cache, save_prediction_cache
 from ranking_service import build_rankings, STAT_LABELS, confidence_from_mae
 from prediction_tracker import grade_predictions_for_game, save_player_predictions, show_accuracy_report
 from prediction_storage import (
@@ -190,40 +191,77 @@ def load_betting_lines(path=BETTING_LINES_FILE):
 
 def _load_roster_for_betting(season="2025-26"):
     team = normalize_team_abbreviation(input("Enter team abbreviation for betting report: "))
+    cache_status = {"rosters": {}, "predictions": "LIVE", "opponent_unavailable": False}
     if not team:
         print("A team abbreviation is required.")
-        return [], "Unknown", default_context()
-    try:
-        _, roster = get_team_roster(team, season=season)
-    except Exception as exc:
-        print(f"Roster lookup failed: {exc}")
-        return [], team, default_context()
+        return [], "Unknown", default_context(), cache_status
 
     context = get_next_game_context(team, season=season)
     if context.get("opponent"):
         context["opponent"] = normalize_team_abbreviation(context["opponent"])
     print(f"\nSchedule context: {context['source']}")
 
+    _, roster, team_status = get_roster_with_cache(team, season=season)
+    cache_status["rosters"][team] = team_status
+    if not roster:
+        return [], team, context, cache_status
+
     include_opponent = input("Include opponent roster too? (y/N): ").strip().lower() == "y"
     if include_opponent and context.get("opponent"):
-        try:
-            opponent = normalize_team_abbreviation(context["opponent"])
-            print(f"Opponent roster lookup: {context['opponent']} -> {opponent}")
-            _, opponent_roster = get_team_roster(opponent, season=season)
+        opponent = normalize_team_abbreviation(context["opponent"])
+        print(f"Opponent roster lookup: {context['opponent']} -> {opponent}")
+        _, opponent_roster, opponent_status = get_roster_with_cache(opponent, season=season)
+        cache_status["rosters"][opponent] = opponent_status
+        if opponent_roster:
             roster = roster + opponent_roster
-        except Exception as exc:
-            print(f"Opponent roster lookup failed: {exc}")
+        else:
+            cache_status["opponent_unavailable"] = True
+            print("Opponent roster unavailable and no cache found; parlay will be built from selected team only.")
 
-    return roster, team, context
+    return roster, team, context, cache_status
+
+
+def _load_cached_betting_predictions(team, context, cache_status):
+    opponent = context.get("opponent") or "unknown"
+    cached = load_prediction_cache(context.get("game_date"), team, opponent)
+    if cached and cached.get("prediction_rows"):
+        print(
+            f"Using cached betting predictions for {team} vs {opponent} "
+            f"on {context.get('game_date')}."
+        )
+        cache_status["predictions"] = "CACHE"
+        return cached["prediction_rows"]
+    return []
 
 
 def collect_betting_predictions(season="2025-26"):
-    roster, team, context = _load_roster_for_betting(season=season)
+    roster, team, context, cache_status = _load_roster_for_betting(season=season)
     if not roster:
-        return []
+        predictions = _load_cached_betting_predictions(team, context, cache_status)
+        return predictions, cache_status
+
+    if cache_status.get("opponent_unavailable"):
+        predictions = _load_cached_betting_predictions(team, context, cache_status)
+        if predictions:
+            return predictions, cache_status
+
     print("\nRunning predictions for betting engine...")
     run_data = run_roster_predictions(roster, team=team, context=context, season=season, emit_output=False)
-    return run_data["prediction_rows"]
+    predictions = run_data["prediction_rows"]
+    if predictions:
+        if not cache_status.get("opponent_unavailable"):
+            save_prediction_cache(context.get("game_date"), team, context.get("opponent"), predictions)
+        cache_status["predictions"] = "LIVE"
+    else:
+        predictions = _load_cached_betting_predictions(team, context, cache_status)
+    return predictions, cache_status
+
+
+def print_cache_status(cache_status):
+    print("\nCache status:")
+    for team, status in cache_status.get("rosters", {}).items():
+        print(f"* {team} roster: {status}")
+    print(f"* Predictions: {cache_status.get('predictions', 'LIVE')}")
 
 
 def format_percent(value):
@@ -262,7 +300,7 @@ def run_best_bets_mode(season="2025-26"):
     sportsbook_lines = load_betting_lines()
     if sportsbook_lines is None:
         return []
-    predictions = collect_betting_predictions(season=season)
+    predictions, cache_status = collect_betting_predictions(season=season)
     if not predictions:
         print("No predictions were generated for betting recommendations.")
         return []
@@ -274,6 +312,7 @@ def run_best_bets_mode(season="2025-26"):
         return []
     save_bet_recommendations(recommendations)
     show_all = input("Show all props, including avoid/negative edge? (y/N): ").strip().lower() == "y"
+    print_cache_status(cache_status)
     print_best_bets_report(recommendations, show_all=show_all)
     print(f"\nSaved {len(recommendations)} bet recommendations to predictions.db.")
     return recommendations
@@ -344,7 +383,7 @@ def run_auto_parlay_mode(season="2025-26"):
     sportsbook_lines = load_betting_lines()
     if sportsbook_lines is None:
         return
-    predictions = collect_betting_predictions(season=season)
+    predictions, cache_status = collect_betting_predictions(season=season)
     if not predictions:
         print("No predictions were generated for parlay building.")
         return
@@ -362,6 +401,7 @@ def run_auto_parlay_mode(season="2025-26"):
     except ValueError as exc:
         print(exc)
         return
+    print_cache_status(cache_status)
     print_parlay(parlay, stake, target_payout)
     print(f"\nSaved {len(recommendations)} bet recommendations to predictions.db.")
 
