@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +12,24 @@ from team_utils import normalize_team_abbreviation
 CACHE_DIR = Path("data/cache")
 ROSTER_CACHE_MAX_AGE_HOURS = 72
 PREDICTION_CACHE_MAX_AGE_HOURS = 24
+INVALID_WINDOWS_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]+')
+
+
+def safe_cache_key(value: str) -> str:
+    """Return a Windows-safe cache filename component."""
+    raw_value = "" if value is None else str(value).strip()
+    if not raw_value:
+        return "unknown"
+
+    safe_value = INVALID_WINDOWS_FILENAME_CHARS.sub("_", raw_value)
+    safe_value = re.sub(r"\s+", "_", safe_value)
+    safe_value = re.sub(r"_+", "_", safe_value).strip("_")
+    if not safe_value:
+        return "unknown"
+
+    if "_" not in safe_value and safe_value.isalpha() and 2 <= len(safe_value) <= 4:
+        return normalize_team_abbreviation(safe_value)
+    return safe_value
 
 
 def _utc_now():
@@ -53,7 +72,7 @@ def save_roster_cache(team_abbr, roster):
         "cached_at": _utc_now().isoformat(),
         "roster": list(roster or []),
     }
-    _write_json(CACHE_DIR / f"roster_{team_abbr}.json", payload)
+    _write_json(CACHE_DIR / f"roster_{safe_cache_key(team_abbr)}.json", payload)
     return payload
 
 
@@ -65,7 +84,7 @@ def load_roster_cache(team_abbr, max_age_hours=ROSTER_CACHE_MAX_AGE_HOURS, allow
     ``roster``, and ``stale``.
     """
     team_abbr = normalize_team_abbreviation(team_abbr)
-    path = CACHE_DIR / f"roster_{team_abbr}.json"
+    path = CACHE_DIR / f"roster_{safe_cache_key(team_abbr)}.json"
     if not path.exists():
         return None
     try:
@@ -86,16 +105,17 @@ def load_roster_cache(team_abbr, max_age_hours=ROSTER_CACHE_MAX_AGE_HOURS, allow
 
 
 def _prediction_cache_path(game_date, team, opponent):
-    game_date = str(game_date or "unknown")
-    team = normalize_team_abbreviation(team)
-    opponent = normalize_team_abbreviation(opponent or "unknown")
-    return CACHE_DIR / f"predictions_{game_date}*{team}*{opponent}.json"
+    game_date = safe_cache_key(game_date)
+    team = safe_cache_key(team)
+    opponent = safe_cache_key(opponent)
+    return CACHE_DIR / f"predictions_{game_date}_{team}_{opponent}.json"
 
 
 def save_prediction_cache(game_date, team, opponent, prediction_rows):
     """Save structured betting prediction rows for one game/team pairing."""
-    team = normalize_team_abbreviation(team)
-    opponent = normalize_team_abbreviation(opponent or "unknown")
+    game_date = safe_cache_key(game_date)
+    team = safe_cache_key(team)
+    opponent = safe_cache_key(opponent)
     payload = {
         "game_date": game_date,
         "team": team,
@@ -122,7 +142,8 @@ def load_prediction_cache(game_date, team, opponent, max_age_hours=PREDICTION_CA
     if _is_stale(cached_at, max_age_hours):
         return None
     payload["cached_at"] = cached_at.isoformat() if cached_at else payload.get("cached_at")
-    payload["team"] = normalize_team_abbreviation(payload.get("team") or team)
-    payload["opponent"] = normalize_team_abbreviation(payload.get("opponent") or opponent or "unknown")
+    payload["game_date"] = safe_cache_key(payload.get("game_date") or game_date)
+    payload["team"] = safe_cache_key(payload.get("team") or team)
+    payload["opponent"] = safe_cache_key(payload.get("opponent") or opponent)
     payload["prediction_rows"] = list(payload.get("prediction_rows") or [])
     return payload
