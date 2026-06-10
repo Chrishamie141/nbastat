@@ -301,6 +301,11 @@ def print_parlay(parlay, stake, target_payout):
     print(f"Estimated Payout: ${payout:.2f}")
     if target_payout and payout < target_payout:
         print(f"Target Payout: ${target_payout:.2f} (not reached with qualifying legs)")
+    if parlay.get("conservative_warning"):
+        print(
+            "WARNING: Could not build a true SAFE parlay from available lines. "
+            "Showing best available conservative legs."
+        )
     if not parlay["complete"]:
         print("WARNING: betting_lines.json may be too incomplete to build a meaningful parlay.")
         print(f"Warning: Found {len(parlay['legs'])} legs; target range starts at {parlay['min_legs']}.")
@@ -313,7 +318,10 @@ def print_parlay(parlay, stake, target_payout):
         )
     for index, leg in enumerate(parlay["legs"], 1):
         line_label = int(leg["line"]) if float(leg["line"]).is_integer() else leg["line"]
-        print(f"{index}. {leg['player']} {line_label}+ {leg['stat_type']} - {format_percent(leg['model_probability'])}")
+        print(
+            f"{index}. {leg['player']} {line_label}+ {leg['stat_type']} - "
+            f"{format_percent(leg['model_probability'])} | Quality: {leg.get('quality_score', 0):.0f}"
+        )
         note = high_probability_note(leg["model_probability"])
         if note:
             print(f"   {note}")
