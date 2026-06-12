@@ -254,6 +254,70 @@ def clear_unhealthy_cache(game_date=None, team=None, opponent=None, expected_tea
     return removed
 
 
+def _has_invalid_cache_filename(path):
+    """Return True when a cache filename contains characters unsafe on Windows."""
+    return bool(INVALID_WINDOWS_FILENAME_CHARS.search(Path(path).name))
+
+
+def _health_report(removed=0, cache_dir_created=False):
+    return {"removed": removed, "cache_dir_created": cache_dir_created}
+
+
+def run_health_check(cache_dir=None, print_summary=False):
+    """Validate and heal the cache directory.
+
+    The check is intentionally lightweight for startup use: it creates the cache
+    directory if missing, deletes only files known to be unsafe/bad, and leaves
+    repository keep files in place. A short summary is printed only when files
+    are removed, unless ``print_summary`` is True.
+    """
+    root = Path(cache_dir) if cache_dir is not None else CACHE_DIR
+    cache_dir_created = False
+    if not root.exists():
+        root.mkdir(parents=True, exist_ok=True)
+        cache_dir_created = True
+
+    removed = 0
+    for path in list(root.rglob("*")):
+        if not path.is_file() or path.name in PRESERVED_CACHE_FILENAMES:
+            continue
+
+        if _has_invalid_cache_filename(path):
+            removed += int(clear_cache_file(path))
+            continue
+
+        if path.suffix.lower() != ".json":
+            continue
+
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            removed += int(clear_cache_file(path))
+            continue
+
+        if path.name.startswith("roster_"):
+            roster = payload.get("roster") if isinstance(payload, dict) else None
+            valid, _reason = validate_roster_cache(roster)
+            if not valid:
+                removed += int(clear_cache_file(path))
+        elif path.name.startswith("predictions_"):
+            rows = payload.get("prediction_rows") if isinstance(payload, dict) else None
+            expected_teams = None
+            if isinstance(payload, dict):
+                expected_teams = [payload.get("team")]
+                if payload.get("opponent") not in (None, "", "unknown", "None"):
+                    expected_teams.append(payload.get("opponent"))
+            valid, _reason = validate_prediction_cache(rows, expected_teams=expected_teams)
+            if not valid:
+                removed += int(clear_cache_file(path))
+
+    if removed:
+        print(f"Startup health check: removed {removed} invalid cache file(s).")
+    elif print_summary:
+        print("Startup health check: no cache issues found.")
+    return _health_report(removed=removed, cache_dir_created=cache_dir_created)
+
+
 def save_roster_cache(team_abbr, roster):
     """Save a local roster snapshot for one team abbreviation."""
     team_abbr = normalize_team_abbreviation(team_abbr)

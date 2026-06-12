@@ -18,14 +18,37 @@ pip install -r requirements.txt
 python app.py
 ```
 
-## Menu modes
+## Normal menu usage
+
+Run `python app.py` for the interactive menu. Normal use shows only user-facing prediction and grading workflows:
+
 1. Single Player Prediction
 2. Default `roster.txt` Prediction
 3. Team Auto-Roster Prediction
 4. Best Bets Report
 5. Auto Parlay Builder
 6. Grade Predictions
-7. Clear Cache
+
+
+## Background cache healing
+
+On normal startup, the app runs a lightweight cache health check before showing the menu. The check creates `data/cache` if needed, removes cache files with invalid filenames, validates roster and prediction cache payloads, and automatically deletes only invalid/bad cache files. When nothing is wrong, startup stays quiet; if anything is fixed, the app prints a short summary such as `Startup health check: removed 2 invalid cache file(s).`
+
+Roster lookup diagnostics also run automatically only when a lookup fails. The app reports the normalized team abbreviation, live lookup attempts, error type, cache usage, invalid/deleted cache state, and sample cached players when available. Betting workflows automatically clear bad roster or prediction cache files and continue with live data or valid cached predictions when possible.
+
+## Optional maintenance flags
+
+Maintenance and debug actions are available as command-line flags instead of numbered menu options:
+
+```bash
+python app.py --clear-cache
+python app.py --debug-roster NYK
+python app.py --health-check
+```
+
+- `--clear-cache` deletes cache files and exits while preserving `.gitignore` and `.gitkeep`.
+- `--debug-roster TEAM` runs roster diagnostics for one team and exits.
+- `--health-check` runs the cache health check, prints a clean/fixed summary, and exits.
 
 ## Team auto-roster mode
 1. Select mode `3`.
@@ -36,8 +59,8 @@ python app.py
 - Prediction history is stored in `data/prediction_history.csv`.
 - One row is saved for each printed player/stat prediction: PTS, REB, AST, STL, and BLK.
 - Existing model training remains unchanged; this history is only for post-game evaluation.
-- Select mode `4` after a game is complete and enter the NBA `game_id` to pull the actual box score and grade matching ungraded predictions.
-- Select mode `5` to print the model accuracy report across all graded predictions.
+- Select mode `6` and choose the legacy NBA `game_id` option after a game is complete to pull the actual box score and grade matching ungraded predictions.
+- Select mode `6` and choose the accuracy report option to print the model accuracy report across all graded predictions.
 
 ## Opponent-specific logic
 - Pulls regular + playoff logs.
