@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 
@@ -14,9 +15,11 @@ from schedule_service import get_next_game_context
 from team_utils import normalize_team_abbreviation
 from cache_service import (
     clear_cache_files,
+    clear_team_cache,
     load_prediction_cache,
     prediction_cache_health_report,
     print_prediction_cache_health,
+    run_health_check,
     save_prediction_cache,
 )
 from ranking_service import build_rankings, STAT_LABELS, confidence_from_mae
@@ -330,7 +333,10 @@ def collect_betting_predictions(season="2025-26"):
     cached_failure_rate = _cached_roster_failure_rate(run_data, cache_status.get("cached_roster_players", []))
     cached_roster_unreliable = cached_failure_rate > 0.40
     if cached_roster_unreliable:
-        print("Cached roster appears unreliable; ignoring cached roster results.")
+        print("Cached roster appears unreliable; deleting bad roster cache and ignoring cached roster results.")
+        for cached_team, status in cache_status.get("rosters", {}).items():
+            if "CACHE" in status:
+                clear_team_cache(cached_team)
         cached_predictions = _load_cached_betting_predictions(team, context, cache_status)
         if cached_predictions:
             return cached_predictions, cache_status
@@ -561,8 +567,7 @@ def run_clear_cache_mode():
     print(f"Removed {removed_count} cache file(s).")
 
 
-def run_debug_roster_lookup_mode(season="2025-26"):
-    team = input("Enter team abbreviation to debug: ").strip()
+def run_debug_roster_lookup_mode(team, season="2025-26"):
     if not team:
         print("A team abbreviation is required.")
         return
@@ -608,7 +613,15 @@ def run_grading_mode():
     print_model_grading_report(graded_rows)
 
 
-if __name__ == "__main__":
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="NBA Player Stat Prediction System")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear cache files and exit.")
+    parser.add_argument("--debug-roster", metavar="TEAM", help="Run roster diagnostics for a team and exit.")
+    parser.add_argument("--health-check", action="store_true", help="Run cache health check and exit.")
+    return parser.parse_args(argv)
+
+
+def print_main_menu():
     print("NBA Player Stat Prediction System")
     print("1. Single Player Prediction")
     print("2. Default roster.txt Prediction")
@@ -616,15 +629,25 @@ if __name__ == "__main__":
     print("4. Best Bets Report")
     print("5. Auto Parlay Builder")
     print("6. Grade Predictions")
-    print("7. Clear Cache")
-    print("8. Debug Roster Lookup")
-    mode = input("Select mode 1, 2, 3, 4, 5, 6, 7, or 8: ").strip()
 
-    if mode == "8":
-        run_debug_roster_lookup_mode()
-    elif mode == "7":
+
+def main(argv=None):
+    args = parse_args(argv)
+    if args.clear_cache:
         run_clear_cache_mode()
-    elif mode == "6":
+        return
+    if args.debug_roster:
+        run_debug_roster_lookup_mode(args.debug_roster)
+        return
+    if args.health_check:
+        run_health_check(print_summary=True)
+        return
+
+    run_health_check()
+    print_main_menu()
+    mode = input("Select mode 1, 2, 3, 4, 5, or 6: ").strip()
+
+    if mode == "6":
         run_grading_mode()
     elif mode == "5":
         run_auto_parlay_mode()
@@ -639,3 +662,7 @@ if __name__ == "__main__":
         context = default_context()
         result = run_prediction(player_name)
         print_player_result(result, "Unknown", context)
+
+
+if __name__ == "__main__":
+    main()

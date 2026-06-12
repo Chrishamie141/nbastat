@@ -176,6 +176,25 @@ def _try_live_roster_with_retries(team_abbr, season, timeout, attempts=ROSTER_LO
     return None, [], last_error
 
 
+def _print_roster_lookup_failure_summary(team_abbr, attempts, live_error, cached=None, cache_invalid_deleted=False):
+    cache_used = bool(cached and cached.get("roster"))
+    cache_state = "used" if cache_used else "unavailable"
+    if cache_invalid_deleted:
+        cache_state = "invalid/deleted"
+    print(
+        f"Roster lookup failed for {team_abbr} after {attempts} attempts. "
+        f"Cache {cache_state}. Trying cached predictions."
+    )
+    print(
+        f"Roster diagnostics: normalized_team={team_abbr}; live_attempts={attempts}; "
+        f"error_type={_error_type(live_error) if live_error else 'None'}; "
+        f"cache_used={cache_used}; cache_invalid_deleted={cache_invalid_deleted}"
+    )
+    if cache_used:
+        names = [get_player_display_name(player) for player in cached.get("roster", []) if get_player_display_name(player)]
+        print(f"Roster cache sample players: {', '.join(names[:5]) or 'None'}")
+
+
 def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT, max_age_hours=72):
     """Return ``(team_id, roster, status)`` using cache only after live retries fail.
 
@@ -206,7 +225,9 @@ def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIM
             live_error = exc
             print(f"Live retry after cache deletion failed for {team_abbr}: {_error_type(exc)}")
         if local_valid:
+            _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES + 1, live_error, cached=cached, cache_invalid_deleted=True)
             return get_team_id(team_abbr), local_roster, "UNAVAILABLE"
+        _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES + 1, live_error, cached=cached, cache_invalid_deleted=True)
         return None, [], "INVALID-DELETED"
 
     if cached and cached.get("roster"):
@@ -226,9 +247,10 @@ def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIM
         print(f"Invalid cache detected for roster_{safe_cache_key(team_abbr)}.json; deleted and retrying live lookup.")
 
     if local_valid:
+        _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES, live_error, cached=cached)
         return get_team_id(team_abbr), local_roster, "UNAVAILABLE"
 
-    print(f"Roster lookup failed for {team_abbr}: {live_error}")
+    _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES, live_error, cached=cached)
     return None, [], "UNAVAILABLE"
 
 

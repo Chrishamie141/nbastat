@@ -458,3 +458,107 @@ def test_app_uses_valid_cached_predictions_when_live_lookup_fails(tmp_path, monk
     assert predictions == rows
     assert status["predictions"] == "CACHE"
     assert status["prediction_health"]["valid"] is True
+
+
+def test_startup_health_check_deletes_invalid_cache(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    (tmp_path / ".gitkeep").write_text("", encoding="utf-8")
+    (tmp_path / "bad:name.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "roster_NYK.json").write_text(json.dumps({
+        "team_abbr": "NYK",
+        "cached_at": datetime.now(timezone.utc).isoformat(),
+        "roster": ["Bad"],
+    }), encoding="utf-8")
+
+    report = cache_service.run_health_check()
+
+    assert report["removed"] == 2
+    assert not (tmp_path / "bad:name.json").exists()
+    assert not (tmp_path / "roster_NYK.json").exists()
+    assert (tmp_path / ".gitkeep").exists()
+    assert "Startup health check: removed 2 invalid cache file(s)." in capsys.readouterr().out
+
+
+def test_clear_cache_flag_clears_cache_without_deleting_keep_files(tmp_path, monkeypatch, capsys):
+    import app
+
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    (tmp_path / ".gitignore").write_text("*\n", encoding="utf-8")
+    (tmp_path / ".gitkeep").write_text("", encoding="utf-8")
+    (tmp_path / "roster_NYK.json").write_text("{}", encoding="utf-8")
+
+    app.main(["--clear-cache"])
+
+    assert (tmp_path / ".gitignore").exists()
+    assert (tmp_path / ".gitkeep").exists()
+    assert not (tmp_path / "roster_NYK.json").exists()
+    assert "Removed 1 cache file(s)." in capsys.readouterr().out
+
+
+def test_debug_roster_flag_runs_for_nyk(monkeypatch, capsys):
+    import app
+
+    monkeypatch.setattr(roster_service, "get_team_roster", lambda *args, **kwargs: (1, sample_roster("Knicks")))
+    monkeypatch.setattr(roster_service, "save_roster_cache", lambda *args, **kwargs: None)
+
+    app.main(["--debug-roster", "NYK"])
+
+    output = capsys.readouterr().out
+    assert "Normalized team abbreviation: NYK" in output
+    assert "Live roster result count: 8" in output
+
+
+def test_main_menu_no_longer_includes_cache_or_debug_options(capsys):
+    import app
+
+    app.print_main_menu()
+
+    output = capsys.readouterr().out
+    assert "1. Single Player Prediction" in output
+    assert "6. Grade Predictions" in output
+    assert "7. Clear Cache" not in output
+    assert "8. Debug Roster Lookup" not in output
+
+
+def test_bad_prediction_cache_auto_clears_during_betting_workflow(tmp_path, monkeypatch):
+    import app
+
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    bad_path = cache_service._prediction_cache_path("2026-06-08", "NYK", "SAS")
+    bad_path.parent.mkdir(parents=True, exist_ok=True)
+    bad_path.write_text(json.dumps({
+        "game_date": "2026-06-08",
+        "team": "NYK",
+        "opponent": "SAS",
+        "cached_at": datetime.now(timezone.utc).isoformat(),
+        "prediction_rows": [{"player": "Only Player"}],
+    }), encoding="utf-8")
+    context = {
+        "opponent": "SAS",
+        "home": True,
+        "playoff_game": True,
+        "game_date": "2026-06-08",
+        "game_id": "1",
+    }
+    monkeypatch.setattr(
+        app,
+        "_load_roster_for_betting",
+        lambda season="2025-26": (
+            [],
+            "NYK",
+            context,
+            {
+                "rosters": {"NYK": "UNAVAILABLE"},
+                "predictions": "LIVE",
+                "opponent_unavailable": False,
+                "cached_roster_players": [],
+                "prediction_health": None,
+            },
+        ),
+    )
+
+    predictions, status = app.collect_betting_predictions()
+
+    assert predictions == []
+    assert status["predictions"] == "INVALID-DELETED"
+    assert not bad_path.exists()
