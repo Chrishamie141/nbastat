@@ -9,10 +9,16 @@ from betting_engine import (
     sportsbook_line_coverage,
 )
 from predictor import PlayerStatPredictor
-from roster_service import get_player_display_name, get_team_roster, get_roster_with_cache
+from roster_service import debug_roster_lookup, get_player_display_name, get_team_roster, get_roster_with_cache
 from schedule_service import get_next_game_context
 from team_utils import normalize_team_abbreviation
-from cache_service import clear_cache_files, load_prediction_cache, save_prediction_cache
+from cache_service import (
+    clear_cache_files,
+    load_prediction_cache,
+    prediction_cache_health_report,
+    print_prediction_cache_health,
+    save_prediction_cache,
+)
 from ranking_service import build_rankings, STAT_LABELS, confidence_from_mae
 from prediction_tracker import grade_predictions_for_game, save_player_predictions, show_accuracy_report
 from prediction_storage import (
@@ -200,6 +206,7 @@ def _load_roster_for_betting(season="2025-26"):
         "predictions": "LIVE",
         "opponent_unavailable": False,
         "cached_roster_players": [],
+        "prediction_health": None,
     }
     if not team:
         print("A team abbreviation is required.")
@@ -233,21 +240,49 @@ def _load_roster_for_betting(season="2025-26"):
             roster = roster + opponent_roster
         else:
             cache_status["opponent_unavailable"] = True
-            print("Opponent roster unavailable and no cache found; parlay will be built from selected team only.")
+            print("Opponent unavailable; building selected-team-only parlay.")
 
     return roster, team, context, cache_status
 
 
-def _load_cached_betting_predictions(team, context, cache_status):
+def _expected_prediction_teams(team, context, include_opponent=True):
+    expected = [normalize_team_abbreviation(team)] if team else []
+    opponent = context.get("opponent")
+    if include_opponent and opponent:
+        expected.append(normalize_team_abbreviation(opponent))
+    return expected
+
+
+def _load_cached_betting_predictions(team, context, cache_status, include_opponent=True):
     opponent = context.get("opponent") or "unknown"
-    cached = load_prediction_cache(context.get("game_date"), team, opponent)
+    expected_teams = _expected_prediction_teams(team, context, include_opponent=include_opponent)
+    try:
+        cached = load_prediction_cache(
+            context.get("game_date"),
+            team,
+            opponent,
+            expected_teams=expected_teams,
+        )
+    except TypeError:
+        # Test doubles and older call sites may not accept validation kwargs.
+        cached = load_prediction_cache(context.get("game_date"), team, opponent)
+    if cached and cached.get("health_report"):
+        cache_status["prediction_health"] = cached["health_report"]
+    if cached and cached.get("invalid_deleted"):
+        cache_status["predictions"] = "INVALID-DELETED"
+        return []
     if cached and cached.get("prediction_rows"):
         print(
             f"Using cached betting predictions for {team} vs {opponent} "
             f"on {context.get('game_date')}."
         )
         cache_status["predictions"] = "CACHE"
+        if not cache_status.get("prediction_health"):
+            cache_status["prediction_health"] = prediction_cache_health_report(
+                cached["prediction_rows"], expected_teams=expected_teams
+            )
         return cached["prediction_rows"]
+    cache_status["predictions"] = "UNAVAILABLE"
     return []
 
 
@@ -280,12 +315,15 @@ def collect_betting_predictions(season="2025-26"):
     roster, team, context, cache_status = _load_roster_for_betting(season=season)
     if not roster:
         predictions = _load_cached_betting_predictions(team, context, cache_status)
+        if not predictions:
+            print("No valid roster or prediction cache available. Cannot build reliable parlay.")
         return predictions, cache_status
 
     if cache_status.get("opponent_unavailable"):
-        predictions = _load_cached_betting_predictions(team, context, cache_status)
+        predictions = _load_cached_betting_predictions(team, context, cache_status, include_opponent=True)
         if predictions:
             return predictions, cache_status
+        print("Opponent unavailable; building selected-team-only parlay.")
 
     print("\nRunning predictions for betting engine...")
     run_data = run_roster_predictions(roster, team=team, context=context, season=season, emit_output=False)
@@ -302,8 +340,18 @@ def collect_betting_predictions(season="2025-26"):
     predictions = run_data["prediction_rows"]
     if predictions:
         if not cache_status.get("opponent_unavailable") and not cached_roster_unreliable:
-            save_prediction_cache(context.get("game_date"), team, context.get("opponent"), predictions)
+            expected_teams = sorted({normalize_team_abbreviation(row.get("team")) for row in predictions if row.get("team")})
+            save_prediction_cache(
+                context.get("game_date"),
+                team,
+                context.get("opponent"),
+                predictions,
+                expected_teams=expected_teams or _expected_prediction_teams(team, context, include_opponent=False),
+            )
         cache_status["predictions"] = "LIVE"
+        cache_status["prediction_health"] = prediction_cache_health_report(
+            predictions, expected_teams=sorted({normalize_team_abbreviation(row.get("team")) for row in predictions if row.get("team")}) or [team]
+        )
     else:
         predictions = _load_cached_betting_predictions(team, context, cache_status)
     return predictions, cache_status
@@ -314,6 +362,8 @@ def print_cache_status(cache_status):
     for team, status in cache_status.get("rosters", {}).items():
         print(f"* {team} roster: {status}")
     print(f"* Predictions: {cache_status.get('predictions', 'LIVE')}")
+    if cache_status.get("prediction_health"):
+        print_prediction_cache_health(cache_status["prediction_health"])
 
 
 def format_percent(value):
@@ -511,6 +561,14 @@ def run_clear_cache_mode():
     print(f"Removed {removed_count} cache file(s).")
 
 
+def run_debug_roster_lookup_mode(season="2025-26"):
+    team = input("Enter team abbreviation to debug: ").strip()
+    if not team:
+        print("A team abbreviation is required.")
+        return
+    debug_roster_lookup(team, season=season)
+
+
 def run_grading_mode():
     print("\nGrade Predictions")
     print("1. Grade saved bet recommendations from CSV")
@@ -559,9 +617,12 @@ if __name__ == "__main__":
     print("5. Auto Parlay Builder")
     print("6. Grade Predictions")
     print("7. Clear Cache")
-    mode = input("Select mode 1, 2, 3, 4, 5, 6, or 7: ").strip()
+    print("8. Debug Roster Lookup")
+    mode = input("Select mode 1, 2, 3, 4, 5, 6, 7, or 8: ").strip()
 
-    if mode == "7":
+    if mode == "8":
+        run_debug_roster_lookup_mode()
+    elif mode == "7":
         run_clear_cache_mode()
     elif mode == "6":
         run_grading_mode()

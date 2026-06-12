@@ -13,6 +13,27 @@ def sample_roster(prefix="Player"):
     return [f"{prefix} {index}" for index in range(1, 9)]
 
 
+def sample_prediction_rows(teams=("NYK", "SAS")):
+    key_players = {
+        "NYK": ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Josh Hart", "Mikal Bridges"],
+        "SAS": ["Victor Wembanyama", "De'Aaron Fox", "Stephon Castle", "Dylan Harper", "Devin Vassell"],
+    }
+    rows = []
+    for team in teams:
+        players = key_players.get(team, []) + [f"{team} Player {index}" for index in range(1, 16)]
+        for player in players:
+            for stat in ("PTS", "REB", "AST"):
+                rows.append({
+                    "player": player,
+                    "team": team,
+                    "stat_type": stat,
+                    "projection": 10.0,
+                    "low_range": 8.0,
+                    "high_range": 12.0,
+                })
+    return rows
+
+
 def test_roster_cache_falls_back_when_live_lookup_fails(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
     cache_service.save_roster_cache("SAS", sample_roster("Spur"))
@@ -50,7 +71,7 @@ def test_stale_roster_cache_is_used_when_live_lookup_fails(tmp_path, monkeypatch
 
 def test_prediction_cache_round_trip(tmp_path, monkeypatch):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
-    rows = [{"player": "Jalen Brunson", "stat_type": "PTS", "projection": 28.4}]
+    rows = sample_prediction_rows()
 
     cache_service.save_prediction_cache("2026-06-08", "NYK", "SAS", rows)
     cached = cache_service.load_prediction_cache("2026-06-08", "NYK", "SAS")
@@ -80,7 +101,7 @@ def test_prediction_cache_path_uses_windows_safe_filename(tmp_path, monkeypatch)
 
 def test_prediction_cache_round_trip_uses_windows_safe_filename(tmp_path, monkeypatch):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
-    rows = [{"player": "Jalen Brunson", "stat_type": "PTS", "projection": 28.4}]
+    rows = sample_prediction_rows()
 
     cache_service.save_prediction_cache("2026-06-10", "NYK", "SAS", rows)
 
@@ -254,3 +275,186 @@ def test_collect_betting_predictions_prefers_cached_rows_when_cached_roster_unre
     assert predictions == [{"player": "Cached Prediction", "stat_type": "PTS"}]
     assert status["predictions"] == "CACHE"
     assert "Cached roster appears unreliable" in capsys.readouterr().out
+
+
+def test_invalid_prediction_cache_missing_brunson_for_nyk_gets_rejected():
+    rows = [row for row in sample_prediction_rows(("NYK",)) if row["player"] != "Jalen Brunson"]
+
+    is_valid, reason = cache_service.validate_prediction_cache(rows, expected_teams=["NYK"])
+
+    assert is_valid is False
+    assert "Jalen Brunson" in reason
+
+
+def test_invalid_prediction_cache_is_deleted_automatically(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    path = cache_service._prediction_cache_path("2026-06-08", "NYK", "SAS")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "game_date": "2026-06-08",
+        "team": "NYK",
+        "opponent": "SAS",
+        "cached_at": datetime.now(timezone.utc).isoformat(),
+        "prediction_rows": [{"player": "Jalen Brunson"}],
+    }), encoding="utf-8")
+
+    cached = cache_service.load_prediction_cache("2026-06-08", "NYK", "SAS")
+
+    assert cached["invalid_deleted"] is True
+    assert not path.exists()
+    assert "Invalid cache detected" in capsys.readouterr().out
+
+
+def test_valid_two_team_nyk_sas_prediction_cache_passes():
+    rows = sample_prediction_rows()
+
+    is_valid, reason = cache_service.validate_prediction_cache(rows, expected_teams=["NYK", "SAS"])
+
+    assert is_valid is True
+    assert reason == "valid"
+
+
+def test_bad_roster_cache_is_not_saved(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+
+    result = cache_service.save_roster_cache("NYK", ["Bad Player"])
+
+    assert result is None
+    assert not (tmp_path / "roster_NYK.json").exists()
+
+
+def test_cache_healing_does_not_delete_gitignore_or_gitkeep(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    (tmp_path / ".gitignore").write_text("*\n", encoding="utf-8")
+    (tmp_path / ".gitkeep").write_text("", encoding="utf-8")
+
+    assert cache_service.clear_cache_file(tmp_path / ".gitignore") is False
+    assert cache_service.clear_cache_file(tmp_path / ".gitkeep") is False
+    assert (tmp_path / ".gitignore").exists()
+    assert (tmp_path / ".gitkeep").exists()
+
+
+def test_get_roster_with_cache_normalizes_before_lookup(monkeypatch):
+    calls = []
+
+    def fake_live(team, season="2025-26", timeout=45):
+        calls.append(team)
+        return 1, sample_roster("Knicks")
+
+    monkeypatch.setattr(roster_service, "get_team_roster", fake_live)
+    monkeypatch.setattr(roster_service, "save_roster_cache", lambda *args, **kwargs: None)
+
+    _, roster, status = roster_service.get_roster_with_cache("NY")
+
+    assert calls == ["NYK"]
+    assert roster == sample_roster("Knicks")
+    assert status == "LIVE"
+
+
+def test_get_roster_with_cache_retries_when_first_live_call_fails(monkeypatch):
+    calls = []
+
+    def flaky_live(team, season="2025-26", timeout=45):
+        calls.append(team)
+        if len(calls) == 1:
+            raise ValueError("timeout")
+        return 1, sample_roster("Knicks")
+
+    monkeypatch.setattr(roster_service, "get_team_roster", flaky_live)
+    monkeypatch.setattr(roster_service, "save_roster_cache", lambda *args, **kwargs: None)
+    monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
+
+    _, roster, status = roster_service.get_roster_with_cache("NYK")
+
+    assert len(calls) == 2
+    assert roster == sample_roster("Knicks")
+    assert status == "LIVE"
+
+
+def test_cache_is_used_only_after_live_retries_fail(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(roster_service.cache_service, "CACHE_DIR", tmp_path)
+    cache_service.save_roster_cache("SAS", sample_roster("Spur"))
+    calls = []
+
+    def fail_live(team, season="2025-26", timeout=45):
+        calls.append(team)
+        raise ValueError("timeout")
+
+    monkeypatch.setattr(roster_service, "get_team_roster", fail_live)
+    monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
+
+    _, roster, status = roster_service.get_roster_with_cache("SA")
+
+    assert calls == ["SAS", "SAS"]
+    assert roster == sample_roster("Spur")
+    assert status == "CACHE"
+
+
+def test_invalid_roster_cache_is_deleted(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(roster_service.cache_service, "CACHE_DIR", tmp_path)
+    (tmp_path / "roster_NYK.json").write_text(json.dumps({
+        "team_abbr": "NYK",
+        "cached_at": datetime.now(timezone.utc).isoformat(),
+        "roster": ["Bad"],
+    }), encoding="utf-8")
+    monkeypatch.setattr(roster_service, "get_team_roster", lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("timeout")))
+    monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
+
+    _, roster, status = roster_service.get_roster_with_cache("NYK")
+
+    assert roster == []
+    assert status == "INVALID-DELETED"
+    assert not (tmp_path / "roster_NYK.json").exists()
+
+
+def test_debug_roster_mode_prints_useful_status(monkeypatch, capsys):
+    monkeypatch.setattr(roster_service, "get_team_roster", lambda *args, **kwargs: (1, sample_roster("Knicks")))
+    monkeypatch.setattr(roster_service, "save_roster_cache", lambda *args, **kwargs: None)
+
+    result = roster_service.debug_roster_lookup("NY")
+
+    output = capsys.readouterr().out
+    assert result["team"] == "NYK"
+    assert "Normalized team abbreviation: NYK" in output
+    assert "Live roster result count: 8" in output
+    assert "Cache status: LIVE" in output
+    assert "Validation result: PASS" in output
+
+
+def test_app_uses_valid_cached_predictions_when_live_lookup_fails(tmp_path, monkeypatch):
+    import app
+
+    monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
+    rows = sample_prediction_rows()
+    cache_service.save_prediction_cache("2026-06-08", "NYK", "SAS", rows)
+    context = {
+        "opponent": "SAS",
+        "home": True,
+        "playoff_game": True,
+        "game_date": "2026-06-08",
+        "game_id": "1",
+    }
+    monkeypatch.setattr(
+        app,
+        "_load_roster_for_betting",
+        lambda season="2025-26": (
+            [],
+            "NYK",
+            context,
+            {
+                "rosters": {"NYK": "UNAVAILABLE"},
+                "predictions": "LIVE",
+                "opponent_unavailable": False,
+                "cached_roster_players": [],
+                "prediction_health": None,
+            },
+        ),
+    )
+
+    predictions, status = app.collect_betting_predictions()
+
+    assert predictions == rows
+    assert status["predictions"] == "CACHE"
+    assert status["prediction_health"]["valid"] is True
