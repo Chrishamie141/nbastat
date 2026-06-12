@@ -422,7 +422,7 @@ def test_debug_roster_mode_prints_useful_status(monkeypatch, capsys):
     assert "Validation result: PASS" in output
 
 
-def test_app_stops_when_no_roster_instead_of_using_prediction_cache(tmp_path, monkeypatch):
+def test_app_uses_valid_prediction_cache_when_no_roster_is_available(tmp_path, monkeypatch, capsys):
     import app
 
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
@@ -454,8 +454,11 @@ def test_app_stops_when_no_roster_instead_of_using_prediction_cache(tmp_path, mo
 
     predictions, status = app.collect_betting_predictions()
 
-    assert predictions == []
-    assert status["predictions"] == "UNAVAILABLE"
+    assert predictions == rows
+    assert status["predictions"] == "CACHE"
+    assert status["prediction_health"]["valid"] is True
+    assert "Using cached betting predictions" in capsys.readouterr().out
+
 
 def test_startup_health_check_deletes_invalid_cache(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
@@ -517,7 +520,7 @@ def test_main_menu_no_longer_includes_cache_or_debug_options(capsys):
     assert "8. Debug Roster Lookup" not in output
 
 
-def test_bad_prediction_cache_is_not_used_or_auto_cleared_during_betting_workflow(tmp_path, monkeypatch):
+def test_bad_prediction_cache_is_not_used_and_is_auto_cleared_during_betting_workflow(tmp_path, monkeypatch):
     import app
 
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
@@ -558,4 +561,4 @@ def test_bad_prediction_cache_is_not_used_or_auto_cleared_during_betting_workflo
 
     assert predictions == []
     assert status["predictions"] == "UNAVAILABLE"
-    assert bad_path.exists()
+    assert not bad_path.exists()

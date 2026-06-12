@@ -34,7 +34,7 @@ Run `python app.py` for the interactive menu. Normal use shows only user-facing 
 
 On normal startup, the app runs a lightweight cache health check before showing the menu. The check creates `data/cache` if needed, removes cache files with invalid filenames, validates roster and prediction cache payloads, and automatically deletes only invalid/bad cache files. When nothing is wrong, startup stays quiet; if anything is fixed, the app prints a short summary such as `Startup health check: removed 2 invalid cache file(s).`
 
-Roster lookup diagnostics also run automatically only when a lookup fails. The app reports the normalized team abbreviation, live lookup attempts, error type, cache usage, invalid/deleted cache state, and sample cached players when available. Betting workflows automatically clear bad roster or prediction cache files and continue with live data or valid cached predictions when possible.
+Roster lookup diagnostics also run automatically only when a lookup fails. The app reports the normalized team abbreviation, live lookup attempts, error type, cache usage, invalid/deleted cache state, and sample cached players when available. Betting workflows automatically clear bad roster or prediction cache files and continue with live data, valid roster cache, or valid cached predictions when live roster/prediction generation is unavailable.
 
 ## Optional maintenance flags
 
