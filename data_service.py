@@ -6,12 +6,39 @@ SEASON = "2025-26"
 STAT_COLUMNS = ["PTS", "REB", "AST", "STL", "BLK", "MIN"]
 
 
+PLAYER_NAME_ALIASES = {
+    "karl-anthony towns": ["Karl Anthony Towns"],
+    "karl anthony towns": ["Karl-Anthony Towns"],
+    "de'aaron fox": ["DeAaron Fox"],
+    "deaaron fox": ["De'Aaron Fox"],
+    "pacôme dadiet": ["Pacome Dadiet"],
+    "pacome dadiet": ["Pacôme Dadiet"],
+    "og anunoby": ["O.G. Anunoby"],
+    "o.g. anunoby": ["OG Anunoby"],
+}
+
+
+def _player_lookup_candidates(player_name):
+    clean_name = str(player_name or "").strip()
+    candidates = [clean_name]
+    for alias in PLAYER_NAME_ALIASES.get(clean_name.lower(), []):
+        if alias not in candidates:
+            candidates.append(alias)
+    return candidates
+
+
 def find_player(player_name):
-    matches = players.find_players_by_full_name(player_name.strip())
-    if not matches:
-        raise ValueError(f"No player found for: {player_name}")
-    exact = [p for p in matches if p["full_name"].lower() == player_name.lower()]
-    return exact[0] if exact else matches[0]
+    searched = []
+    for candidate in _player_lookup_candidates(player_name):
+        if not candidate:
+            continue
+        searched.append(candidate)
+        matches = players.find_players_by_full_name(candidate)
+        if matches:
+            exact = [p for p in matches if p["full_name"].lower() == candidate.lower()]
+            return exact[0] if exact else matches[0]
+    searched_names = ", ".join(searched) or str(player_name)
+    raise ValueError(f"No player found for: {player_name} (tried: {searched_names})")
 
 
 def safe_player_log(player_id, season, season_type, timeout=30):
