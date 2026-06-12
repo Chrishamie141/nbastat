@@ -1,9 +1,9 @@
 import time
 from pathlib import Path
 
-import requests
 from nba_api.stats.static import teams
-from nba_api.stats.endpoints import commonteamroster
+from nba_api.stats.endpoints import commonallplayers, commonteamroster
+from nba_api.stats.library import http
 
 from team_utils import normalize_team_abbreviation
 import cache_service
@@ -31,9 +31,12 @@ STATS_NBA_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.9",
     "Connection": "keep-alive",
+    "x-nba-stats-origin": "stats",
+    "x-nba-stats-token": "true",
 }
-ROSTER_LOOKUP_TIMEOUT = 45
-ROSTER_LOOKUP_RETRIES = 2
+http.NBAStatsHTTP.headers.update(STATS_NBA_HEADERS)
+ROSTER_LOOKUP_TIMEOUT = 15
+ROSTER_LOOKUP_RETRIES = 3
 DEFAULT_ROSTER_FILE = Path("roster.txt")
 
 
@@ -42,22 +45,61 @@ def _error_type(exc):
     return type(root).__name__
 
 
+def _stats_headers():
+    """Return NBA Stats headers and keep nba_api's global header config in sync."""
+    http.NBAStatsHTTP.headers.update(STATS_NBA_HEADERS)
+    return dict(http.NBAStatsHTTP.headers)
+
+
+def _extract_player_names(roster_df, preferred_columns):
+    for column in preferred_columns:
+        if column in roster_df.columns:
+            return roster_df[column].dropna().astype(str).str.strip().tolist()
+    raise ValueError(f"Roster response missing player-name columns: {list(roster_df.columns)}")
+
+
 def _live_roster_lookup(team_abbreviation, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
-    """Call the original stats.nba.com roster endpoint with stronger headers."""
-    session = requests.Session()
-    session.headers.update(STATS_NBA_HEADERS)
+    """Call the original stats.nba.com commonteamroster endpoint."""
     team_id = get_team_id(team_abbreviation)
     roster_df = commonteamroster.CommonTeamRoster(
         team_id=team_id,
         season=season,
-        headers=dict(session.headers),
+        league_id_nullable="00",
+        headers=_stats_headers(),
         timeout=timeout,
     ).get_data_frames()[0]
     if roster_df.empty:
         raise ValueError("Empty roster response")
-    names = roster_df["PLAYER"].dropna().tolist()
+    names = _extract_player_names(roster_df, ("PLAYER", "PLAYER_NAME", "DISPLAY_FIRST_LAST"))
     return team_id, names
 
+
+def _live_roster_lookup_commonallplayers(team_abbreviation, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
+    """Fallback live roster lookup using nba_api's current-season all-player endpoint."""
+    normalized = normalize_team_abbreviation(team_abbreviation)
+    team_id = get_team_id(normalized)
+    players_df = commonallplayers.CommonAllPlayers(
+        is_only_current_season=1,
+        league_id="00",
+        season=season,
+        headers=_stats_headers(),
+        timeout=timeout,
+    ).get_data_frames()[0]
+    if players_df.empty:
+        raise ValueError("Empty commonallplayers response")
+
+    filtered = players_df
+    if "TEAM_ID" in filtered.columns:
+        filtered = filtered[filtered["TEAM_ID"].astype(str) == str(team_id)]
+    elif "TEAM_ABBREVIATION" in filtered.columns:
+        filtered = filtered[filtered["TEAM_ABBREVIATION"].astype(str) == normalized]
+    else:
+        raise ValueError(f"commonallplayers response cannot be filtered by team: {list(players_df.columns)}")
+
+    if filtered.empty:
+        raise ValueError(f"Empty commonallplayers roster response for {normalized}")
+    names = _extract_player_names(filtered, ("DISPLAY_FIRST_LAST", "PLAYER_NAME", "PLAYER", "PERSON_NAME"))
+    return team_id, names
 
 def _load_local_roster_file(path=DEFAULT_ROSTER_FILE):
     if not path.exists():
@@ -155,26 +197,44 @@ def get_team_roster(team_abbreviation, season="2025-26", timeout=ROSTER_LOOKUP_T
         raise ValueError(f"Roster lookup failed for {team_abbreviation}: {exc}") from exc
 
 
+def _retry_backoff(attempt):
+    return attempt
+
+
 def _try_live_roster_with_retries(team_abbr, season, timeout, attempts=ROSTER_LOOKUP_RETRIES):
     last_error = None
-    for attempt in range(1, attempts + 1):
-        try:
-            print(f"Live roster lookup for {team_abbr} using stats.nba.com (attempt {attempt}/{attempts}).")
-            return (*get_team_roster(team_abbr, season=season, timeout=timeout), None)
-        except Exception as exc:
-            last_error = exc
-            if attempt < attempts:
-                print(f"Roster lookup attempt {attempt} failed for {team_abbr}; retrying...")
-                print(f"Diagnostics: team={team_abbr}; source=stats.nba.com; error_type={_error_type(exc)}; retry=True")
-                time.sleep(0.5)
-            else:
+    endpoints = (
+        ("commonteamroster", get_team_roster),
+        ("commonallplayers", _live_roster_lookup_commonallplayers),
+    )
+    for endpoint_name, lookup in endpoints:
+        for attempt in range(1, attempts + 1):
+            try:
                 print(
-                    f"Live roster lookup failed for {team_abbr} using stats.nba.com after {attempts} "
-                    f"attempts: {_error_type(exc)}. Trying cache..."
+                    f"Live roster lookup for {team_abbr} using {endpoint_name} "
+                    f"(attempt {attempt}/{attempts}, timeout={timeout}s, headers=yes)."
                 )
-                print(f"Diagnostics: team={team_abbr}; source=stats.nba.com; error_type={_error_type(exc)}; retry=False; cache_fallback=True")
+                return (*lookup(team_abbr, season=season, timeout=timeout), None)
+            except Exception as exc:
+                last_error = exc
+                if attempt < attempts:
+                    print(f"Roster lookup attempt {attempt} failed for {team_abbr} via {endpoint_name}; retrying...")
+                    print(
+                        f"Diagnostics: team={team_abbr}; endpoint={endpoint_name}; season={season}; "
+                        f"timeout={timeout}; headers_applied=yes; error_type={_error_type(exc)}; retry=True"
+                    )
+                    time.sleep(_retry_backoff(attempt))
+                else:
+                    next_step = "trying commonallplayers live fallback" if endpoint_name == "commonteamroster" else "trying cache"
+                    print(
+                        f"Live roster lookup failed for {team_abbr} using {endpoint_name} after {attempts} "
+                        f"attempts: {_error_type(exc)}; {next_step}."
+                    )
+                    print(
+                        f"Diagnostics: team={team_abbr}; endpoint={endpoint_name}; season={season}; "
+                        f"timeout={timeout}; headers_applied=yes; error_type={_error_type(exc)}; retry=False"
+                    )
     return None, [], last_error
-
 
 def _print_roster_lookup_failure_summary(team_abbr, attempts, live_error, cached=None, cache_invalid_deleted=False):
     cache_used = bool(cached and cached.get("roster"))
@@ -206,14 +266,6 @@ def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIM
         save_roster_cache(team_abbr, roster)
         return team_id, roster, "LIVE"
 
-    try:
-        local_roster = _load_local_roster_file()
-    except OSError:
-        local_roster = []
-    local_valid, _ = validate_roster_cache(local_roster)
-    if local_valid:
-        print(f"Local roster.txt fallback is available for {team_abbr}; source=roster.txt; players={len(local_roster)}")
-
     cached = load_roster_cache(team_abbr, max_age_hours=max_age_hours, allow_stale=True)
     if cached and cached.get("invalid_deleted"):
         print(f"Invalid cached roster for {team_abbr} deleted; retrying live lookup one more time.")
@@ -224,9 +276,6 @@ def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIM
         except Exception as exc:
             live_error = exc
             print(f"Live retry after cache deletion failed for {team_abbr}: {_error_type(exc)}")
-        if local_valid:
-            _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES + 1, live_error, cached=cached, cache_invalid_deleted=True)
-            return get_team_id(team_abbr), local_roster, "UNAVAILABLE"
         _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES + 1, live_error, cached=cached, cache_invalid_deleted=True)
         return None, [], "INVALID-DELETED"
 
@@ -246,13 +295,87 @@ def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIM
         clear_team_cache(team_abbr)
         print(f"Invalid cache detected for roster_{safe_cache_key(team_abbr)}.json; deleted and retrying live lookup.")
 
-    if local_valid:
-        _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES, live_error, cached=cached)
-        return get_team_id(team_abbr), local_roster, "UNAVAILABLE"
-
     _print_roster_lookup_failure_summary(team_abbr, ROSTER_LOOKUP_RETRIES, live_error, cached=cached)
     return None, [], "UNAVAILABLE"
 
+
+def debug_roster_live_lookup(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
+    """Print uncached live roster diagnostics for one team."""
+    normalized = normalize_team_abbreviation(team_abbr)
+    headers = _stats_headers()
+    try:
+        team_id = get_team_id(normalized)
+    except Exception as exc:
+        team_id = None
+        print("Debug Live Roster Lookup")
+        print(f"Normalized team abbreviation: {normalized}")
+        print(f"Team ID: {team_id}")
+        print(f"Endpoint attempted: none")
+        print(f"Season: {season}")
+        print(f"Timeout: {timeout}")
+        print(f"Headers applied: {'yes' if headers else 'no'}")
+        print("Attempt count: 0")
+        print("Result count: 0")
+        print("First 10 player names: None")
+        print(f"Error type: {_error_type(exc)}")
+        print(f"Error message: {exc}")
+        return {"team": normalized, "team_id": team_id, "count": 0, "status": "FAILED", "valid": False}
+
+    print("Debug Live Roster Lookup")
+    print(f"Normalized team abbreviation: {normalized}")
+    print(f"Team ID: {team_id}")
+    print(f"Season: {season}")
+    print(f"Timeout: {timeout}")
+    print(f"Headers applied: {'yes' if headers else 'no'}")
+    print("Cache bypassed: yes")
+
+    endpoints = (
+        ("commonteamroster", get_team_roster),
+        ("commonallplayers", _live_roster_lookup_commonallplayers),
+    )
+    total_attempts = 0
+    last_error = None
+    attempted = []
+    for endpoint_name, lookup in endpoints:
+        for attempt in range(1, ROSTER_LOOKUP_RETRIES + 1):
+            total_attempts += 1
+            attempted.append(endpoint_name)
+            print(f"Endpoint attempted: {endpoint_name}")
+            print(f"Attempt count: {attempt}/{ROSTER_LOOKUP_RETRIES} ({total_attempts} total)")
+            try:
+                _, roster = lookup(normalized, season=season, timeout=timeout)
+                print(f"Result count: {len(roster)}")
+                print(f"First 10 player names: {', '.join(roster[:10]) or 'None'}")
+                print("Status: LIVE")
+                return {
+                    "team": normalized,
+                    "team_id": team_id,
+                    "count": len(roster),
+                    "status": "LIVE",
+                    "valid": True,
+                    "attempts": total_attempts,
+                    "endpoints": attempted,
+                }
+            except Exception as exc:
+                last_error = exc
+                print(f"Error type: {_error_type(exc)}")
+                print(f"Error message: {exc}")
+                if attempt < ROSTER_LOOKUP_RETRIES:
+                    time.sleep(_retry_backoff(attempt))
+
+    print("Result count: 0")
+    print("First 10 player names: None")
+    print("Status: FAILED")
+    return {
+        "team": normalized,
+        "team_id": team_id,
+        "count": 0,
+        "status": "FAILED",
+        "valid": False,
+        "attempts": total_attempts,
+        "endpoints": attempted,
+        "error": str(last_error) if last_error else None,
+    }
 
 def debug_roster_lookup(team_abbr, season="2025-26"):
     """Print diagnostics for one roster lookup without requiring app internals."""
