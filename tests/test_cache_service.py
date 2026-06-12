@@ -42,6 +42,8 @@ def test_roster_cache_falls_back_when_live_lookup_fails(tmp_path, monkeypatch, c
         raise ValueError("simulated timeout")
 
     monkeypatch.setattr(roster_service, "get_team_roster", fail_live_lookup)
+    monkeypatch.setattr(roster_service, "_live_roster_lookup_commonallplayers", fail_live_lookup)
+    monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
     team_id, roster, status = roster_service.get_roster_with_cache("SAS")
 
     assert team_id is not None
@@ -62,6 +64,8 @@ def test_stale_roster_cache_is_used_when_live_lookup_fails(tmp_path, monkeypatch
         raise ValueError("simulated timeout")
 
     monkeypatch.setattr(roster_service, "get_team_roster", fail_live_lookup)
+    monkeypatch.setattr(roster_service, "_live_roster_lookup_commonallplayers", fail_live_lookup)
+    monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
     _, roster, status = roster_service.get_roster_with_cache("SAS")
 
     assert roster == sample_roster("Spur")
@@ -381,11 +385,12 @@ def test_cache_is_used_only_after_live_retries_fail(tmp_path, monkeypatch):
         raise ValueError("timeout")
 
     monkeypatch.setattr(roster_service, "get_team_roster", fail_live)
+    monkeypatch.setattr(roster_service, "_live_roster_lookup_commonallplayers", fail_live)
     monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
 
     _, roster, status = roster_service.get_roster_with_cache("SA")
 
-    assert calls == ["SAS", "SAS"]
+    assert calls == ["SAS", "SAS", "SAS", "SAS", "SAS", "SAS"]
     assert roster == sample_roster("Spur")
     assert status == "CACHE"
 
@@ -399,6 +404,7 @@ def test_invalid_roster_cache_is_deleted(tmp_path, monkeypatch):
         "roster": ["Bad"],
     }), encoding="utf-8")
     monkeypatch.setattr(roster_service, "get_team_roster", lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("timeout")))
+    monkeypatch.setattr(roster_service, "_live_roster_lookup_commonallplayers", lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("timeout")))
     monkeypatch.setattr(roster_service.time, "sleep", lambda *_args: None)
 
     _, roster, status = roster_service.get_roster_with_cache("NYK")

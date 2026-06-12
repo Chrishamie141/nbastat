@@ -10,7 +10,7 @@ from betting_engine import (
     sportsbook_line_coverage,
 )
 from predictor import PlayerStatPredictor
-from roster_service import debug_roster_lookup, get_player_display_name, get_team_roster, get_roster_with_cache
+from roster_service import debug_roster_live_lookup, debug_roster_lookup, get_player_display_name, get_team_roster, get_roster_with_cache
 from schedule_service import get_next_game_context
 from team_utils import normalize_team_abbreviation
 from cache_service import (
@@ -176,10 +176,14 @@ def run_default_roster_mode(season="2025-26"):
 def run_team_mode(season="2025-26"):
     team = normalize_team_abbreviation(input("Enter team abbreviation: "))
     try:
-        _, roster = get_team_roster(team, season=season)
+        _, roster, roster_status = get_roster_with_cache(team, season=season)
     except Exception as exc:
         print(f"Roster lookup failed: {exc}")
         return
+    if not roster:
+        print("Roster lookup failed: no live roster or valid cache available.")
+        return
+    print(f"Roster source: {roster_status}")
 
     context = get_next_game_context(team, season=season)
     if context.get("opponent"):
@@ -531,6 +535,13 @@ def run_debug_roster_lookup_mode(team, season="2025-26"):
     debug_roster_lookup(team, season=season)
 
 
+def run_debug_roster_live_lookup_mode(team, season="2025-26"):
+    if not team:
+        print("A team abbreviation is required.")
+        return
+    debug_roster_live_lookup(team, season=season)
+
+
 def run_debug_player_mode(player_name, season="2025-26"):
     clean_name = str(player_name or "").strip()
     print("Debug Player Prediction")
@@ -602,6 +613,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="NBA Player Stat Prediction System")
     parser.add_argument("--clear-cache", action="store_true", help="Clear cache files and exit.")
     parser.add_argument("--debug-roster", metavar="TEAM", help="Run roster diagnostics for a team and exit.")
+    parser.add_argument("--debug-roster-live", metavar="TEAM", help="Run uncached live roster diagnostics for a team and exit.")
     parser.add_argument("--debug-player", metavar="PLAYER", help="Run direct player prediction diagnostics and exit.")
     parser.add_argument("--health-check", action="store_true", help="Run cache health check and exit.")
     return parser.parse_args(argv)
@@ -624,6 +636,9 @@ def main(argv=None):
         return
     if args.debug_roster:
         run_debug_roster_lookup_mode(args.debug_roster)
+        return
+    if args.debug_roster_live:
+        run_debug_roster_live_lookup_mode(args.debug_roster_live)
         return
     if args.debug_player:
         run_debug_player_mode(args.debug_player)
