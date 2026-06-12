@@ -183,7 +183,7 @@ def _print_roster_lookup_failure_summary(team_abbr, attempts, live_error, cached
         cache_state = "invalid/deleted"
     print(
         f"Roster lookup failed for {team_abbr} after {attempts} attempts. "
-        f"Cache {cache_state}. Trying cached predictions."
+        f"Cache {cache_state}."
     )
     print(
         f"Roster diagnostics: normalized_team={team_abbr}; live_attempts={attempts}; "

@@ -117,7 +117,7 @@ def test_prediction_cache_round_trip_uses_windows_safe_filename(tmp_path, monkey
     assert cached["prediction_rows"] == rows
 
 
-def test_collect_betting_predictions_uses_prediction_cache_when_opponent_roster_missing(monkeypatch):
+def test_collect_betting_predictions_does_not_use_prediction_cache_when_opponent_roster_missing(monkeypatch):
     import app
 
     answers = iter(["NYK", "y"])
@@ -141,25 +141,26 @@ def test_collect_betting_predictions_uses_prediction_cache_when_opponent_roster_
         return None, [], "UNAVAILABLE"
 
     monkeypatch.setattr(app, "get_roster_with_cache", roster_with_cache)
-    monkeypatch.setattr(
-        app,
-        "load_prediction_cache",
-        lambda game_date, team, opponent: {
-            "prediction_rows": [{"player": "Victor Wembanyama", "stat_type": "PTS"}]
-        },
-    )
 
     def fail_if_called(*args, **kwargs):
-        raise AssertionError("selected-team-only predictions should not run when full cached rows exist")
+        raise AssertionError("prediction cache should not be used in normal betting flow")
 
-    monkeypatch.setattr(app, "run_roster_predictions", fail_if_called)
+    monkeypatch.setattr(app, "load_prediction_cache", fail_if_called, raising=False)
+    monkeypatch.setattr(
+        app,
+        "run_roster_predictions",
+        lambda *args, **kwargs: {
+            "prediction_rows": [{"player": "Jalen Brunson", "team": "NYK", "stat_type": "PTS", "projection": 20, "low_range": 18, "high_range": 22}],
+            "failed": [],
+        },
+    )
+    monkeypatch.setattr(app, "save_prediction_cache", lambda *args, **kwargs: None)
 
     predictions, status = app.collect_betting_predictions()
 
-    assert predictions == [{"player": "Victor Wembanyama", "stat_type": "PTS"}]
+    assert predictions == [{"player": "Jalen Brunson", "team": "NYK", "stat_type": "PTS", "projection": 20, "low_range": 18, "high_range": 22}]
     assert status["rosters"] == {"NYK": "LIVE", "SAS": "UNAVAILABLE"}
-    assert status["predictions"] == "CACHE"
-
+    assert status["predictions"] == "LIVE"
 
 def test_validate_roster_cache_accepts_valid_dict_roster():
     roster = [
@@ -228,7 +229,7 @@ def test_clear_cache_keeps_gitignore_and_gitkeep(tmp_path, monkeypatch):
     assert not (nested / "predictions.json").exists()
 
 
-def test_collect_betting_predictions_prefers_cached_rows_when_cached_roster_unreliable(monkeypatch, capsys):
+def test_collect_betting_predictions_uses_generated_rows_for_cached_roster(monkeypatch, capsys):
     import app
 
     context = {
@@ -258,24 +259,22 @@ def test_collect_betting_predictions_prefers_cached_rows_when_cached_roster_unre
         app,
         "run_roster_predictions",
         lambda *args, **kwargs: {
-            "prediction_rows": [{"player": "Cached 1", "stat_type": "PTS"}],
+            "prediction_rows": [{"player": "Cached 1", "team": "NYK", "stat_type": "PTS", "projection": 10, "low_range": 8, "high_range": 12}],
             "failed": [(player, "No regular season data found") for player in cached_roster_players[:4]],
         },
     )
-    monkeypatch.setattr(
-        app,
-        "load_prediction_cache",
-        lambda game_date, team, opponent: {
-            "prediction_rows": [{"player": "Cached Prediction", "stat_type": "PTS"}]
-        },
-    )
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("prediction cache should not be used in normal betting flow")
+
+    monkeypatch.setattr(app, "load_prediction_cache", fail_if_called, raising=False)
+    monkeypatch.setattr(app, "save_prediction_cache", lambda *args, **kwargs: None)
 
     predictions, status = app.collect_betting_predictions()
 
-    assert predictions == [{"player": "Cached Prediction", "stat_type": "PTS"}]
-    assert status["predictions"] == "CACHE"
-    assert "Cached roster appears unreliable" in capsys.readouterr().out
-
+    assert predictions == [{"player": "Cached 1", "team": "NYK", "stat_type": "PTS", "projection": 10, "low_range": 8, "high_range": 12}]
+    assert status["predictions"] == "LIVE"
+    assert "Cached roster appears unreliable" not in capsys.readouterr().out
 
 def test_invalid_prediction_cache_missing_brunson_for_nyk_gets_rejected():
     rows = [row for row in sample_prediction_rows(("NYK",)) if row["player"] != "Jalen Brunson"]
@@ -423,7 +422,7 @@ def test_debug_roster_mode_prints_useful_status(monkeypatch, capsys):
     assert "Validation result: PASS" in output
 
 
-def test_app_uses_valid_cached_predictions_when_live_lookup_fails(tmp_path, monkeypatch):
+def test_app_stops_when_no_roster_instead_of_using_prediction_cache(tmp_path, monkeypatch):
     import app
 
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
@@ -455,10 +454,8 @@ def test_app_uses_valid_cached_predictions_when_live_lookup_fails(tmp_path, monk
 
     predictions, status = app.collect_betting_predictions()
 
-    assert predictions == rows
-    assert status["predictions"] == "CACHE"
-    assert status["prediction_health"]["valid"] is True
-
+    assert predictions == []
+    assert status["predictions"] == "UNAVAILABLE"
 
 def test_startup_health_check_deletes_invalid_cache(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
@@ -520,7 +517,7 @@ def test_main_menu_no_longer_includes_cache_or_debug_options(capsys):
     assert "8. Debug Roster Lookup" not in output
 
 
-def test_bad_prediction_cache_auto_clears_during_betting_workflow(tmp_path, monkeypatch):
+def test_bad_prediction_cache_is_not_used_or_auto_cleared_during_betting_workflow(tmp_path, monkeypatch):
     import app
 
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
@@ -560,5 +557,5 @@ def test_bad_prediction_cache_auto_clears_during_betting_workflow(tmp_path, monk
     predictions, status = app.collect_betting_predictions()
 
     assert predictions == []
-    assert status["predictions"] == "INVALID-DELETED"
-    assert not bad_path.exists()
+    assert status["predictions"] == "UNAVAILABLE"
+    assert bad_path.exists()

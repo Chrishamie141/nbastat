@@ -301,15 +301,10 @@ def run_health_check(cache_dir=None, print_summary=False):
             if not valid:
                 removed += int(clear_cache_file(path))
         elif path.name.startswith("predictions_"):
-            rows = payload.get("prediction_rows") if isinstance(payload, dict) else None
-            expected_teams = None
-            if isinstance(payload, dict):
-                expected_teams = [payload.get("team")]
-                if payload.get("opponent") not in (None, "", "unknown", "None"):
-                    expected_teams.append(payload.get("opponent"))
-            valid, _reason = validate_prediction_cache(rows, expected_teams=expected_teams)
-            if not valid:
-                removed += int(clear_cache_file(path))
+            # Keep usable prediction history. Startup only removes unsafe filenames
+            # and unreadable JSON; prediction-row completeness can be validated by
+            # explicit cache maintenance tools when needed.
+            continue
 
     if removed:
         print(f"Startup health check: removed {removed} invalid cache file(s).")
