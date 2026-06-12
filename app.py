@@ -15,6 +15,7 @@ from schedule_service import get_next_game_context
 from team_utils import normalize_team_abbreviation
 from cache_service import (
     clear_cache_files,
+    load_prediction_cache,
     prediction_cache_health_report,
     print_prediction_cache_health,
     run_health_check,
@@ -258,11 +259,37 @@ def _expected_prediction_teams(team, context, include_opponent=True):
     return expected
 
 
+def _load_cached_betting_predictions(team, context, cache_status, include_opponent=True):
+    """Return valid cached betting predictions when live roster/prediction generation is unavailable."""
+    expected_teams = _expected_prediction_teams(team, context, include_opponent=include_opponent)
+    cached = load_prediction_cache(
+        context.get("game_date"),
+        team,
+        context.get("opponent"),
+        expected_teams=expected_teams or None,
+    )
+    if not cached or cached.get("invalid_deleted"):
+        cache_status["predictions"] = "UNAVAILABLE"
+        if cached and cached.get("health_report"):
+            cache_status["prediction_health"] = cached["health_report"]
+        return []
+
+    predictions = cached.get("prediction_rows") or []
+    cache_status["predictions"] = "CACHE"
+    cache_status["prediction_health"] = cached.get("health_report") or prediction_cache_health_report(
+        predictions, expected_teams=expected_teams or None
+    )
+    print("Using cached betting predictions because live roster/prediction generation is unavailable.")
+    return predictions
+
+
 def collect_betting_predictions(season="2025-26"):
     roster, team, context, cache_status = _load_roster_for_betting(season=season)
     if not roster:
-        cache_status["predictions"] = "UNAVAILABLE"
-        print("No valid live roster or roster cache available. Cannot build reliable parlay.")
+        predictions = _load_cached_betting_predictions(team, context, cache_status)
+        if predictions:
+            return predictions, cache_status
+        print("No valid live roster, roster cache, or prediction cache available. Cannot build reliable parlay.")
         return [], cache_status
 
     if cache_status.get("opponent_unavailable"):
@@ -285,8 +312,11 @@ def collect_betting_predictions(season="2025-26"):
             predictions, expected_teams=expected_teams or [team]
         )
     else:
-        cache_status["predictions"] = "UNAVAILABLE"
-        print("No live predictions were generated; prediction cache is not used in normal betting flow.")
+        predictions = _load_cached_betting_predictions(
+            team, context, cache_status, include_opponent=not cache_status.get("opponent_unavailable")
+        )
+        if not predictions:
+            print("No live predictions were generated and no valid prediction cache is available.")
     return predictions, cache_status
 
 
