@@ -15,6 +15,7 @@ PREDICTION_CACHE_MAX_AGE_HOURS = 24
 INVALID_WINDOWS_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]+')
 PRESERVED_CACHE_FILENAMES = {".gitignore", ".gitkeep"}
 PREDICTION_REQUIRED_FIELDS = ("player", "team", "stat_type", "projection", "low_range", "high_range")
+ROSTER_CACHE_FILENAME = re.compile(r"^roster_[A-Za-z0-9_-]+\.json$")
 KEY_PLAYERS_BY_TEAM = {
     "NYK": {
         "Jalen Brunson",
@@ -259,6 +260,20 @@ def _has_invalid_cache_filename(path):
     return bool(INVALID_WINDOWS_FILENAME_CHARS.search(Path(path).name))
 
 
+def _is_roster_cache_filename(path):
+    """Return True only for well-formed roster cache JSON filenames."""
+    return bool(ROSTER_CACHE_FILENAME.fullmatch(Path(path).name))
+
+
+def _should_delete_roster_cache(path, payload):
+    """Return True when a roster cache file is malformed or has invalid content."""
+    if not _is_roster_cache_filename(path):
+        return True
+    roster = payload.get("roster") if isinstance(payload, dict) else None
+    valid, _reason = validate_roster_cache(roster)
+    return not valid
+
+
 def _health_report(removed=0, cache_dir_created=False):
     return {"removed": removed, "cache_dir_created": cache_dir_created}
 
@@ -296,9 +311,7 @@ def run_health_check(cache_dir=None, print_summary=False):
             continue
 
         if path.name.startswith("roster_"):
-            roster = payload.get("roster") if isinstance(payload, dict) else None
-            valid, _reason = validate_roster_cache(roster)
-            if not valid:
+            if _should_delete_roster_cache(path, payload):
                 removed += int(clear_cache_file(path))
         elif path.name.startswith("predictions_"):
             # Keep usable prediction history. Startup only removes unsafe filenames
