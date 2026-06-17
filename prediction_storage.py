@@ -248,3 +248,93 @@ def summarize_graded_bets(graded_rows):
         "by_stat": {stat: sum(values) / len(values) for stat, values in by_stat.items()},
         "profits_by_stat": profits_by_stat,
     }
+
+
+def initialize_parlay_history(db_file=DB_FILE):
+    initialize_database(db_file)
+    with get_connection(db_file) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS parlay_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sport TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                difficulty TEXT NOT NULL,
+                legs_json TEXT NOT NULL,
+                estimated_odds INTEGER,
+                combined_probability REAL,
+                result_status TEXT NOT NULL DEFAULT 'pending',
+                notes TEXT
+            )
+            """
+        )
+
+
+def save_parlay_result(parlay_result, db_file=DB_FILE):
+    """Persist a shared ParlayResult for NBA/NFL history screens."""
+    import json
+
+    initialize_parlay_history(db_file)
+    parlay = parlay_result.parlay
+    legs = []
+    for leg in parlay.legs:
+        legs.append(
+            {
+                "sport": getattr(leg.sport, "value", leg.sport),
+                "player": leg.player,
+                "team": leg.team,
+                "stat_type": leg.stat_type,
+                "line": leg.line,
+                "odds": leg.odds,
+                "prediction": leg.prediction,
+                "confidence": leg.confidence,
+                "notes": leg.notes,
+            }
+        )
+    with get_connection(db_file) as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO parlay_history (
+                sport, created_at, difficulty, legs_json, estimated_odds,
+                combined_probability, result_status, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                getattr(parlay.sport, "value", parlay.sport),
+                parlay.created_at,
+                getattr(parlay.difficulty, "value", parlay.difficulty),
+                json.dumps(legs),
+                parlay_result.estimated_odds,
+                parlay_result.combined_probability,
+                parlay_result.result_status,
+                parlay_result.notes or parlay.notes,
+            ),
+        )
+        return cur.lastrowid
+
+
+def load_parlay_history(sport=None, difficulty=None, result_status=None, db_file=DB_FILE):
+    initialize_parlay_history(db_file)
+    filters = []
+    params = []
+    if sport:
+        filters.append("UPPER(sport) = ?")
+        params.append(str(sport).upper())
+    if difficulty:
+        filters.append("UPPER(difficulty) = ?")
+        params.append(str(difficulty).upper())
+    if result_status:
+        filters.append("LOWER(result_status) = ?")
+        params.append(str(result_status).lower())
+    where = f"WHERE {' AND '.join(filters)}" if filters else ""
+    with get_connection(db_file) as conn:
+        rows = conn.execute(
+            f"""
+            SELECT * FROM parlay_history
+            {where}
+            ORDER BY created_at DESC, id DESC
+            LIMIT 100
+            """,
+            params,
+        ).fetchall()
+    return [dict(row) for row in rows]
