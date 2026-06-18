@@ -16,6 +16,7 @@ INVALID_WINDOWS_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]+')
 PRESERVED_CACHE_FILENAMES = {".gitignore", ".gitkeep"}
 PREDICTION_REQUIRED_FIELDS = ("player", "team", "stat_type", "projection", "low_range", "high_range")
 ROSTER_CACHE_FILENAME = re.compile(r"^roster_[A-Za-z0-9_-]+\.json$")
+PREDICTION_CACHE_FILENAME = re.compile(r"^predictions_[A-Za-z0-9_-]+\.json$")
 KEY_PLAYERS_BY_TEAM = {
     "NYK": {
         "Jalen Brunson",
@@ -265,6 +266,11 @@ def _is_roster_cache_filename(path):
     return bool(ROSTER_CACHE_FILENAME.fullmatch(Path(path).name))
 
 
+def _is_prediction_cache_filename(path):
+    """Return True only for well-formed prediction cache JSON filenames."""
+    return bool(PREDICTION_CACHE_FILENAME.fullmatch(Path(path).name))
+
+
 def _should_delete_roster_cache(path, payload):
     """Return True when a roster cache file is malformed or has invalid content."""
     if not _is_roster_cache_filename(path):
@@ -310,10 +316,12 @@ def run_health_check(cache_dir=None, print_summary=False):
             removed += int(clear_cache_file(path))
             continue
 
-        if path.name.startswith("roster_"):
+        if _is_roster_cache_filename(path):
             if _should_delete_roster_cache(path, payload):
                 removed += int(clear_cache_file(path))
-        elif path.name.startswith("predictions_"):
+            continue
+
+        if _is_prediction_cache_filename(path):
             # Keep usable prediction history. Startup only removes unsafe filenames
             # and unreadable JSON; prediction-row completeness can be validated by
             # explicit cache maintenance tools when needed.
