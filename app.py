@@ -35,6 +35,7 @@ from prediction_storage import (
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
 from nfl_fantasy_service import show_fantasy_menu
 from nfl_parlay_builder import run_nfl_parlay_flow
+from nfl_parlay_grader import grade_nfl_parlays
 
 DEFAULT_ROSTER_FILE = "roster.txt"
 BETTING_LINES_FILE = Path("betting_lines.json")
@@ -715,11 +716,14 @@ def main(argv=None):
         print("1. NFL Parlay Builder")
         print("2. Fantasy Football Tools")
         print("3. View Parlay History")
-        nfl_mode = input("Select mode 1, 2, or 3: ").strip()
+        print("4. Grade NFL Parlays")
+        nfl_mode = input("Select mode 1, 2, 3, or 4: ").strip()
         if nfl_mode == "2":
             show_fantasy_menu()
         elif nfl_mode == "3":
             run_parlay_history_mode()
+        elif nfl_mode == "4":
+            grade_nfl_parlays()
         else:
             run_nfl_parlay_flow()
         return
