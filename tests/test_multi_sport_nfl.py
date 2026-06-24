@@ -1,7 +1,14 @@
 import sqlite3
 
 from models import DifficultyLevel, SportType
-from nfl_parlay_builder import build_nfl_parlay
+from nfl_parlay_builder import (
+    build_nfl_parlay,
+    calculate_edge_score,
+    calculate_injury_adjustment,
+    calculate_matchup_adjustment,
+    calculate_player_consistency,
+    calculate_weather_adjustment,
+)
 from prediction_storage import load_parlay_history, save_parlay_result
 
 
@@ -31,3 +38,14 @@ def test_save_and_filter_parlay_history(tmp_path):
     with sqlite3.connect(db_file) as conn:
         count = conn.execute("SELECT COUNT(*) FROM parlay_history").fetchone()[0]
     assert count == 1
+
+
+def test_nfl_edge_and_adjustment_helpers_score_expected_inputs():
+    assert calculate_edge_score(72.5, 64.5) == 8.0
+    steady_score = calculate_player_consistency([70, 72, 71, 73, 72])
+    volatile_score = calculate_player_consistency([40, 95, 51, 104, 63])
+
+    assert steady_score > volatile_score
+    assert calculate_matchup_adjustment({"matchup_difficulty": "favorable"}) > 0
+    assert calculate_weather_adjustment({"condition": "rain", "wind_mph": 18}, "PASS_YDS") < 0
+    assert calculate_injury_adjustment([{"player": "Test Player", "status": "Questionable"}], "Test Player") < 0
