@@ -30,16 +30,18 @@ REQUEST_TIMEOUT = 10
 
 PROP_MARKETS = [
     "player_pass_yds",
-    "player_pass_tds",
     "player_rush_yds",
     "player_reception_yds",
     "player_receptions",
     "player_anytime_td",
+    "player_pass_tds",
+    "player_pass_interceptions",
 ]
 TEAM_MARKETS = ["h2h", "spreads", "totals"]
 MARKET_TO_STAT = {
     "player_pass_yds": "PASS_YDS",
     "player_pass_tds": "PASS_TD",
+    "player_pass_interceptions": "PASS_INT",
     "player_rush_yds": "RUSH_YDS",
     "player_reception_yds": "REC_YDS",
     "player_receptions": "RECEPTIONS",
@@ -48,6 +50,7 @@ MARKET_TO_STAT = {
 STAT_ALIASES = {
     "PassingYards": "PASS_YDS",
     "PassingTouchdowns": "PASS_TD",
+    "PassingInterceptions": "PASS_INT",
     "RushingYards": "RUSH_YDS",
     "ReceivingYards": "REC_YDS",
     "Receptions": "RECEPTIONS",
@@ -80,7 +83,7 @@ NFL_SAMPLE_RECENT_STATS = {
     "Christian McCaffrey": {"team": "SF", "position": "RB", "RUSH_YDS": [72, 88, 54, 91, 63], "REC_YDS": [31, 42, 18, 36, 29], "RECEPTIONS": [4, 5, 3, 4, 4], "TD": [1, 1, 0, 2, 1]},
     "Justin Jefferson": {"team": "MIN", "position": "WR", "REC_YDS": [92, 81, 104, 67, 88], "RECEPTIONS": [7, 6, 8, 5, 7], "TD": [1, 0, 1, 0, 1]},
     "Amon-Ra St. Brown": {"team": "DET", "position": "WR", "REC_YDS": [76, 94, 71, 83, 65], "RECEPTIONS": [7, 8, 6, 7, 6], "TD": [0, 1, 1, 0, 1]},
-    "Josh Allen": {"team": "BUF", "position": "QB", "PASS_YDS": [244, 289, 227, 312, 261], "PASS_TD": [2, 2, 1, 3, 2], "RUSH_YDS": [42, 35, 54, 29, 47]},
+    "Josh Allen": {"team": "BUF", "position": "QB", "PASS_YDS": [244, 289, 227, 312, 261], "PASS_TD": [2, 2, 1, 3, 2], "PASS_INT": [1, 0, 1, 0, 1], "RUSH_YDS": [42, 35, 54, 29, 47]},
 }
 
 NFL_SAMPLE_INJURIES = []
@@ -152,14 +155,24 @@ def get_nfl_player_props(team: str | None = None) -> dict[str, dict[str, list[di
         key = _odds_key()
         if not key:
             raise ValueError("THE_ODDS_API_KEY is not set")
-        params = urlencode({"apiKey": key, "regions": "us", "markets": ",".join(PROP_MARKETS), "oddsFormat": "american"})
-        rows = _fetch_json(f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/odds/?{params}")
+
+        games = get_nfl_games()
+        if not games:
+            raise ValueError("no NFL games available for player prop lookup")
+
         props: dict[str, dict[str, list[dict[str, Any]]]] = {}
         team_key = str(team).strip().upper() if team else None
-        for game in rows:
+        params = urlencode({"apiKey": key, "regions": "us", "markets": ",".join(PROP_MARKETS), "oddsFormat": "american"})
+
+        for game in games:
+            event_id = game.get("game_id") or game.get("id")
+            if not event_id:
+                continue
             if team_key and team_key not in {str(game.get("home_team", "")).upper(), str(game.get("away_team", "")).upper()}:
                 continue
-            for bookmaker in game.get("bookmakers", []):
+
+            event = _fetch_json(f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/events/{event_id}/odds?{params}")
+            for bookmaker in event.get("bookmakers", []):
                 for market in bookmaker.get("markets", []):
                     stat_type = MARKET_TO_STAT.get(market.get("key"))
                     if not stat_type:
@@ -169,9 +182,15 @@ def get_nfl_player_props(team: str | None = None) -> dict[str, dict[str, list[di
                         if not player:
                             continue
                         props.setdefault(player, {}).setdefault(stat_type, []).append({
-                            "line": outcome.get("point"), "odds": outcome.get("price"), "side": outcome.get("name"),
-                            "bookmaker": bookmaker.get("title"), "provider": "the-odds-api",
+                            "line": outcome.get("point"),
+                            "odds": outcome.get("price"),
+                            "side": outcome.get("name"),
+                            "bookmaker": bookmaker.get("title"),
+                            "provider": "the-odds-api",
+                            "event_id": event.get("id") or event_id,
                         })
+        if not props:
+            raise ValueError("The Odds API event odds endpoint returned no NFL player props")
         return props
     return _provider_get(fetch, lambda: _sample_player_props(team), "NFL player props")
 
