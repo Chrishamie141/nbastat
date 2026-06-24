@@ -300,3 +300,34 @@ def get_team_market_placeholders(team):
         {"team": team_key, "market": "SPREAD", "prediction": f"{team_key} spread lean", "confidence": 51, "notes": "Fallback sample team market; connect real odds."},
         {"team": team_key, "market": "TOTAL", "prediction": "Game total lean", "confidence": 50, "notes": "Fallback sample total; connect real odds."},
     ]
+
+
+def get_nfl_final_player_stats(game_id: str | None = None, week: int | None = None, season: int | None = None) -> dict[str, dict[str, Any]]:
+    """Return final NFL player stats for grading, or an empty dict when unavailable.
+
+    Placeholder for a completed-game provider such as SportsDataIO box scores.
+    The empty fallback is intentional: grading leaves parlays pending instead of
+    using sample/projection data as final results.
+    """
+    def fetch():
+        key = _sportsdata_key()
+        if not key:
+            raise ValueError("SPORTSDATAIO_API_KEY is not set")
+        raise ValueError("final NFL player stat provider is not configured")
+
+    return _provider_get(fetch, dict, "NFL final player stats")
+
+
+def get_nfl_final_team_results(game_id: str | None = None, week: int | None = None, season: int | None = None) -> dict[str, dict[str, Any]]:
+    """Return final NFL team grading results, or an empty dict when unavailable.
+
+    Expected shape by team: {"KC": {"won": True, "margin": 3, "total": 47}}.
+    The empty fallback keeps pending parlays unchanged when finals are not wired.
+    """
+    def fetch():
+        key = _sportsdata_key()
+        if not key:
+            raise ValueError("SPORTSDATAIO_API_KEY is not set")
+        raise ValueError("final NFL team result provider is not configured")
+
+    return _provider_get(fetch, dict, "NFL final team results")
