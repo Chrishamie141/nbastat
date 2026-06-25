@@ -6,6 +6,7 @@ from statistics import mean
 
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
 from nfl_data_service import (
+    NFL_SAMPLE_PLAYERS,
     get_nfl_games,
     get_nfl_injuries,
     get_nfl_player_props,
@@ -234,6 +235,13 @@ def _candidate_to_leg(candidate):
     )
 
 
+def _team_filter_excludes_sample_players(team):
+    if not team:
+        return False
+    team_key = str(team).strip().upper()
+    return not any(player.get("team") == team_key for player in NFL_SAMPLE_PLAYERS)
+
+
 def build_nfl_parlay(difficulty, team=None):
     difficulty = DifficultyLevel.from_input(difficulty)
     rules = DIFFICULTY_RULES[difficulty]
@@ -269,6 +277,11 @@ def build_nfl_parlay(difficulty, team=None):
         estimated_odds = round((1 / max(combined_probability, 0.01) - 1) * 100)
 
     notes = "NFL parlay built from live provider data when available, with sample provider fallback for missing feeds."
+    if not legs and _team_filter_excludes_sample_players(team):
+        notes = (
+            f"{notes} Team filter {str(team).strip().upper()} did not match fallback/sample NFL players; "
+            "try running without a team filter."
+        )
     return ParlayResult(
         parlay=Parlay(sport=SportType.NFL, difficulty=difficulty, legs=legs, notes=notes),
         estimated_odds=estimated_odds,
@@ -283,6 +296,8 @@ def print_nfl_parlay_result(result):
     print("========================")
     if not result.parlay.legs:
         print("No NFL legs found. Add live NFL stats/odds keys or broaden the selected team/player pool.")
+        if "try running without a team filter" in (result.notes or ""):
+            print("Team filter removed all fallback/sample players; try running without a team filter.")
         return
     for index, leg in enumerate(result.parlay.legs, 1):
         odds_label = f" ({leg.odds:+d})" if leg.odds is not None else ""
@@ -308,6 +323,9 @@ def run_nfl_parlay_flow():
         print(exc)
         return None
     print_nfl_parlay_result(result)
+    if not result.parlay.legs:
+        print("No NFL parlay saved because no legs were generated.")
+        return result
     parlay_id = save_parlay_result(result)
     print(f"Saved NFL parlay history row #{parlay_id} to predictions.db.")
     return result
