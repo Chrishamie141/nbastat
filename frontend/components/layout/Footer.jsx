@@ -1,0 +1,1 @@
+export default function Footer(){return <footer className="mx-auto max-w-7xl px-6 py-12 text-sm text-gray-500">DEMO / SAMPLE DATA is not for live wagering. Binary assets are intentionally excluded.</footer>}

@@ -1,0 +1,1 @@
+export default function EdgeMeter({value=0}){return <div><div className="mb-1 flex justify-between text-xs text-gray-400"><span>Edge</span><span>{value>0?'+':''}{value}%</span></div><div className="h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-400" style={{width:`${Math.min(100,Math.abs(value)*6)}%`}}/></div></div>}

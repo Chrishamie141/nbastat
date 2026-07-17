@@ -2,6 +2,13 @@ import argparse
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+
+from config import print_config_status
+
 from betting_engine import (
     build_parlay,
     parlay_line_threshold,
@@ -692,6 +699,7 @@ def print_main_menu():
 
 
 def main(argv=None):
+    print_config_status()
     args = parse_args(argv)
     if args.clear_cache:
         run_clear_cache_mode()

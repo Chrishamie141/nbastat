@@ -1,0 +1,1 @@
+'use client';import{motion}from'framer-motion';export default function MagneticButton({children,className='',href}){const C=href?'a':'button';return <motion.div whileHover={{scale:1.03}} whileTap={{scale:.98}}><C href={href} className={`btn focus-ring ${className}`}>{children}</C></motion.div>}

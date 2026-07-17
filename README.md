@@ -1,83 +1,78 @@
-# NBA Team Matchup Prediction Engine
+# APEX EDGE Premium Sports Analytics
 
-This project predicts player box-score stats using `nba_api` + `scikit-learn` Random Forest models, now with a **team auto-roster workflow**.
+A premium dark sports-analytics website wrapped around the existing NBA/NFL Python prediction engine. The original CLI prediction, roster, grading, fantasy, parlay, cache, and performance modules remain in place while a FastAPI adapter and Next.js JSX frontend provide a modern product shell.
 
-## What it does
-- Single-player prediction mode.
-- Team mode: enter only `LAL`, `OKC`, `BOS`, etc.
-- Auto-fetches roster via `CommonTeamRoster`.
-- Attempts next-opponent detection and home/away context.
-- Computes model prediction + opponent averages + blended prediction.
-- Ranks top reliable and top raw predictions for PTS/REB/AST/STL/BLK.
-- Saves every printed player prediction to `data/prediction_history.csv`.
-- Grades completed games against the NBA box score and reports MAE/RMSE/range-hit accuracy by stat.
+## What is included
 
-## Run
+- Existing Python prediction engine and all current NBA/NFL workflows are preserved.
+- Safe environment loading with `python-dotenv` happens before services are imported.
+- FastAPI backend endpoints expose health, config status, NFL games, predictions, parlays, performance, players, and fantasy rankings.
+- Next.js App Router frontend using JSX, Tailwind CSS, Framer Motion, Lenis, Lucide React, and Recharts.
+- Premium dark glassmorphism UI with CSS variables, reduced-motion support, responsive layouts, inline SVG/CSS effects, and no committed binary assets.
+- Explicit data-mode labels: `sample`, `partial_live`, and `live`. Sample data is displayed as `DEMO / SAMPLE DATA — NOT FOR LIVE WAGERING` and is excluded from official performance messaging.
+
+## Setup
+
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+Create a root `.env` file when live providers are available:
+
+```bash
+THE_ODDS_API_KEY=...
+SPORTSDATAIO_API_KEY=...
+OPENWEATHER_API_KEY=...
+```
+
+Missing keys do not crash startup. The app prints a safe status table that never includes secret values and falls back to demo/sample data when providers are unavailable.
+
+## Run the existing Python CLI
+
+```bash
+python app.py --health-check
 python app.py
 ```
 
-## Normal menu usage
-
-Run `python app.py` for the interactive menu. Normal use shows only user-facing prediction and grading workflows:
-
-1. Single Player Prediction
-2. Default `roster.txt` Prediction
-3. Team Auto-Roster Prediction
-4. Best Bets Report
-5. Auto Parlay Builder
-6. Grade Predictions
-
-
-## Background cache healing
-
-On normal startup, the app runs a lightweight cache health check before showing the menu. The check creates `data/cache` if needed, removes cache files with invalid filenames, validates roster and prediction cache payloads, and automatically deletes only invalid/bad cache files. When nothing is wrong, startup stays quiet; if anything is fixed, the app prints a short summary such as `Startup health check: removed 2 invalid cache file(s).`
-
-Roster lookup diagnostics also run automatically only when a lookup fails. The app reports the normalized team abbreviation, live lookup attempts, error type, cache usage, invalid/deleted cache state, and sample cached players when available. Betting workflows automatically clear bad roster or prediction cache files and continue with live data, valid roster cache, or valid cached predictions when live roster/prediction generation is unavailable.
-
-## Optional maintenance flags
-
-Maintenance and debug actions are available as command-line flags instead of numbered menu options:
+## Run the FastAPI backend
 
 ```bash
-python app.py --clear-cache
-python app.py --debug-roster NYK
-python app.py --health-check
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-- `--clear-cache` deletes cache files and exits while preserving `.gitignore` and `.gitkeep`.
-- `--debug-roster TEAM` runs roster diagnostics for one team and exits.
-- `--health-check` runs the cache health check, prints a clean/fixed summary, and exits.
+Useful endpoints:
 
-## Team auto-roster mode
-1. Select mode `3`.
-2. Enter team abbreviation.
-3. App pulls roster, finds next opponent (fallback: General Estimate), predicts each player, saves prediction history rows, and prints rankings.
+- `GET /api/health`
+- `GET /api/config/status`
+- `GET /api/nfl/games`
+- `GET /api/nfl/predictions`
+- `GET /api/nfl/predictions/{id}`
+- `POST /api/nfl/parlays/build`
+- `GET /api/nfl/parlays`
+- `GET /api/nfl/performance`
+- `GET /api/players/{id}`
+- `GET /api/fantasy/rankings`
 
-## Prediction history and grading
-- Prediction history is stored in `data/prediction_history.csv`.
-- One row is saved for each printed player/stat prediction: PTS, REB, AST, STL, and BLK.
-- Existing model training remains unchanged; this history is only for post-game evaluation.
-- Select mode `6` and choose the legacy NBA `game_id` option after a game is complete to pull the actual box score and grade matching ungraded predictions.
-- Select mode `6` and choose the accuracy report option to print the model accuracy report across all graded predictions.
+## Run the frontend
 
-## Opponent-specific logic
-- Pulls regular + playoff logs.
-- Filters games vs upcoming opponent.
-- Computes opponent-specific averages with sample size.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Blended logic
-- 3+ games vs opponent: `60% ML + 40% opponent average`
-- 1-2 games: `75% ML + 25% opponent average`
-- 0 games: `ML only`
+Set `NEXT_PUBLIC_API_URL=http://localhost:8000` if the backend is not on the default URL.
 
-## Confidence scoring
-- `normalized_error = mae / max(prediction, 1)`
-- `score = max(0, round(100 - normalized_error * 100, 1))`
-- Labels: HIGH (80+), MEDIUM (60-79), LOW (<60)
+Production checks:
 
-## Limitations
-- NBA endpoints can be slow/unavailable; safe fallback is used for schedule context.
-- STL/BLK are inherently noisy.
-- Early season data can produce unstable confidence.
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+## Binary asset policy
+
+Binary/local runtime files are intentionally excluded. Do not commit PNG, JPG, GIF, WEBP, ICO, video, audio, font binaries, ZIPs, compiled files, SQLite databases, or downloaded fonts. Visual effects should be built with CSS gradients, Tailwind, JSX, inline SVG, Lucide icons, Framer Motion, Lenis, and Recharts.

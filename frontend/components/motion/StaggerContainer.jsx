@@ -1,0 +1,1 @@
+'use client';import{motion}from'framer-motion';import{stagger}from'@/lib/motion';export default function StaggerContainer({children,className=''}){return <motion.div className={className} variants={stagger} initial="hidden" whileInView="show" viewport={{once:true}}>{children}</motion.div>}

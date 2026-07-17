@@ -1,0 +1,1 @@
+import GlowCard from'@/components/ui/GlowCard';export default function Account(){return <main className="mx-auto max-w-4xl px-6 pt-32"><GlowCard className="p-8"><h1 className="text-5xl font-black tracking-[-.06em]">Account</h1><p className="mt-4 text-gray-400">Authentication-ready premium account shell.</p></GlowCard></main>}

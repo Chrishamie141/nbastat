@@ -1,0 +1,1 @@
+export default function Sidebar(){return <aside className="glass sticky top-28 hidden h-fit rounded-[28px] p-4 lg:block"><p className="tag">Model status</p><p className="mt-3 text-sm text-gray-400">Sample, partial_live, and live results are separated for responsible analytics.</p></aside>}
