@@ -22,11 +22,11 @@ def score_game(game: dict) -> dict:
     dt = game.get('startTimeUtc')
     try:
         hour = dt.astimezone(timezone.utc).hour if hasattr(dt, 'astimezone') else 0
-        if 0 <= hour <= 4: score += FORMULA['primeTime']; reasons.append('Prime-time window')
+        if 0 <= hour <= 4: score += FORMULA['primeTime']; reasons.append('Prime-time matchup')
     except Exception: pass
     if game.get('venue') and bcasts:
-        score += FORMULA['dataCompleteness']; reasons.append('Schedule details available')
-    for sig, label, weight in [('rivalry','Rivalry or divisional matchup',15),('closeSpread','Close projected spread',10),('highTotal','High projected total',8),('preseasonRosterSignal','Preseason roster competition',12)]:
+        score += FORMULA['dataCompleteness']
+    for sig, label, weight in [('rivalry','Divisional rivalry',15),('closeSpread','Close projected spread',10),('highTotal','High projected total',8),('preseasonRosterSignal','Quarterback competition',12)]:
         if game.get(sig): score += weight; reasons.append(label)
     if not reasons: reasons.append('Earliest relevant scheduled matchup')
     return {'watchScore': min(100, int(score)), 'watchReasons': reasons}
