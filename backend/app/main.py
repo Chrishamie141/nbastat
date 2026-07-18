@@ -6,14 +6,18 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(BASE_DIR / ".env")
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import get_config_status, print_config_status
 from backend.app.api.auth import router as auth_router
+from backend.app.services.auth_service import current_user
+from backend.app.services.sports_mode_service import get_sports_mode
+from backend.app.services.schedule_service import upcoming_games
+from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
 from nfl_parlay_builder import build_nfl_parlay
 from nfl_performance_report import print_nfl_performance_report
-from prediction_storage import load_parlay_history, grade_recommendations, summarize_graded_bets, get_connection, initialize_database
+from prediction_storage import load_parlay_history, grade_recommendations, summarize_graded_bets, get_connection, initialize_database, ensure_user_columns
 from app import run_prediction, default_context, prediction_rows_from_result, run_roster_predictions, run_best_bets_mode, run_auto_parlay_mode
 from roster_service import get_roster_with_cache
 from team_utils import normalize_team_abbreviation
@@ -27,8 +31,8 @@ app.include_router(auth_router)
 def now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 def provider_status():
     providers=get_config_status()
-    configured=[k for k,v in providers.items() if v]
-    return {"configuredProviders": configured, "status": "live" if configured else "sample fallback"}
+    configured=[k for k,v in providers.items() if v == "Loaded"]
+    return {"configuredProviders": configured, "status": "live" if configured else "sample"}
 def mode(): return "live" if provider_status()["configuredProviders"] else "sample"
 def envelope(sport, action, **extra): return {"sport":sport,"action":action,"generatedAt":now(),"dataMode":mode(),"providerStatus":provider_status(),"saveStatus":extra.pop("saveStatus","not saved"),**extra}
 def safe_error(sport, action, exc): return envelope(sport, action, error=str(exc), providerStatus=provider_status())
@@ -38,18 +42,40 @@ def health(): return {"ok": True, "generatedAt": now(), "dataMode": mode(), "pro
 @app.get("/api/config/status")
 def config_status(): return {"providers": get_config_status(), "dataMode": mode(), "providerStatus": provider_status()}
 
+@app.get("/api/sports-mode")
+def sports_mode():
+    return get_sports_mode().model_dump(mode="json")
+
+@app.get("/api/games/upcoming")
+def api_upcoming_games(league: str|None=None, limit: int=Query(8, ge=1, le=20)):
+    sm=get_sports_mode(); leagues=[league.lower()] if league else sm.activeLeagues
+    leagues=[l for l in leagues if l in sm.activeLeagues and l in {"nfl","nba"}]
+    games=upcoming_games(leagues, limit=limit) if leagues else []
+    return {"items":[g.model_dump(mode="json") for g in games],"sportsMode":sm.model_dump(mode="json"),"lastUpdated":now(),"source": games[0].dataProvider if games else sm.source}
+
+@app.get("/api/games/featured")
+def api_featured_game():
+    sm=get_sports_mode(); games=upcoming_games(sm.activeLeagues, limit=20) if sm.activeLeagues else []
+    featured=max(games, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
+    return FeaturedGame(game=featured, reason="Highest deterministic watch-interest score from upcoming schedule signals." if featured else "No upcoming supported games are available.").model_dump(mode="json")
+
 @app.get("/api/dashboard")
-def dashboard():
-    initialize_database(); summary={"totalPredictions":0,"gradedPredictions":0,"overallAccuracy":None,"savedParlays":0}; recent=[]
+def dashboard(request: Request):
+    user=current_user(request); initialize_database(); ensure_user_columns();
+    definitions={"savedAnalyses":"Account-owned saved analysis records, excluding legacy rows without user_id.","individualPredictions":"Account-owned rows in predictions; parlay legs are counted separately only when saved as predictions.","gradedPredictions":"Account-owned graded_bets rows.","savedParlays":"Account-owned saved rows in parlay_history.","overallAccuracy":"Hit rate across account-owned graded predictions; hidden until at least five graded rows exist."}
+    recent=[]
     with get_connection() as conn:
-        summary["totalPredictions"]=conn.execute("SELECT COUNT(*) c FROM predictions").fetchone()["c"]
-        summary["gradedPredictions"]=conn.execute("SELECT COUNT(*) c FROM graded_bets").fetchone()["c"]
-        summary["savedParlays"]=conn.execute("SELECT COUNT(*) c FROM parlay_history").fetchone()["c"] if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='parlay_history'").fetchone() else 0
-        hits=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets").fetchone()
-        if hits["c"]: summary["overallAccuracy"]=round((hits["h"] or 0)*100/hits["c"],1)
-        rows=conn.execute("SELECT created_at, player, stat_type FROM predictions ORDER BY created_at DESC LIMIT 5").fetchall()
+        uid=user['id']
+        pred=conn.execute("SELECT COUNT(*) c FROM predictions WHERE user_id=?",(uid,)).fetchone()["c"]
+        graded_row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets WHERE user_id=?",(uid,)).fetchone()
+        parlays=conn.execute("SELECT COUNT(*) c FROM parlay_history WHERE user_id=?",(uid,)).fetchone()["c"] if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='parlay_history'").fetchone() else 0
+        acc=round((graded_row['h'] or 0)*100/graded_row['c'],1) if graded_row['c'] and graded_row['c']>=5 else None
+        metrics=DashboardMetrics(savedAnalyses=pred+parlays,individualPredictions=pred,gradedPredictions=graded_row['c'],savedParlays=parlays,overallAccuracy=acc,definitions=definitions)
+        rows=conn.execute("SELECT created_at, player, stat_type FROM predictions WHERE user_id=? ORDER BY created_at DESC LIMIT 5",(uid,)).fetchall()
         recent=[{"summary":f"Prediction: {r['player']} {r['stat_type']}"} for r in rows]
-    return {"summary":summary,"recent":recent,"series":[]}
+    sm=get_sports_mode(); games=upcoming_games(sm.activeLeagues, limit=8) if sm.activeLeagues else []
+    featured=max(games, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
+    return {"summary":metrics.model_dump(mode="json"),"sportsMode":sm.model_dump(mode="json"),"featuredGame":featured.model_dump(mode="json") if featured else None,"upcomingGames":[g.model_dump(mode="json") for g in games],"recent":recent,"series":[]}
 
 @app.post("/api/analyze/nfl/parlay")
 def nfl_parlay(payload: dict):
@@ -62,7 +88,8 @@ def nfl_parlay(payload: dict):
         if legs:
             from prediction_storage import save_parlay_result
             save=f"saved #{save_parlay_result(result)}"
-        return envelope("NFL","NFL Parlay Builder",legs=legs,combinedConfidence=result.combined_probability,estimatedOdds=result.estimated_odds,message=result.notes,saveStatus=save)
+        sm=get_sports_mode(); phase=sm.phaseByLeague.get("nfl","regular_season")
+        return envelope("NFL","NFL Parlay Builder",league="nfl",seasonPhase=phase,confidenceContext=("NFL preseason projections carry extra playing-time and roster uncertainty; prop coverage may be limited." if phase=="preseason" else "Regular-season confidence context from established prediction engine."),legs=legs,combinedConfidence=result.combined_probability,estimatedOdds=result.estimated_odds,message=result.notes,saveStatus=save)
     except HTTPException: raise
     except Exception as exc: return safe_error("NFL","NFL Parlay Builder",exc)
 @app.get("/api/analyze/nfl/history")
@@ -76,7 +103,8 @@ def nfl_perf():
 @app.get("/api/analyze/nfl/fantasy")
 def nfl_fantasy():
     options=["Rankings", "Start/Sit Helper", "Waiver Suggestions", "Player Projection Comparison"]
-    return envelope("NFL","Fantasy Football Tools",items=[{"summary":x} for x in options],message="These are the current fantasy actions exposed by the Python CLI; placeholder helper details remain unchanged.")
+    sm=get_sports_mode(); phase=sm.phaseByLeague.get("nfl","regular_season")
+    return envelope("NFL","Fantasy Football Tools",league="nfl",seasonPhase=phase,confidenceContext=("NFL preseason context: depth-chart uncertainty and coach announcements matter when available." if phase=="preseason" else "Regular-season context."),items=[{"summary":x} for x in options],message="These are the current fantasy actions exposed by the Python CLI; placeholder helper details remain unchanged.")
 
 @app.post("/api/analyze/nba/player")
 def nba_player(payload: dict):

@@ -78,15 +78,28 @@ def initialize_database(db_file=DB_FILE):
         )
 
 
+
+def _column_exists(conn, table, column):
+    return any(row[1] == column for row in conn.execute(f"PRAGMA table_info({table})"))
+
+def ensure_user_columns(db_file=DB_FILE):
+    """Safe migration: add nullable user_id columns without assigning legacy rows."""
+    initialize_parlay_history(db_file)
+    with get_connection(db_file) as conn:
+        for table in ["predictions", "bet_recommendations", "graded_bets", "parlay_history"]:
+            if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone() and not _column_exists(conn, table, "user_id"):
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER")
+        conn.commit()
+
 def save_prediction_record(prediction, db_file=DB_FILE):
-    initialize_database(db_file)
+    ensure_user_columns(db_file)
     with get_connection(db_file) as conn:
         cur = conn.execute(
             """
             INSERT INTO predictions (
                 game_date, team, opponent, player, stat_type, projection,
-                low_range, high_range, confidence_score, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                low_range, high_range, confidence_score, created_at, user_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 prediction.get("game_date"),
@@ -99,6 +112,7 @@ def save_prediction_record(prediction, db_file=DB_FILE):
                 float(prediction["high_range"]),
                 float(prediction.get("confidence_score", 0)),
                 prediction.get("created_at") or utc_now_iso(),
+                prediction.get("user_id"),
             ),
         )
         return cur.lastrowid
@@ -274,7 +288,7 @@ def save_parlay_result(parlay_result, db_file=DB_FILE):
     """Persist a shared ParlayResult for NBA/NFL history screens."""
     import json
 
-    initialize_parlay_history(db_file)
+    ensure_user_columns(db_file)
     parlay = parlay_result.parlay
     legs = []
     for leg in parlay.legs:
@@ -296,8 +310,8 @@ def save_parlay_result(parlay_result, db_file=DB_FILE):
             """
             INSERT INTO parlay_history (
                 sport, created_at, difficulty, legs_json, estimated_odds,
-                combined_probability, result_status, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                combined_probability, result_status, notes, user_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 getattr(parlay.sport, "value", parlay.sport),
@@ -308,6 +322,7 @@ def save_parlay_result(parlay_result, db_file=DB_FILE):
                 parlay_result.combined_probability,
                 parlay_result.result_status,
                 parlay_result.notes or parlay.notes,
+                getattr(parlay_result, "user_id", None),
             ),
         )
         return cur.lastrowid
