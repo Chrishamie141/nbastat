@@ -1,0 +1,5 @@
+'use client';
+import {createContext,useContext,useEffect,useMemo,useState} from 'react';
+const AuthContext=createContext(null);const KEY='apex_demo_session';
+export function AuthProvider({children}){const[user,setUser]=useState(null);const[ready,setReady]=useState(false);useEffect(()=>{try{const raw=localStorage.getItem(KEY);if(raw)setUser(JSON.parse(raw).user)}catch{}setReady(true)},[]);const persist=(next)=>{setUser(next);try{next?localStorage.setItem(KEY,JSON.stringify({user:next,createdAt:new Date().toISOString()})):localStorage.removeItem(KEY)}catch{}};const login=async({email,remember})=>{const name=email?.split('@')?.[0]||'Demo User';persist({name,email,remember:!!remember});return {ok:true}};const register=async({name,email})=>{persist({name:name||'Demo User',email});return {ok:true}};const logout=()=>persist(null);const value=useMemo(()=>({user,ready,isAuthenticated:!!user,login,register,logout}),[user,ready]);return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>}
+export function useAuth(){const ctx=useContext(AuthContext);if(!ctx)throw new Error('useAuth must be used within AuthProvider');return ctx}
