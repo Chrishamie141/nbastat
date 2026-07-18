@@ -76,3 +76,12 @@ npm run build
 ## Binary asset policy
 
 Binary/local runtime files are intentionally excluded. Do not commit PNG, JPG, GIF, WEBP, ICO, video, audio, font binaries, ZIPs, compiled files, SQLite databases, or downloaded fonts. Visual effects should be built with CSS gradients, Tailwind, JSX, inline SVG, Lucide icons, Framer Motion, Lenis, and Recharts.
+
+
+## Frontend workflow and development authentication
+
+The simplified frontend is organized around the original `app.py` CLI decision tree: landing page → local demo login/register → dashboard → `/analyze` → sport → CLI action → options → result.
+
+Authentication is development-only. `frontend/components/auth/AuthProvider.jsx` stores a basic demo session in `localStorage` and exposes `login`, `register`, and `logout` actions behind a `useAuth` hook so it can later be replaced by Auth.js, Clerk, Supabase Auth, or another provider. Do not use this local demo authentication for production access control.
+
+Protected frontend routes redirect unauthenticated users to `/login`. No real credentials are hardcoded.
