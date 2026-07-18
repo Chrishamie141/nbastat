@@ -13,6 +13,7 @@ from backend.app.api.auth import router as auth_router
 from backend.app.services.auth_service import current_user
 from backend.app.services.sports_mode_service import get_sports_mode
 from backend.app.services.schedule_service import upcoming_games
+from backend.app.services.team_metadata import teams_for_league
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
 from nfl_parlay_builder import build_nfl_parlay
@@ -46,6 +47,11 @@ def config_status(): return {"providers": get_config_status(), "dataMode": mode(
 def sports_mode():
     return get_sports_mode().model_dump(mode="json")
 
+
+@app.get("/api/teams")
+def api_teams(league: str=Query(..., pattern="^(nfl|nba)$")):
+    return {"teams":[t.model_dump(mode="json") for t in teams_for_league(league)]}
+
 @app.get("/api/games/upcoming")
 def api_upcoming_games(league: str|None=None, limit: int=Query(8, ge=1, le=20)):
     sm=get_sports_mode(); leagues=[league.lower()] if league else sm.activeLeagues
@@ -73,9 +79,16 @@ def dashboard(request: Request):
         metrics=DashboardMetrics(savedAnalyses=pred+parlays,individualPredictions=pred,gradedPredictions=graded_row['c'],savedParlays=parlays,overallAccuracy=acc,definitions=definitions)
         rows=conn.execute("SELECT created_at, player, stat_type FROM predictions WHERE user_id=? ORDER BY created_at DESC LIMIT 5",(uid,)).fetchall()
         recent=[{"summary":f"Prediction: {r['player']} {r['stat_type']}"} for r in rows]
-    sm=get_sports_mode(); games=upcoming_games(sm.activeLeagues, limit=8) if sm.activeLeagues else []
+    sm=get_sports_mode(); errors={}; games=[]
+    if sm.activeLeagues:
+        try:
+            games=upcoming_games(sm.activeLeagues, limit=8)
+        except Exception:
+            errors['upcomingGames']='Upcoming schedule unavailable'
     featured=max(games, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
-    return {"summary":metrics.model_dump(mode="json"),"sportsMode":sm.model_dump(mode="json"),"featuredGame":featured.model_dump(mode="json") if featured else None,"upcomingGames":[g.model_dump(mode="json") for g in games],"recent":recent,"series":[]}
+    if sm.activeLeagues and not featured and errors.get('upcomingGames'):
+        errors['featuredGame']='Featured game unavailable'
+    return {"summary":metrics.model_dump(mode="json"),"sportsMode":sm.model_dump(mode="json"),"featuredGame":featured.model_dump(mode="json") if featured else None,"upcomingGames":[g.model_dump(mode="json") for g in games],"errors":errors,"recent":recent,"series":[]}
 
 @app.post("/api/analyze/nfl/parlay")
 def nfl_parlay(payload: dict):

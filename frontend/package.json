@@ -2,7 +2,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test __tests__/*.test.js"
   },
   "dependencies": {
     "@studio-freight/lenis": "^1.0.42",

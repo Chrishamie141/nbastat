@@ -14,8 +14,16 @@ class TeamSummary(CamelModel):
     id: str
     name: str
     abbreviation: str
+    league: Literal['nfl','nba'] | None = None
+    city: str | None = None
+    nickname: str | None = None
     logoUrl: str | None = None
     record: str | None = None
+
+    @field_validator('abbreviation')
+    @classmethod
+    def canonical_abbreviation(cls, value: str) -> str:
+        return (value or 'TBD').upper()
 
 class UpcomingGame(CamelModel):
     id: str

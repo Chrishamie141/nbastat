@@ -85,3 +85,7 @@ The simplified frontend is organized around the original `app.py` CLI decision t
 Authentication is development-only. `frontend/components/auth/AuthProvider.jsx` stores a basic demo session in `localStorage` and exposes `login`, `register`, and `logout` actions behind a `useAuth` hook so it can later be replaced by Auth.js, Clerk, Supabase Auth, or another provider. Do not use this local demo authentication for production access control.
 
 Protected frontend routes redirect unauthenticated users to `/login`. No real credentials are hardcoded.
+
+## Team logo source
+
+The web dashboard uses remote team logo URLs from ESPN's stable team-logo CDN (`https://a.espncdn.com/i/teamlogos/...`) through the centralized backend team metadata in `backend/app/services/team_metadata.py`. Logos are not downloaded during page rendering and no local binary logo assets are committed. If ESPN logo terms change, replace the URL mapping with another approved official or stable provider before shipping.
