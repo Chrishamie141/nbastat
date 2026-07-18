@@ -9,6 +9,8 @@ load_dotenv(BASE_DIR / ".env")
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import get_config_status, print_config_status
+from backend.app.api.auth import router as auth_router
+import os
 from nfl_parlay_builder import build_nfl_parlay
 from nfl_performance_report import print_nfl_performance_report
 from prediction_storage import load_parlay_history, grade_recommendations, summarize_graded_bets, get_connection, initialize_database
@@ -17,8 +19,10 @@ from roster_service import get_roster_with_cache
 from team_utils import normalize_team_abbreviation
 
 print_config_status()
-app = FastAPI(title="Premium Sports Analytics API", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app = FastAPI(title="SmartBetSports API", version="2.0.0")
+frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+app.add_middleware(CORSMiddleware, allow_origins=[frontend_origin], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.include_router(auth_router)
 
 def now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 def provider_status():

@@ -1,1 +1,2 @@
-export default function Footer(){return <footer className="mx-auto max-w-7xl px-6 py-12 text-sm text-gray-500">DEMO / SAMPLE DATA is not for live wagering. Binary assets are intentionally excluded.</footer>}
+import {brand} from '@/lib/brand';import SmartBetSportsLogo from '@/components/branding/SmartBetSportsLogo';
+export default function Footer(){return <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-slate-400"><SmartBetSportsLogo size={26}/><p>© {new Date().getFullYear()} {brand.name}. Clear sports analysis and prediction tracking.</p></footer>}
