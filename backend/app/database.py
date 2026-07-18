@@ -34,3 +34,34 @@ def initialize_auth_database():
         ''')
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)')
         conn.commit()
+
+def _column_exists(conn, table, column):
+    return any(row[1] == column for row in conn.execute(f"PRAGMA table_info({table})"))
+
+def initialize_billing_database():
+    initialize_auth_database()
+    columns = {
+        'stripe_customer_id': 'TEXT',
+        'stripe_subscription_id': 'TEXT',
+        'subscription_plan': "TEXT NOT NULL DEFAULT 'none'",
+        'subscription_status': "TEXT NOT NULL DEFAULT 'inactive'",
+        'subscription_current_period_end': 'TEXT',
+        'subscription_cancel_at_period_end': 'INTEGER NOT NULL DEFAULT 0',
+        'subscription_created_at': 'TEXT',
+        'subscription_updated_at': 'TEXT',
+        'access_source': "TEXT NOT NULL DEFAULT 'none'",
+    }
+    with get_db_connection() as conn:
+        for name, ddl in columns.items():
+            if not _column_exists(conn, 'users', name):
+                conn.execute(f'ALTER TABLE users ADD COLUMN {name} {ddl}')
+        conn.execute('CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id)')
+        conn.execute('CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription ON users(stripe_subscription_id)')
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+                stripe_event_id TEXT PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                processed_at TEXT NOT NULL
+            )
+        """)
+        conn.commit()
