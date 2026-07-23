@@ -47,7 +47,20 @@ def index_outcomes(outcomes: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict
     """Index outcomes by run-stable game, market, and optional player keys."""
     indexed = {}
     for outcome in outcomes:
-        key = (outcome.get("game"), outcome.get("market"), outcome.get("player"))
+        game = outcome.get("game") or outcome.get("game_id")
+        market_results = outcome.get("market_results") if isinstance(outcome.get("market_results"), dict) else {}
+        player_results = outcome.get("player_results") if isinstance(outcome.get("player_results"), dict) else {}
+        if market_results or player_results:
+            for market, result in market_results.items():
+                row = {"game": game, "market": market, "actual_result": result}
+                indexed[(game, market, None)] = row
+            for player, markets in player_results.items():
+                for market, result in (markets or {}).items():
+                    row = {"game": game, "market": market, "player": player, "actual_result": result}
+                    indexed[(game, market, player)] = row
+                    indexed.setdefault((game, market, None), row)
+            continue
+        key = (game, outcome.get("market"), outcome.get("player"))
         indexed[key] = outcome
-        indexed.setdefault((outcome.get("game"), outcome.get("market"), None), outcome)
+        indexed.setdefault((game, outcome.get("market"), None), outcome)
     return indexed

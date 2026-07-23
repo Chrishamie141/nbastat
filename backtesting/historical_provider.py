@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Protocol
 
-from .utils import read_json
+from .snapshots import SnapshotError, snapshot_path
 
 
 class PredictionDataProvider(Protocol):
@@ -26,8 +26,15 @@ class HistoricalSnapshotProvider:
         self.data_dir = Path(data_dir)
 
     def _snapshot(self, league: str, season: str, week: int, name: str) -> list[dict[str, Any]]:
-        path = self.data_dir / league / str(season) / f"week_{week}" / f"{name}.json"
-        return read_json(path, [])
+        path = snapshot_path(self.data_dir, league, season, week, name)
+        if not path.exists():
+            raise SnapshotError(
+                f"No {name} snapshot found for {league.upper()} {season} Week {int(week)}:\n{path}"
+            )
+        data = __import__("json").loads(path.read_text())
+        if not isinstance(data, list):
+            raise SnapshotError(f"Malformed {name} snapshot for {league.upper()} {season} Week {int(week)}: expected a list at {path}")
+        return data
 
     def get_games(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return games known before kickoff for the requested historical week."""
