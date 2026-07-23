@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -112,6 +113,18 @@ class ValidationReport:
     def add_error(self, message: str) -> None:
         self.errors.append(message)
 
+    def add_warning(self, message: str) -> None:
+        self.warnings.append(message)
+
+
+def _parse_iso(value: str) -> datetime | None:
+    try:
+        text = str(value).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(text)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
 
 def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | None = None) -> ValidationReport:
     report = ValidationReport()
@@ -146,13 +159,36 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
             missing = [f for f in SCHEMAS[dataset] if any(f not in r for r in data)]
             if missing:
                 report.add_error(f"Malformed {dataset} records for {league.upper()} {season} Week {week}: missing fields {sorted(set(missing))}")
-        game_ids = {g.get("game_id") for g in loaded.get("games", [])}
+        games = loaded.get("games", [])
+        game_ids = {g.get("game_id") for g in games}
+        if len(game_ids) != len(games):
+            report.add_error(f"Duplicate game IDs for {league.upper()} {season} Week {week}")
+        for game in games:
+            if str(game.get("league", "")).lower() != league.lower():
+                report.add_error(f"Game from wrong league for {league.upper()} {season} Week {week}: {game.get('game_id')}")
+            if str(game.get("season")) != str(season):
+                report.add_error(f"Game from wrong season for {league.upper()} {season} Week {week}: {game.get('game_id')}")
+            if int(game.get("week", -1)) != int(week):
+                report.add_error(f"Game from wrong week for {league.upper()} {season} Week {week}: {game.get('game_id')}")
         outcome_ids = {o.get("game_id") for o in loaded.get("outcomes", [])}
         for gid in sorted(game_ids - outcome_ids):
             report.add_error(f"Game without matching outcome for {league.upper()} {season} Week {week}: {gid}")
+        for gid in sorted(outcome_ids - game_ids):
+            report.add_error(f"Outcome without matching game for {league.upper()} {season} Week {week}: {gid}")
+        kickoff_by_game = {g.get("game_id"): g.get("kickoff_time") for g in games}
         for odd in loaded.get("odds", []):
             if odd.get("game_id") not in game_ids:
                 report.add_error(f"Odds without matching game for {league.upper()} {season} Week {week}: {odd.get('game_id')}")
             if odd.get("market") not in SUPPORTED_MARKETS:
                 report.add_error(f"Unsupported market for {league.upper()} {season} Week {week}: {odd.get('market')}")
+        for dataset in ("odds", "weather"):
+            for row in loaded.get(dataset, []):
+                captured_at = row.get("captured_at")
+                kickoff = kickoff_by_game.get(row.get("game_id"))
+                if captured_at and kickoff and _parse_iso(captured_at) and _parse_iso(kickoff) and _parse_iso(captured_at) > _parse_iso(kickoff):
+                    report.add_error(f"Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: {row.get('game_id')} captured after kickoff")
+        for dataset in ("player_stats", "team_stats"):
+            for row in loaded.get(dataset, []):
+                if str(row.get("season")) != str(season) or int(row.get("through_week", -1)) >= int(week):
+                    report.add_error(f"Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: through_week must be before replay week")
     return report
