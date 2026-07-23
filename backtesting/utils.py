@@ -33,12 +33,19 @@ def read_json(path: Path, default: Any) -> Any:
     return json.loads(path.read_text())
 
 
-def git_commit_hash() -> str | None:
-    """Return the current git commit hash when the repository metadata is available."""
+def git_commit_hash() -> str:
+    """Return the current git commit hash, or ``"unknown"`` if unavailable.
+
+    Git metadata is useful for traceability, but collecting it must never crash
+    a backtest run. This helper intentionally catches broad exceptions from
+    process creation and execution so missing Git installs, unavailable repos,
+    CI/pytest handle issues, or platform-specific ``OSError`` failures degrade
+    to optional metadata.
+    """
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-    return result.stdout.strip() or None
+        return result.stdout.strip() or "unknown"
+    except Exception:
+        return "unknown"

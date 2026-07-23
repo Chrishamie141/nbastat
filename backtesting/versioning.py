@@ -20,7 +20,7 @@ class RunMetadata:
     model_version: str
     league: str
     season: str
-    git_commit_hash: str | None
+    git_commit_hash: str
     prediction_engine_version: str
     configuration_hash: str
     date: str
@@ -31,7 +31,7 @@ class RunMetadata:
 
 
 def create_run_metadata(config: BacktestConfig) -> RunMetadata:
-    """Create unique version metadata without overwriting previous runs."""
+    """Create unique version metadata without requiring Git metadata."""
     payload = {
         "league": config.league,
         "season": config.season,

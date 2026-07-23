@@ -1,3 +1,4 @@
+from argparse import Namespace
 from pathlib import Path
 
 from backtesting.config import BacktestConfig
@@ -38,7 +39,8 @@ class StubProvider:
         return [{"game": f"game-{week}", "market": "moneyline", "actual_result": "home"}]
 
 
-def test_replay_engine_freezes_then_grades_chronologically(tmp_path):
+def test_replay_engine_freezes_then_grades_chronologically(tmp_path, monkeypatch):
+    monkeypatch.setattr("backtesting.versioning.git_commit_hash", lambda: "unknown")
     provider = StubProvider()
 
     def factory(provider, config, week):
@@ -57,9 +59,11 @@ def test_replay_engine_freezes_then_grades_chronologically(tmp_path):
         results_dir=tmp_path / "results",
     )
 
-    summary = ReplayEngine(config, provider=provider, prediction_factory=factory).run()
+    engine = ReplayEngine(config, provider=provider, prediction_factory=factory)
+    summary = engine.run()
 
     assert summary["metrics"]["overall_accuracy"] == 1.0
+    assert engine.metadata.git_commit_hash == "unknown"
     assert provider.calls == [
         ("games", 1),
         ("odds", 1),
@@ -82,12 +86,10 @@ def test_grader_supports_over_under_push_and_moneyline():
 
 import json
 import shutil
-import subprocess
-import sys
-
 import pytest
 
 from backtesting.historical_provider import HistoricalSnapshotProvider
+from backtesting.import_historical_data import main as import_historical_main
 from backtesting.snapshots import SnapshotError, validate_snapshot
 
 
@@ -95,7 +97,8 @@ def test_missing_snapshots_produce_clear_error(tmp_path):
     provider = HistoricalSnapshotProvider(tmp_path)
     with pytest.raises(SnapshotError, match="No games snapshot found for NFL 2025 Week 1") as exc:
         provider.get_games("nfl", "2025", 1)
-    assert "week_01/games.json" in str(exc.value)
+    error_path = Path(str(exc.value).split(": ")[-1])
+    assert error_path.parts[-2:] == ("week_01", "games.json")
 
 
 def test_validation_reports_missing_datasets(tmp_path):
@@ -117,8 +120,7 @@ def test_importing_json_creates_normalized_snapshot_folder(tmp_path):
         "games": [{"id": "g1", "kickoff_time": "2025-09-07T17:00:00Z", "home_team": "BUF", "away_team": "MIA", "venue": "Fixture", "status": "final"}],
         "outcomes": [{"game_id": "g1", "final_home_score": 1, "final_away_score": 0, "player_results": {}, "market_results": {}, "completed_at": "2025-09-07T20:00:00Z"}]
     }))
-    result = subprocess.run([sys.executable, "-m", "backtesting.import_historical_data", "--league", "nfl", "--season", "2025", "--week", "1", "--source", str(source), "--format", "json", "--data-dir", str(tmp_path / "snapshots")], capture_output=True, text=True)
-    assert result.returncode == 0, result.stdout + result.stderr
+    import_historical_main(Namespace(league="nfl", season="2025", week=1, source=str(source), format="json", data_dir=tmp_path / "snapshots", validate_only=False, overwrite=False))
     assert (tmp_path / "snapshots" / "nfl" / "2025" / "week_01" / "games.json").exists()
 
 
@@ -127,8 +129,7 @@ def test_importing_csv_creates_valid_normalized_json(tmp_path):
     source.write_text("dataset,id,kickoff_time,home_team,away_team,venue,status,game_id,final_home_score,final_away_score,player_results,market_results,completed_at\n"
                       "games,g1,2025-09-07T17:00:00Z,BUF,MIA,Fixture,final,,,,,,\n"
                       "outcomes,,,,,,,g1,1,0,{}, {},2025-09-07T20:00:00Z\n")
-    result = subprocess.run([sys.executable, "-m", "backtesting.import_historical_data", "--league", "nfl", "--season", "2025", "--week", "1", "--source", str(source), "--format", "csv", "--data-dir", str(tmp_path / "snapshots")], capture_output=True, text=True)
-    assert result.returncode == 0, result.stdout + result.stderr
+    import_historical_main(Namespace(league="nfl", season="2025", week=1, source=str(source), format="csv", data_dir=tmp_path / "snapshots", validate_only=False, overwrite=False))
     games = json.loads((tmp_path / "snapshots" / "nfl" / "2025" / "week_01" / "games.json").read_text())
     assert games[0]["game_id"] == "g1"
 
@@ -150,9 +151,7 @@ def test_one_week_fixture_replay_produces_predictions_and_grades(tmp_path):
 def test_existing_snapshots_not_overwritten_without_overwrite(tmp_path):
     source = tmp_path / "raw.json"
     source.write_text(json.dumps({"games": [], "outcomes": []}))
-    cmd = [sys.executable, "-m", "backtesting.import_historical_data", "--league", "nfl", "--season", "2025", "--week", "1", "--source", str(source), "--format", "json", "--data-dir", str(tmp_path / "snapshots")]
-    first = subprocess.run(cmd, capture_output=True, text=True)
-    second = subprocess.run(cmd, capture_output=True, text=True)
-    assert first.returncode == 0
-    assert second.returncode != 0
-    assert "Refusing to overwrite" in (second.stdout + second.stderr)
+    args = Namespace(league="nfl", season="2025", week=1, source=str(source), format="json", data_dir=tmp_path / "snapshots", validate_only=False, overwrite=False)
+    import_historical_main(args)
+    with pytest.raises(SnapshotError, match="Refusing to overwrite"):
+        import_historical_main(args)

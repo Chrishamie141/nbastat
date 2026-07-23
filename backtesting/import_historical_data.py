@@ -33,12 +33,16 @@ def _print_report(report) -> None:
         print(f"ERROR: {error}")
 
 
-def main() -> None:
-    args = parse_args()
+def main(args: argparse.Namespace | None = None) -> int:
+    should_exit = args is None
+    args = args or parse_args()
     if args.validate_only:
         report = validate_snapshot(args.data_dir, args.league, args.season, [args.week] if args.week else None)
         _print_report(report)
-        raise SystemExit(0 if report.ok else 1)
+        code = 0 if report.ok else 1
+        if should_exit:
+            raise SystemExit(code)
+        return code
     if not args.source or args.week is None:
         raise SystemExit("--source and --week are required unless --validate-only is supplied")
     raw = load_source(Path(args.source), args.format)
@@ -57,8 +61,11 @@ def main() -> None:
         print(f"- {name}: {counts[name]}")
     report = validate_snapshot(args.data_dir, args.league, args.season, [args.week])
     _print_report(report)
-    raise SystemExit(0 if report.ok else 1)
+    code = 0 if report.ok else 1
+    if should_exit:
+        raise SystemExit(code)
+    return code
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
