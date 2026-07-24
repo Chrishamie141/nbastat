@@ -40,10 +40,15 @@ class PredictionStore:
                     league TEXT NOT NULL, season TEXT NOT NULL, week INTEGER NOT NULL, game TEXT,
                     prediction TEXT, confidence REAL, market TEXT, line REAL, reasoning TEXT,
                     generated_timestamp TEXT NOT NULL, actual_result TEXT, correct INTEGER, margin REAL,
-                    team TEXT, player TEXT, game_type TEXT, home_away TEXT,
+                    team TEXT, player TEXT, game_type TEXT, home_away TEXT, sportsbook_odds REAL, sportsbook TEXT, edge REAL, clv REAL,
                     FOREIGN KEY(run_id) REFERENCES runs(run_id)
                 )
             """)
+            for col, ddl in {"sportsbook_odds":"REAL", "sportsbook":"TEXT", "edge":"REAL", "clv":"REAL"}.items():
+                try:
+                    conn.execute(f"ALTER TABLE predictions ADD COLUMN {col} {ddl}")
+                except sqlite3.OperationalError:
+                    pass
 
     def create_run(self, metadata: RunMetadata) -> None:
         """Insert a new unique run record."""
@@ -56,14 +61,15 @@ class PredictionStore:
             cur = conn.execute("""
                 INSERT INTO predictions (
                     run_id, model_version, league, season, week, game, prediction, confidence,
-                    market, line, reasoning, generated_timestamp, team, player, game_type, home_away
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    market, line, reasoning, generated_timestamp, team, player, game_type, home_away, sportsbook_odds, sportsbook, edge, clv
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 metadata.run_id, metadata.model_version, metadata.league, metadata.season, week,
                 prediction.get("game"), str(prediction.get("prediction")), prediction.get("confidence"),
                 prediction.get("market"), prediction.get("line"), prediction.get("reasoning"),
                 prediction.get("generated_timestamp") or utc_now_iso(), prediction.get("team"),
                 prediction.get("player"), prediction.get("game_type"), prediction.get("home_away"),
+                prediction.get("sportsbook_odds"), prediction.get("sportsbook"), prediction.get("edge"), prediction.get("clv"),
             ))
             return int(cur.lastrowid)
 

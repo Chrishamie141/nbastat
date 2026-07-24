@@ -99,3 +99,33 @@ def test_repository_search_confirms_no_active_legacy_dependency():
                 matches.append(f"{path.relative_to(root)}:{line_no}: {line.strip()}")
 
     assert matches == []
+
+def test_odds_api_successful_historical_odds_retrieval(monkeypatch, tmp_path):
+    import nfl_providers
+    seen={}
+    def ok(url):
+        seen["url"] = url
+        return {"data":[{"id":"odds1","home_team":"Buffalo Bills","away_team":"Miami Dolphins","commence_time":"2025-09-07T17:00:00Z","bookmakers":[{"key":"dk","title":"DraftKings","markets":[{"key":"h2h","last_update":"2025-09-06T17:00:00Z","outcomes":[{"name":"Buffalo Bills","price":-120}]}]}]}]}
+    monkeypatch.setattr(nfl_providers,"_fetch_json",ok)
+    rows = TheOddsApiNflProvider(api_key="SECRET", cache=JsonRawCache(tmp_path)).fetch_odds("2025",1,[{"game_id":"espn-401","home_team":"BUF","away_team":"MIA","kickoff_time":"2025-09-07T17:00:00Z"}],snapshot_time="2025-09-06T17:00:00Z")
+    assert rows and rows[0]["sportsbook"] == "DraftKings"
+    assert "player_pass_yds" not in seen["url"]
+    assert "/historical/sports/americanfootball_nfl/odds?" in seen["url"]
+
+
+def test_odds_api_422_includes_precise_body_and_redacts_key(monkeypatch, tmp_path):
+    import nfl_providers
+    from io import BytesIO
+    from urllib.error import HTTPError
+    def boom(url):
+        raise HTTPError(url,422,"Unprocessable Entity",None,BytesIO(b'{"message":"INVALID_MARKET: player props are event odds markets"}'))
+    monkeypatch.setattr(nfl_providers,"_fetch_json",boom)
+    with pytest.raises(nfl_providers.OddsApiRequestError) as exc:
+        TheOddsApiNflProvider(api_key="SECRET", cache=JsonRawCache(tmp_path)).fetch_odds("2025",1,[],snapshot_time="2025-09-01T00:00:00Z")
+    msg = str(exc.value)
+    assert "INVALID_MARKET" in msg and "REDACTED" in msg and "SECRET" not in msg
+
+
+def test_normalize_odds_missing_bookmaker_or_market():
+    rows = normalize_odds_events([{"id":"e1","bookmakers":[]},{"id":"e2","bookmakers":[{"key":"dk","markets":[]}]}], [])
+    assert rows == []
