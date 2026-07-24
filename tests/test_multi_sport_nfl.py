@@ -1,4 +1,7 @@
+import os
 import sqlite3
+
+import pytest
 
 from models import DifficultyLevel, SportType
 from nfl_parlay_builder import (
@@ -12,7 +15,21 @@ from nfl_parlay_builder import (
 from prediction_storage import load_parlay_history, save_parlay_result
 
 
-def test_build_nfl_safe_parlay_has_expected_shared_models():
+def _force_sample_nfl_providers(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_GAMES, NFL_SAMPLE_INJURIES, NFL_SAMPLE_LINES, NFL_SAMPLE_RECENT_STATS, NFL_SAMPLE_WEATHER
+
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: list(NFL_SAMPLE_GAMES))
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: dict(NFL_SAMPLE_LINES))
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: dict(NFL_SAMPLE_RECENT_STATS))
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: list(NFL_SAMPLE_INJURIES))
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: dict(NFL_SAMPLE_WEATHER))
+
+
+def test_build_nfl_safe_parlay_has_expected_shared_models(monkeypatch):
+    _force_sample_nfl_providers(monkeypatch)
+
     result = build_nfl_parlay("safe")
 
     assert result.parlay.sport == SportType.NFL
@@ -23,13 +40,7 @@ def test_build_nfl_safe_parlay_has_expected_shared_models():
 
 
 def test_build_nfl_safe_parlay_uses_non_empty_sample_fallback_without_live_keys(monkeypatch):
-    for key in (
-        "THE_ODDS_API_KEY",
-        "ODDS_API_KEY",
-        "OPENWEATHER_API_KEY",
-        "OPEN_WEATHER_API_KEY",
-    ):
-        monkeypatch.delenv(key, raising=False)
+    _force_sample_nfl_providers(monkeypatch)
 
     result = build_nfl_parlay("safe")
 
@@ -197,3 +208,12 @@ def test_valid_live_stats_are_not_overwritten_by_sample_backfill(monkeypatch):
     assert len(result.parlay.legs) == 1
     assert result.parlay.legs[0].prediction.startswith("Josh Allen over 239.5")
     assert result.parlay.legs[0].confidence >= 62
+
+
+@pytest.mark.skipif(os.getenv("SMARTBETS_RUN_LIVE_NFL_TESTS") != "1", reason="live-first NFL provider path is opt-in")
+def test_build_nfl_safe_parlay_live_first_path_smoke():
+    result = build_nfl_parlay("safe")
+
+    assert result.parlay.sport == SportType.NFL
+    assert result.parlay.difficulty == DifficultyLevel.SAFE
+    assert len(result.parlay.legs) <= 3
