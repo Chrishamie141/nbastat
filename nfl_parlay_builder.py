@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass, field
 from statistics import mean
+import json
 import math
+import os
 import re
 
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
@@ -34,6 +37,45 @@ STAT_WEIGHTS = {
     "RECEPTIONS": 1.0,
     "TD": 0.8,
 }
+
+
+
+@dataclass
+class CandidateEvaluation:
+    player: str
+    provider: str | None
+    sample_offline: bool
+    raw_stat_type: object
+    normalized_stat_type: str
+    raw_line: object
+    sanitized_line: float | None
+    raw_odds: object
+    sanitized_odds: int | None
+    recent_stats_before_merge: dict
+    recent_stats_after_merge: dict
+    usable_recent_values: list[float]
+    recent_sample_count: int
+    projection: float | None
+    confidence: float | None
+    edge: float | None
+    injury_adjustment: float
+    weather_adjustment: float
+    eligibility_status: str
+    rejection_reasons: list[str] = field(default_factory=list)
+    candidate: dict | None = None
+
+
+def _debug_nfl_candidates_enabled():
+    return os.getenv("SMARTBETS_DEBUG_NFL_CANDIDATES") == "1"
+
+
+def _print_candidate_evaluations(evaluations):
+    if not _debug_nfl_candidates_enabled():
+        return
+    for evaluation in evaluations:
+        payload = asdict(evaluation)
+        payload.pop("candidate", None)
+        print("NFL_CANDIDATE_EVALUATION " + json.dumps(payload, sort_keys=True, default=str))
 
 STAT_ALIASES = {
     "PASSING_YARDS": "PASS_YDS",
@@ -283,15 +325,27 @@ def _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats)
     return merged
 
 
-def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather):
-    stat_type = _normalize_stat_type(stat_type)
+def _evaluate_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather, rules=None):
+    raw_stat_type = stat_type
+    normalized_stat_type = _normalize_stat_type(stat_type)
+    raw_line = (line_info or {}).get("line")
+    raw_odds = (line_info or {}).get("odds")
+    provider = (line_info or {}).get("provider") or (line_info or {}).get("bookmaker") or "provider"
+    before_key = player_name
+    normalized_player = _normalize_name(player_name)
+    for name in recent_stats or {}:
+        if _normalize_name(name) == normalized_player:
+            before_key = name
+            break
+    recent_stats_before_merge = dict((recent_stats or {}).get(before_key) or {})
+
     cleaned_line = dict(line_info or {})
     cleaned_line["line"] = _usable_number(cleaned_line.get("line"))
     if _is_sample_line(cleaned_line) and cleaned_line["line"] is None:
         for sample_name, sample_lines in NFL_SAMPLE_LINES.items():
-            if _normalize_name(sample_name) != _normalize_name(player_name):
+            if _normalize_name(sample_name) != normalized_player:
                 continue
-            sample_stat_lines = sample_lines.get(stat_type) or sample_lines.get(_normalize_stat_type(stat_type)) or []
+            sample_stat_lines = sample_lines.get(normalized_stat_type) or []
             for sample_line in sample_stat_lines:
                 sample_value = _usable_number(sample_line.get("line"))
                 if sample_value is not None:
@@ -300,42 +354,92 @@ def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, 
             break
     cleaned_odds = _usable_number(cleaned_line.get("odds"))
     cleaned_line["odds"] = int(cleaned_odds) if cleaned_odds is not None else None
-    line_info = cleaned_line
-    recent_stats = _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats)
-    projection = calculate_nfl_projection(player_name, stat_type, recent_stats, line_info, injuries, weather)
-    recent_values = _clean_recent_values(recent_stats.get(player_name, {}).get(stat_type, []))
-    player_context = recent_stats.get(player_name, {})
-    confidence = calculate_nfl_confidence(
-        projection, line_info, recent_values, injuries, player_name, weather, player_context, stat_type
-    )
-    edge_score = calculate_edge_score(projection, line_info.get("line"))
-    line = _usable_number(line_info.get("line"))
-    side = "over" if line is None or projection >= float(line) else "under"
-    if line_info.get("side") and not _line_is_over(line_info):
-        side = "under"
-    team = recent_stats.get(player_name, {}).get("team")
-    provider = line_info.get("provider") or line_info.get("bookmaker") or "provider"
-    line_text = f" {side} {float(line):g}" if line is not None else " projected"
-    data_label = " Sample/offline fallback data." if _is_sample_line(line_info) else ""
-    return {
-        "player": player_name,
-        "team": team,
-        "stat_type": stat_type,
-        "line": line,
-        "odds": int(_usable_number(line_info.get("odds"))) if _usable_number(line_info.get("odds")) is not None else None,
-        "projection": projection,
-        "confidence": confidence,
-        "edge_score": edge_score,
-        "consistency_score": calculate_player_consistency(recent_values),
-        "prediction": f"{player_name}{line_text} {stat_type}",
-        "notes": (
-            f"Projection {projection:g}; edge {edge_score:g} vs {provider} line, "
-            "with confidence adjusted for consistency, matchup, injuries, weather, and odds."
-            f"{data_label}"
-        ),
-        "sample_offline": _is_sample_line(line_info),
-    }
 
+    merged_stats = _recent_stats_for_candidate(player_name, normalized_stat_type, cleaned_line, recent_stats)
+    recent_stats_after_merge = dict(merged_stats.get(player_name, {}) or {})
+    recent_values = _clean_recent_values(recent_stats_after_merge.get(normalized_stat_type, []))
+    rejection_reasons = []
+    projection = confidence = edge_score = None
+    injury_adjustment = calculate_injury_adjustment(injuries, player_name)
+    weather_adjustment = calculate_weather_adjustment(weather, normalized_stat_type)
+
+    if cleaned_line["line"] is None:
+        rejection_reasons.append("invalid_line")
+    if cleaned_line["odds"] is None:
+        rejection_reasons.append("invalid_odds")
+    if normalized_stat_type not in STAT_WEIGHTS:
+        rejection_reasons.append("unsupported_stat_type")
+    if not recent_stats_after_merge or normalized_stat_type not in recent_stats_after_merge:
+        rejection_reasons.append("missing_recent_stats")
+    if len(recent_values) < 2:
+        rejection_reasons.append("insufficient_recent_sample")
+
+    if injury_adjustment <= -18:
+        rejection_reasons.append("injury_disqualification")
+    if weather_adjustment <= -8:
+        rejection_reasons.append("weather_disqualification")
+
+    if not any(reason in rejection_reasons for reason in ("invalid_line", "unsupported_stat_type")):
+        try:
+            projection = calculate_nfl_projection(player_name, normalized_stat_type, merged_stats, cleaned_line, injuries, weather)
+        except (TypeError, ValueError, OSError):
+            rejection_reasons.append("projection_failed")
+    else:
+        rejection_reasons.append("projection_failed")
+
+    if projection is not None:
+        confidence = calculate_nfl_confidence(
+            projection, cleaned_line, recent_values, injuries, player_name, weather, recent_stats_after_merge, normalized_stat_type
+        )
+        edge_score = calculate_edge_score(projection, cleaned_line.get("line"))
+        if rules and confidence < rules["min_confidence"]:
+            rejection_reasons.append("confidence_below_minimum")
+        if edge_score <= 0:
+            rejection_reasons.append("edge_below_minimum")
+
+    status = "eligible" if not rejection_reasons else "rejected"
+    candidate = None
+    if status == "eligible":
+        line = cleaned_line.get("line")
+        side = "over" if line is None or projection >= float(line) else "under"
+        if cleaned_line.get("side") and not _line_is_over(cleaned_line):
+            side = "under"
+        team = recent_stats_after_merge.get("team")
+        line_text = f" {side} {float(line):g}" if line is not None else " projected"
+        data_label = " Sample/offline fallback data." if _is_sample_line(cleaned_line) else ""
+        candidate = {
+            "player": player_name,
+            "team": team,
+            "stat_type": normalized_stat_type,
+            "line": line,
+            "odds": cleaned_line.get("odds"),
+            "projection": projection,
+            "confidence": confidence,
+            "edge_score": edge_score,
+            "consistency_score": calculate_player_consistency(recent_values),
+            "prediction": f"{player_name}{line_text} {normalized_stat_type}",
+            "notes": (
+                f"Projection {projection:g}; edge {edge_score:g} vs {provider} line, "
+                "with confidence adjusted for consistency, matchup, injuries, weather, and odds."
+                f"{data_label}"
+            ),
+            "sample_offline": _is_sample_line(cleaned_line),
+        }
+
+    return CandidateEvaluation(
+        player=player_name, provider=provider, sample_offline=_is_sample_line(cleaned_line),
+        raw_stat_type=raw_stat_type, normalized_stat_type=normalized_stat_type, raw_line=raw_line,
+        sanitized_line=cleaned_line.get("line"), raw_odds=raw_odds, sanitized_odds=cleaned_line.get("odds"),
+        recent_stats_before_merge=recent_stats_before_merge, recent_stats_after_merge=recent_stats_after_merge,
+        usable_recent_values=recent_values, recent_sample_count=len(recent_values), projection=projection,
+        confidence=confidence, edge=edge_score, injury_adjustment=injury_adjustment,
+        weather_adjustment=weather_adjustment, eligibility_status=status, rejection_reasons=rejection_reasons,
+        candidate=candidate,
+    )
+
+
+def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather):
+    return _evaluate_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather).candidate
 
 def _selection_score(candidate, difficulty):
     """Rank NFL legs before parlay creation using style-specific edge weighting."""
@@ -383,17 +487,20 @@ def build_nfl_parlay(difficulty, team=None):
     injuries = get_nfl_injuries(team=team)
     weather = get_nfl_weather(games[0] if games else None) if games else get_nfl_weather()
 
-    candidates = []
+    evaluations = []
     for player_name, stat_lines in props.items():
         for stat_type, lines in stat_lines.items():
             for line_info in lines[:2]:
-                candidates.append(_build_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather))
+                evaluations.append(_evaluate_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather, rules))
+
+    candidates = [evaluation.candidate for evaluation in evaluations if evaluation.candidate]
+
+    _print_candidate_evaluations(evaluations)
 
     # Team lines are included as context today; player props remain the first functional parlay output.
     if not candidates and team_lines:
         print("NFL player props unavailable after provider fallback; team lines were loaded but no player leg could be built.")
 
-    candidates = [row for row in candidates if row["confidence"] >= rules["min_confidence"]]
     candidates.sort(key=lambda row: _selection_score(row, difficulty), reverse=True)
     target_legs = min(rules["max_legs"], len(candidates))
     legs = [_candidate_to_leg(candidate) for candidate in candidates[:target_legs]]
