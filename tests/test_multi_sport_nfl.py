@@ -65,3 +65,42 @@ def test_nfl_edge_and_adjustment_helpers_score_expected_inputs():
     assert calculate_matchup_adjustment({"matchup_difficulty": "favorable"}) > 0
     assert calculate_weather_adjustment({"condition": "rain", "wind_mph": 18}, "PASS_YDS") < 0
     assert calculate_injury_adjustment([{"player": "Test Player", "status": "Questionable"}], "Test Player") < 0
+
+
+def test_safe_sample_fallback_survives_unusable_espn_and_optional_provider_gaps(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_GAMES, NFL_SAMPLE_LINES, NFL_SAMPLE_WEATHER
+
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: list(NFL_SAMPLE_GAMES))
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: dict(NFL_SAMPLE_LINES))
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(
+        builder,
+        "get_nfl_player_recent_stats",
+        lambda team=None: {"Unrelated ESPN Player": {"team": "DAL", "passing_yards": [99]}},
+    )
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: dict(NFL_SAMPLE_WEATHER))
+
+    first = build_nfl_parlay("safe")
+    second = build_nfl_parlay("safe")
+
+    assert 1 <= len(first.parlay.legs) <= 3
+    assert [leg.prediction for leg in first.parlay.legs] == [leg.prediction for leg in second.parlay.legs]
+    assert [leg.confidence for leg in first.parlay.legs] == [leg.confidence for leg in second.parlay.legs]
+    assert all("Sample/offline fallback data" in leg.notes for leg in first.parlay.legs)
+
+
+def test_safe_fallback_without_live_keys_or_optional_weather_and_injury(monkeypatch):
+    for key in (
+        "THE_ODDS_API_KEY",
+        "ODDS_API_KEY",
+        "OPENWEATHER_API_KEY",
+        "OPEN_WEATHER_API_KEY",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    result = build_nfl_parlay("safe")
+
+    assert 1 <= len(result.parlay.legs) <= 3
+    assert all("sample" in leg.notes.lower() and leg.confidence >= 62 for leg in result.parlay.legs)
