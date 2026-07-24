@@ -11,7 +11,7 @@ from typing import Any
 
 DATASETS = ("games", "odds", "weather", "injuries", "player_stats", "team_stats", "outcomes")
 REQUIRED_DATASETS = ("games", "outcomes")
-SUPPORTED_MARKETS = {"moneyline", "spread", "total", "player_prop", "PASS_YDS", "RUSH_YDS", "REC_YDS", "RECEPTIONS", "TD", "PASS_TD"}
+from .markets import CANONICAL_TEAM_MARKETS, SUPPORTED_MARKETS, normalize_market
 
 SCHEMAS: dict[str, tuple[str, ...]] = {
     "games": ("game_id", "league", "season", "week", "kickoff_time", "home_team", "away_team", "venue", "status"),
@@ -74,7 +74,13 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
                 if extra in record:
                     row[extra] = record[extra]
         if name == "odds" and "market" in row:
-            row["market"] = str(row["market"])
+            row["market"] = normalize_market(row["market"])
+            row.setdefault("bookmaker", record.get("bookmaker") or record.get("sportsbook"))
+            row.setdefault("provider", record.get("provider") or record.get("source"))
+            row.setdefault("timestamp", record.get("timestamp") or record.get("captured_at") or record.get("data_as_of"))
+            row.setdefault("outcome", record.get("outcome") or record.get("selection"))
+            if row["market"] == "h2h" and row.get("line") is None:
+                row["line"] = 0
         if name in {"player_stats", "team_stats"}:
             row.setdefault("season", str(season))
             row.setdefault("through_week", int(week) - 1)
@@ -217,11 +223,14 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
         for odd in loaded.get("odds", []):
             if odd.get("game_id") not in game_ids:
                 report.add_error(f"Odds without matching game for {league.upper()} {season} Week {week}: {odd.get('game_id')}")
-            if odd.get("market") not in SUPPORTED_MARKETS:
-                report.add_error(f"Unsupported market for {league.upper()} {season} Week {week}: {odd.get('market')}")
-            for field in ("sportsbook", "market", "line", "odds"):
+            market = normalize_market(odd.get("market"))
+            if market != odd.get("market"):
+                report.add_error(f"market_not_normalized: Expected: {chr(10).join(CANONICAL_TEAM_MARKETS)}; Received: {odd.get('market')}; Normalization stage: snapshot_writer; game={odd.get('game_id')}; provider={odd.get('provider') or odd.get('source')}")
+            elif market not in SUPPORTED_MARKETS:
+                report.add_error(f"unsupported_market: Expected: {chr(10).join(sorted(SUPPORTED_MARKETS))}; Received: {odd.get('market')}; Normalization stage: snapshot_writer; game={odd.get('game_id')}; provider={odd.get('provider') or odd.get('source')}")
+            for field in ("game_id", "sportsbook", "market", "line", "odds", "selection", "captured_at"):
                 if odd.get(field) is None:
-                    report.add_error(f"missing_odds_field: odds missing {field} for {league.upper()} {season} Week {week}: {odd.get('game_id')}")
+                    report.add_error(f"missing_odds_field: odds missing {field}; game={odd.get('game_id')}; market={odd.get('market')}; provider={odd.get('provider') or odd.get('source')}")
             if str(odd.get("source", "")).lower() in {"current", "live", "the-odds-api-current"}:
                 report.add_error(f"current_data_labeled_historical: odds for {odd.get('game_id')}")
         for dataset in ("odds", "weather"):

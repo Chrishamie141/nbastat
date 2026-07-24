@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "id": "odds-api-evt-1",
+      "sport_key": "americanfootball_nfl",
+      "commence_time": "2025-09-07T17:00:00Z",
+      "home_team": "Buffalo Bills",
+      "away_team": "Miami Dolphins",
+      "bookmakers": [
+        {
+          "key": "draftkings",
+          "title": "DraftKings",
+          "markets": [
+            {"key": "h2h", "last_update": "2025-09-06T17:00:00Z", "outcomes": [{"name": "Buffalo Bills", "price": -125}, {"name": "Miami Dolphins", "price": 105}]},
+            {"key": "spreads", "last_update": "2025-09-06T17:00:00Z", "outcomes": [{"name": "Buffalo Bills", "point": -2.5, "price": -110}, {"name": "Miami Dolphins", "point": 2.5, "price": -110}]},
+            {"key": "totals", "last_update": "2025-09-06T17:00:00Z", "outcomes": [{"name": "Over", "point": 47.5, "price": -108}, {"name": "Under", "point": 47.5, "price": -112}]}
+          ]
+        }
+      ]
+    }
+  ]
+}
