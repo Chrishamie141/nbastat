@@ -327,6 +327,11 @@ def run_health_check(cache_dir=None, print_summary=False):
             # explicit cache maintenance tools when needed.
             continue
 
+        # Any other JSON file under the cache tree is not an application cache
+        # record. Delete it deterministically instead of depending on platform-
+        # specific forbidden filename characters to identify invalid files.
+        removed += int(clear_cache_file(path))
+
     if removed:
         print(f"Startup health check: removed {removed} invalid cache file(s).")
     elif print_summary:

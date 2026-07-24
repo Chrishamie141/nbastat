@@ -9,9 +9,8 @@ os.environ.setdefault("AUTH_SECRET", "test-secret")
 os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_placeholder")
 os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_test")
 os.environ.setdefault("STRIPE_FOUNDING_MONTHLY_PRICE_ID", "price_founder")
-os.environ["DATABASE_URL"] = "sqlite:///./test_billing.db"
 
-from backend.app.database import get_db_connection, initialize_billing_database, database_path
+from backend.app.database import get_db_connection, initialize_billing_database
 from backend.app.services.auth_service import create_token
 from backend.app.services.entitlement_service import current_entitlement_for_user_id, require_full_access
 from backend.app.api import billing
@@ -23,12 +22,19 @@ class Req:
         self._payload = payload
     async def body(self): return self._payload
 
-def setup_function():
-    p=database_path()
-    if p.exists(): p.unlink()
+@pytest.fixture(autouse=True)
+def isolated_billing_database(tmp_path, monkeypatch):
+    db_path = tmp_path / "billing.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
     initialize_billing_database()
     with get_db_connection() as conn:
-        conn.execute("INSERT INTO users(id,name,email,password_hash,created_at,updated_at,is_active) VALUES(1,'A','a@example.com','x','now','now',1)"); conn.commit()
+        conn.execute("INSERT INTO users(id,name,email,password_hash,created_at,updated_at,is_active) VALUES(1,'A','a@example.com','x','now','now',1)")
+        conn.commit()
+    yield db_path
+    # All application code uses short-lived sqlite3 connections via context managers;
+    # force teardown-time collection so Windows can remove the tmp_path database.
+    import gc
+    gc.collect()
 
 def test_checkout_requires_authentication():
     with pytest.raises(Exception) as exc: billing.create_checkout_session(Req())

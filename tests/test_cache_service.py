@@ -469,7 +469,7 @@ def test_app_uses_valid_prediction_cache_when_no_roster_is_available(tmp_path, m
 def test_startup_health_check_deletes_invalid_cache(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cache_service, "CACHE_DIR", tmp_path)
     (tmp_path / ".gitkeep").write_text("", encoding="utf-8")
-    (tmp_path / "bad:name.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "unexpected_cache.json").write_text("{}", encoding="utf-8")
     (tmp_path / "roster_NYK.json").write_text(json.dumps({
         "team_abbr": "NYK",
         "cached_at": datetime.now(timezone.utc).isoformat(),
@@ -479,7 +479,7 @@ def test_startup_health_check_deletes_invalid_cache(tmp_path, monkeypatch, capsy
     report = cache_service.run_health_check()
 
     assert report["removed"] == 2
-    assert not (tmp_path / "bad:name.json").exists()
+    assert not (tmp_path / "unexpected_cache.json").exists()
     assert not (tmp_path / "roster_NYK.json").exists()
     assert (tmp_path / ".gitkeep").exists()
     assert "Startup health check: removed 2 invalid cache file(s)." in capsys.readouterr().out
