@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +39,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--providers", default="odds-api,espn,nfl-official,local-json")
     parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--check-providers", action="store_true")
+    parser.add_argument("--odds-hours-before-kickoff", type=int, default=24)
+    parser.add_argument("--require-backtest-ready", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -60,7 +63,7 @@ def _complete_valid(data_dir: Path, league: str, season: str, week: int) -> bool
     return all((wdir / f"{d}.json").exists() for d in DATASETS) and validate_snapshot(data_dir, league, season, [week]).ok
 
 
-def _write_json(path: Path, records: list[dict[str, Any]], overwrite: bool) -> None:
+def _write_json(path: Path, records: Any, overwrite: bool) -> None:
     if path.exists() and not overwrite:
         raise SnapshotError(f"Refusing to overwrite existing snapshot without --overwrite: {path}")
     path.write_text(json.dumps(records, indent=2, sort_keys=True) + "\n")
@@ -84,6 +87,35 @@ def _fetch_dataset(sources: list[HistoricalSnapshotSource], cache: RawCache, dat
     return [], warnings or [f"no configured provider supports historical {dataset}"]
 
 
+def _manifest(league: str, season: str, week: int, normalized: dict[str, list[dict[str, Any]]], warnings: list[str], source_by_dataset: dict[str, str], leakage_ok: bool) -> dict[str, Any]:
+    datasets = {}
+    for d in DATASETS:
+        count = len(normalized.get(d, []))
+        required = d in REQUIRED_DATASETS
+        datasets[d] = {
+            "source": source_by_dataset.get(d, "none" if not count else "mixed"),
+            "records": count,
+            "status": "complete" if count else ("missing" if required else "optional_empty"),
+        }
+        if not count and not required:
+            datasets[d]["reason"] = "historical provider unavailable or local export missing"
+    return {"league": league.lower(), "season": int(season), "week": int(week), "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"), "builder_version": "phase1-leakage-safe", "datasets": datasets, "warnings": warnings, "leakage_checks_passed": leakage_ok}
+
+
+def _provider_capabilities(sources: list[HistoricalSnapshotSource]) -> None:
+    import os
+    print("Provider capability report (API keys redacted):")
+    for s in sources:
+        name = getattr(s, "name", "unknown")
+        supported = sorted(getattr(s, "supported_datasets", set()))
+        configured = "configured" if (name != "odds-api" or os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")) else "missing key"
+        historical = bool(set(supported) - ({"weather"} if name in {"openweather"} else set()))
+        live_only = name in {"openweather", "existing-nfl"}
+        paid = name == "odds-api"
+        local_fill = name in {"odds-api", "historical-weather", "openweather", "espn"}
+        print(f"- provider={name} key={configured} supported={','.join(supported) or 'none'} historical={historical} live_only={live_only} paid_subscription_required={paid} local_export_can_fill_gap={local_fill}")
+
+
 def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource], cache: RawCache, week: int) -> tuple[bool, dict[str, int], list[str]]:
     if args.resume and _complete_valid(args.data_dir, args.league, args.season, week):
         print(f"{args.league.upper()} {args.season} Week {week}: skipped complete valid snapshot")
@@ -96,13 +128,16 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
     print(f"{args.league.upper()} {args.season} Week {week}")
     print(f"- Week range: {week_range[0]} to {week_range[1]}")
     raw: dict[str, list[dict[str, Any]]] = {}
+    source_by_dataset: dict[str, str] = {}
     all_warnings: list[str] = []
     games, warnings = _fetch_dataset(sources, cache, "games", args.league, args.season, week, week_range, [])
     all_warnings.extend(warnings)
     raw["games"] = games
+    source_by_dataset["games"] = next((r.get("source") for r in games if r.get("source")), "unknown") if games else "none"
     for dataset in DATASETS[1:]:
         rows, warnings = _fetch_dataset(sources, cache, dataset, args.league, args.season, week, week_range, games)
         raw[dataset] = rows
+        source_by_dataset[dataset] = next((r.get("source") for r in rows if r.get("source")), "none") if rows else "none"
         all_warnings.extend(warnings)
 
     normalized = {d: normalize_dataset(d, raw.get(d, []), args.league, args.season, week) for d in DATASETS}
@@ -123,6 +158,8 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
                 _write_json(path, [], args.overwrite or args.resume)
             else:
                 _write_json(path, normalized[dataset], args.overwrite or args.resume)
+        tmp_report = validate_snapshot(args.data_dir, args.league, args.season, [week], strict=args.strict, require_backtest_ready=getattr(args, "require_backtest_ready", False))
+        _write_json(wdir / "manifest.json", _manifest(args.league, args.season, week, normalized, all_warnings, source_by_dataset, tmp_report.ok), True)
     for dataset in DATASETS:
         label = dataset.replace("_", " ").title()
         print(f"- {label} records: {len(normalized[dataset])}")
@@ -130,7 +167,7 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
         print(f"WARNING: {warning}")
     ok = True
     if args.validate and not args.dry_run:
-        report = validate_snapshot(args.data_dir, args.league, args.season, [week])
+        report = validate_snapshot(args.data_dir, args.league, args.season, [week], strict=args.strict, require_backtest_ready=getattr(args, "require_backtest_ready", False))
         ok = report.ok
         print(f"- Validation: {'passed' if ok else 'failed'}")
         for error in report.errors:
@@ -144,7 +181,14 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
 
 def main(argv: list[str] | argparse.Namespace | None = None) -> int:
     args = argv if isinstance(argv, argparse.Namespace) else parse_args(argv)
-    sources = create_sources(args.providers)
+    
+    try:
+        sources = create_sources(args.providers, getattr(args, "odds_hours_before_kickoff", 24))
+    except TypeError:
+        sources = create_sources(args.providers)
+    if getattr(args, "check_providers", False):
+        _provider_capabilities(sources)
+        return 0
     cache = RawCache(Path(args.data_dir).parent / "raw_cache", overwrite=args.overwrite)
     summary = BuildSummary(requested=args.end_week - args.start_week + 1)
     for week in range(args.start_week, args.end_week + 1):

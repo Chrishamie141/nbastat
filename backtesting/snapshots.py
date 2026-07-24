@@ -78,6 +78,15 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
         if name in {"player_stats", "team_stats"}:
             row.setdefault("season", str(season))
             row.setdefault("through_week", int(week) - 1)
+            row.setdefault("record_role", record.get("record_role", "pregame_history"))
+        if name != "injuries":
+            row.setdefault("game_id", record.get("game_id"))
+        row.setdefault("source", record.get("source", "unknown"))
+        row.setdefault("captured_at", record.get("captured_at") or record.get("data_as_of") or record.get("kickoff_time"))
+        row.setdefault("data_as_of", record.get("data_as_of") or row.get("captured_at"))
+        row.setdefault("is_pregame", bool(record.get("is_pregame", name not in {"outcomes"} and row.get("record_role") != "game_outcome")))
+        row.setdefault("season", str(season))
+        row.setdefault("week", int(week))
         normalized.append(row)
     return normalized
 
@@ -126,7 +135,20 @@ def _parse_iso(value: str) -> datetime | None:
         return None
 
 
-def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | None = None) -> ValidationReport:
+
+def _require_meta(report: ValidationReport, dataset: str, row: dict[str, Any], league: str, season: str, week: int) -> None:
+    for field in ("source", "captured_at", "data_as_of", "is_pregame", "season", "week"):
+        if field not in row:
+            report.add_error(f"missing_data_as_of: {dataset} record missing {field} for {league.upper()} {season} Week {week}")
+    if dataset not in {"injuries", "player_stats", "team_stats"} and "game_id" not in row:
+        report.add_error(f"missing_data_as_of: {dataset} record missing game_id for {league.upper()} {season} Week {week}")
+
+
+def _record_key(row: dict[str, Any]) -> str:
+    return json.dumps(row, sort_keys=True, default=str)
+
+
+def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | None = None, *, strict: bool = False, require_backtest_ready: bool = False) -> ValidationReport:
     report = ValidationReport()
     season_dir = Path(root) / league.lower() / str(season)
     if weeks is None:
@@ -143,8 +165,10 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
         for dataset in DATASETS:
             path = wdir / f"{dataset}.json"
             if not path.exists():
-                if dataset in REQUIRED_DATASETS:
+                if dataset in REQUIRED_DATASETS or strict or require_backtest_ready:
                     report.add_error(f"Missing {dataset} file for {league.upper()} {season} Week {week}: {path}")
+                else:
+                    report.add_warning(f"Optional dataset {dataset} missing for {league.upper()} {season} Week {week}: {path}")
                 continue
             try:
                 data = json.loads(path.read_text())
@@ -155,14 +179,24 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
                 report.add_error(f"Malformed {dataset} records for {league.upper()} {season} Week {week}: expected a list in {path}")
                 continue
             loaded[dataset] = data
+            if not data and (dataset in REQUIRED_DATASETS or strict or require_backtest_ready):
+                report.add_error(f"Empty required dataset {dataset} for {league.upper()} {season} Week {week}")
             report.counts[f"week_{week}.{dataset}"] = len(data)
             missing = [f for f in SCHEMAS[dataset] if any(f not in r for r in data)]
             if missing:
                 report.add_error(f"Malformed {dataset} records for {league.upper()} {season} Week {week}: missing fields {sorted(set(missing))}")
+            seen = set()
+            for r in data:
+                k = _record_key(r)
+                if k in seen:
+                    report.add_error(f"duplicate_record: duplicate {dataset} record for {league.upper()} {season} Week {week}")
+                seen.add(k)
+                _require_meta(report, dataset, r, league, season, week)
         games = loaded.get("games", [])
         game_ids = {g.get("game_id") for g in games}
         if len(game_ids) != len(games):
             report.add_error(f"Duplicate game IDs for {league.upper()} {season} Week {week}")
+        kickoff_by_game = {g.get("game_id"): g.get("kickoff_time") for g in games}
         for game in games:
             if str(game.get("league", "")).lower() != league.lower():
                 report.add_error(f"Game from wrong league for {league.upper()} {season} Week {week}: {game.get('game_id')}")
@@ -170,25 +204,52 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
                 report.add_error(f"Game from wrong season for {league.upper()} {season} Week {week}: {game.get('game_id')}")
             if int(game.get("week", -1)) != int(week):
                 report.add_error(f"Game from wrong week for {league.upper()} {season} Week {week}: {game.get('game_id')}")
+            if not _parse_iso(game.get("kickoff_time")):
+                report.add_error(f"invalid_kickoff_time: {game.get('game_id')} for {league.upper()} {season} Week {week}")
         outcome_ids = {o.get("game_id") for o in loaded.get("outcomes", [])}
         for gid in sorted(game_ids - outcome_ids):
             report.add_error(f"Game without matching outcome for {league.upper()} {season} Week {week}: {gid}")
         for gid in sorted(outcome_ids - game_ids):
             report.add_error(f"Outcome without matching game for {league.upper()} {season} Week {week}: {gid}")
-        kickoff_by_game = {g.get("game_id"): g.get("kickoff_time") for g in games}
+        for outcome in loaded.get("outcomes", []):
+            if outcome.get("completed_at") and not _parse_iso(outcome.get("completed_at")):
+                report.add_error(f"invalid_completed_at: outcome for {outcome.get('game_id')}")
         for odd in loaded.get("odds", []):
             if odd.get("game_id") not in game_ids:
                 report.add_error(f"Odds without matching game for {league.upper()} {season} Week {week}: {odd.get('game_id')}")
             if odd.get("market") not in SUPPORTED_MARKETS:
                 report.add_error(f"Unsupported market for {league.upper()} {season} Week {week}: {odd.get('market')}")
+            for field in ("sportsbook", "market", "line", "odds"):
+                if odd.get(field) is None:
+                    report.add_error(f"missing_odds_field: odds missing {field} for {league.upper()} {season} Week {week}: {odd.get('game_id')}")
+            if str(odd.get("source", "")).lower() in {"current", "live", "the-odds-api-current"}:
+                report.add_error(f"current_data_labeled_historical: odds for {odd.get('game_id')}")
         for dataset in ("odds", "weather"):
             for row in loaded.get(dataset, []):
                 captured_at = row.get("captured_at")
                 kickoff = kickoff_by_game.get(row.get("game_id"))
                 if captured_at and kickoff and _parse_iso(captured_at) and _parse_iso(kickoff) and _parse_iso(captured_at) > _parse_iso(kickoff):
-                    report.add_error(f"Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: {row.get('game_id')} captured after kickoff")
+                    code = "odds_after_kickoff" if dataset == "odds" else "weather_after_kickoff"
+                    report.add_error(f"{code}: Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: {row.get('game_id')} captured after kickoff")
+                if dataset == "weather" and str(row.get("source", "")).lower() in {"openweather", "current", "live"}:
+                    report.add_error(f"weather_not_historical: current/live weather cannot be used for historical game {row.get('game_id')}")
+        for row in loaded.get("injuries", []):
+            gid = row.get("game_id")
+            if gid and gid in kickoff_by_game and _parse_iso(row.get("captured_at")) and _parse_iso(kickoff_by_game[gid]) and _parse_iso(row.get("captured_at")) > _parse_iso(kickoff_by_game[gid]):
+                report.add_error(f"injury_report_after_kickoff: {gid}")
         for dataset in ("player_stats", "team_stats"):
             for row in loaded.get(dataset, []):
-                if str(row.get("season")) != str(season) or int(row.get("through_week", -1)) >= int(week):
-                    report.add_error(f"Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: through_week must be before replay week")
+                role = row.get("record_role", "pregame_history")
+                if role == "pregame_history" and (str(row.get("season")) != str(season) or int(row.get("through_week", -1)) >= int(week)):
+                    report.add_error(f"same_game_stats_in_pregame_history: Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: through_week must be before replay week")
+        manifest = wdir / "manifest.json"
+        if manifest.exists():
+            try:
+                meta = json.loads(manifest.read_text())
+                for d, info in (meta.get("datasets") or {}).items():
+                    key = f"week_{week}.{d}"
+                    if key in report.counts and int(info.get("records", -1)) != report.counts[key]:
+                        report.add_error(f"manifest_count_mismatch: {d} manifest count does not match file for {league.upper()} {season} Week {week}")
+            except json.JSONDecodeError as exc:
+                report.add_error(f"Malformed manifest JSON for {league.upper()} {season} Week {week}: {manifest} ({exc})")
     return report

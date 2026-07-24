@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Protocol
@@ -149,16 +149,37 @@ class TheOddsApiSnapshotSource:
     name = "odds-api"
     supported_datasets = {"odds"}
 
-    def __init__(self):
+    def __init__(self, hours_before_kickoff: int = 24):
         from nfl_providers import TheOddsApiNflProvider, JsonRawCache
         self.provider = TheOddsApiNflProvider(cache=JsonRawCache(DATA_DIR / "raw_cache"))
+        self.hours_before_kickoff = int(hours_before_kickoff)
 
     def fetch_odds(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        kickoff = min((g.get("kickoff_time") for g in games if g.get("kickoff_time")), default=None)
-        snapshot_time = week_range[0] + "T12:00:00Z" if int(season) < date.today().year else None
-        if snapshot_time and kickoff and snapshot_time >= kickoff:
-            raise ProviderUnavailable("historical odds snapshot timestamp must be before kickoff")
-        return self.provider.fetch_odds(season, week, games, snapshot_time=snapshot_time)
+        rows: list[dict[str, Any]] = []
+        for game in games:
+            kickoff_raw = game.get("kickoff_time")
+            if not kickoff_raw:
+                continue
+            kickoff = datetime.fromisoformat(str(kickoff_raw).replace("Z", "+00:00"))
+            snapshot_dt = kickoff - timedelta(hours=self.hours_before_kickoff)
+            if snapshot_dt >= kickoff:
+                raise ProviderUnavailable("historical odds snapshot timestamp must be before kickoff")
+            snapshot_time = snapshot_dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+            
+            try:
+                game_rows = self.provider.fetch_odds(season, week, [game], snapshot_time=snapshot_time)
+            except Exception as exc:
+                raise ProviderUnavailable(str(exc)) from exc
+            for row in game_rows:
+                captured = row.get("captured_at") or row.get("snapshot_timestamp") or snapshot_time
+                if datetime.fromisoformat(str(captured).replace("Z", "+00:00")) >= kickoff:
+                    raise ProviderUnavailable(f"odds_after_kickoff: provider returned odds captured after kickoff for {game.get('game_id')}")
+                row.setdefault("snapshot_timestamp", snapshot_time)
+                row.setdefault("data_as_of", captured)
+                row.setdefault("is_pregame", True)
+                row.setdefault("source", "the-odds-api-historical")
+                rows.append(row)
+        return rows
 
 
 class NflOfficialSnapshotSource:
@@ -169,12 +190,17 @@ class NflOfficialSnapshotSource:
         self.provider = NflOfficialProvider()
 
 
-class OpenWeatherSnapshotSource:
-    name = "openweather"
+class HistoricalWeatherSnapshotSource:
+    name = "historical-weather"
     supported_datasets = {"weather"}
     def fetch_weather(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        from nfl_data_service import get_nfl_weather
-        return [{"game_id": g.get("game_id"), "captured_at": week_range[0] + "T12:00:00Z", "temperature": w.get("temperature_f"), "wind_speed": w.get("wind_mph"), "precipitation": None, "conditions": w.get("condition")} for g in games for w in [get_nfl_weather(g)]]
+        raise ProviderUnavailable("no genuine historical weather/archive provider is configured; current OpenWeather data was not substituted")
+
+
+class OpenWeatherSnapshotSource(HistoricalWeatherSnapshotSource):
+    name = "openweather"
+    def fetch_weather(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        raise ProviderUnavailable("OpenWeather live adapter is disabled for historical snapshots; use historical-weather or local-json export")
 
 
 @dataclass
@@ -207,7 +233,7 @@ class LocalJsonSnapshotSource:
         raise AttributeError(name)
 
 
-def create_sources(spec: str | None) -> list[HistoricalSnapshotSource]:
+def create_sources(spec: str | None, odds_hours_before_kickoff: int = 24) -> list[HistoricalSnapshotSource]:
     sources: list[HistoricalSnapshotSource] = []
     names = [p.strip() for p in (spec or "odds-api,espn,nfl-official,local-json").split(",") if p.strip()]
     for name in names:
@@ -216,11 +242,13 @@ def create_sources(spec: str | None) -> list[HistoricalSnapshotSource]:
         elif name == "espn":
             sources.append(EspnSnapshotSource())
         elif name == "odds-api":
-            sources.append(TheOddsApiSnapshotSource())
+            sources.append(TheOddsApiSnapshotSource(odds_hours_before_kickoff))
         elif name == "nfl-official":
             sources.append(NflOfficialSnapshotSource())
         elif name == "openweather":
             sources.append(OpenWeatherSnapshotSource())
+        elif name == "historical-weather":
+            sources.append(HistoricalWeatherSnapshotSource())
         elif name == "local-json":
             sources.append(LocalJsonSnapshotSource(Path(os.getenv("BACKTESTING_LOCAL_EXPORT_DIR", DATA_DIR / "provider_exports"))))
         else:

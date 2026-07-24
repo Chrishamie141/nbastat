@@ -37,6 +37,8 @@ class ReplayEngine:
             games = self.provider.get_games(self.config.league, self.config.season, week)
             odds = self.provider.get_odds(self.config.league, self.config.season, week)
             predictions = self.prediction_factory(self.provider, self.config, week)
+            if not predictions and not odds:
+                print(f"- Predictions unavailable: no historical odds were loaded; current/sample odds were not substituted")
             frozen: list[tuple[int, dict[str, Any]]] = []
             for prediction in predictions:
                 prediction.setdefault("generated_timestamp", utc_now_iso())

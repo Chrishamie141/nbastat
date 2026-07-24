@@ -54,11 +54,11 @@ class HistoricalSnapshotProvider:
 
     def get_player_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return player statistics available before kickoff."""
-        return self._snapshot(league, season, week, "player_stats")
+        return [r for r in self._snapshot(league, season, week, "player_stats") if r.get("record_role", "pregame_history") == "pregame_history" and r.get("is_pregame", True)]
 
     def get_team_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return team statistics available before kickoff."""
-        return self._snapshot(league, season, week, "team_stats")
+        return [r for r in self._snapshot(league, season, week, "team_stats") if r.get("record_role", "pregame_history") == "pregame_history" and r.get("is_pregame", True)]
 
     def get_outcomes(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return final outcomes loaded only after predictions have been frozen."""
