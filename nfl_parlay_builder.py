@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from statistics import mean
+import math
+import re
 
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
 from nfl_data_service import (
+    NFL_SAMPLE_LINES,
     NFL_SAMPLE_PLAYERS,
     NFL_SAMPLE_RECENT_STATS,
     get_nfl_games,
@@ -32,11 +35,73 @@ STAT_WEIGHTS = {
     "TD": 0.8,
 }
 
+STAT_ALIASES = {
+    "PASSING_YARDS": "PASS_YDS",
+    "PASS_YARDS": "PASS_YDS",
+    "PASS_YDS": "PASS_YDS",
+    "PASSINGYARDS": "PASS_YDS",
+    "PLAYER_PASS_YDS": "PASS_YDS",
+    "PASSING_TOUCHDOWNS": "PASS_TD",
+    "PASS_TDS": "PASS_TD",
+    "PASS_TD": "PASS_TD",
+    "PASSINGTOUCHDOWNS": "PASS_TD",
+    "RUSHING_YARDS": "RUSH_YDS",
+    "RUSH_YARDS": "RUSH_YDS",
+    "RUSH_YDS": "RUSH_YDS",
+    "RUSHINGYARDS": "RUSH_YDS",
+    "RECEIVING_YARDS": "REC_YDS",
+    "RECEPTION_YARDS": "REC_YDS",
+    "REC_YDS": "REC_YDS",
+    "RECEIVINGYARDS": "REC_YDS",
+    "RECEPTIONS": "RECEPTIONS",
+    "CATCHES": "RECEPTIONS",
+    "ANYTIME_TD": "TD",
+    "TOUCHDOWNS": "TD",
+    "TD": "TD",
+    "PASSING_INTERCEPTIONS": "PASS_INT",
+    "PASS_INT": "PASS_INT",
+}
+
+
+def _normalize_name(value):
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+
+def _normalize_stat_type(value):
+    raw = str(value or "").strip()
+    key = re.sub(r"[^A-Za-z0-9]+", "_", raw).strip("_").upper()
+    compact = key.replace("_", "")
+    return STAT_ALIASES.get(key) or STAT_ALIASES.get(compact) or key
+
+
+def _usable_number(value):
+    if value in (None, "", [], [None]):
+        return None
+    if isinstance(value, (list, tuple)):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(number):
+        return None
+    return number
+
+
+def _clean_recent_values(values):
+    cleaned = []
+    for value in values or []:
+        number = _usable_number(value)
+        if number is not None:
+            cleaned.append(number)
+    return cleaned
+
 
 def calculate_nfl_projection(player_name, stat_type, recent_stats, line_info=None, injuries=None, weather=None):
     """Project a player stat from recent production, line context, injuries, and weather."""
+    stat_type = _normalize_stat_type(stat_type)
     player_stats = recent_stats.get(player_name, {})
-    values = [float(value) for value in player_stats.get(stat_type, []) if value is not None]
+    values = _clean_recent_values(player_stats.get(stat_type, []))
     if values:
         projection = mean(values[-5:])
     elif line_info and line_info.get("line") is not None:
@@ -68,7 +133,7 @@ def calculate_edge_score(projection, sportsbook_line):
 
 def calculate_player_consistency(recent_values):
     """Score player consistency from recent-game variance on a 0-100 scale."""
-    values = [float(value) for value in (recent_values or []) if value is not None]
+    values = _clean_recent_values(recent_values)
     if len(values) < 2:
         return 50.0
     avg = mean(values)
@@ -134,6 +199,7 @@ def calculate_injury_adjustment(injuries=None, player_name=None):
 
 
 def _odds_value_score(odds):
+    odds = _usable_number(odds)
     if odds is None:
         return 0.0
     odds = int(odds)
@@ -187,13 +253,30 @@ def _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats)
     provider data but not usable for sample players, so backfill only the missing
     sample player/stat fields needed by the normalized candidate pipeline.
     """
-    candidate_stats = dict((recent_stats or {}).get(player_name) or {})
+    stat_type = _normalize_stat_type(stat_type)
+    candidate_key = player_name
+    normalized_player = _normalize_name(player_name)
+    for name in recent_stats or {}:
+        if _normalize_name(name) == normalized_player:
+            candidate_key = name
+            break
+    candidate_stats = dict((recent_stats or {}).get(candidate_key) or {})
+    for key, value in list(candidate_stats.items()):
+        normalized_key = _normalize_stat_type(key)
+        if normalized_key != key and normalized_key not in candidate_stats:
+            candidate_stats[normalized_key] = value
     if _is_sample_line(line_info):
-        sample_stats = NFL_SAMPLE_RECENT_STATS.get(player_name, {})
-        if not candidate_stats or not candidate_stats.get(stat_type):
+        sample_stats = {}
+        for sample_name, sample_row in NFL_SAMPLE_RECENT_STATS.items():
+            if _normalize_name(sample_name) == normalized_player:
+                sample_stats = sample_row
+                break
+        if not candidate_stats or len(_clean_recent_values(candidate_stats.get(stat_type))) < 2:
             candidate_stats = {**sample_stats, **candidate_stats}
         for key, value in sample_stats.items():
-            candidate_stats.setdefault(key, value)
+            normalized_key = _normalize_stat_type(key)
+            if normalized_key not in candidate_stats or len(_clean_recent_values(candidate_stats.get(normalized_key))) < 2:
+                candidate_stats[normalized_key] = value
     merged = dict(recent_stats or {})
     if candidate_stats:
         merged[player_name] = candidate_stats
@@ -201,15 +284,32 @@ def _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats)
 
 
 def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather):
+    stat_type = _normalize_stat_type(stat_type)
+    cleaned_line = dict(line_info or {})
+    cleaned_line["line"] = _usable_number(cleaned_line.get("line"))
+    if _is_sample_line(cleaned_line) and cleaned_line["line"] is None:
+        for sample_name, sample_lines in NFL_SAMPLE_LINES.items():
+            if _normalize_name(sample_name) != _normalize_name(player_name):
+                continue
+            sample_stat_lines = sample_lines.get(stat_type) or sample_lines.get(_normalize_stat_type(stat_type)) or []
+            for sample_line in sample_stat_lines:
+                sample_value = _usable_number(sample_line.get("line"))
+                if sample_value is not None:
+                    cleaned_line["line"] = sample_value
+                    break
+            break
+    cleaned_odds = _usable_number(cleaned_line.get("odds"))
+    cleaned_line["odds"] = int(cleaned_odds) if cleaned_odds is not None else None
+    line_info = cleaned_line
     recent_stats = _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats)
     projection = calculate_nfl_projection(player_name, stat_type, recent_stats, line_info, injuries, weather)
-    recent_values = recent_stats.get(player_name, {}).get(stat_type, [])
+    recent_values = _clean_recent_values(recent_stats.get(player_name, {}).get(stat_type, []))
     player_context = recent_stats.get(player_name, {})
     confidence = calculate_nfl_confidence(
         projection, line_info, recent_values, injuries, player_name, weather, player_context, stat_type
     )
     edge_score = calculate_edge_score(projection, line_info.get("line"))
-    line = line_info.get("line")
+    line = _usable_number(line_info.get("line"))
     side = "over" if line is None or projection >= float(line) else "under"
     if line_info.get("side") and not _line_is_over(line_info):
         side = "under"
@@ -222,7 +322,7 @@ def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, 
         "team": team,
         "stat_type": stat_type,
         "line": line,
-        "odds": line_info.get("odds"),
+        "odds": int(_usable_number(line_info.get("odds"))) if _usable_number(line_info.get("odds")) is not None else None,
         "projection": projection,
         "confidence": confidence,
         "edge_score": edge_score,
@@ -233,6 +333,7 @@ def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, 
             "with confidence adjusted for consistency, matchup, injuries, weather, and odds."
             f"{data_label}"
         ),
+        "sample_offline": _is_sample_line(line_info),
     }
 
 
