@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
-TRACKED_KEYS = ("THE_ODDS_API_KEY", "SPORTSDATAIO_API_KEY", "OPENWEATHER_API_KEY")
+TRACKED_KEYS = ("THE_ODDS_API_KEY", "OPENWEATHER_API_KEY")
 
 
 def get_config_status():

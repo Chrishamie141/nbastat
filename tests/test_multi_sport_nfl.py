@@ -26,8 +26,6 @@ def test_build_nfl_safe_parlay_uses_non_empty_sample_fallback_without_live_keys(
     for key in (
         "THE_ODDS_API_KEY",
         "ODDS_API_KEY",
-        "SPORTSDATAIO_API_KEY",
-        "SPORTS_DATA_IO_API_KEY",
         "OPENWEATHER_API_KEY",
         "OPEN_WEATHER_API_KEY",
     ):

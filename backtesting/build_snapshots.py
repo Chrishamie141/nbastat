@@ -37,7 +37,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--providers", default="local-json,existing-nfl")
+    parser.add_argument("--providers", default="odds-api,espn,nfl-official,local-json")
     parser.add_argument("--strict", action="store_true")
     return parser.parse_args(argv)
 
