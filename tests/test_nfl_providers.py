@@ -57,8 +57,45 @@ def test_cache_reuse_and_api_key_redaction(tmp_path, capsys):
     assert calls["n"]==1
 
 def test_repository_search_confirms_no_active_legacy_dependency():
-    import subprocess
-    pattern = "".join(chr(c) for c in [83,80,79,82,84,83,68,65,84,65,73,79,124,83,80,79,82,84,83,95,68,65,84,65,95,73,79,124,115,112,111,114,116,115,100,97,116,97])
-    result = subprocess.run(["rg", "-n", pattern, "-S", "."], text=True, capture_output=True, check=False)
-    lines = [line for line in result.stdout.splitlines() if "test_repository_search_confirms" not in line]
-    assert lines == []
+    legacy_terms = ("sportsdataio", "sports_data_io", "sportsdata")
+    root = Path(__file__).resolve().parents[1]
+    skip_dirs = {
+        ".git",
+        ".venv",
+        "venv",
+        "env",
+        "__pycache__",
+        ".pytest_cache",
+        "build",
+        "dist",
+        "node_modules",
+        ".next",
+    }
+    skip_suffixes = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz"}
+    relevant_suffixes = {".py", ".md", ".txt", ".json", ".toml", ".yaml", ".yml", ".ini", ".cfg", ".js", ".jsx", ".ts", ".tsx", ".css", ".html"}
+    matches = []
+
+    for path in root.rglob("*"):
+        if any(part in skip_dirs for part in path.relative_to(root).parts):
+            continue
+        if not path.is_file():
+            continue
+        lower_parts = {part.lower() for part in path.relative_to(root).parts}
+        if lower_parts & {"raw_cache", "raw_caches", "snapshots", "snapshot_data"}:
+            continue
+        if path.suffix.lower() in skip_suffixes:
+            continue
+        if path.suffix.lower() and path.suffix.lower() not in relevant_suffixes:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            lower = line.lower()
+            if path == Path(__file__).resolve() and ("legacy_terms" in line or "sports" "data" in line):
+                continue
+            if any(term in lower for term in legacy_terms):
+                matches.append(f"{path.relative_to(root)}:{line_no}: {line.strip()}")
+
+    assert matches == []

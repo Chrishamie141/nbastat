@@ -7,6 +7,7 @@ from statistics import mean
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
 from nfl_data_service import (
     NFL_SAMPLE_PLAYERS,
+    NFL_SAMPLE_RECENT_STATS,
     get_nfl_games,
     get_nfl_injuries,
     get_nfl_player_props,
@@ -174,7 +175,33 @@ def _line_is_over(line_info):
     return "under" not in side
 
 
+def _is_sample_line(line_info):
+    return str((line_info or {}).get("provider") or "").lower() == "sample"
+
+
+def _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats):
+    """Return stats for candidate, backfilling sample props with matching sample stats.
+
+    Live odds remain live-first. When props are deterministic sample/offline lines,
+    ESPN may still return unrelated current box-score rows. Those rows are non-empty
+    provider data but not usable for sample players, so backfill only the missing
+    sample player/stat fields needed by the normalized candidate pipeline.
+    """
+    candidate_stats = dict((recent_stats or {}).get(player_name) or {})
+    if _is_sample_line(line_info):
+        sample_stats = NFL_SAMPLE_RECENT_STATS.get(player_name, {})
+        if not candidate_stats or not candidate_stats.get(stat_type):
+            candidate_stats = {**sample_stats, **candidate_stats}
+        for key, value in sample_stats.items():
+            candidate_stats.setdefault(key, value)
+    merged = dict(recent_stats or {})
+    if candidate_stats:
+        merged[player_name] = candidate_stats
+    return merged
+
+
 def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather):
+    recent_stats = _recent_stats_for_candidate(player_name, stat_type, line_info, recent_stats)
     projection = calculate_nfl_projection(player_name, stat_type, recent_stats, line_info, injuries, weather)
     recent_values = recent_stats.get(player_name, {}).get(stat_type, [])
     player_context = recent_stats.get(player_name, {})
@@ -189,6 +216,7 @@ def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, 
     team = recent_stats.get(player_name, {}).get("team")
     provider = line_info.get("provider") or line_info.get("bookmaker") or "provider"
     line_text = f" {side} {float(line):g}" if line is not None else " projected"
+    data_label = " Sample/offline fallback data." if _is_sample_line(line_info) else ""
     return {
         "player": player_name,
         "team": team,
@@ -203,6 +231,7 @@ def _build_candidate(player_name, stat_type, line_info, recent_stats, injuries, 
         "notes": (
             f"Projection {projection:g}; edge {edge_score:g} vs {provider} line, "
             "with confidence adjusted for consistency, matchup, injuries, weather, and odds."
+            f"{data_label}"
         ),
     }
 
