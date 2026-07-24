@@ -22,6 +22,24 @@ def test_build_nfl_safe_parlay_has_expected_shared_models():
     assert all(leg.confidence >= 62 for leg in result.parlay.legs)
 
 
+def test_build_nfl_safe_parlay_uses_non_empty_sample_fallback_without_live_keys(monkeypatch):
+    for key in (
+        "THE_ODDS_API_KEY",
+        "ODDS_API_KEY",
+        "SPORTSDATAIO_API_KEY",
+        "SPORTS_DATA_IO_API_KEY",
+        "OPENWEATHER_API_KEY",
+        "OPEN_WEATHER_API_KEY",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    result = build_nfl_parlay("safe")
+
+    assert 1 <= len(result.parlay.legs) <= 3
+    assert all("sample" in leg.notes for leg in result.parlay.legs)
+    assert "sample provider fallback" in result.notes
+
+
 def test_save_and_filter_parlay_history(tmp_path):
     db_file = tmp_path / "predictions.db"
     result = build_nfl_parlay("balanced")
