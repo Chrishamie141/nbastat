@@ -83,18 +83,24 @@ class EspnNflProvider:
         comps=((e or {}).get("competitions") or [{}])[0]; competitors=comps.get("competitors") or []
         home=next((c for c in competitors if c.get("homeAway")=="home"),{}); away=next((c for c in competitors if c.get("homeAway")=="away"),{})
         status=(e.get("status") or {}).get("type") or {}
-        return {"game_id":f"espn-{e.get('id')}","espn_event_id":e.get("id"),"league":"nfl","season":str(season),"week":int(week),"kickoff_time":_iso(e.get("date")),"home_team":normalize_team((home.get("team") or {}).get("abbreviation") or (home.get("team") or {}).get("displayName")),"away_team":normalize_team((away.get("team") or {}).get("abbreviation") or (away.get("team") or {}).get("displayName")),"venue":(comps.get("venue") or {}).get("fullName"),"status":status.get("name") or status.get("state"),"final_home_score": int(home.get("score",0) or 0),"final_away_score": int(away.get("score",0) or 0)}
-    def fetch_outcomes(self, season, week, games): return [{"game_id":g["game_id"],"final_home_score":g.get("final_home_score"),"final_away_score":g.get("final_away_score"),"player_results":{},"market_results":{"moneyline":"home" if (g.get("final_home_score") or 0)>(g.get("final_away_score") or 0) else "away"},"completed_at":g.get("kickoff_time")} for g in games if str(g.get("status","")).lower() in {"status_final","final","post"}]
+        return {"game_id":f"espn-{e.get('id')}","espn_event_id":e.get("id"),"league":"nfl","season":str(season),"week":int(week),"kickoff_time":_iso(e.get("date")),"home_team":normalize_team((home.get("team") or {}).get("abbreviation") or (home.get("team") or {}).get("displayName")),"away_team":normalize_team((away.get("team") or {}).get("abbreviation") or (away.get("team") or {}).get("displayName")),"venue":(comps.get("venue") or {}).get("fullName"),"status":status.get("name") or status.get("state"),"final_home_score": int(home.get("score",0) or 0),"final_away_score": int(away.get("score",0) or 0),"source":"espn","captured_at":_iso(e.get("date")),"data_as_of":_iso(e.get("date")),"is_pregame":True}
+    def fetch_outcomes(self, season, week, games): return [{"game_id":g["game_id"],"source":"espn","captured_at":g.get("kickoff_time"),"data_as_of":g.get("kickoff_time"),"is_pregame":False,"season":str(season),"week":int(week),"final_home_score":g.get("final_home_score"),"final_away_score":g.get("final_away_score"),"player_results":{},"market_results":{"moneyline":"home" if (g.get("final_home_score") or 0)>(g.get("final_away_score") or 0) else "away"},"completed_at":g.get("kickoff_time")} for g in games if str(g.get("status","")).lower() in {"status_final","final","post"}]
     def fetch_player_stats(self, season, week, games):
         rows=[]
         for g in games:
             eid=str(g.get("espn_event_id") or str(g.get("game_id","")).replace("espn-","")); data=self._summary(season,week,eid)
-            rows += normalize_espn_player_boxscore(data, str(season), int(week)-1)
+            
+            for r in normalize_espn_player_boxscore(data, str(season), int(week)-1):
+                r.update({"game_id": g.get("game_id"), "source":"espn", "captured_at": g.get("kickoff_time"), "data_as_of": g.get("kickoff_time"), "is_pregame": True, "record_role":"pregame_history", "week": int(week)})
+                rows.append(r)
         return rows
     def fetch_team_stats(self, season, week, games):
         rows=[]
         for g in games:
-            eid=str(g.get("espn_event_id") or str(g.get("game_id","")).replace("espn-","")); rows += normalize_espn_team_boxscore(self._summary(season,week,eid), str(season), int(week)-1)
+            eid=str(g.get("espn_event_id") or str(g.get("game_id","")).replace("espn-",""));
+            for r in normalize_espn_team_boxscore(self._summary(season,week,eid), str(season), int(week)-1):
+                r.update({"game_id": g.get("game_id"), "source":"espn", "captured_at": g.get("kickoff_time"), "data_as_of": g.get("kickoff_time"), "is_pregame": True, "record_role":"pregame_history", "week": int(week)})
+                rows.append(r)
         return rows
     def fetch_injuries(self, season, week, games): return []
 
@@ -156,7 +162,7 @@ def normalize_odds_events(events, games):
         for book in ev.get("bookmakers",[]) or []:
             for market in book.get("markets",[]) or []:
                 for o in market.get("outcomes",[]) or []:
-                    rows.append({"game_id":gid,"event_id":ev.get("id"),"commence_time":ev.get("commence_time"),"market":MARKET_TO_STAT.get(market.get("key"), market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":o.get("point"),"odds":o.get("price"),"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api"})
+                    rows.append({"game_id":gid,"event_id":ev.get("id"),"commence_time":ev.get("commence_time"),"market":MARKET_TO_STAT.get(market.get("key"), market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":o.get("point"),"odds":o.get("price"),"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api","source":"the-odds-api-historical","data_as_of":market.get("last_update") or captured,"is_pregame":True})
     return rows
 
 class NflOfficialProvider:
