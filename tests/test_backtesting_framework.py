@@ -1,7 +1,7 @@
 from argparse import Namespace
 from pathlib import Path
 
-from backtesting.config import BacktestConfig
+from backtesting.config import BacktestConfig, PredictionMode
 from backtesting.grader import PredictionGrader
 from backtesting.replay_engine import ReplayEngine
 
@@ -16,7 +16,7 @@ class StubProvider:
 
     def get_odds(self, league, season, week):
         self.calls.append(("odds", week))
-        return []
+        return [{"game_id": f"game-{week}", "market": "moneyline", "selection": "home", "line": None, "odds": -110, "sportsbook": "fixture-book"}]
 
     def get_weather(self, league, season, week):
         self.calls.append(("weather", week))
@@ -155,3 +155,37 @@ def test_existing_snapshots_not_overwritten_without_overwrite(tmp_path):
     import_historical_main(args)
     with pytest.raises(SnapshotError, match="Refusing to overwrite"):
         import_historical_main(args)
+
+
+class NoOddsProvider(StubProvider):
+    def get_odds(self, league, season, week):
+        self.calls.append(("odds", week))
+        return []
+
+
+def test_betting_mode_generates_zero_predictions_without_odds(tmp_path):
+    provider = NoOddsProvider()
+    config = BacktestConfig(league="nfl", season="2025", start_week=1, end_week=1, export=False, db_path=tmp_path/"b.db", data_dir=tmp_path, prediction_mode=PredictionMode.BETTING)
+    engine = ReplayEngine(config, provider=provider, prediction_factory=lambda p, c, w: [{"game":"game-1","market":"moneyline","prediction":"home","confidence":70}])
+    summary = engine.run()
+    assert summary["mode"] == "BETTING"
+    assert summary["metrics"]["total_predictions"] == 0
+
+
+def test_statistical_mode_allows_predictions_without_odds(tmp_path):
+    provider = NoOddsProvider()
+    config = BacktestConfig(league="nfl", season="2025", start_week=1, end_week=1, export=False, db_path=tmp_path/"s.db", data_dir=tmp_path, prediction_mode=PredictionMode.STATISTICAL)
+    engine = ReplayEngine(config, provider=provider, prediction_factory=lambda p, c, w: [{"game":"game-1","market":"moneyline","prediction":"home","confidence":70}])
+    summary = engine.run()
+    assert summary["mode"] == "STATISTICAL"
+    assert summary["metrics"]["graded_predictions"] == 1
+
+
+def test_roi_uses_american_odds_profit(tmp_path):
+    provider = StubProvider()
+    config = BacktestConfig(league="nfl", season="2025", start_week=1, end_week=1, export=False, db_path=tmp_path/"r.db", data_dir=tmp_path)
+    pred = {"game":"game-1","market":"moneyline","prediction":"home","confidence":70,"sportsbook_odds":100,"edge":0.05,"clv":0.5}
+    summary = ReplayEngine(config, provider=provider, prediction_factory=lambda p, c, w: [pred]).run()
+    assert summary["metrics"]["roi"] == 1.0
+    assert summary["metrics"]["average_edge"] == 0.05
+    assert summary["metrics"]["average_clv"] == 0.5

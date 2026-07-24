@@ -36,6 +36,10 @@ class NflOutcomeProvider(Protocol):
 class ProviderUnavailable(RuntimeError): pass
 class HistoricalOddsUnavailable(ProviderUnavailable): pass
 
+class OddsApiRequestError(HistoricalOddsUnavailable):
+    """The Odds API rejected a historical odds request with a provider-supplied reason."""
+
+
 def normalize_team(value: Any) -> str:
     key = re.sub(r"[^A-Z0-9 ]", "", str(value or "").upper()).strip()
     return TEAM_ALIASES.get(key, key)
@@ -68,6 +72,21 @@ class JsonRawCache:
 def _fetch_json(url: str, headers: dict[str,str]|None=None, timeout:int=REQUEST_TIMEOUT):
     req = Request(url, headers={"User-Agent":USER_AGENT, **(headers or {})})
     with urlopen(req, timeout=timeout) as r: return json.loads(r.read().decode())
+
+def _read_http_error(e: HTTPError) -> str:
+    try:
+        body = e.read().decode("utf-8", "replace")
+    except Exception:
+        body = ""
+    try:
+        parsed = json.loads(body) if body else {}
+        detail = parsed.get("message") or parsed.get("error") or parsed.get("detail") or body
+    except Exception:
+        detail = body
+    return str(detail or e.reason or f"HTTP {e.code}")
+
+def _redact_url(url: str) -> str:
+    return re.sub(r"(apiKey=)[^&]+", r"\1REDACTED", url)
 
 class EspnNflProvider:
     name="espn"; supported_datasets={"games","player_stats","team_stats","outcomes","injuries"}
@@ -145,13 +164,21 @@ class TheOddsApiNflProvider:
     def __init__(self, api_key=None, cache:JsonRawCache|None=None): self.api_key=api_key or os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY"); self.cache=cache or JsonRawCache()
     def fetch_odds(self, season, week, games, snapshot_time=None):
         if not self.api_key: raise ProviderUnavailable("THE_ODDS_API_KEY is not set")
-        endpoint="historical/sports" if snapshot_time else "sports"; params={"apiKey":self.api_key,"regions":"us","markets":",".join(TEAM_MARKETS+PROP_MARKETS),"oddsFormat":"american"}
+        endpoint="historical/sports" if snapshot_time else "sports"
+        # The Odds API /odds endpoint supports game markets. NFL player props are event-level
+        # markets and cause 422 INVALID_MARKET responses when mixed into this request.
+        params={"apiKey":self.api_key,"regions":"us","markets":",".join(TEAM_MARKETS),"oddsFormat":"american"}
         if snapshot_time: params["date"]=snapshot_time
-        url=f"{ODDS_API_BASE}/{endpoint}/{NFL_SPORT_KEY}/odds/?{urlencode(params)}"
+        url=f"{ODDS_API_BASE}/{endpoint}/{NFL_SPORT_KEY}/odds?{urlencode(params)}"
         try: data=self.cache.get_or_fetch(self.name,"nfl",season,week,"odds",{k:v for k,v in params.items() if k!='apiKey'},lambda:_fetch_json(url))
         except HTTPError as e:
-            if e.code in (401,402,403): raise HistoricalOddsUnavailable("The Odds API historical odds require an authorized subscription; current odds were not substituted")
-            raise
+            detail = _read_http_error(e)
+            safe_url = _redact_url(url)
+            if e.code in (401,402,403):
+                raise HistoricalOddsUnavailable(f"The Odds API historical odds require an authorized subscription ({e.code}: {detail}); current odds were not substituted") from e
+            if e.code == 422:
+                raise OddsApiRequestError(f"The Odds API rejected historical odds request (422: {detail}). url={safe_url}. Likely causes: invalid date, unsupported market for endpoint, unsupported event, or subscription limitation.") from e
+            raise OddsApiRequestError(f"The Odds API odds request failed ({e.code}: {detail}). url={safe_url}") from e
         events=data.get("data",[]) if isinstance(data,dict) else data
         return normalize_odds_events(events, games)
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 
 
@@ -12,6 +13,13 @@ SNAPSHOTS_DIR = DATA_DIR / "snapshots"
 RESULTS_DIR = PACKAGE_ROOT / "results"
 LOGS_DIR = PACKAGE_ROOT / "logs"
 DEFAULT_DB_PATH = DATA_DIR / "backtests.db"
+
+
+class PredictionMode(str, Enum):
+    """Replay prediction modes."""
+
+    BETTING = "BETTING"
+    STATISTICAL = "STATISTICAL"
 
 
 @dataclass(frozen=True)
@@ -28,6 +36,13 @@ class BacktestConfig:
     db_path: Path = DEFAULT_DB_PATH
     data_dir: Path = SNAPSHOTS_DIR
     results_dir: Path = RESULTS_DIR
+    prediction_mode: PredictionMode | str = PredictionMode.BETTING
+
+    def mode(self) -> PredictionMode:
+        """Return the configured replay mode as an enum."""
+        if isinstance(self.prediction_mode, PredictionMode):
+            return self.prediction_mode
+        return PredictionMode(str(self.prediction_mode).upper())
 
     def normalized_markets(self) -> tuple[str, ...]:
         """Return selected markets with whitespace removed and lowercase applied."""

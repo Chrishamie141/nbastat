@@ -21,9 +21,11 @@ class MetricsCalculator:
         graded = [p for p in predictions if p.get("correct") is not None]
         wins = sum(1 for p in graded if bool(p.get("correct")))
         losses = len(graded) - wins
-        units_won = float(wins)
+        units_won = sum(self._profit(p) for p in graded if bool(p.get("correct")))
         units_lost = float(losses)
         roi = (units_won - units_lost) / len(graded) if graded else None
+        edges = [float(p.get("edge")) for p in predictions if p.get("edge") is not None]
+        clvs = [float(p.get("clv")) for p in predictions if p.get("clv") is not None]
         confidences = [float(p.get("confidence") or 0) for p in predictions]
         return {
             "overall_accuracy": _accuracy(predictions),
@@ -35,13 +37,23 @@ class MetricsCalculator:
             "accuracy_by_game_type": self._group_accuracy(predictions, "game_type"),
             "accuracy_by_home_away": self._group_accuracy(predictions, "home_away"),
             "roi": roi,
+            "win_pct": _accuracy(predictions),
             "units_won": units_won,
             "units_lost": units_lost,
             "average_confidence": sum(confidences) / len(confidences) if confidences else None,
+            "average_clv": sum(clvs) / len(clvs) if clvs else None,
+            "average_edge": sum(edges) / len(edges) if edges else None,
             "calibration": self._calibration(predictions),
             "graded_predictions": len(graded),
             "total_predictions": len(predictions),
         }
+
+    def _profit(self, row: dict[str, Any]) -> float:
+        odds = row.get("sportsbook_odds")
+        if odds in (None, ""):
+            return 1.0
+        odds = float(odds)
+        return odds / 100 if odds > 0 else 100 / abs(odds)
 
     def _group_accuracy(self, rows: list[dict[str, Any]], key: str) -> dict[str, float | None]:
         groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
