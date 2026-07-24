@@ -104,3 +104,96 @@ def test_safe_fallback_without_live_keys_or_optional_weather_and_injury(monkeypa
 
     assert 1 <= len(result.parlay.legs) <= 3
     assert all("sample" in leg.notes.lower() and leg.confidence >= 62 for leg in result.parlay.legs)
+
+
+def test_safe_fallback_with_complete_live_provider_failure(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_LINES
+
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: [])
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: dict(NFL_SAMPLE_LINES))
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: {})
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: {})
+
+    result = build_nfl_parlay("safe")
+
+    assert 1 <= len(result.parlay.legs) <= 3
+    assert all("Sample/offline fallback data" in leg.notes for leg in result.parlay.legs)
+
+
+def test_safe_fallback_with_no_recent_rows_no_weather_key_and_optional_injuries(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_GAMES, NFL_SAMPLE_LINES
+
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: list(NFL_SAMPLE_GAMES))
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: dict(NFL_SAMPLE_LINES))
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: {})
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: {})
+
+    result = build_nfl_parlay("safe")
+
+    assert 1 <= len(result.parlay.legs) <= 3
+    assert all(leg.confidence >= 62 for leg in result.parlay.legs)
+
+
+def test_safe_fallback_resolves_player_name_and_stat_type_alias_mismatch(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_GAMES, NFL_SAMPLE_WEATHER
+
+    props = {"Amon Ra St Brown": {"receiving_yards": [{"line": 69.5, "odds": -110, "provider": "sample"}]}}
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: list(NFL_SAMPLE_GAMES))
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: props)
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: {"Amon-Ra St. Brown": {"team": "DET", "ReceivingYards": [76, 94, 71, 83, 65]}})
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: dict(NFL_SAMPLE_WEATHER))
+
+    result = build_nfl_parlay("safe")
+
+    assert len(result.parlay.legs) == 1
+    assert result.parlay.legs[0].stat_type == "REC_YDS"
+    assert result.parlay.legs[0].confidence >= 62
+
+
+def test_safe_fallback_replaces_unusable_target_stat_values_but_preserves_zero(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_GAMES, NFL_SAMPLE_WEATHER
+
+    props = {"Christian McCaffrey": {"TD": [{"line": [None], "odds": "-125", "provider": "sample"}]}}
+    bad_stats = {"Christian McCaffrey": {"team": "SF", "TD": [None, [], [None], "", float("nan"), 0]}}
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: list(NFL_SAMPLE_GAMES))
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: props)
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: bad_stats)
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: dict(NFL_SAMPLE_WEATHER))
+
+    result = build_nfl_parlay("safe")
+
+    assert len(result.parlay.legs) == 1
+    assert result.parlay.legs[0].line == 0.5
+    assert result.parlay.legs[0].confidence >= 62
+
+
+def test_valid_live_stats_are_not_overwritten_by_sample_backfill(monkeypatch):
+    import nfl_parlay_builder as builder
+    from nfl_data_service import NFL_SAMPLE_GAMES, NFL_SAMPLE_WEATHER
+
+    props = {"Josh Allen": {"PASS_YDS": [{"line": 239.5, "odds": -110, "provider": "sample"}]}}
+    live_stats = {"Josh Allen": {"team": "BUF", "PASS_YDS": [400, 401, 402, 403, 404]}}
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: list(NFL_SAMPLE_GAMES))
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None: props)
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: live_stats)
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: dict(NFL_SAMPLE_WEATHER))
+
+    result = build_nfl_parlay("safe")
+
+    assert len(result.parlay.legs) == 1
+    assert result.parlay.legs[0].prediction.startswith("Josh Allen over 239.5")
+    assert result.parlay.legs[0].confidence >= 62
