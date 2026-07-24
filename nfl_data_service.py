@@ -4,7 +4,7 @@ Live integrations are intentionally lightweight and optional. Configure API keys
 with environment variables to enable real provider data:
 
 - THE_ODDS_API_KEY: The Odds API for NFL player props and team lines.
-- SPORTSDATAIO_API_KEY: SportsDataIO NFL scores/stats/injuries.
+- ESPN: NFL schedules, scores, box scores, and available statistics.
 - OPENWEATHER_API_KEY: OpenWeather current weather for outdoor game venues.
 
 When a live provider is unavailable, malformed, or returns no usable rows, the
@@ -24,7 +24,6 @@ from urllib.request import Request, urlopen
 
 NFL_SPORT_KEY = "americanfootball_nfl"
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
-SPORTSDATAIO_BASE = "https://api.sportsdata.io/v3/nfl"
 OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather"
 REQUEST_TIMEOUT = 10
 
@@ -102,10 +101,6 @@ def _fallback(message: str) -> None:
 
 def _odds_key() -> str | None:
     return os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
-
-
-def _sportsdata_key() -> str | None:
-    return os.getenv("SPORTSDATAIO_API_KEY") or os.getenv("SPORTS_DATA_IO_API_KEY")
 
 
 def _openweather_key() -> str | None:
@@ -217,32 +212,30 @@ def get_nfl_team_lines(team: str | None = None) -> list[dict[str, Any]]:
 
 
 def get_nfl_player_recent_stats(player: str | None = None, team: str | None = None, games: int = 5) -> dict[str, dict[str, Any]]:
+    """Return ESPN-normalized recent stats when available, otherwise deterministic sample data."""
     def fetch():
-        key = _sportsdata_key()
-        if not key:
-            raise ValueError("SPORTSDATAIO_API_KEY is not set")
+        from nfl_providers import EspnNflProvider
         season = date.today().year
-        url = f"{SPORTSDATAIO_BASE}/stats/json/PlayerGameStatsBySeason/{season}?key={key}"
-        rows = _fetch_json(url)
+        provider = EspnNflProvider()
+        schedule = provider.fetch_games(season, 1)
+        rows = provider.fetch_player_stats(season, 1, schedule)
         grouped: dict[str, dict[str, Any]] = {}
         team_key = str(team).strip().upper() if team else None
         player_key = str(player).strip().lower() if player else None
         for row in rows:
-            name = row.get("Name")
+            name = row.get("player")
             if not name or (player_key and player_key not in name.lower()):
                 continue
-            if team_key and str(row.get("Team", "")).upper() != team_key:
+            if team_key and str(row.get("team", "")).upper() != team_key:
                 continue
-            item = grouped.setdefault(name, {"team": row.get("Team"), "position": row.get("Position"), "games": []})
-            item["games"].append(row)
+            item = grouped.setdefault(name, {"team": row.get("team"), "position": row.get("position"), "games": []})
+            item["games"].append(row.get("stats", {}))
         normalized = {}
         for name, item in grouped.items():
-            recent = sorted(item["games"], key=lambda r: str(r.get("Day") or r.get("DateTime") or ""), reverse=True)[:games]
             normalized[name] = {"team": item.get("team"), "position": item.get("position")}
-            for provider_field, stat_type in STAT_ALIASES.items():
-                values = [row.get(provider_field) for row in recent if row.get(provider_field) is not None]
-                if values:
-                    normalized[name][stat_type] = values
+            for stat in item["games"][:games]:
+                for key, value in stat.items():
+                    normalized[name].setdefault(key.upper(), []).append(value)
         return normalized
     def sample():
         rows = {name: data for name, data in NFL_SAMPLE_RECENT_STATS.items() if (not player or player.lower() in name.lower())}
@@ -253,15 +246,9 @@ def get_nfl_player_recent_stats(player: str | None = None, team: str | None = No
 
 
 def get_nfl_injuries(team: str | None = None) -> list[dict[str, Any]]:
-    def fetch():
-        key = _sportsdata_key()
-        if not key:
-            raise ValueError("SPORTSDATAIO_API_KEY is not set")
-        season = date.today().year
-        rows = _fetch_json(f"{SPORTSDATAIO_BASE}/scores/json/Injuries/{season}?key={key}")
-        team_key = str(team).strip().upper() if team else None
-        return [{"player": r.get("Name"), "team": r.get("Team"), "status": r.get("Status"), "body_part": r.get("BodyPart"), "notes": r.get("PracticeDescription") or r.get("InjuryNotes"), "provider": "sportsdataio"} for r in rows if not team_key or str(r.get("Team", "")).upper() == team_key]
-    return _provider_get(fetch, lambda: list(NFL_SAMPLE_INJURIES), "NFL injuries")
+    """Return optional injury data; empty if no verified provider is configured."""
+    _fallback("NFL injury provider is optional and no verified endpoint is configured")
+    return list(NFL_SAMPLE_INJURIES)
 
 
 def get_nfl_weather(game: dict[str, Any] | None = None, city: str | None = None) -> dict[str, Any]:
@@ -305,17 +292,9 @@ def get_team_market_placeholders(team):
 def get_nfl_final_player_stats(game_id: str | None = None, week: int | None = None, season: int | None = None) -> dict[str, dict[str, Any]]:
     """Return final NFL player stats for grading, or an empty dict when unavailable.
 
-    Placeholder for a completed-game provider such as SportsDataIO box scores.
-    The empty fallback is intentional: grading leaves parlays pending instead of
-    using sample/projection data as final results.
+    ESPN outcomes are used by backtesting; live grading keeps empty fallback when finals are unavailable.
     """
-    def fetch():
-        key = _sportsdata_key()
-        if not key:
-            raise ValueError("SPORTSDATAIO_API_KEY is not set")
-        raise ValueError("final NFL player stat provider is not configured")
-
-    return _provider_get(fetch, dict, "NFL final player stats")
+    return dict()
 
 
 def get_nfl_final_team_results(game_id: str | None = None, week: int | None = None, season: int | None = None) -> dict[str, dict[str, Any]]:
@@ -324,10 +303,4 @@ def get_nfl_final_team_results(game_id: str | None = None, week: int | None = No
     Expected shape by team: {"KC": {"won": True, "margin": 3, "total": 47}}.
     The empty fallback keeps pending parlays unchanged when finals are not wired.
     """
-    def fetch():
-        key = _sportsdata_key()
-        if not key:
-            raise ValueError("SPORTSDATAIO_API_KEY is not set")
-        raise ValueError("final NFL team result provider is not configured")
-
-    return _provider_get(fetch, dict, "NFL final team results")
+    return dict()

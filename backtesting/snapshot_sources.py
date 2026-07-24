@@ -1,10 +1,11 @@
-"""Historical snapshot collection sources and raw-response caching."""
+"""Historical snapshot collection sources and raw-response caching for ESPN, The Odds API, optional NFL data, weather, and local JSON."""
 
 from __future__ import annotations
 
 import json
 import os
 import time
+from datetime import date
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Protocol
@@ -70,7 +71,7 @@ class RawCache:
 
 
 def _redact(text: str) -> str:
-    for key in ("THE_ODDS_API_KEY", "ODDS_API_KEY", "SPORTSDATAIO_API_KEY", "SPORTS_DATA_IO_API_KEY", "OPENWEATHER_API_KEY", "OPEN_WEATHER_API_KEY"):
+    for key in ("THE_ODDS_API_KEY", "ODDS_API_KEY", "OPENWEATHER_API_KEY", "OPEN_WEATHER_API_KEY"):
         value = os.getenv(key)
         if value:
             text = text.replace(value, "[REDACTED]")
@@ -115,6 +116,67 @@ class ExistingNflProviderSource:
         return self._unavailable("outcomes")
 
 
+class EspnSnapshotSource:
+    name = "espn"
+    supported_datasets = {"games", "player_stats", "team_stats", "outcomes", "injuries"}
+
+    def __init__(self):
+        from nfl_providers import EspnNflProvider, JsonRawCache
+        self.provider = EspnNflProvider(cache=JsonRawCache(DATA_DIR / "raw_cache"))
+
+    def fetch_games(self, league: str, season: str, week: int, week_range: tuple[str, str]) -> list[dict[str, Any]]:
+        if league.lower() != "nfl":
+            raise ProviderUnavailable("ESPN snapshot adapter currently supports NFL only")
+        return self.provider.fetch_games(season, week)
+
+    def fetch_player_stats(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return self.provider.fetch_player_stats(season, week, games)
+
+    def fetch_team_stats(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return self.provider.fetch_team_stats(season, week, games)
+
+    def fetch_outcomes(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return self.provider.fetch_outcomes(season, week, games)
+
+    def fetch_injuries(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        rows = self.provider.fetch_injuries(season, week, games)
+        if not rows:
+            print("WARNING: no verified NFL injury provider returned data; writing optional empty injuries dataset")
+        return rows
+
+
+class TheOddsApiSnapshotSource:
+    name = "odds-api"
+    supported_datasets = {"odds"}
+
+    def __init__(self):
+        from nfl_providers import TheOddsApiNflProvider, JsonRawCache
+        self.provider = TheOddsApiNflProvider(cache=JsonRawCache(DATA_DIR / "raw_cache"))
+
+    def fetch_odds(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        kickoff = min((g.get("kickoff_time") for g in games if g.get("kickoff_time")), default=None)
+        snapshot_time = week_range[0] + "T12:00:00Z" if int(season) < date.today().year else None
+        if snapshot_time and kickoff and snapshot_time >= kickoff:
+            raise ProviderUnavailable("historical odds snapshot timestamp must be before kickoff")
+        return self.provider.fetch_odds(season, week, games, snapshot_time=snapshot_time)
+
+
+class NflOfficialSnapshotSource:
+    name = "nfl-official"
+    supported_datasets: set[str] = set()
+    def __init__(self):
+        from nfl_providers import NflOfficialProvider
+        self.provider = NflOfficialProvider()
+
+
+class OpenWeatherSnapshotSource:
+    name = "openweather"
+    supported_datasets = {"weather"}
+    def fetch_weather(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        from nfl_data_service import get_nfl_weather
+        return [{"game_id": g.get("game_id"), "captured_at": week_range[0] + "T12:00:00Z", "temperature": w.get("temperature_f"), "wind_speed": w.get("wind_mph"), "precipitation": None, "conditions": w.get("condition")} for g in games for w in [get_nfl_weather(g)]]
+
+
 @dataclass
 class LocalJsonSnapshotSource:
     """Load historical provider exports from JSON files under a directory."""
@@ -147,10 +209,18 @@ class LocalJsonSnapshotSource:
 
 def create_sources(spec: str | None) -> list[HistoricalSnapshotSource]:
     sources: list[HistoricalSnapshotSource] = []
-    names = [p.strip() for p in (spec or "local-json,existing-nfl").split(",") if p.strip()]
+    names = [p.strip() for p in (spec or "odds-api,espn,nfl-official,local-json").split(",") if p.strip()]
     for name in names:
         if name == "existing-nfl":
             sources.append(ExistingNflProviderSource())
+        elif name == "espn":
+            sources.append(EspnSnapshotSource())
+        elif name == "odds-api":
+            sources.append(TheOddsApiSnapshotSource())
+        elif name == "nfl-official":
+            sources.append(NflOfficialSnapshotSource())
+        elif name == "openweather":
+            sources.append(OpenWeatherSnapshotSource())
         elif name == "local-json":
             sources.append(LocalJsonSnapshotSource(Path(os.getenv("BACKTESTING_LOCAL_EXPORT_DIR", DATA_DIR / "provider_exports"))))
         else:

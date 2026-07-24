@@ -23,7 +23,6 @@ Create a root `.env` file when live providers are available:
 
 ```bash
 THE_ODDS_API_KEY=...
-SPORTSDATAIO_API_KEY=...
 OPENWEATHER_API_KEY=...
 ```
 
@@ -89,3 +88,8 @@ Protected frontend routes redirect unauthenticated users to `/login`. No real cr
 ## Team logo source
 
 The web dashboard uses remote team logo URLs from ESPN's stable team-logo CDN (`https://a.espncdn.com/i/teamlogos/...`) through the centralized backend team metadata in `backend/app/services/team_metadata.py`. Logos are not downloaded during page rendering and no local binary logo assets are committed. If ESPN logo terms change, replace the URL mapping with another approved official or stable provider before shipping.
+
+
+## NFL data providers
+
+SmartBetSports NFL uses The Odds API, ESPN, optional verified NFL data, OpenWeather, and local JSON exports. The Odds API (`THE_ODDS_API_KEY`) supplies NFL moneyline, spread, total, player-prop, bookmaker, and historical odds data where the configured subscription supports it. ESPN endpoints supply NFL schedules, event IDs, start times, teams, final scores, rosters/box scores, and available player/team statistics. The optional NFL official adapter is disabled unless a dependable NFL-hosted JSON endpoint is verified; it is supplemental only. OpenWeather (`OPENWEATHER_API_KEY`) remains the weather source. Local JSON exports can fill historical gaps; current odds must not be relabeled as historical point-in-time odds.
