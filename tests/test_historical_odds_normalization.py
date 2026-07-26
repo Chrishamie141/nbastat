@@ -7,6 +7,7 @@ from backtesting.historical_provider import HistoricalSnapshotProvider
 from backtesting.markets import normalize_market
 from backtesting.replay_engine import ReplayEngine
 from backtesting.snapshots import normalize_dataset, snapshot_week_dir, validate_snapshot
+from backtesting.snapshot_sources import TheOddsApiSnapshotSource
 from nfl_providers import normalize_odds_events
 
 FIXTURE = Path(__file__).parent / "fixtures" / "historical_odds_sample.json"
@@ -67,7 +68,7 @@ def test_timestamp_normalization_and_safe_kickoff_tolerance():
     assert "kickoff_datetime_outside_tolerance" in diag.reasons
 
 
-def test_event_level_match_propagates_game_id_and_reports_unmatched_once(capsys):
+def test_event_level_match_propagates_game_id_and_discards_unmatched_by_default(capsys):
     payload = json.loads(FIXTURE.read_text())["data"][0]
     payload["home_team"] = "Buffalo Bills"
     payload["away_team"] = "Miami Dolphins"
@@ -76,19 +77,88 @@ def test_event_level_match_propagates_game_id_and_reports_unmatched_once(capsys)
         "commence_time":"2025-09-14T17:00:00Z", "home_team":"LA Rams",
         "away_team":"NY Jets", "bookmakers": payload["bookmakers"] * 2,
     }
-    rows = normalize_odds_events([payload, unrelated], [game()])
+    diagnostics = {}
+    rows = normalize_odds_events([payload, unrelated], [game()], diagnostics=diagnostics)
     assert len(rows) == 6
     assert {row["game_id"] for row in rows} == {"espn-401"}
     assert all(row["event_id"] == "odds-api-evt-1" for row in rows)
     output = capsys.readouterr().out
+    assert output == ""
+    assert diagnostics == {
+        "provider_events_received": 2,
+        "provider_events_matched": 1,
+        "provider_events_discarded": 1,
+        "odds_rows_persisted": 6,
+    }
+
+
+def test_unmatched_details_require_debug_flag(capsys):
+    payload = json.loads(FIXTURE.read_text())["data"][0]
+    unrelated = payload | {"id": "week-2", "commence_time": "2025-09-14T17:00:00Z"}
+    normalize_odds_events([unrelated], [game()], debug=True)
+    output = capsys.readouterr().out
     assert output.count("Unmatched Odds API event:") == 1
-    assert "provider_event_id=unrelated-event" in output
-    assert "closest_espn_candidate=espn-401" in output
-    assert "affected_rows=12" in output
-    assert "unique_events_received=2" in output
-    assert "unique_events_matched=1" in output
-    assert "unique_events_unmatched=1" in output
-    assert "odds_rows_assigned=6" in output
+    assert "provider_event_id=week-2" in output
+
+
+def test_per_game_historical_request_retains_only_intended_canonical_event(capsys):
+    template = json.loads(FIXTURE.read_text())["data"][0]
+    intended = game()
+    other_week_one = intended | {"game_id": "espn-402", "kickoff_time": "2025-09-08T00:00:00Z", "home_team": "KC", "away_team": "DEN"}
+    events = [template]
+    for event_id, kickoff, home, away in (
+        ("other-week-1", "2025-09-08T00:00:00Z", "Kansas City Chiefs", "Denver Broncos"),
+        ("week-2", "2025-09-14T17:00:00Z", "Los Angeles Rams", "Tennessee Titans"),
+        ("week-3", "2025-09-21T17:00:00Z", "Seattle Seahawks", "New Orleans Saints"),
+        ("december", "2025-12-07T17:00:00Z", "Pittsburgh Steelers", "Minnesota Vikings"),
+    ):
+        events.append(template | {"id": event_id, "commence_time": kickoff, "home_team": home, "away_team": away})
+
+    class FixtureProvider:
+        def fetch_odds(self, season, week, games, snapshot_time=None):
+            self.last_diagnostics = {}
+            return normalize_odds_events(events, games, diagnostics=self.last_diagnostics)
+
+    source = TheOddsApiSnapshotSource.__new__(TheOddsApiSnapshotSource)
+    source.provider = FixtureProvider()
+    source.hours_before_kickoff = 24
+    rows = source.fetch_odds("nfl", "2025", 1, ("2025-09-04", "2025-09-10"), [intended])
+    assert len(rows) == 6
+    assert {row["game_id"] for row in rows} == {"espn-401"}
+    assert {row["event_id"] for row in rows} == {"odds-api-evt-1"}
+    assert all(row["provider_event_matched"] is True for row in rows)
+    output = capsys.readouterr().out
+    assert "provider_events_received=5" in output
+    assert "provider_events_matched=1" in output
+    assert "provider_events_discarded=4" in output
+
+
+def test_full_week_fixture_odds_ids_equal_sixteen_canonical_game_ids():
+    template = json.loads(FIXTURE.read_text())["data"][0]
+    games = []
+    for index in range(16):
+        games.append(game() | {
+            "game_id": f"espn-{index}",
+            "kickoff_time": f"2025-09-{7 + index // 8:02d}T{13 + index % 8:02d}:00:00Z",
+            "home_team": f"HOME{index}", "away_team": f"AWAY{index}",
+        })
+
+    class FixtureProvider:
+        def fetch_odds(self, season, week, requested, snapshot_time=None):
+            target = requested[0]
+            intended = template | {
+                "id": f"provider-{target['game_id']}", "commence_time": target["kickoff_time"],
+                "home_team": target["home_team"], "away_team": target["away_team"],
+            }
+            later = template | {"id": f"later-{target['game_id']}", "commence_time": "2025-12-20T17:00:00Z"}
+            self.last_diagnostics = {}
+            return normalize_odds_events([intended, later], requested, diagnostics=self.last_diagnostics)
+
+    source = TheOddsApiSnapshotSource.__new__(TheOddsApiSnapshotSource)
+    source.provider = FixtureProvider()
+    source.hours_before_kickoff = 24
+    odds = source.fetch_odds("nfl", "2025", 1, ("2025-09-04", "2025-09-10"), games)
+    assert {row["game_id"] for row in odds} == {game["game_id"] for game in games}
 
 
 def write_snapshot(root):
@@ -112,6 +182,21 @@ def test_snapshot_validation_accepts_normalized_historical_odds(tmp_path):
     write_snapshot(tmp_path)
     report = validate_snapshot(tmp_path, "nfl", "2025", [1])
     assert report.ok, report.errors
+
+
+def test_validation_rejects_duplicate_unproven_or_post_kickoff_odds(tmp_path):
+    write_snapshot(tmp_path)
+    odds_path = snapshot_week_dir(tmp_path, "nfl", "2025", 1) / "odds.json"
+    odds = json.loads(odds_path.read_text())
+    odds[0]["provider_event_matched"] = False
+    odds[0]["data_as_of"] = "2025-09-07T17:00:00Z"
+    odds.append(dict(odds[0]))
+    odds_path.write_text(json.dumps(odds, indent=2) + "\n")
+    report = validate_snapshot(tmp_path, "nfl", "2025", [1])
+    assert not report.ok
+    assert any("unreconciled_provider_event" in error for error in report.errors)
+    assert any("duplicate_odds_row" in error for error in report.errors)
+    assert any("data_as_of at/after kickoff" in error for error in report.errors)
 
 
 def test_validation_groups_unmatched_bookmaker_rows_by_provider_event(tmp_path):

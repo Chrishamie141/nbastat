@@ -81,6 +81,9 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
             row.setdefault("outcome", record.get("outcome") or record.get("selection"))
             if row["market"] == "h2h" and row.get("line") is None:
                 row["line"] = 0
+            for extra in ("event_id", "snapshot_timestamp", "provider_event_matched", "commence_time"):
+                if extra in record:
+                    row[extra] = record[extra]
         if name in {"player_stats", "team_stats"}:
             row.setdefault("season", str(season))
             row.setdefault("through_week", int(week) - 1)
@@ -221,10 +224,24 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
             if outcome.get("completed_at") and not _parse_iso(outcome.get("completed_at")):
                 report.add_error(f"invalid_completed_at: outcome for {outcome.get('game_id')}")
         unmatched_odds: dict[str, int] = {}
+        odds_identities: set[tuple[Any, ...]] = set()
         for odd in loaded.get("odds", []):
             if odd.get("game_id") not in game_ids:
                 event_id = str(odd.get("event_id") or odd.get("game_id") or "unknown-event")
                 unmatched_odds[event_id] = unmatched_odds.get(event_id, 0) + 1
+            if odd.get("provider_event_matched") is False:
+                report.add_error(f"unreconciled_provider_event: odds event={odd.get('event_id') or 'unknown-event'}")
+            if str(odd.get("source", "")).lower() == "the-odds-api-historical" and odd.get("provider_event_matched") is not True:
+                report.add_error(f"missing_reconciliation_proof: historical Odds API event={odd.get('event_id') or 'unknown-event'}")
+            if str(odd.get("season")) != str(season) or int(odd.get("week", -1)) != int(week):
+                report.add_error(f"odds_outside_requested_week: game={odd.get('game_id')}")
+            identity = tuple(odd.get(field) for field in (
+                "game_id", "snapshot_timestamp", "captured_at", "bookmaker",
+                "sportsbook", "market", "selection", "line", "odds",
+            ))
+            if identity in odds_identities:
+                report.add_error(f"duplicate_odds_row: game={odd.get('game_id')}; market={odd.get('market')}; selection={odd.get('selection')}")
+            odds_identities.add(identity)
             market = normalize_market(odd.get("market"))
             if market != odd.get("market"):
                 report.add_error(f"market_not_normalized: Expected: {chr(10).join(CANONICAL_TEAM_MARKETS)}; Received: {odd.get('market')}; Normalization stage: snapshot_writer; game={odd.get('game_id')}; provider={odd.get('provider') or odd.get('source')}")
@@ -244,9 +261,15 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
             for row in loaded.get(dataset, []):
                 captured_at = row.get("captured_at")
                 kickoff = kickoff_by_game.get(row.get("game_id"))
-                if captured_at and kickoff and _parse_iso(captured_at) and _parse_iso(kickoff) and _parse_iso(captured_at) > _parse_iso(kickoff):
-                    code = "odds_after_kickoff" if dataset == "odds" else "weather_after_kickoff"
-                    report.add_error(f"{code}: Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: {row.get('game_id')} captured after kickoff")
+                if dataset == "odds" and row.get("is_pregame") is not True:
+                    report.add_error(f"odds_not_pregame: {row.get('game_id')}")
+                for timestamp_field in (("captured_at", "data_as_of") if dataset == "odds" else ("captured_at",)):
+                    timestamp = row.get(timestamp_field)
+                    if dataset == "odds" and (not timestamp or not _parse_iso(timestamp)):
+                        report.add_error(f"invalid_odds_timestamp: {timestamp_field}; game={row.get('game_id')}")
+                    if timestamp and kickoff and _parse_iso(timestamp) and _parse_iso(kickoff) and _parse_iso(timestamp) >= _parse_iso(kickoff):
+                        code = "odds_after_kickoff" if dataset == "odds" else "weather_after_kickoff"
+                        report.add_error(f"{code}: Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: {row.get('game_id')} {timestamp_field} at/after kickoff")
                 if dataset == "weather" and str(row.get("source", "")).lower() in {"openweather", "current", "live"}:
                     report.add_error(f"weather_not_historical: current/live weather cannot be used for historical game {row.get('game_id')}")
         for row in loaded.get("injuries", []):
