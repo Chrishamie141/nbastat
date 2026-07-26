@@ -61,3 +61,30 @@ python -m backtesting.build_snapshots \
 ```
 
 Historical The Odds API access may require a paid subscription. Current responses cannot reconstruct historical point-in-time inputs.
+
+### Historical odds scoping
+
+The historical `/odds` endpoint is a point-in-time view of the NFL market, not
+a response scoped to an ESPN week or to one game.  Snapshot construction first
+loads ESPN's canonical games and makes one request at `kickoff -
+odds-hours-before-kickoff` for each game.  Each response is reconciled against
+only that request's canonical game; other Week 1 games and later-season events
+are discarded before bookmaker markets are flattened.  Thus an individual
+batch normally reports one matched event even when the response contains many
+available future events.
+
+The final odds rows retain the canonical ESPN `game_id`, reconciliation proof,
+provider event ID, and point-in-time timestamp. Rows are deterministically
+deduplicated by canonical game, requested/captured snapshot, bookmaker, market,
+selection, line, and price. Set `BACKTESTING_ODDS_DEBUG=1` to print individual
+discarded events; normal output prints only aggregate receipt, match, discard,
+coverage, and persisted-row counts.
+
+The previously observed 1,042 rows were the sum of the rows flattened from the
+single matched canonical event in each per-game response (bookmakers × markets
+× outcomes across 16 requested snapshots). The large unmatched counts described
+events returned by the point-in-time endpoint but already skipped by event-level
+normalization; they were noisy diagnostics, not evidence that those provider
+IDs were persisted. The additional per-request boundary, semantic deduplication,
+persisted reconciliation metadata, and validator checks now make that property
+explicit and enforceable.

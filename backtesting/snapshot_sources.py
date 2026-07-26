@@ -156,6 +156,7 @@ class TheOddsApiSnapshotSource:
 
     def fetch_odds(self, league: str, season: str, week: int, week_range: tuple[str, str], games: list[dict[str, Any]]) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
+        totals = {"provider_events_received": 0, "provider_events_matched": 0, "provider_events_discarded": 0}
         for game in games:
             kickoff_raw = game.get("kickoff_time")
             if not kickoff_raw:
@@ -170,7 +171,14 @@ class TheOddsApiSnapshotSource:
                 game_rows = self.provider.fetch_odds(season, week, [game], snapshot_time=snapshot_time)
             except Exception as exc:
                 raise ProviderUnavailable(str(exc)) from exc
+            for key in totals:
+                totals[key] += int(getattr(self.provider, "last_diagnostics", {}).get(key, 0))
             for row in game_rows:
+                # This request is for exactly one canonical game.  Defense in
+                # depth prevents a provider/cache regression from crossing the
+                # per-game boundary.
+                if row.get("game_id") != game.get("game_id"):
+                    continue
                 captured = row.get("captured_at") or row.get("snapshot_timestamp") or snapshot_time
                 if datetime.fromisoformat(str(captured).replace("Z", "+00:00")) >= kickoff:
                     raise ProviderUnavailable(f"odds_after_kickoff: provider returned odds captured after kickoff for {game.get('game_id')}")
@@ -178,8 +186,23 @@ class TheOddsApiSnapshotSource:
                 row.setdefault("data_as_of", captured)
                 row.setdefault("is_pregame", True)
                 row.setdefault("source", "the-odds-api-historical")
+                row["provider_event_matched"] = True
                 rows.append(row)
-        return rows
+        def identity(row: dict[str, Any]) -> tuple[Any, ...]:
+            return tuple(row.get(field) for field in (
+                "game_id", "snapshot_timestamp", "captured_at", "bookmaker",
+                "market", "selection", "line", "odds",
+            ))
+        deduped = list({identity(row): row for row in rows}.values())
+        game_ids = {row.get("game_id") for row in deduped}
+        print("Historical odds snapshot:")
+        print(f"- canonical_games={len(games)}")
+        for key in totals:
+            print(f"- {key}={totals[key]}")
+        print(f"- games_with_odds={len(game_ids)}")
+        print(f"- games_without_odds={len({g.get('game_id') for g in games} - game_ids)}")
+        print(f"- odds_rows_persisted={len(deduped)}")
+        return deduped
 
 
 class NflOfficialSnapshotSource:
