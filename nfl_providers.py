@@ -172,15 +172,59 @@ class TheOddsApiNflProvider:
         events=data.get("data",[]) if isinstance(data,dict) else data
         return normalize_odds_events(events, games)
 
+def _event_row_count(event: dict[str, Any]) -> int:
+    return sum(
+        len(market.get("outcomes", []) or [])
+        for book in event.get("bookmakers", []) or []
+        for market in book.get("markets", []) or []
+    )
+
+
 def normalize_odds_events(events, games):
+    """Match provider events once, then propagate the canonical ID to their rows.
+
+    Historical ``/odds`` responses can contain events outside the requested ESPN
+    game.  Those events must not be flattened with their provider IDs because
+    doing so turns one irrelevant event into thousands of invalid snapshot rows.
+    """
     rows=[]; captured=datetime.now(timezone.utc).isoformat().replace("+00:00","Z")
-    for ev in events or []:
+    unique_events: dict[str, dict[str, Any]] = {}
+    matched_ids: set[str] = set()
+    unmatched: list[tuple[dict[str, Any], Any, int]] = []
+    for index, ev in enumerate(events or []):
+        event_id = str(ev.get("id") or ev.get("event_id") or f"missing-id-{index}")
+        # Provider payloads occasionally repeat an event. Reconciliation and
+        # diagnostics are event-based rather than bookmaker-row-based.
+        if event_id in unique_events:
+            continue
+        unique_events[event_id] = ev
         diag=match_game(ev, games, league="nfl")
-        gid=diag.game_id or ev.get("id")
+        if not diag.matched:
+            unmatched.append((ev, diag, _event_row_count(ev)))
+            continue
+        matched_ids.add(event_id)
+        gid=diag.game_id
         for book in ev.get("bookmakers",[]) or []:
             for market in book.get("markets",[]) or []:
                 for o in market.get("outcomes",[]) or []:
-                    rows.append({"game_id":gid,"event_id":ev.get("id"),"commence_time":ev.get("commence_time"),"market":normalize_market(market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":(0 if normalize_market(market.get("key")) == "h2h" and o.get("point") is None else o.get("point")),"odds":int(o.get("price")) if o.get("price") is not None else None,"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api","source":"the-odds-api-historical","data_as_of":market.get("last_update") or captured,"is_pregame":True})
+                    rows.append({"game_id":gid,"event_id":ev.get("id") or ev.get("event_id"),"commence_time":ev.get("commence_time"),"home_team":ev.get("home_team"),"away_team":ev.get("away_team"),"league":ev.get("league") or ev.get("sport_key") or "nfl","market":normalize_market(market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":(0 if normalize_market(market.get("key")) == "h2h" and o.get("point") is None else o.get("point")),"odds":int(o.get("price")) if o.get("price") is not None else None,"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api","source":"the-odds-api-historical","data_as_of":market.get("last_update") or captured,"is_pregame":True})
+    for ev, diag, affected_rows in unmatched:
+        print(
+            "Unmatched Odds API event: "
+            f"provider_event_id={ev.get('id') or ev.get('event_id')}; "
+            f"home_team={ev.get('home_team')}; away_team={ev.get('away_team')}; "
+            f"commence_time={ev.get('commence_time')}; "
+            f"closest_espn_candidate={diag.closest_game_id} "
+            f"({diag.closest_away_team} at {diag.closest_home_team}, {diag.closest_kickoff_time}); "
+            f"reason={','.join(diag.reasons)}; affected_rows={affected_rows}"
+        )
+    print(
+        "Odds reconciliation summary: "
+        f"unique_events_received={len(unique_events)}; "
+        f"unique_events_matched={len(matched_ids)}; "
+        f"unique_events_unmatched={len(unmatched)}; "
+        f"odds_rows_assigned={len(rows)}"
+    )
     return rows
 
 class NflOfficialProvider:

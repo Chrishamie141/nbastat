@@ -220,9 +220,11 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
         for outcome in loaded.get("outcomes", []):
             if outcome.get("completed_at") and not _parse_iso(outcome.get("completed_at")):
                 report.add_error(f"invalid_completed_at: outcome for {outcome.get('game_id')}")
+        unmatched_odds: dict[str, int] = {}
         for odd in loaded.get("odds", []):
             if odd.get("game_id") not in game_ids:
-                report.add_error(f"Odds without matching game for {league.upper()} {season} Week {week}: {odd.get('game_id')}")
+                event_id = str(odd.get("event_id") or odd.get("game_id") or "unknown-event")
+                unmatched_odds[event_id] = unmatched_odds.get(event_id, 0) + 1
             market = normalize_market(odd.get("market"))
             if market != odd.get("market"):
                 report.add_error(f"market_not_normalized: Expected: {chr(10).join(CANONICAL_TEAM_MARKETS)}; Received: {odd.get('market')}; Normalization stage: snapshot_writer; game={odd.get('game_id')}; provider={odd.get('provider') or odd.get('source')}")
@@ -233,6 +235,11 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
                     report.add_error(f"missing_odds_field: odds missing {field}; game={odd.get('game_id')}; market={odd.get('market')}; provider={odd.get('provider') or odd.get('source')}")
             if str(odd.get("source", "")).lower() in {"current", "live", "the-odds-api-current"}:
                 report.add_error(f"current_data_labeled_historical: odds for {odd.get('game_id')}")
+        for event_id, affected_rows in sorted(unmatched_odds.items()):
+            report.add_error(
+                f"Odds without matching game for {league.upper()} {season} Week {week}: "
+                f"event={event_id}; affected_rows={affected_rows}"
+            )
         for dataset in ("odds", "weather"):
             for row in loaded.get(dataset, []):
                 captured_at = row.get("captured_at")
