@@ -13,6 +13,7 @@ from .config import BacktestConfig, PredictionMode
 from .grader import PredictionGrader, index_outcomes
 from .metrics import MetricsCalculator
 from .nfl_game_predictor import NFLGameMarketPredictor
+from .nfl_game_predictor import no_vig_probabilities, sportsbook_consensus
 from .markets import CANONICAL_TEAM_MARKETS, normalize_market
 from .historical_provider import HistoricalSnapshotProvider, PredictionDataProvider
 from .prediction_store import PredictionStore
@@ -173,7 +174,7 @@ class ReplayEngine:
             self._last_prediction_diagnostics = {"games_evaluated": 0, "markets_evaluated": 0, "candidates_evaluated": 0, "bets_accepted": 0, "no_bet_reasons": {"unsupported_league": 1}, "games": []}
             return []
         predictor = NFLPredictor()
-        game_predictor = NFLGameMarketPredictor()
+        game_predictor = NFLGameMarketPredictor(config.model_version)
         predictions: list[dict[str, Any]] = []
         games = provider.get_games(config.league, config.season, week)
         odds = provider.get_odds(config.league, config.season, week)
@@ -314,6 +315,20 @@ class ReplayEngine:
         projection = predictor.project(game, team_stats)
         if projection is None:
             return [], [{"market": market, "decision": "rejected", "rejection_reason": "insufficient_pregame_history", "reason": "insufficient_pregame_history", "model_probability": None}], Counter({"insufficient_pregame_history": 1})
+        # Consensus is context; the best separately retained quote is executable.
+        consensus = sportsbook_consensus(valid, market)
+        consensus_probabilities: dict[str, list[float]] = {}
+        groups: dict[tuple[str, Any], list[dict[str, Any]]] = {}
+        for quote in valid:
+            groups.setdefault((str(quote.get("sportsbook") or ""), quote.get("line") if market != "h2h" else None), []).append(quote)
+        for quotes in groups.values():
+            selections = {str(q["selection"]).casefold() for q in quotes}
+            if len(selections) != 2:
+                continue
+            prices = [float(q["odds"]) for q in quotes]
+            for quote, probability in zip(quotes, no_vig_probabilities(prices)):
+                consensus_probabilities.setdefault(str(quote["selection"]).casefold(), []).append(probability)
+        market_probability = {selection: __import__("statistics").median(values) for selection, values in consensus_probabilities.items()}
         # A projection is computed once above. Quotes merely price its distribution.
         by_selection = {}
         for row in valid:
@@ -323,7 +338,10 @@ class ReplayEngine:
             except (TypeError, ValueError):
                 continue
             implied = self._implied_probability(row.get("odds"))
-            evaluated = {**row, "model_probability": probability, "implied_probability": implied, "edge": probability - implied}
+            consensus_implied = market_probability.get(selection.casefold(), implied)
+            evaluated = {**row, "model_probability": probability, "implied_probability": consensus_implied,
+                         "execution_implied_probability": implied, "edge": probability - consensus_implied,
+                         "consensus_line": consensus.get("consensus_line")}
             key = selection.casefold()
             current = by_selection.get(key)
             rank = (evaluated["edge"], float(evaluated["odds"]), str(evaluated.get("sportsbook") or ""))
@@ -341,7 +359,7 @@ class ReplayEngine:
             decision = "accepted" if reason is None else "rejected"
             if reason is not None:
                 reasons[reason] += 1
-            diagnostic = {"market": market, "selection": row["selection"], "model_probability": row["model_probability"], "implied_probability": row["implied_probability"], "edge": row["edge"], "confidence": projection.confidence, "sportsbook": row.get("sportsbook"), "line": row.get("line"), "american_odds": row.get("odds"), "decision": decision, "rejection_reason": reason, "reason": reason, "threshold": 0.02, "model_version": projection.model_version, "features_data_as_of": projection.data_as_of}
+            diagnostic = {"market": market, "selection": row["selection"], "model_probability": row["model_probability"], "implied_probability": row["implied_probability"], "execution_implied_probability": row["execution_implied_probability"], "edge": row["edge"], "confidence": projection.confidence, "sportsbook": row.get("sportsbook"), "line": row.get("line"), "consensus_line": row.get("consensus_line"), "american_odds": row.get("odds"), "decision": decision, "rejection_reason": reason, "reason": reason, "threshold": 0.02, "model_version": projection.model_version, "features_data_as_of": projection.data_as_of}
             decisions.append(diagnostic)
             if reason is not None:
                 continue

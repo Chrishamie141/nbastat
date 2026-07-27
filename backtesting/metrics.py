@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import log
 from typing import Any
 
 
@@ -28,6 +29,8 @@ class MetricsCalculator:
         edges = [float(p.get("edge")) for p in predictions if p.get("edge") is not None]
         clvs = [float(p.get("clv")) for p in predictions if p.get("clv") is not None]
         confidences = [float(p.get("confidence") or 0) for p in predictions]
+        probability_rows = [p for p in graded if p.get("grade") in {"win", "loss"} and p.get("model_probability") is not None]
+        probability_pairs = [(min(.999999, max(.000001, float(p["model_probability"]))), 1.0 if p.get("grade") == "win" else 0.0) for p in probability_rows]
         return {
             "overall_accuracy": _accuracy(predictions),
             "weekly_accuracy": self._group_accuracy(predictions, "week"),
@@ -45,6 +48,9 @@ class MetricsCalculator:
             "average_clv": sum(clvs) / len(clvs) if clvs else None,
             "average_edge": sum(edges) / len(edges) if edges else None,
             "calibration": self._calibration(predictions),
+            "brier_score": sum((probability-outcome)**2 for probability, outcome in probability_pairs) / len(probability_pairs) if probability_pairs else None,
+            "log_loss": -sum(outcome*log(probability)+(1-outcome)*log(1-probability) for probability, outcome in probability_pairs) / len(probability_pairs) if probability_pairs else None,
+            "probability_calibration": self._probability_calibration(probability_pairs),
             "graded_predictions": len(graded),
             "total_predictions": len(predictions),
             "wins": wins, "losses": losses, "pushes": pushes,
@@ -75,3 +81,12 @@ class MetricsCalculator:
     def _calibration(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
         buckets = self._confidence_buckets(rows)
         return {"bucket_accuracy": buckets, "note": "Confidence is interpreted as 0-100 probability buckets."}
+
+    @staticmethod
+    def _probability_calibration(pairs: list[tuple[float, float]]) -> dict[str, dict[str, float | int]]:
+        buckets: dict[str, list[tuple[float, float]]] = defaultdict(list)
+        for probability, outcome in pairs:
+            lower = min(9, int(probability * 10)) * 10
+            buckets[f"{lower}-{lower + 10}"].append((probability, outcome))
+        return {name: {"count": len(values), "mean_probability": sum(x for x, _ in values)/len(values),
+                       "observed_rate": sum(y for _, y in values)/len(values)} for name, values in sorted(buckets.items())}

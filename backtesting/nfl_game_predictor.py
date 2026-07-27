@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from math import erf, sqrt
+from math import erf, log, sqrt
+from statistics import median, pstdev
 from typing import Any
 
 from backtesting.game_matching import normalize_team, parse_dt
 from backtesting.team_history import COMPLETED_GAME_HISTORY, PREGAME_AGGREGATE
 
 
-MODEL_VERSION = "nfl-game-baseline-v1"
+V1_MODEL_VERSION = "nfl_game_baseline_v1"
+V2_MODEL_VERSION = "nfl_game_baseline_v2"
+MODEL_VERSION = V1_MODEL_VERSION
 
 
 def _number(mapping: dict[str, Any], *names: str) -> float | None:
@@ -51,6 +54,9 @@ class GameProjection:
     data_as_of: str | None
     features: dict[str, float]
     model_version: str = MODEL_VERSION
+    margin_standard_deviation: float = 13.86
+    total_standard_deviation: float = 14.5
+    raw_home_win_probability: float | None = None
 
     @staticmethod
     def _cdf(value: float, mean: float, standard_deviation: float) -> float:
@@ -60,18 +66,38 @@ class GameProjection:
         selection_key = selection.casefold()
         is_home = selection_key in {"home", home_team.casefold()}
         if market == "h2h":
-            home_win = 1.0 - self._cdf(0.0, self.expected_margin, 13.86)
+            home_win = self.raw_home_win_probability if self.raw_home_win_probability is not None else 1.0 - self._cdf(0.0, self.expected_margin, self.margin_standard_deviation)
             return home_win if is_home else 1.0 - home_win
         if market == "spread":
             selected_margin = self.expected_margin if is_home else -self.expected_margin
-            return 1.0 - self._cdf(0.0, selected_margin + float(line or 0), 13.86)
+            return 1.0 - self._cdf(0.0, selected_margin + float(line or 0), self.margin_standard_deviation)
         if market == "total":
-            over = 1.0 - self._cdf(float(line), self.expected_total, 14.5)
+            over = 1.0 - self._cdf(float(line), self.expected_total, self.total_standard_deviation)
             return over if selection_key == "over" else 1.0 - over
         raise ValueError(f"unsupported market: {market}")
 
+    def output(self, *, home_team: str, away_team: str, spread: float | None = None,
+               total: float | None = None, market_probability: float | None = None,
+               market_weight: float = 0.0) -> dict[str, Any]:
+        """Return an auditable model payload; market blending is explicit and opt-in."""
+        raw = self.probability("h2h", home_team, home_team=home_team, away_team=away_team)
+        blended = raw if market_probability is None else (1-market_weight)*raw + market_weight*market_probability
+        result = {"projected_home_points": self.home_points, "projected_away_points": self.away_points,
+                  "projected_margin": self.expected_margin, "projected_total": self.expected_total,
+                  "raw_home_win_probability": raw, "raw_model_probability": raw,
+                  "market_implied_probability": market_probability, "blended_probability": blended,
+                  "features_used": self.features, "feature_timestamps": {"data_as_of": self.data_as_of},
+                  "model_version": self.model_version}
+        if spread is not None:
+            result["home_cover_probability"] = self.probability("spread", home_team, spread, home_team=home_team, away_team=away_team)
+            result["away_cover_probability"] = 1-result["home_cover_probability"]
+        if total is not None:
+            result["over_probability"] = self.probability("total", "over", total, home_team=home_team, away_team=away_team)
+            result["under_probability"] = 1-result["over_probability"]
+        return result
 
-class NFLGameMarketPredictor:
+
+class NFLGameMarketPredictorV1:
     """Project scores from prior team offense/defense without consulting odds or outcomes."""
 
     HOME_FIELD_POINTS = 1.5
@@ -207,3 +233,184 @@ class NFLGameMarketPredictor:
         timestamps = [str(row.get("data_as_of") or row.get("captured_at")) for row in (home, away) if row.get("data_as_of") or row.get("captured_at")]
         features = {"home_points_for": home_for, "away_points_for": away_for, "home_points_against": home_against if home_against is not None else self.LEAGUE_POINTS, "away_points_against": away_against if away_against is not None else self.LEAGUE_POINTS, "home_field_points": self.HOME_FIELD_POINTS}
         return GameProjection(home_points, away_points, home_points - away_points, home_points + away_points, confidence, max(timestamps) if timestamps else None, features)
+
+
+@dataclass(frozen=True)
+class NFLGameModelConfig:
+    """Documented, outcome-independent knobs for the deterministic v2 model."""
+
+    decay: float = 0.90
+    recent_games: int = 5
+    recent_weight: float = 0.30
+    split_prior_games: float = 6.0
+    elo_k: float = 20.0
+    elo_mean: float = 1500.0
+    elo_regression: float = 0.33
+    elo_home_advantage: float = 48.0
+    elo_weight: float = 0.35
+    margin_of_victory: bool = True
+    market_blend_weight: float = 0.0
+
+
+def no_vig_probabilities(prices: list[float]) -> list[float]:
+    """Convert opposing American prices to probabilities summing exactly to one."""
+    raw = []
+    for price in prices:
+        if price == 0:
+            raise ValueError("American odds cannot be zero")
+        raw.append(-price / (-price + 100) if price < 0 else 100 / (price + 100))
+    total = sum(raw)
+    if not raw or total <= 0:
+        raise ValueError("At least one valid price is required")
+    return [value / total for value in raw]
+
+
+def sportsbook_consensus(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
+    """Return median market context while retaining the best executable quote."""
+    valid = [r for r in rows if r.get("odds") not in (None, 0, "")]
+    lines = [float(r["line"]) for r in valid if r.get("line") is not None]
+    probabilities = [(-float(r["odds"]) / (-float(r["odds"]) + 100) if float(r["odds"]) < 0
+                      else 100 / (float(r["odds"]) + 100)) for r in valid]
+    best = max(valid, key=lambda r: (float(r["odds"]), str(r.get("sportsbook") or ""))) if valid else None
+    return {"market": market, "consensus_line": median(lines) if lines else None,
+            "median_implied_probability": median(probabilities) if probabilities else None,
+            "best_execution_quote": best}
+
+
+class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
+    """Leakage-safe feature model using only completed, pre-kickoff observations."""
+
+    def __init__(self, config: NFLGameModelConfig | None = None) -> None:
+        super().__init__()
+        self.config = config or NFLGameModelConfig()
+
+    @staticmethod
+    def _implied(price: float) -> float:
+        return -price / (-price + 100) if price < 0 else 100 / (price + 100)
+
+    def weighted_average(self, values: list[float]) -> float:
+        """Weight oldest-to-newest values with exponential decay."""
+        weights = [self.config.decay ** (len(values) - index - 1) for index in range(len(values))]
+        return sum(value * weight for value, weight in zip(values, weights)) / sum(weights)
+
+    def regress_elo(self, rating: float) -> float:
+        return self.config.elo_mean + (rating - self.config.elo_mean) * (1.0 - self.config.elo_regression)
+
+    def elo_update(self, home: float, away: float, home_score: float, away_score: float) -> tuple[float, float]:
+        expected = 1 / (1 + 10 ** (-(home + self.config.elo_home_advantage - away) / 400))
+        actual = 1.0 if home_score > away_score else 0.0 if home_score < away_score else 0.5
+        multiplier = 1.0
+        if self.config.margin_of_victory:
+            multiplier = log(abs(home_score - away_score) + 1.0) * (2.2 / ((home - away) * (1 if actual == 1 else -1) * .001 + 2.2))
+        change = self.config.elo_k * multiplier * (actual - expected)
+        return home + change, away - change
+
+    @staticmethod
+    def rest_features(rows: list[dict[str, Any]], kickoff: Any) -> dict[str, float | bool | None]:
+        start = parse_dt(kickoff)
+        completed = [parse_dt(r.get("completed_at")) for r in rows]
+        safe = [value for value in completed if value and start and value < start]
+        days = (start - max(safe)).total_seconds() / 86400 if safe and start else None
+        return {"days_since_last_game": days, "short_week": days is not None and days < 6,
+                "extended_rest": days is not None and days > 10}
+
+    def _safe_rows(self, game: dict[str, Any], histories: list[dict[str, Any]], team: str) -> list[dict[str, Any]]:
+        kickoff = parse_dt(game.get("kickoff_time") or game.get("commence_time"))
+        result = []
+        for row in histories:
+            completed = parse_dt(row.get("completed_at")); known = parse_dt(row.get("data_as_of") or row.get("captured_at"))
+            if (normalize_team(row.get("team")) == team and row.get("record_role") == COMPLETED_GAME_HISTORY
+                    and row.get("is_pregame") is False and completed and known and kickoff
+                    and completed < kickoff and known < kickoff and known >= completed
+                    and row.get("game_id") != game.get("game_id")
+                    and row.get("points_for") is not None and row.get("points_against") is not None):
+                result.append(row)
+        return sorted(result, key=lambda r: (parse_dt(r["completed_at"]), str(r.get("game_id"))))
+
+    def _team_features(self, rows: list[dict[str, Any]], all_rows: list[dict[str, Any]], venue: str) -> dict[str, float]:
+        points_for = [float(r["points_for"]) for r in rows]; points_against = [float(r["points_against"]) for r in rows]
+        overall_for = self.weighted_average(points_for); overall_against = self.weighted_average(points_against)
+        recent_n = min(self.config.recent_games, len(rows))
+        recent_for = sum(points_for[-recent_n:]) / recent_n; recent_against = sum(points_against[-recent_n:]) / recent_n
+        split = [r for r in rows if str(r.get("home_away", "")).casefold() == venue]
+        n = len(split); shrink = n / (n + self.config.split_prior_games)
+        split_for = sum(float(r["points_for"]) for r in split) / n if n else overall_for
+        split_against = sum(float(r["points_against"]) for r in split) / n if n else overall_against
+        venue_for = shrink * split_for + (1 - shrink) * overall_for
+        venue_against = shrink * split_against + (1 - shrink) * overall_against
+        # Opponent baselines are constructed solely from the same pre-kickoff pool.
+        by_team: dict[str, list[dict[str, Any]]] = {}
+        for row in all_rows: by_team.setdefault(normalize_team(row.get("team")), []).append(row)
+        offensive, defensive = [], []
+        for row in rows:
+            opponent = by_team.get(normalize_team(row.get("opponent")), [])
+            if opponent:
+                offensive.append(float(row["points_for"]) - sum(float(x["points_against"]) for x in opponent) / len(opponent))
+                defensive.append(sum(float(x["points_for"]) for x in opponent) / len(opponent) - float(row["points_against"]))
+        return {"weighted_points_for": overall_for, "weighted_points_against": overall_against,
+                "weighted_point_differential": overall_for - overall_against,
+                "recent_points_for": recent_for, "recent_points_against": recent_against,
+                "venue_points_for": venue_for, "venue_points_against": venue_against,
+                "offensive_strength": sum(offensive) / len(offensive) if offensive else 0.0,
+                "defensive_strength": sum(defensive) / len(defensive) if defensive else 0.0,
+                "scoring_sd": pstdev(points_for) if len(points_for) > 1 else 0.0}
+
+    def project(self, game: dict[str, Any], histories: list[dict[str, Any]]) -> GameProjection | None:
+        kickoff = game.get("kickoff_time") or game.get("commence_time")
+        home_team, away_team = normalize_team(game.get("home_team")), normalize_team(game.get("away_team"))
+        home_rows, away_rows = self._safe_rows(game, histories, home_team), self._safe_rows(game, histories, away_team)
+        if min(len(home_rows), len(away_rows)) < self.MIN_GAME_HISTORY:
+            return None
+        safe_all = []
+        for team in {normalize_team(r.get("team")) for r in histories}:
+            safe_all.extend(self._safe_rows(game, histories, team))
+        hf = self._team_features(home_rows, safe_all, "home"); af = self._team_features(away_rows, safe_all, "away")
+        recent = self.config.recent_weight
+        home_off = (1-recent)*hf["venue_points_for"] + recent*hf["recent_points_for"] + hf["offensive_strength"]*.25
+        away_off = (1-recent)*af["venue_points_for"] + recent*af["recent_points_for"] + af["offensive_strength"]*.25
+        home_def = (1-recent)*hf["venue_points_against"] + recent*hf["recent_points_against"] - hf["defensive_strength"]*.25
+        away_def = (1-recent)*af["venue_points_against"] + recent*af["recent_points_against"] - af["defensive_strength"]*.25
+        home_points = (home_off + away_def)/2 + self.HOME_FIELD_POINTS/2
+        away_points = (away_off + home_def)/2 - self.HOME_FIELD_POINTS/2
+        ratings = {team: self.config.elo_mean for team in {normalize_team(r.get("team")) for r in safe_all}}
+        prior_season = None
+        games: dict[str, dict[str, Any]] = {}
+        for row in safe_all: games.setdefault(str(row.get("game_id")), row)
+        for row in sorted(games.values(), key=lambda r: parse_dt(r["completed_at"])):
+            season = int(row.get("season", 0))
+            if prior_season is not None and season != prior_season:
+                ratings = {team: self.regress_elo(rating) for team, rating in ratings.items()}
+            prior_season = season
+            team, opponent = normalize_team(row.get("team")), normalize_team(row.get("opponent"))
+            if opponent:
+                if str(row.get("home_away", "home")).casefold() == "away":
+                    ratings[opponent], ratings[team] = self.elo_update(ratings.get(opponent, 1500), ratings.get(team, 1500), float(row["points_against"]), float(row["points_for"]))
+                else:
+                    ratings[team], ratings[opponent] = self.elo_update(ratings.get(team, 1500), ratings.get(opponent, 1500), float(row["points_for"]), float(row["points_against"]))
+        home_elo, away_elo = ratings.get(home_team, 1500), ratings.get(away_team, 1500)
+        elo_probability = 1/(1+10**(-(home_elo+self.config.elo_home_advantage-away_elo)/400))
+        margin_probability = 1-GameProjection._cdf(0, home_points-away_points, max(8.0, sqrt(hf["scoring_sd"]**2+af["scoring_sd"]**2)))
+        raw_probability = (1-self.config.elo_weight)*margin_probability+self.config.elo_weight*elo_probability
+        features = {**{f"home_{k}": v for k,v in hf.items()}, **{f"away_{k}": v for k,v in af.items()},
+                    "home_elo": home_elo, "away_elo": away_elo, "elo_difference": home_elo-away_elo,
+                    "elo_win_probability": elo_probability, "raw_model_probability": raw_probability,
+                    **{f"home_{k}": v for k,v in self.rest_features(home_rows, kickoff).items()},
+                    **{f"away_{k}": v for k,v in self.rest_features(away_rows, kickoff).items()}}
+        timestamp = max(str(r.get("data_as_of")) for r in home_rows+away_rows)
+        margin_sd = max(8.0, sqrt(hf["scoring_sd"]**2+af["scoring_sd"]**2))
+        total_sd = max(8.0, margin_sd)
+        return GameProjection(home_points, away_points, home_points-away_points, home_points+away_points,
+                              min(85.0, 55+min(len(home_rows),len(away_rows))), timestamp, features, V2_MODEL_VERSION,
+                              margin_sd, total_sd, raw_probability)
+
+
+class NFLGameMarketPredictor:
+    """Version-selecting facade; v1 remains the compatibility default."""
+
+    def __new__(cls, model_version: str = V1_MODEL_VERSION, config: NFLGameModelConfig | None = None):
+        normalized = str(model_version).replace("-", "_")
+        if normalized in {V1_MODEL_VERSION, "development"}:
+            return NFLGameMarketPredictorV1()
+        if normalized == V2_MODEL_VERSION:
+            return NFLGameMarketPredictorV2(config)
+        raise ValueError(f"Unsupported NFL game model version: {model_version}")
