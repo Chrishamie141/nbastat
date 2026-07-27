@@ -23,6 +23,7 @@ class Market(StrEnum):
 ODDS_API_MARKET_ALIASES = {
     "h2h": Market.H2H,
     "moneyline": Market.H2H,
+    "moneylines": Market.H2H,
     "spreads": Market.SPREAD,
     "spread": Market.SPREAD,
     "totals": Market.TOTAL,
@@ -50,3 +51,13 @@ def normalize_market(value: Any) -> str:
         return ""
     text = str(value).strip()
     return ODDS_API_MARKET_ALIASES.get(text.lower(), text).value if text.lower() in ODDS_API_MARKET_ALIASES else text
+
+
+def normalize_markets(values: Any) -> tuple[str, ...]:
+    """Normalize and de-duplicate market names without changing their order."""
+    normalized: list[str] = []
+    for value in values:
+        market = normalize_market(value)
+        if market and market not in normalized:
+            normalized.append(market)
+    return tuple(normalized)

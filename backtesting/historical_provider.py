@@ -54,11 +54,23 @@ class HistoricalSnapshotProvider:
 
     def get_player_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return player statistics available before kickoff."""
-        return [r for r in self._snapshot(league, season, week, "player_stats") if r.get("record_role", "pregame_history") == "pregame_history" and r.get("is_pregame", True)]
+        return [r for r in self._snapshot(league, season, week, "player_stats") if self._is_usable_history(r, season, week)]
 
     def get_team_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return team statistics available before kickoff."""
-        return [r for r in self._snapshot(league, season, week, "team_stats") if r.get("record_role", "pregame_history") == "pregame_history" and r.get("is_pregame", True)]
+        return [r for r in self._snapshot(league, season, week, "team_stats") if self._is_usable_history(r, season, week)]
+
+    @staticmethod
+    def _is_usable_history(row: dict[str, Any], season: str, week: int) -> bool:
+        """Allow prior seasons and completed earlier weeks, never the replayed/future week."""
+        if row.get("record_role", "pregame_history") != "pregame_history" or not row.get("is_pregame", True):
+            return False
+        try:
+            row_season = int(row.get("season", season))
+            replay_season = int(season)
+            return row_season < replay_season or (row_season == replay_season and int(row.get("through_week", -1)) < int(week))
+        except (TypeError, ValueError):
+            return False
 
     def get_outcomes(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return final outcomes loaded only after predictions have been frozen."""

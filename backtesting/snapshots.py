@@ -279,7 +279,9 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
         for dataset in ("player_stats", "team_stats"):
             for row in loaded.get(dataset, []):
                 role = row.get("record_role", "pregame_history")
-                if role == "pregame_history" and (str(row.get("season")) != str(season) or int(row.get("through_week", -1)) >= int(week)):
+                row_season = int(row.get("season", season))
+                replay_season = int(season)
+                if role == "pregame_history" and (row_season > replay_season or (row_season == replay_season and int(row.get("through_week", -1)) >= int(week))):
                     report.add_error(f"same_game_stats_in_pregame_history: Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: through_week must be before replay week")
         manifest = wdir / "manifest.json"
         if manifest.exists():

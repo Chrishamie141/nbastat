@@ -30,12 +30,19 @@ def test_historical_odds_payload_normalizes_all_team_markets_and_bookmaker_field
     assert {r["odds"] for r in rows} >= {-125, 105, -110, -108, -112}
     assert [r for r in rows if r["market"] == "h2h"][0]["line"] == 0
     assert [r for r in rows if r["market"] == "spread"][0]["line"] == -2.5
+    known = next(r for r in rows if r["game_id"] == "espn-401" and r["market"] == "spread" and r["selection"] == "Buffalo Bills")
+    assert (known["line"], known["odds"], known["sportsbook"], known["captured_at"]) == (-2.5, -110, "DraftKings", "2025-09-06T17:00:00Z")
 
 
 def test_market_normalization_accepts_odds_api_market_names():
     assert normalize_market("h2h") == "h2h"
+    assert normalize_market("moneyline") == "h2h"
+    assert normalize_market("moneylines") == "h2h"
+    assert normalize_market("spread") == "spread"
     assert normalize_market("spreads") == "spread"
+    assert normalize_market("total") == "total"
     assert normalize_market("totals") == "total"
+    assert BacktestConfig(league="nfl", season="2025", markets=("moneylines", "spreads", "totals")).normalized_markets() == ("h2h", "spread", "total")
 
 
 def test_match_game_reports_provider_id_and_datetime_team_diagnostics():
