@@ -2,7 +2,8 @@ import json
 from argparse import Namespace
 from pathlib import Path
 
-from backtesting.build_snapshots import _manifest, main, request_plan
+from backtesting.build_snapshots import _manifest, main, request_plan, prepare_canonical_games
+from nfl_providers import JsonRawCache
 from backtesting.snapshot_coverage import coverage, markdown, write_coverage
 from backtesting.snapshot_sources import RawCache
 
@@ -72,3 +73,60 @@ def test_raw_cache_writes_auditable_checksum_metadata_and_reuses_response(tmp_pa
     meta = json.loads(cache.path("odds-api", "nfl", "2025", 1, "odds").with_suffix(".metadata.json").read_text())
     assert calls == 1 and cache.hits == cache.misses == 1
     assert len(meta["response_sha256"]) == 64 and meta["requested_historical_date"] == "2025-09-01T00:00:00Z"
+
+
+def test_plan_prepares_schedule_without_constructing_odds_provider(tmp_path, monkeypatch):
+    class ESPN:
+        name = "espn"
+        supported_datasets = {"games"}
+        def fetch_games(self, league, season, week, week_range):
+            return [{"game_id": "g", "kickoff_time": "2025-09-11T00:00:00Z",
+                     "home_team": "A", "away_team": "B", "source": "espn"}]
+    def sources(spec, *args):
+        assert spec == "espn"
+        return [ESPN()]
+    monkeypatch.setattr("backtesting.build_snapshots.create_sources", sources)
+    args = Namespace(league="nfl", season="2025", start_week=2, end_week=2,
+                     data_dir=tmp_path, odds_hours_before_kickoff=24)
+    prepare_canonical_games(args)
+    assert json.loads((tmp_path / "nfl/2025/week_02/games.json").read_text())[0]["game_id"] == "g"
+
+
+def test_exact_plan_is_cache_aware_and_credits_differ_from_http_requests(tmp_path):
+    week = tmp_path / "nfl/2025/week_02"; week.mkdir(parents=True)
+    games = [{"game_id": "a", "kickoff_time": "2025-09-11T00:00:00Z"},
+             {"game_id": "b", "kickoff_time": "2025-09-12T00:00:00Z"}]
+    (week / "games.json").write_text(json.dumps(games))
+    for dataset in ("odds", "team_stats", "outcomes"):
+        (week / f"{dataset}.json").write_text("[]")
+    params = {"regions": "us", "markets": "h2h,spreads,totals", "oddsFormat": "american",
+              "date": "2025-09-10T00:00:00Z"}
+    cache = JsonRawCache(tmp_path.parent / "raw_cache")
+    path = cache.path("odds-api", "nfl", "2025", 2, "odds", params)
+    path.parent.mkdir(parents=True); path.write_text("[]")
+    args = Namespace(league="nfl", season="2025", start_week=2, end_week=2,
+                     data_dir=tmp_path, odds_hours_before_kickoff=24)
+    row = request_plan(args)[0]
+    assert row["historical_requests_needed"] == 2
+    assert row["cache_hits"] == 1 and row["paid_requests"] == 1
+    assert row["estimated_credits"] == 30
+
+
+def test_cache_identity_is_parameter_complete_and_has_no_api_key(tmp_path):
+    cache = JsonRawCache(tmp_path)
+    base = {"date": "2025-09-01T00:00:00Z", "regions": "us", "markets": "h2h",
+            "oddsFormat": "american", "apiKey": "secret"}
+    identity = cache.identity("odds-api", "nfl", 2025, 1, "odds", base)
+    assert "apiKey" not in identity["params"] and "secret" not in json.dumps(identity)
+    assert cache.path("odds-api", "nfl", 2025, 1, "odds", base) != cache.path(
+        "odds-api", "nfl", 2025, 1, "odds", {**base, "markets": "spreads"})
+
+
+def test_paid_execution_requires_explicit_authorization(tmp_path, monkeypatch):
+    week = tmp_path / "nfl/2025/week_02"; week.mkdir(parents=True)
+    (week / "games.json").write_text(json.dumps([{"game_id": "g", "kickoff_time": "2025-09-11T00:00:00Z"}]))
+    for dataset in ("odds", "team_stats", "outcomes"):
+        (week / f"{dataset}.json").write_text("[]")
+    monkeypatch.setattr("backtesting.build_snapshots.create_sources", lambda *a, **k: (_ for _ in ()).throw(AssertionError("constructed")))
+    assert main(["--league", "nfl", "--season", "2025", "--start-week", "2", "--end-week", "2",
+                 "--data-dir", str(tmp_path), "--resume"]) == 2

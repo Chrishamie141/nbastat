@@ -24,6 +24,7 @@ def parse_args(argv=None):
     p.add_argument("--resume", action="store_true")
     p.add_argument("--validate", action="store_true")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--plan", action="store_true")
     p.add_argument("--allow-paid-odds-fetch", action="store_true")
     return p.parse_args(argv)
 
@@ -33,14 +34,14 @@ def main(argv=None):
     if not args.validate_only:
         weeks = sorted(set(args.week or range(args.start_week or 1, (args.end_week or 22) + 1)))
         for season in sorted(set(args.season)):
-            for week in weeks:
-                command = ["--league", "nfl", "--season", str(season), "--start-week", str(week),
-                    "--end-week", str(week), "--data-dir", str(args.output_dir), "--providers", args.providers,
-                    "--odds-hours-before-kickoff", str(args.odds_hours_before_kickoff), "--validate"]
-                command.append("--overwrite" if args.overwrite else "--resume")
-                if args.dry_run: command.append("--dry-run")
-                if args.allow_paid_odds_fetch: command.append("--allow-paid-odds-fetch")
-                result |= build(command)
+            command = ["--league", "nfl", "--season", str(season), "--start-week", str(min(weeks)),
+                "--end-week", str(max(weeks)), "--data-dir", str(args.output_dir), "--providers", args.providers,
+                "--odds-hours-before-kickoff", str(args.odds_hours_before_kickoff), "--validate"]
+            command.append("--overwrite" if args.overwrite else "--resume")
+            if args.dry_run: command.append("--dry-run")
+            if args.plan: command.append("--plan")
+            if args.allow_paid_odds_fetch: command.append("--allow-paid-odds-fetch")
+            result |= build(command)
     report = coverage(args.output_dir, "nfl", args.season)
     write_coverage(report, ROOT / "reports/nfl_historical_snapshot_coverage.json",
                    ROOT / "docs/nfl-historical-snapshot-coverage.md")
