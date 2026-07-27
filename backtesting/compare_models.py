@@ -57,7 +57,9 @@ def compare(*, data_dir: Path, league: str, season: str, start_week: int, end_we
         for model in models:
             cfg = BacktestConfig(league=league, season=season, start_week=start_week, end_week=end_week,
                 markets=markets, model_version=model, data_dir=data_dir, db_path=Path(temp)/f"{model}.db", export=False)
-            engine = ReplayEngine(cfg); summary = engine.run(); rows = engine.store.load_predictions(summary["run_id"])
+            with ReplayEngine(cfg) as engine:
+                summary = engine.run()
+                rows = engine.store.load_predictions(summary["run_id"])
             game_meta = {g["game_id"]: g for g in summary["evaluation"].get("games", [])}
             for row in rows:
                 row["run_id"] = summary["run_id"]
@@ -79,7 +81,8 @@ def compare(*, data_dir: Path, league: str, season: str, start_week: int, end_we
 
 
 def write_artifacts(report, rows, output: Path, bets: Path):
-    output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(report, indent=2, sort_keys=True, default=str)+"\n")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2, sort_keys=True, default=str)+"\n", encoding="utf-8")
     bets.parent.mkdir(parents=True, exist_ok=True)
     audit = []
     for r in rows:
@@ -88,7 +91,7 @@ def write_artifacts(report, rows, output: Path, bets: Path):
             "rest_difference": ((features.get("home_days_since_last_game") or 0)-(features.get("away_days_since_last_game") or 0)),
             **{k: features.get(k) for k in ("projected_home_points", "projected_away_points", "projected_margin", "projected_total", "home_elo", "away_elo")}})
     fields = sorted({k for r in audit for k in r})
-    with bets.open("w", newline="") as handle:
+    with bets.open("w", newline="", encoding="utf-8") as handle:
         writer=csv.DictWriter(handle, fields); writer.writeheader(); writer.writerows(audit)
 
 

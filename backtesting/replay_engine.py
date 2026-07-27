@@ -29,16 +29,33 @@ PredictionFactory = Callable[[PredictionDataProvider, BacktestConfig, int], list
 class ReplayEngine:
     """Simulate a season chronologically while preventing future data leakage."""
 
-    def __init__(self, config: BacktestConfig, provider: PredictionDataProvider | None = None, prediction_factory: PredictionFactory | None = None):
+    def __init__(self, config: BacktestConfig, provider: PredictionDataProvider | None = None, prediction_factory: PredictionFactory | None = None, store: PredictionStore | None = None):
         self.config = config
         self.provider = provider or HistoricalSnapshotProvider(config.data_dir)
         self.prediction_factory = prediction_factory or self._production_prediction_adapter
-        self.store = PredictionStore(config.db_path)
+        self._owns_store = store is None
+        self.store = store or PredictionStore(config.db_path)
         self.grader = PredictionGrader()
         self.metrics = MetricsCalculator()
         self.metadata: RunMetadata = create_run_metadata(config)
         self._last_prediction_diagnostics: dict[str, Any] = {}
         self._evaluation_weeks: dict[str, dict[str, Any]] = {}
+
+    def close(self) -> None:
+        """Close resources created by this engine, preserving injected-store ownership."""
+        if self._owns_store:
+            self.store.close()
+
+    def __enter__(self) -> ReplayEngine:
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        try:
+            self.close()
+        except BaseException:
+            if exc_type is None:
+                raise
+        return False
 
     def run(self) -> dict[str, Any]:
         """Execute the replay, grade predictions, export reports, and return a summary."""

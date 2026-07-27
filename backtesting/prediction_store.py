@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -16,25 +17,68 @@ class PredictionStore:
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.initialize()
+        self._connection = sqlite3.connect(self.db_path)
+        self._connection.row_factory = sqlite3.Row
+        try:
+            self.initialize()
+        except BaseException:
+            self.close()
+            raise
 
     def connect(self) -> sqlite3.Connection:
-        """Open a row-aware SQLite connection."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        """Return the connection owned by this store."""
+        if self._connection is None:
+            raise RuntimeError("PredictionStore is closed")
+        return self._connection
+
+    @contextmanager
+    def _cursor(self):
+        """Commit a unit of work and deterministically close its cursor."""
+        cursor = self.connect().cursor()
+        try:
+            yield cursor
+            self.connect().commit()
+        except BaseException:
+            self.connect().rollback()
+            raise
+        finally:
+            cursor.close()
+
+    def close(self) -> None:
+        """Commit and close the owned SQLite connection; safe to call repeatedly."""
+        connection = self._connection
+        if connection is None:
+            return
+        try:
+            connection.commit()
+        finally:
+            try:
+                connection.close()
+            finally:
+                self._connection = None
+
+    def __enter__(self) -> PredictionStore:
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        try:
+            self.close()
+        except BaseException:
+            if exc_type is None:
+                raise
+        return False
 
     def initialize(self) -> None:
         """Create storage tables if they do not already exist."""
-        with self.connect() as conn:
-            conn.execute("""
+        with self._cursor() as cursor:
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY, model_version TEXT NOT NULL, league TEXT NOT NULL,
                     season TEXT NOT NULL, git_commit_hash TEXT, prediction_engine_version TEXT NOT NULL,
                     configuration_hash TEXT NOT NULL, date TEXT NOT NULL
                 )
             """)
-            conn.execute("""
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS predictions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, model_version TEXT NOT NULL,
                     league TEXT NOT NULL, season TEXT NOT NULL, week INTEGER NOT NULL, game TEXT,
@@ -49,19 +93,19 @@ class PredictionStore:
             """)
             for col, ddl in {"sportsbook_odds":"REAL", "sportsbook":"TEXT", "edge":"REAL", "clv":"REAL", "model_probability":"REAL", "implied_probability":"REAL", "consensus_probability":"REAL", "execution_implied_probability":"REAL", "edge_vs_consensus":"REAL", "edge_vs_execution":"REAL", "prediction_model_version":"TEXT", "features_data_as_of":"TEXT", "features":"TEXT", "selection":"TEXT", "grade":"TEXT", "ungraded_reason":"TEXT"}.items():
                 try:
-                    conn.execute(f"ALTER TABLE predictions ADD COLUMN {col} {ddl}")
+                    cursor.execute(f"ALTER TABLE predictions ADD COLUMN {col} {ddl}")
                 except sqlite3.OperationalError:
                     pass
 
     def create_run(self, metadata: RunMetadata) -> None:
         """Insert a new unique run record."""
-        with self.connect() as conn:
-            conn.execute("INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tuple(metadata.to_dict().values()))
+        with self._cursor() as cursor:
+            cursor.execute("INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tuple(metadata.to_dict().values()))
 
     def save_prediction(self, metadata: RunMetadata, week: int, prediction: dict[str, Any]) -> int:
         """Freeze and store a single prediction before outcomes are loaded."""
-        with self.connect() as conn:
-            cur = conn.execute("""
+        with self._cursor() as cursor:
+            cursor.execute("""
                 INSERT INTO predictions (
                     run_id, model_version, league, season, week, game, prediction, confidence,
                     market, line, reasoning, generated_timestamp, team, player, game_type, home_away, sportsbook_odds, sportsbook, edge, clv,
@@ -81,19 +125,20 @@ class PredictionStore:
                 prediction.get("edge_vs_consensus"), prediction.get("edge_vs_execution"),
                 prediction.get("selection", prediction.get("prediction")),
             ))
-            return int(cur.lastrowid)
+            return int(cursor.lastrowid)
 
     def grade_prediction(self, prediction_id: int, grade: dict[str, Any]) -> None:
         """Attach actual result, correctness, and margin to a frozen prediction."""
         correct = grade.get("correct")
-        with self.connect() as conn:
-            conn.execute(
+        with self._cursor() as cursor:
+            cursor.execute(
                 "UPDATE predictions SET actual_result=?, correct=?, margin=?, grade=?, ungraded_reason=? WHERE id=?",
                 (None if grade.get("actual_result") is None else str(grade.get("actual_result")), None if correct is None else int(bool(correct)), grade.get("margin"), grade.get("grade"), grade.get("ungraded_reason"), prediction_id),
             )
 
     def load_predictions(self, run_id: str) -> list[dict[str, Any]]:
         """Load all stored predictions for a run."""
-        with self.connect() as conn:
-            rows = conn.execute("SELECT * FROM predictions WHERE run_id=? ORDER BY week, id", (run_id,)).fetchall()
+        with self._cursor() as cursor:
+            cursor.execute("SELECT * FROM predictions WHERE run_id=? ORDER BY week, id", (run_id,))
+            rows = cursor.fetchall()
         return [dict(row) for row in rows]
