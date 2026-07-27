@@ -115,7 +115,7 @@ def test_grader_supports_team_markets_win_loss_and_push():
     assert grader.grade({"market": "total", "prediction": "over", "line": 44}, final)["grade"] == "push"
 
 
-def test_team_market_replay_reports_unsupported_model_capability_not_silent_zero(tmp_path):
+def test_team_market_replay_generates_candidates_before_threshold_acceptance(tmp_path):
     class TeamMarketProvider(StubProvider):
         def get_games(self, league, season, week):
             return [{"game_id": "game-1", "home_team": "BUF", "away_team": "MIA", "kickoff_time": "2025-09-07T17:00:00Z"}]
@@ -137,11 +137,11 @@ def test_team_market_replay_reports_unsupported_model_capability_not_silent_zero
     evaluation = summary["evaluation"]
     assert evaluation["games_evaluated"] == 1
     assert evaluation["markets_evaluated"] == 3
-    assert evaluation["candidates_evaluated"] == 0
+    assert evaluation["candidates_evaluated"] == 3
     assert evaluation["bets_accepted"] == 0
-    assert evaluation["no_bet_reasons"] == {"unsupported_market": 3}
+    assert evaluation["no_bet_reasons"] == {"edge_below_threshold": 3}
     assert len(evaluation["games"][0]["market_decisions"]) == 3
-    assert all(row["reason"] == "unsupported_market" for row in evaluation["games"][0]["market_decisions"])
+    assert all(row["model_probability"] is not None for row in evaluation["games"][0]["market_decisions"])
 
 
 def test_offline_week_one_shape_evaluates_all_games_and_explains_every_no_bet(tmp_path):
@@ -167,8 +167,8 @@ def test_offline_week_one_shape_evaluates_all_games_and_explains_every_no_bet(tm
     config = BacktestConfig(league="nfl", season="2025", start_week=1, end_week=1, markets=("h2h", "spreads", "totals"), export=False, db_path=tmp_path / "week1.db", data_dir=tmp_path)
     summary = ReplayEngine(config, provider=provider).run()
     evaluation = summary["evaluation"]
-    assert (evaluation["games_evaluated"], evaluation["markets_evaluated"], evaluation["candidates_evaluated"], evaluation["bets_accepted"]) == (16, 48, 0, 0)
-    assert evaluation["no_bet_reasons"] == {"unsupported_market": 48}
+    assert (evaluation["games_evaluated"], evaluation["markets_evaluated"], evaluation["candidates_evaluated"], evaluation["bets_accepted"]) == (16, 48, 48, 0)
+    assert evaluation["no_bet_reasons"] == {"edge_below_threshold": 48}
     assert all(game["rejection_reasons"] and game["team_stats_available"] == 2 for game in evaluation["games"])
 
 import json
@@ -329,3 +329,47 @@ def test_roi_uses_american_odds_profit(tmp_path):
     assert summary["metrics"]["roi"] == 1.0
     assert summary["metrics"]["average_edge"] == 0.05
     assert summary["metrics"]["average_clv"] == 0.5
+
+
+def test_game_model_is_leakage_safe_and_best_price_is_deduplicated(tmp_path):
+    class Provider(StubProvider):
+        def get_games(self, *args):
+            return [{"game_id": "g", "home_team": "BUF", "away_team": "MIA", "kickoff_time": "2025-09-07T17:00:00Z"}]
+        def get_team_stats(self, *args):
+            return [
+                {"team": "BUF", "season": 2024, "through_week": 18, "data_as_of": "2025-08-01T00:00:00Z", "stats": {"points_per_game": 30, "points_allowed_per_game": 18}},
+                {"team": "MIA", "season": 2024, "through_week": 18, "data_as_of": "2025-08-01T00:00:00Z", "stats": {"points_per_game": 18, "points_allowed_per_game": 28}},
+                {"team": "BUF", "season": 2025, "through_week": 1, "data_as_of": "2025-09-08T00:00:00Z", "stats": {"points_per_game": 0}},
+            ]
+        def get_odds(self, *args):
+            return [
+                {"game_id":"g","market":"moneyline","selection":"BUF","line":0,"odds":100,"sportsbook":"worse","captured_at":"2025-09-07T12:00:00Z"},
+                {"game_id":"g","market":"h2h","selection":"BUF","line":0,"odds":120,"sportsbook":"best","captured_at":"2025-09-07T12:00:00Z"},
+                {"game_id":"g","market":"spreads","selection":"BUF","line":-3.5,"odds":110,"sportsbook":"best","captured_at":"2025-09-07T12:00:00Z"},
+                {"game_id":"g","market":"totals","selection":"Over","line":42.5,"odds":110,"sportsbook":"best","captured_at":"2025-09-07T12:00:00Z"},
+            ]
+        def get_player_stats(self,*args): return []
+        def get_outcomes(self,*args):
+            return [{"game_id":"g","final_home_score":28,"final_away_score":17,"market_results":{"h2h":"BUF","spread":11,"total":45}}]
+    config=BacktestConfig(league="nfl",season="2025",start_week=1,end_week=1,markets=("h2h","spread","total"),export=False,db_path=tmp_path/"game.db",data_dir=tmp_path)
+    summary=ReplayEngine(config,provider=Provider()).run()
+    rows=ReplayEngine(config,provider=Provider()).store.load_predictions(summary["run_id"])
+    assert len({(r["game"],r["market"],r["prediction"]) for r in rows}) == len(rows)
+    h2h=next(r for r in rows if r["market"] == "h2h")
+    assert h2h["sportsbook"] == "best" and h2h["sportsbook_odds"] == 120
+    assert h2h["implied_probability"] == pytest.approx(100/220)
+    assert h2h["edge"] == pytest.approx(h2h["model_probability"]-h2h["implied_probability"])
+    assert summary["metrics"]["graded_predictions"] == len(rows)
+
+
+def test_team_markets_reject_missing_or_future_history(tmp_path):
+    class Provider(StubProvider):
+        def get_games(self,*args): return [{"game_id":"g","home_team":"BUF","away_team":"MIA","kickoff_time":"2025-09-07T17:00:00Z"}]
+        def get_odds(self,*args): return [{"game_id":"g","market":"h2h","selection":"BUF","odds":120,"sportsbook":"book","captured_at":"2025-09-07T12:00:00Z"}]
+        def get_team_stats(self,*args): return [{"team":"BUF","season":2024,"through_week":18,"data_as_of":"2025-09-08T00:00:00Z","stats":{"points_per_game":30}}]
+        def get_player_stats(self,*args): return []
+        def get_outcomes(self,*args): return []
+    config=BacktestConfig(league="nfl",season="2025",start_week=1,end_week=1,markets=("moneyline",),export=False,db_path=tmp_path/"missing.db",data_dir=tmp_path)
+    evaluation=ReplayEngine(config,provider=Provider()).run()["evaluation"]
+    assert evaluation["candidates_evaluated"] == 0
+    assert evaluation["no_bet_reasons"] == {"insufficient_pregame_history": 1}

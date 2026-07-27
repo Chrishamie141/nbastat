@@ -12,6 +12,7 @@ from nfl_predictor import NFLPredictor
 from .config import BacktestConfig, PredictionMode
 from .grader import PredictionGrader, index_outcomes
 from .metrics import MetricsCalculator
+from .nfl_game_predictor import NFLGameMarketPredictor
 from .markets import CANONICAL_TEAM_MARKETS, normalize_market
 from .historical_provider import HistoricalSnapshotProvider, PredictionDataProvider
 from .prediction_store import PredictionStore
@@ -130,6 +131,7 @@ class ReplayEngine:
             self._last_prediction_diagnostics = {"games_evaluated": 0, "markets_evaluated": 0, "candidates_evaluated": 0, "bets_accepted": 0, "no_bet_reasons": {"unsupported_league": 1}, "games": []}
             return []
         predictor = NFLPredictor()
+        game_predictor = NFLGameMarketPredictor()
         predictions: list[dict[str, Any]] = []
         games = provider.get_games(config.league, config.season, week)
         odds = provider.get_odds(config.league, config.season, week)
@@ -160,8 +162,13 @@ class ReplayEngine:
             for market in selected_markets:
                 markets_evaluated += 1
                 if market in CANONICAL_TEAM_MARKETS:
-                    game_reasons["unsupported_market"] += 1
-                    game_decisions.append({"market": market, "model_probability": None, "implied_probability": None, "edge": None, "confidence": None, "threshold": None, "decision": "no_bet", "reason": "unsupported_market"})
+                    team_predictions, team_decisions, team_reasons = self._evaluate_team_market(
+                        game_predictor, game, market, game_odds, team_stats, config
+                    )
+                    candidates_evaluated += len(team_decisions) - sum(1 for row in team_decisions if row.get("model_probability") is None)
+                    predictions.extend(team_predictions)
+                    game_decisions.extend(team_decisions)
+                    game_reasons.update(team_reasons)
             if game_id not in odds_by_game:
                 game_reasons["odds_lookup_failed"] += 1
             players = game.get("players") or []
@@ -226,6 +233,71 @@ class ReplayEngine:
         }
         return predictions
 
+    def _evaluate_team_market(self, predictor, game, market, game_odds, team_stats, config):
+        """Create model evaluations first, then apply betting acceptance thresholds."""
+        rows = [row for row in game_odds if normalize_market(row.get("market")) == market]
+        kickoff = game.get("kickoff_time") or game.get("commence_time")
+        valid = []
+        for row in rows:
+            implied = self._implied_probability(row.get("odds"))
+            captured = row.get("captured_at") or row.get("snapshot_timestamp")
+            if implied is None or not row.get("selection") or (market != "h2h" and row.get("line") is None) or not self._timestamp_before(captured, kickoff):
+                continue
+            valid.append(row)
+        if not valid:
+            return [], [{"market": market, "decision": "rejected", "rejection_reason": "invalid_or_missing_odds", "reason": "invalid_or_missing_odds", "model_probability": None}], Counter({"invalid_or_missing_odds": 1})
+        projection = predictor.project(game, team_stats)
+        if projection is None:
+            return [], [{"market": market, "decision": "rejected", "rejection_reason": "insufficient_pregame_history", "reason": "insufficient_pregame_history", "model_probability": None}], Counter({"insufficient_pregame_history": 1})
+        # A projection is computed once above. Quotes merely price its distribution.
+        by_selection = {}
+        for row in valid:
+            selection = str(row["selection"])
+            try:
+                probability = projection.probability(market, selection, row.get("line"), home_team=str(game.get("home_team")), away_team=str(game.get("away_team")))
+            except (TypeError, ValueError):
+                continue
+            implied = self._implied_probability(row.get("odds"))
+            evaluated = {**row, "model_probability": probability, "implied_probability": implied, "edge": probability - implied}
+            key = selection.casefold()
+            current = by_selection.get(key)
+            rank = (evaluated["edge"], float(evaluated["odds"]), str(evaluated.get("sportsbook") or ""))
+            if current is None or rank > current[0]:
+                by_selection[key] = (rank, evaluated)
+        if not by_selection:
+            return [], [{"market": market, "decision": "rejected", "rejection_reason": "model_evaluation_failed", "reason": "model_evaluation_failed", "model_probability": None}], Counter({"model_evaluation_failed": 1})
+        accepted, decisions, reasons = [], [], Counter()
+        for _, row in sorted(by_selection.values(), key=lambda item: (str(item[1]["selection"]).casefold(), str(item[1].get("sportsbook") or ""))):
+            reason = None
+            if row["edge"] < 0.02:
+                reason = "edge_below_threshold"
+            elif projection.confidence < 55.0:
+                reason = "confidence_below_threshold"
+            decision = "accepted" if reason is None else "rejected"
+            if reason is not None:
+                reasons[reason] += 1
+            diagnostic = {"market": market, "selection": row["selection"], "model_probability": row["model_probability"], "implied_probability": row["implied_probability"], "edge": row["edge"], "confidence": projection.confidence, "sportsbook": row.get("sportsbook"), "line": row.get("line"), "american_odds": row.get("odds"), "decision": decision, "rejection_reason": reason, "reason": reason, "threshold": 0.02, "model_version": projection.model_version, "features_data_as_of": projection.data_as_of}
+            decisions.append(diagnostic)
+            if reason is not None:
+                continue
+            selection = str(row["selection"])
+            accepted.append({"game": game.get("game_id") or game.get("id") or game.get("game"), "prediction": selection, "selection": selection, "market": market, "line": row.get("line"), "sportsbook_odds": row.get("odds"), "american_odds": row.get("odds"), "sportsbook": row.get("sportsbook"), "model_probability": row["model_probability"], "implied_probability": row["implied_probability"], "edge": row["edge"], "confidence": projection.confidence, "prediction_model_version": projection.model_version, "features_data_as_of": projection.data_as_of, "features": projection.features, "reasoning": f"{projection.model_version}: prior scoring offense/defense plus home-field adjustment", "team": selection if market != "total" else None, "home_away": "home" if selection.casefold() in {"home", str(game.get("home_team")).casefold()} else "away" if market != "total" else None, "game_type": game.get("game_type"), "clv": row.get("closing_line_value") or row.get("clv")})
+        return accepted, decisions, reasons
+
+    @staticmethod
+    def _timestamp_before(value, kickoff):
+        if not value or not kickoff:
+            return False
+        try:
+            from datetime import datetime, timezone
+            observed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            start = datetime.fromisoformat(str(kickoff).replace("Z", "+00:00"))
+            if observed.tzinfo is None: observed = observed.replace(tzinfo=timezone.utc)
+            if start.tzinfo is None: start = start.replace(tzinfo=timezone.utc)
+            return observed < start
+        except (TypeError, ValueError):
+            return False
+
     def _fallback_evaluation(self, games: list[dict[str, Any]], odds: list[dict[str, Any]], predictions: list[dict[str, Any]]) -> dict[str, Any]:
         """Supply concise accounting for injected factories that predate diagnostics."""
         reasons = {}
@@ -262,6 +334,8 @@ class ReplayEngine:
         # Retain the original single-run fields for report consumers while the
         # explicit totals/weeks structure supplies unambiguous aggregation.
         evaluation.update(totals)
+        evaluation["candidates_generated"] = totals["candidates_evaluated"]
+        evaluation["bets_rejected"] = totals["candidates_evaluated"] - totals["bets_accepted"]
         if len(self._evaluation_weeks) == 1:
             only_week = next(iter(self._evaluation_weeks.values()))
             evaluation["games"] = only_week.get("games", [])

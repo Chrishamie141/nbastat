@@ -47,6 +47,18 @@ class PredictionGrader:
             correct = margin > 0
             return {"actual_result": actual, "correct": correct, "margin": margin, "grade": "win" if correct else "loss"}
 
+        if market == "h2h":
+            home = str(outcome.get("home_team") or "").casefold()
+            away = str(outcome.get("away_team") or "").casefold()
+            actual_key = str(actual).casefold()
+            pick_key = str(prediction.get("selection") or prediction.get("prediction") or "").casefold()
+            if actual_key == "home" and home: actual_key = home
+            elif actual_key == "away" and away: actual_key = away
+            if pick_key == "home" and home: pick_key = home
+            elif pick_key == "away" and away: pick_key = away
+            correct = pick_key == actual_key
+            return {"actual_result": actual, "correct": correct, "margin": None, "grade": "win" if correct else "loss"}
+
         return self._binary(prediction, actual)
 
     def _binary(self, prediction: dict[str, Any], actual: Any) -> dict[str, Any]:
