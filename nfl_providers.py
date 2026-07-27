@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib, json, os, re, time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
@@ -104,13 +104,51 @@ class EspnNflProvider:
                 rows.append(r)
         return rows
     def fetch_team_stats(self, season, week, games):
+        """Return completed-game observations known before this snapshot's games.
+
+        Unlike the old implementation, this never reads the target game's
+        boxscore.  Week one therefore uses the preceding regular season; later
+        weeks additionally use already completed games in the target season.
+        """
+        target_season, target_week = int(season), int(week)
+        earliest_kickoff = min((_dt(g.get("kickoff_time")) for g in games if g.get("kickoff_time")), default=None)
         rows=[]
-        for g in games:
-            eid=str(g.get("espn_event_id") or str(g.get("game_id","")).replace("espn-",""));
-            for r in normalize_espn_team_boxscore(self._summary(season,week,eid), str(season), int(week)-1):
-                r.update({"game_id": g.get("game_id"), "source":"espn", "captured_at": g.get("kickoff_time"), "data_as_of": g.get("kickoff_time"), "is_pregame": True, "record_role":"pregame_history", "week": int(week)})
-                rows.append(r)
-        return rows
+        for history_season, weeks in ((target_season - 1, range(1, 19)), (target_season, range(1, target_week))):
+            for history_week in weeks:
+                payload = self._scoreboard(history_season, history_week)
+                for event in payload.get("events", []):
+                    status = ((event.get("status") or {}).get("type") or {})
+                    if not status.get("completed"):
+                        continue
+                    game = self.normalize_game(event, history_season, history_week)
+                    kickoff = _dt(game.get("kickoff_time"))
+                    # ESPN's public scoreboard has no finalization instant. Six
+                    # hours after kickoff is a conservative deterministic lower
+                    # bound for when a final score was knowable.
+                    completed = kickoff + timedelta(hours=6) if kickoff else None
+                    if not completed or (earliest_kickoff and completed >= earliest_kickoff):
+                        continue
+                    completed_at = completed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                    competitors = (((event.get("competitions") or [{}])[0]).get("competitors") or [])
+                    if len(competitors) != 2:
+                        continue
+                    normalized=[]
+                    for competitor in competitors:
+                        team = normalize_team((competitor.get("team") or {}).get("abbreviation") or (competitor.get("team") or {}).get("displayName"))
+                        try: score = int(competitor.get("score"))
+                        except (TypeError, ValueError): break
+                        normalized.append((competitor.get("homeAway"), team, score))
+                    if len(normalized) != 2:
+                        continue
+                    for home_away, team, score in normalized:
+                        opponent = next(item for item in normalized if item[1] != team)
+                        rows.append({"season":history_season,"week":history_week,"through_week":history_week,
+                            "team":team,"game_id":game.get("game_id"),"opponent":opponent[1],
+                            "points_for":score,"points_against":opponent[2],"home_away":home_away,
+                            "completed_at":completed_at,"captured_at":completed_at,"data_as_of":completed_at,
+                            "record_role":"completed_game_history","source":"espn-scoreboard","is_pregame":False})
+        identity=lambda r:(r["season"],r["week"],r["game_id"],r["team"])
+        return sorted({identity(r):r for r in rows}.values(), key=identity)
     def fetch_injuries(self, season, week, games): return []
 
 def normalize_espn_player_boxscore(data, season, through_week):

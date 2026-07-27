@@ -42,6 +42,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--check-providers", action="store_true")
     parser.add_argument("--odds-hours-before-kickoff", type=int, default=24)
     parser.add_argument("--require-backtest-ready", action="store_true")
+    parser.add_argument("--refresh", choices=("team-stats",), help="Refresh only free statistical history; preserves odds.json and never contacts The Odds API.")
     return parser.parse_args(argv)
 
 
@@ -181,7 +182,33 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
 
 def main(argv: list[str] | argparse.Namespace | None = None) -> int:
     args = argv if isinstance(argv, argparse.Namespace) else parse_args(argv)
-    
+    if getattr(args, "refresh", None) == "team-stats":
+        # Deliberately construct no odds source. Games are read from the local
+        # snapshot and only team_stats.json is replaced.
+        sources = create_sources("espn")
+        failed = 0
+        for week in range(args.start_week, args.end_week + 1):
+            wdir = snapshot_week_dir(args.data_dir, args.league, args.season, week)
+            try:
+                games = json.loads((wdir / "games.json").read_text())
+                source = next(s for s in sources if "team_stats" in s.supported_datasets)
+                rows = source.fetch_team_stats(args.league, args.season, week, nfl_week_date_range(args.season, week), games)
+                normalized = normalize_dataset("team_stats", rows, args.league, args.season, week)
+                if not normalized:
+                    raise SnapshotError("ESPN returned no completed prior team history")
+                tmp = wdir / "team_stats.json.tmp"
+                tmp.write_text(json.dumps(normalized, indent=2, sort_keys=True) + "\n")
+                tmp.replace(wdir / "team_stats.json")
+                print(f"NFL {args.season} Week {week}: team history records={len(normalized)}")
+                if args.validate:
+                    report = validate_snapshot(args.data_dir, args.league, args.season, [week])
+                    if not report.ok:
+                        raise SnapshotError("; ".join(report.errors))
+            except Exception as exc:
+                failed += 1; print(f"ERROR: {_redact(str(exc))}")
+        print("Historical odds preserved; Odds API not requested.")
+        return 1 if failed else 0
+
     try:
         sources = create_sources(args.providers, getattr(args, "odds_hours_before_kickoff", 24))
     except TypeError:

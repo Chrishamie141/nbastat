@@ -88,6 +88,8 @@ class ReplayEngine:
             print(f"- Bets accepted: {evaluation['bets_accepted']}")
             reasons = evaluation.get("no_bet_reasons", {})
             print(f"- No-bet reasons: {', '.join(f'{key}={value}' for key, value in sorted(reasons.items())) if reasons else 'none'}")
+            coverage = evaluation.get("history_coverage", {})
+            print(f"- History coverage: teams={coverage.get('teams', 0)}, rows_used={coverage.get('rows_used', 0)}, rejected_future_rows={coverage.get('rejected_future_rows', 0)}")
             if os.getenv("BACKTESTING_DEBUG_PREDICTIONS") == "1":
                 print("- Prediction diagnostics:")
                 for game_diagnostic in evaluation.get("games", []):
@@ -101,7 +103,7 @@ class ReplayEngine:
             report_dir = ReportExporter(self.config.results_dir).export(self.metadata, stored, metrics)
         evaluation = self._aggregate_evaluation()
         summary = {"run_id": self.metadata.run_id, "mode": self.config.mode().value, "metrics": metrics, "evaluation": evaluation, "report_dir": str(report_dir) if report_dir else None}
-        print(f"Final report: {summary}")
+        print(f"Final report: run_id={summary['run_id']} mode={summary['mode']} predictions={metrics.get('total_predictions', 0)}")
         return summary
 
     def _weeks(self) -> range:
@@ -222,14 +224,17 @@ class ReplayEngine:
                 "candidates_accepted": sum(1 for p in predictions if p.get("game") == game_id),
                 "candidates_rejected": sum(game_reasons.values()), "rejection_reasons": dict(sorted(game_reasons.items())),
                 "market_decisions": game_decisions,
+                "history": game_predictor.last_diagnostics,
             })
         # NFLPredictor's team-market method is explicitly placeholder-only (zero projection), so replay must not
         # turn complete h2h/spread/total prices into fabricated bets.
+        history_diags = [team for game_diag in diagnostics for team in game_diag.get("history", {}).values()]
         self._last_prediction_diagnostics = {
             "games_evaluated": len(games), "markets_evaluated": markets_evaluated,
             "candidates_evaluated": candidates_evaluated, "bets_accepted": len(predictions),
             "no_bet_reasons": dict(sorted(reasons.items())), "games": diagnostics,
             "supported_prediction_markets": sorted(supported_player_markets),
+            "history_coverage": {"teams": len(history_diags), "rows_used": sum(int(x.get("history_rows_used", 0)) for x in history_diags), "rejected_future_rows": sum(int(x.get("rejected_future_rows", 0)) for x in history_diags)},
         }
         return predictions
 
