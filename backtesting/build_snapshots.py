@@ -11,6 +11,7 @@ from typing import Any
 
 from .config import DATA_DIR, SNAPSHOTS_DIR
 from .snapshot_sources import DATASET_METHODS, HistoricalSnapshotSource, ProviderUnavailable, RawCache, create_sources, _redact
+from nfl_providers import JsonRawCache, TEAM_MARKETS
 from .snapshots import DATASETS, REQUIRED_DATASETS, SnapshotError, normalize_dataset, snapshot_week_dir, validate_snapshot
 
 OPTIONAL_DATASETS = tuple(d for d in DATASETS if d not in REQUIRED_DATASETS)
@@ -37,6 +38,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--plan", action="store_true", help="Prepare canonical schedules with free providers and print an exact paid-odds plan.")
     parser.add_argument("--providers", default="odds-api,espn,nfl-official,local-json")
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--check-providers", action="store_true")
@@ -76,11 +78,44 @@ def _backtest_ready(data_dir: Path, league: str, season: str, week: int) -> bool
     return populated and validate_snapshot(data_dir, league, season, [week]).ok
 
 
+def _odds_request(season: str, week: int, game: dict[str, Any], hours: int) -> tuple[str, dict[str, Any]]:
+    kickoff = datetime.fromisoformat(str(game["kickoff_time"]).replace("Z", "+00:00"))
+    timestamp = (kickoff - timedelta(hours=hours)).astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return timestamp, {"regions": "us", "markets": ",".join(TEAM_MARKETS),
+                       "oddsFormat": "american", "date": timestamp}
+
+
+def prepare_canonical_games(args: argparse.Namespace) -> None:
+    """Fill missing schedules using local data/cache or ESPN, never Odds API."""
+    cache = RawCache(Path(args.data_dir).parent / "raw_cache")
+    espn = None
+    for week in range(args.start_week, args.end_week + 1):
+        wdir = snapshot_week_dir(args.data_dir, args.league, args.season, week)
+        try:
+            if json.loads((wdir / "games.json").read_text()):
+                print(f"Preparation Week {week}: canonical schedule provider=local-snapshot")
+                continue
+        except (OSError, json.JSONDecodeError):
+            pass
+        if espn is None:
+            print("Preparation provider=espn (non-paid); provider=odds-api disabled")
+            espn = create_sources("espn")[0]
+        games, warnings = _fetch_dataset([espn], cache, "games", args.league, args.season,
+                                         week, nfl_week_date_range(args.season, week), [])
+        if not games:
+            raise SnapshotError(f"canonical schedule unavailable for Week {week}: {'; '.join(warnings)}")
+        normalized = normalize_dataset("games", games, args.league, args.season, week)
+        wdir.mkdir(parents=True, exist_ok=True)
+        _write_json(wdir / "games.json", normalized, False)
+        print(f"Preparation Week {week}: canonical schedule provider=espn games={len(normalized)}")
+
+
 def request_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
     """Inspect local files only and print the quota plan before source construction."""
     plan = []
     print(f"{args.league.upper()} {args.season} Weeks {args.start_week}–{args.end_week} build plan")
-    paid = 0
+    paid = hits = needed = 0
+    odds_cache = JsonRawCache(Path(args.data_dir).parent / "raw_cache")
     for week in range(args.start_week, args.end_week + 1):
         wdir = snapshot_week_dir(args.data_dir, args.league, args.season, week)
         loaded = {}
@@ -89,23 +124,41 @@ def request_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
             except (OSError, json.JSONDecodeError): loaded[dataset] = []
         game_ids = {r.get("game_id") for r in loaded["games"]}
         odds_ids = {r.get("game_id") for r in loaded["odds"]}
-        missing_games = len(game_ids - odds_ids) if game_ids else 0
+        missing = [g for g in loaded["games"] if g.get("game_id") not in odds_ids]
+        missing_games = len(missing)
         ready = _backtest_ready(args.data_dir, args.league, args.season, week)
         actions = [] if ready else [d for d in ("games", "odds", "team_stats", "outcomes") if not loaded[d]]
         if loaded["games"] and missing_games: actions = [*([a for a in actions if a != "odds"]), "odds"]
-        requests = (missing_games if game_ids else None) if "odds" in actions else 0
-        if requests is not None:
-            paid += requests
+        requests = missing_games if "odds" in actions else 0
+        cache_hits = 0
+        if requests:
+            for game in missing:
+                # Normalized canonical schedules always contain kickoff_time.
+                # Keep request_plan useful for older hand-written snapshots,
+                # while conservatively treating an unidentifiable cache entry
+                # as a paid miss.
+                if game.get("kickoff_time"):
+                    _, params = _odds_request(str(args.season), week, game, getattr(args, "odds_hours_before_kickoff", 24))
+                    cache_hits += odds_cache.path("odds-api", "nfl", args.season, week, "odds", params).exists()
+        paid_requests = requests - cache_hits
+        needed += requests; hits += cache_hits; paid += paid_requests
         row = {"week": week, "ready": ready, "counts": {k: len(v) for k,v in loaded.items()},
                "games_with_odds": len(game_ids & odds_ids), "games_without_odds": missing_games,
-               "actions": actions, "expected_paid_requests": requests}
+               "canonical_games": len(game_ids), "historical_requests_needed": requests,
+               "cache_hits": cache_hits, "paid_requests": paid_requests,
+               "estimated_credits": paid_requests * len(TEAM_MARKETS) * 10,
+               "actions": actions, "expected_paid_requests": paid_requests}
         plan.append(row)
         print(f"Week {week}:")
         for name in ("games", "odds", "team_stats", "outcomes"):
             print(f"{name.replace('_', ' ')}: {'present' if loaded[name] else 'missing'}")
+        print(f"canonical_games={len(game_ids)} historical_requests_needed={requests} cache_hits={cache_hits} paid_requests={paid_requests}")
+        print(f"estimated_credits={paid_requests * len(TEAM_MARKETS) * 10} (historical multiplier=10 x regions=1 x markets={len(TEAM_MARKETS)})")
         print(f"action: {'SKIP' if ready else ', '.join('FETCH '+a.replace('_',' ').upper() for a in actions) or 'VALIDATE'}")
-    unknown = any(row["expected_paid_requests"] is None for row in plan)
-    print(f"Expected paid historical requests: {paid}{' + TBD after canonical games are fetched' if unknown else ''}")
+    print(f"Totals: canonical_games={sum(r['canonical_games'] for r in plan)} historical_requests_needed={needed} cache_hits={hits}")
+    print(f"Historical HTTP requests (paid cache misses): {paid}")
+    print(f"Expected paid historical requests: {paid}")
+    print(f"Estimated Odds API credits: {paid * len(TEAM_MARKETS) * 10} (10 historical x 1 region x {len(TEAM_MARKETS)} markets per HTTP request)")
     return plan
 
 
@@ -127,6 +180,12 @@ def _fetch_dataset(sources: list[HistoricalSnapshotSource], cache: RawCache, dat
                 if dataset == "games":
                     return method(league, season, week, week_range)
                 return method(league, season, week, week_range, games)
+            # The Odds API adapter performs one timestamped HTTP request per
+            # game and owns a parameter-complete JsonRawCache.  Wrapping the
+            # whole week in the coarse dataset cache would conceal those
+            # individual cache identities from quota planning.
+            if dataset == "odds" and source.name == "odds-api":
+                return call(), warnings
             return cache.get_or_fetch(source.name, league, season, week, dataset, call), warnings
         except ProviderUnavailable as exc:
             warnings.append(_redact(f"{source.name}: {exc}"))
@@ -316,7 +375,12 @@ def main(argv: list[str] | argparse.Namespace | None = None) -> int:
         print("Historical odds preserved; Odds API not requested.")
         return 1 if failed else 0
 
+    if getattr(args, "plan", False):
+        prepare_canonical_games(args)
     plan = request_plan(args)
+    if getattr(args, "plan", False):
+        print("Plan complete: no paid Odds API requests were made.")
+        return 0
     if args.dry_run:
         print("Dry run: zero external calls made.")
         return 0

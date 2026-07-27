@@ -55,9 +55,23 @@ class JsonRawCache:
     overwrite: bool = False
     hits: int = 0
     misses: int = 0
+    @staticmethod
+    def identity(provider: str, league: str, season: str|int, week: int,
+                 endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
+        """Return the complete, secret-free identity of a provider response."""
+        return {"provider": provider, "sport": league.lower(), "season": str(season),
+                "week": int(week), "endpoint": endpoint,
+                "params": {k: v for k, v in params.items() if k.lower() not in {"apikey", "api_key"}}}
+
+    def path(self, provider: str, league: str, season: str|int, week: int,
+             endpoint: str, params: dict[str, Any]) -> Path:
+        identity = self.identity(provider, league, season, week, endpoint, params)
+        digest = hashlib.sha256(json.dumps(identity, sort_keys=True, default=str).encode()).hexdigest()[:16]
+        return self.root/provider/league.lower()/str(season)/f"week_{int(week):02d}"/f"{endpoint}-{digest}.json"
+
     def get_or_fetch(self, provider: str, league: str, season: str|int, week: int, endpoint: str, params: dict[str, Any], fetcher):
-        digest = hashlib.sha256(json.dumps(params, sort_keys=True, default=str).encode()).hexdigest()[:16]
-        path = self.root/provider/league/str(season)/f"week_{int(week):02d}"/f"{endpoint}-{digest}.json"
+        params = {k: v for k, v in params.items() if k.lower() not in {"apikey", "api_key"}}
+        path = self.path(provider, league, season, week, endpoint, params)
         if path.exists() and not self.overwrite:
             self.hits += 1
             return json.loads(path.read_text())
@@ -69,6 +83,7 @@ class JsonRawCache:
         meta = {"request_timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "requested_historical_date": params.get("date"), "provider": provider, "sport": league,
             "season": str(season), "week": int(week), "endpoint": endpoint,
+            "request_identity": self.identity(provider, league, season, week, endpoint, params),
             "markets": str(params.get("markets", "")).split(",") if params.get("markets") else [],
             "event_count": len(events) if isinstance(events, list) else 0,
             "response_sha256": hashlib.sha256(payload).hexdigest(), "api_usage_headers": {}}
