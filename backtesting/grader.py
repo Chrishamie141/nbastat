@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .markets import normalize_market
+
 
 class PredictionGrader:
     """Compare frozen predictions with actual historical outcomes."""
@@ -14,12 +16,14 @@ class PredictionGrader:
             return {"actual_result": None, "correct": None, "margin": None, "grade": "unresolved"}
         actual = outcome.get("actual_result", outcome.get("result"))
         line = prediction.get("line")
-        market = str(prediction.get("market", "")).lower()
+        market = normalize_market(prediction.get("market"))
         pick = str(prediction.get("prediction", "")).lower()
         if actual is None:
             return {"actual_result": None, "correct": None, "margin": None, "grade": "unresolved"}
 
-        if market in {"over_under", "total", "player_prop", "player props"} or pick in {"over", "under"}:
+        if market in {"total", "player_prop", "player props"} or pick in {"over", "under"}:
+            if market == "total" and outcome.get("final_home_score") is not None and outcome.get("final_away_score") is not None:
+                actual = float(outcome["final_home_score"]) + float(outcome["final_away_score"])
             if line is None:
                 return self._binary(prediction, actual)
             margin = float(actual) - float(line)
@@ -29,7 +33,15 @@ class PredictionGrader:
             return {"actual_result": actual, "correct": correct, "margin": margin, "grade": "win" if correct else "loss"}
 
         if market in {"spread"}:
-            margin = float(outcome.get("margin", actual)) - float(line or 0)
+            selection = str(prediction.get("selection") or prediction.get("prediction") or "").lower()
+            home = str(outcome.get("home_team") or "").lower()
+            away = str(outcome.get("away_team") or "").lower()
+            if outcome.get("final_home_score") is not None and outcome.get("final_away_score") is not None:
+                home_margin = float(outcome["final_home_score"]) - float(outcome["final_away_score"])
+                selected_margin = -home_margin if selection in {"away", away} else home_margin
+            else:
+                selected_margin = float(outcome.get("margin", actual))
+            margin = selected_margin + float(line or 0)
             if margin == 0:
                 return {"actual_result": actual, "correct": None, "margin": margin, "grade": "push"}
             correct = margin > 0
@@ -52,15 +64,18 @@ def index_outcomes(outcomes: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict
         player_results = outcome.get("player_results") if isinstance(outcome.get("player_results"), dict) else {}
         if market_results or player_results:
             for market, result in market_results.items():
-                row = {"game": game, "market": market, "actual_result": result}
-                indexed[(game, market, None)] = row
+                canonical = normalize_market(market)
+                row = {**outcome, "game": game, "market": canonical, "actual_result": result}
+                indexed[(game, canonical, None)] = row
             for player, markets in player_results.items():
                 for market, result in (markets or {}).items():
-                    row = {"game": game, "market": market, "player": player, "actual_result": result}
-                    indexed[(game, market, player)] = row
-                    indexed.setdefault((game, market, None), row)
+                    canonical = normalize_market(market)
+                    row = {**outcome, "game": game, "market": canonical, "player": player, "actual_result": result}
+                    indexed[(game, canonical, player)] = row
+                    indexed.setdefault((game, canonical, None), row)
             continue
-        key = (game, outcome.get("market"), outcome.get("player"))
+        canonical = normalize_market(outcome.get("market"))
+        key = (game, canonical, outcome.get("player"))
         indexed[key] = outcome
-        indexed.setdefault((game, outcome.get("market"), None), outcome)
+        indexed.setdefault((game, canonical, None), outcome)
     return indexed

@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
+from .markets import normalize_markets
+
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 DATA_DIR = PACKAGE_ROOT / "data"
@@ -46,4 +48,4 @@ class BacktestConfig:
 
     def normalized_markets(self) -> tuple[str, ...]:
         """Return selected markets with whitespace removed and lowercase applied."""
-        return tuple(m.strip().lower() for m in self.markets if m.strip())
+        return normalize_markets(self.markets)
