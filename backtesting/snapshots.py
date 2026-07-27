@@ -12,6 +12,7 @@ from typing import Any
 DATASETS = ("games", "odds", "weather", "injuries", "player_stats", "team_stats", "outcomes")
 REQUIRED_DATASETS = ("games", "outcomes")
 from .markets import CANONICAL_TEAM_MARKETS, SUPPORTED_MARKETS, normalize_market
+from .team_history import canonicalize_team_history
 
 SCHEMAS: dict[str, tuple[str, ...]] = {
     "games": ("game_id", "league", "season", "week", "kickoff_time", "home_team", "away_team", "venue", "status"),
@@ -102,6 +103,8 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
         row.setdefault("is_pregame", bool(record.get("is_pregame", name not in {"outcomes"} and row.get("record_role") != "game_outcome")))
         row.setdefault("season", str(season))
         row.setdefault("week", int(week))
+        if name == "team_stats":
+            row = canonicalize_team_history(row)
         normalized.append(row)
     return normalized
 
