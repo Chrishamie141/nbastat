@@ -44,13 +44,22 @@ SUPPORTED_MARKETS = {market.value for market in Market} | {"moneyline"}
 CANONICAL_TEAM_MARKETS = (Market.H2H.value, Market.SPREAD.value, Market.TOTAL.value)
 ODDS_API_TEAM_MARKETS = ("h2h", "spreads", "totals")
 
+# Internal player markets are intentionally upper-case.  Keep this lookup
+# separate from provider aliases so values stored by older snapshots (and CLI
+# values with arbitrary casing) meet predictor output at the same canonical
+# name.
+_INTERNAL_MARKETS_BY_CASEFOLD = {market.value.casefold(): market.value for market in Market}
+
 
 def normalize_market(value: Any) -> str:
     """Return the canonical internal market string for provider or snapshot input."""
     if value is None:
         return ""
     text = str(value).strip()
-    return ODDS_API_MARKET_ALIASES.get(text.lower(), text).value if text.lower() in ODDS_API_MARKET_ALIASES else text
+    folded = text.casefold()
+    if folded in ODDS_API_MARKET_ALIASES:
+        return ODDS_API_MARKET_ALIASES[folded].value
+    return _INTERNAL_MARKETS_BY_CASEFOLD.get(folded, text)
 
 
 def normalize_markets(values: Any) -> tuple[str, ...]:

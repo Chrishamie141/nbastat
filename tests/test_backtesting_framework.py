@@ -88,6 +88,11 @@ def test_replay_engine_freezes_then_grades_chronologically(tmp_path, monkeypatch
         ("odds", 2),
         ("outcomes", 2),
     ]
+    assert summary["evaluation"]["totals"] == {
+        "games_evaluated": 2, "markets_evaluated": 2,
+        "candidates_evaluated": 2, "bets_accepted": 2,
+    }
+    assert set(summary["evaluation"]["weeks"]) == {"1", "2"}
 
 
 def test_grader_supports_over_under_push_and_moneyline():
@@ -230,6 +235,57 @@ def test_one_week_fixture_replay_produces_predictions_and_grades(tmp_path):
     assert predictions_csv.read_text().strip()
 
 
+def test_player_replay_and_diagnostics_allow_missing_optional_team_stats(tmp_path):
+    src = Path("tests/fixtures/backtesting")
+    data_dir = tmp_path / "snapshots"
+    shutil.copytree(src, data_dir)
+    (data_dir / "nfl" / "2025" / "week_01" / "team_stats.json").unlink()
+    config = BacktestConfig(
+        league="nfl", season="2025", start_week=1, end_week=1,
+        markets=("pass_yds",), export=False, db_path=tmp_path / "optional.db", data_dir=data_dir,
+    )
+    summary = ReplayEngine(config).run()
+    assert summary["metrics"]["total_predictions"] > 0
+    week = summary["evaluation"]["weeks"]["1"]
+    assert week["games_evaluated"] == 1
+    assert week["games"][0]["team_stats_available"] == 0
+
+
+def test_model_that_requires_team_stats_can_require_snapshot_explicitly(tmp_path):
+    provider = HistoricalSnapshotProvider(tmp_path)
+
+    def game_model(provider, config, week):
+        provider.get_team_stats(config.league, config.season, week)
+        return []
+
+    config = BacktestConfig(
+        league="nfl", season="2025", start_week=1, end_week=1,
+        export=False, db_path=tmp_path / "required.db", data_dir=tmp_path,
+        prediction_mode=PredictionMode.STATISTICAL,
+    )
+    # Games/odds are loaded by the engine before the factory, so make only
+    # those prerequisites present; the model's explicit team-history load is strict.
+    week_dir = tmp_path / "nfl" / "2025" / "week_01"
+    week_dir.mkdir(parents=True)
+    (week_dir / "games.json").write_text("[]")
+    (week_dir / "odds.json").write_text("[]")
+    with pytest.raises(SnapshotError, match="No team_stats snapshot"):
+        ReplayEngine(config, provider=provider, prediction_factory=game_model).run()
+
+
+def test_mixed_case_player_market_filter_matches_predictor_and_snapshot(tmp_path):
+    src = Path("tests/fixtures/backtesting")
+    data_dir = tmp_path / "snapshots"
+    shutil.copytree(src, data_dir)
+    config = BacktestConfig(
+        league="nfl", season="2025", start_week=1, end_week=1,
+        markets=("Pass_Yds",), export=False, db_path=tmp_path / "case.db", data_dir=data_dir,
+    )
+    summary = ReplayEngine(config).run()
+    assert summary["metrics"]["total_predictions"] > 0
+    assert summary["evaluation"]["totals"]["bets_accepted"] > 0
+
+
 def test_existing_snapshots_not_overwritten_without_overwrite(tmp_path):
     source = tmp_path / "raw.json"
     source.write_text(json.dumps({"games": [], "outcomes": []}))
@@ -252,6 +308,7 @@ def test_betting_mode_generates_zero_predictions_without_odds(tmp_path):
     summary = engine.run()
     assert summary["mode"] == "BETTING"
     assert summary["metrics"]["total_predictions"] == 0
+    assert summary["evaluation"]["weeks"]["1"]["no_bet_reasons"] == {"missing_historical_odds": 1}
 
 
 def test_statistical_mode_allows_predictions_without_odds(tmp_path):
@@ -261,6 +318,7 @@ def test_statistical_mode_allows_predictions_without_odds(tmp_path):
     summary = engine.run()
     assert summary["mode"] == "STATISTICAL"
     assert summary["metrics"]["graded_predictions"] == 1
+    assert summary["evaluation"]["totals"]["bets_accepted"] == 1
 
 
 def test_roi_uses_american_odds_profit(tmp_path):
