@@ -1,7 +1,8 @@
 import json
 import pytest
 
-from backtesting.evaluation import betting_metrics, edge_buckets, probability_metrics
+from backtesting.evaluation import american_profit, betting_metrics, confidence_buckets, edge_buckets, probability_metrics
+from backtesting.compare_models import market_metrics, paired_decisions
 from backtesting.nfl_v1_v2_validation import evaluate, render_report, validate_game
 
 
@@ -26,12 +27,44 @@ def test_roi_drawdown_losing_streak_and_push():
     assert result["win_rate"] == 1 / 3
     assert result["max_drawdown"] == 2
     assert result["longest_losing_streak"] == 2
+    assert result["units_won"] == 2
+    assert result["units_lost"] == 2
+
+
+def test_american_price_profit_is_exact_for_wins_losses_and_pushes():
+    assert american_profit(200, "win") == 2
+    assert american_profit(-125, "win") == pytest.approx(.8)
+    assert american_profit(-110, "loss") == -1
+    assert american_profit(150, "push") == 0
 
 
 def test_edge_buckets_have_stable_boundaries():
     rows = [{"edge": edge, "model_probability": .5} for edge in (-.01, 0, .02, .10)]
     result = edge_buckets(rows)
     assert [row["predictions"] for row in result] == [1, 1, 1, 0, 0, 0, 1]
+
+
+def test_market_probability_metrics_and_confidence_buckets_exclude_push():
+    rows = [{"grade": grade, "sportsbook_odds": -110, "model_probability": probability,
+             "execution_implied_probability": .5238, "consensus_probability": .5, "edge": probability-.5}
+            for grade, probability in (("win", .6), ("loss", .7), ("push", .8))]
+    metrics = market_metrics(rows)
+    assert metrics["probability_quality"]["count"] == 2
+    assert metrics["probability_quality"]["brier"] == pytest.approx((.16+.49)/2)
+    assert sum(bucket["count"] for bucket in confidence_buckets(
+        [{**r, "bet": True, "odds_used": -110} for r in rows])) == 3
+
+
+def test_paired_decisions_include_all_five_categories():
+    a = [{"game": "same", "market": "h2h", "selection": "A", "model_probability": .6, "edge": .1, "grade": "win"},
+         {"game": "opp", "market": "h2h", "selection": "A", "model_probability": .6, "edge": .1, "grade": "loss"},
+         {"game": "one", "market": "h2h", "selection": "A", "model_probability": .6, "edge": .1, "grade": "win"}]
+    b = [{"game": "same", "market": "h2h", "selection": "A", "model_probability": .7, "edge": .2, "grade": "win"},
+         {"game": "opp", "market": "h2h", "selection": "B", "model_probability": .7, "edge": .2, "grade": "win"},
+         {"game": "two", "market": "h2h", "selection": "B", "model_probability": .7, "edge": .2, "grade": "loss"}]
+    universe = {(x, "h2h") for x in ("same", "opp", "one", "two", "none")}
+    counts = paired_decisions({"v1": a, "v2": b}, ["v1", "v2"], universe)["counts"]
+    assert set(counts.values()) == {1}
 
 
 def test_snapshot_rejects_post_kickoff_and_missing_data():

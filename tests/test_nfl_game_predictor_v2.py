@@ -58,6 +58,12 @@ def test_elo_update_regression_and_future_leakage():
     before = predictor.project(GAME, history())
     future = row("BUF", "MIA", 7, 99, 0, stamp="2025-09-08T23:00:00Z")
     assert predictor.project(GAME, history() + [future]) == before
+    diagnostics = predictor.last_diagnostics
+    assert diagnostics["BUF"]["history_rows_loaded"] == 7
+    assert diagnostics["BUF"]["history_rows_used"] == 6
+    assert diagnostics["BUF"]["rejected_future_rows"] == 1
+    assert diagnostics["BUF"]["latest_history_timestamp"] < GAME["kickoff_time"]
+    assert diagnostics["BUF"]["seasons_used"] == [2024]
 
 
 def test_opponent_adjustment_rest_and_score_distribution():

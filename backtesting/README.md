@@ -124,3 +124,19 @@ Then replay entirely from local files:
 ```bash
 python -m backtesting.run_backtest --league nfl --season 2025 --start-week 1 --end-week 1 --markets h2h,spreads,totals
 ```
+# Offline NFL model comparison
+
+Run model versions over the same immutable snapshots and stored outcomes:
+
+```bash
+python -m backtesting.compare_models --league nfl --season 2025 \
+  --start-week 1 --end-week 1 --markets h2h,spreads,totals \
+  --models nfl_game_baseline_v1,nfl_game_baseline_v2
+```
+
+The command writes a deterministic JSON metrics report and a bet-level CSV.
+It performs no live API calls. Probability scoring excludes pushes, while
+betting performance retains pushes at zero profit. Reported model edge uses
+the consensus/no-vig probability; payouts and ROI always use the separately
+stored executable sportsbook price. Small samples are explicitly labelled
+exploratory and must not be used to tune model formulas or thresholds.
