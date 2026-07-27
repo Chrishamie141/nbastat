@@ -53,11 +53,27 @@ def match_events(espn_game: dict[str, Any], odds_event: dict[str, Any], toleranc
 class JsonRawCache:
     root: Path = Path("backtesting/data/raw_cache")
     overwrite: bool = False
+    hits: int = 0
+    misses: int = 0
     def get_or_fetch(self, provider: str, league: str, season: str|int, week: int, endpoint: str, params: dict[str, Any], fetcher):
         digest = hashlib.sha256(json.dumps(params, sort_keys=True, default=str).encode()).hexdigest()[:16]
         path = self.root/provider/league/str(season)/f"week_{int(week):02d}"/f"{endpoint}-{digest}.json"
-        if path.exists() and not self.overwrite: return json.loads(path.read_text())
-        data = fetcher(); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(data, indent=2, sort_keys=True)+"\n"); return data
+        if path.exists() and not self.overwrite:
+            self.hits += 1
+            return json.loads(path.read_text())
+        self.misses += 1
+        data = fetcher(); path.parent.mkdir(parents=True, exist_ok=True)
+        payload = (json.dumps(data, indent=2, sort_keys=True)+"\n").encode()
+        path.write_bytes(payload)
+        events = data.get("data", []) if isinstance(data, dict) else data
+        meta = {"request_timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "requested_historical_date": params.get("date"), "provider": provider, "sport": league,
+            "season": str(season), "week": int(week), "endpoint": endpoint,
+            "markets": str(params.get("markets", "")).split(",") if params.get("markets") else [],
+            "event_count": len(events) if isinstance(events, list) else 0,
+            "response_sha256": hashlib.sha256(payload).hexdigest(), "api_usage_headers": {}}
+        path.with_suffix(".metadata.json").write_text(json.dumps(meta, indent=2, sort_keys=True)+"\n")
+        return data
 
 def _fetch_json(url: str, headers: dict[str,str]|None=None, timeout:int=REQUEST_TIMEOUT):
     req = Request(url, headers={"User-Agent":USER_AGENT, **(headers or {})})
