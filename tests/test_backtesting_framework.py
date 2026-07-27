@@ -158,18 +158,27 @@ def test_offline_week_one_shape_evaluates_all_games_and_explains_every_no_bet(tm
         def get_odds(self, *args): return self.odds
         def get_player_stats(self, *args): return []
         def get_team_stats(self, *args):
-            return [{"team": team, "season": "2024", "through_week": 18, "stats": {"points_per_game": 24}} for game in self.games for team in (game["home_team"], game["away_team"])]
+            return [{"team": team, "opponent": "fixture-opponent", "season": 2024, "week": history_week,
+                     "through_week": history_week, "game_id": f"2024-{history_week}-{team}",
+                     "points_for": 24, "points_against": 20,
+                     "completed_at": f"2024-09-{history_week:02d}T23:00:00Z",
+                     "data_as_of": f"2024-09-{history_week:02d}T23:00:00Z",
+                     "record_role": "completed_game_history", "is_pregame": False, "source": "fixture"}
+                    for game in self.games for team in (game["home_team"], game["away_team"])
+                    for history_week in range(1, 18)]
         def get_outcomes(self, *args):
             return [{"game_id": game["game_id"], "final_home_score": 24, "final_away_score": 20, "market_results": {"h2h": game["home_team"], "spread": 4, "total": 44}} for game in self.games]
 
     provider = WeekOneProvider()
-    assert len(provider.get_games()) == 16 and len(provider.get_odds()) == 1042 and len(provider.get_team_stats()) == 32
+    assert len(provider.get_games()) == 16 and len(provider.get_odds()) == 1042 and len(provider.get_team_stats()) == 544
     config = BacktestConfig(league="nfl", season="2025", start_week=1, end_week=1, markets=("h2h", "spreads", "totals"), export=False, db_path=tmp_path / "week1.db", data_dir=tmp_path)
     summary = ReplayEngine(config, provider=provider).run()
     evaluation = summary["evaluation"]
     assert (evaluation["games_evaluated"], evaluation["markets_evaluated"], evaluation["candidates_evaluated"], evaluation["bets_accepted"]) == (16, 48, 48, 0)
     assert evaluation["no_bet_reasons"] == {"edge_below_threshold": 48}
-    assert all(game["rejection_reasons"] and game["team_stats_available"] == 2 for game in evaluation["games"])
+    assert all(game["rejection_reasons"] and game["team_stats_available"] == 34 for game in evaluation["games"])
+    coverage = next(iter(evaluation["weeks"].values()))["history_coverage"]
+    assert coverage["teams"] == 32 and coverage["rows_loaded"] == 544 and coverage["rows_used"] == 544
 
 import json
 import shutil

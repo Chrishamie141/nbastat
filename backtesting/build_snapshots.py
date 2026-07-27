@@ -103,6 +103,25 @@ def _manifest(league: str, season: str, week: int, normalized: dict[str, list[di
     return {"league": league.lower(), "season": int(season), "week": int(week), "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"), "builder_version": "phase1-leakage-safe", "datasets": datasets, "warnings": warnings, "leakage_checks_passed": leakage_ok}
 
 
+def _refresh_manifest_dataset(wdir: Path, dataset: str, rows: list[dict[str, Any]]) -> None:
+    """Update only one manifest dataset, preserving every unrelated byte-level value."""
+    path = wdir / "manifest.json"
+    manifest = json.loads(path.read_text()) if path.exists() else {"datasets": {}}
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    previous = dict((manifest.get("datasets") or {}).get(dataset) or {})
+    previous.update({
+        "source": next((r.get("source") for r in rows if r.get("source")), "none"),
+        "records": len(rows),
+        "status": "complete" if rows else "optional_empty",
+        "refreshed_at": now,
+    })
+    manifest.setdefault("datasets", {})[dataset] = previous
+    manifest["refreshed_at"] = now
+    tmp = wdir / "manifest.json.tmp"
+    tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    tmp.replace(path)
+
+
 def _provider_capabilities(sources: list[HistoricalSnapshotSource]) -> None:
     import os
     print("Provider capability report (API keys redacted):")
@@ -199,6 +218,7 @@ def main(argv: list[str] | argparse.Namespace | None = None) -> int:
                 tmp = wdir / "team_stats.json.tmp"
                 tmp.write_text(json.dumps(normalized, indent=2, sort_keys=True) + "\n")
                 tmp.replace(wdir / "team_stats.json")
+                _refresh_manifest_dataset(wdir, "team_stats", normalized)
                 print(f"NFL {args.season} Week {week}: team history records={len(normalized)}")
                 if args.validate:
                     report = validate_snapshot(args.data_dir, args.league, args.season, [week])

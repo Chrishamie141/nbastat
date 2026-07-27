@@ -89,7 +89,9 @@ class ReplayEngine:
             reasons = evaluation.get("no_bet_reasons", {})
             print(f"- No-bet reasons: {', '.join(f'{key}={value}' for key, value in sorted(reasons.items())) if reasons else 'none'}")
             coverage = evaluation.get("history_coverage", {})
-            print(f"- History coverage: teams={coverage.get('teams', 0)}, rows_used={coverage.get('rows_used', 0)}, rejected_future_rows={coverage.get('rejected_future_rows', 0)}")
+            print(f"- History coverage: teams={coverage.get('teams', 0)}, rows_loaded={coverage.get('rows_loaded', 0)}, rows_used={coverage.get('rows_used', 0)}, rows_rejected={coverage.get('rows_rejected', 0)}, minimum_history_failures={coverage.get('minimum_history_failures', 0)}")
+            if not coverage.get("rows_used") and coverage.get("dominant_rejection_reason"):
+                print(f"- Dominant history rejection: {coverage['dominant_rejection_reason']}")
             if os.getenv("BACKTESTING_DEBUG_PREDICTIONS") == "1":
                 print("- Prediction diagnostics:")
                 for game_diagnostic in evaluation.get("games", []):
@@ -234,9 +236,29 @@ class ReplayEngine:
             "candidates_evaluated": candidates_evaluated, "bets_accepted": len(predictions),
             "no_bet_reasons": dict(sorted(reasons.items())), "games": diagnostics,
             "supported_prediction_markets": sorted(supported_player_markets),
-            "history_coverage": {"teams": len(history_diags), "rows_used": sum(int(x.get("history_rows_used", 0)) for x in history_diags), "rejected_future_rows": sum(int(x.get("rejected_future_rows", 0)) for x in history_diags)},
+            "history_coverage": self._history_coverage(history_diags),
         }
         return predictions
+
+    @staticmethod
+    def _history_coverage(history_diags):
+        # A team is diagnosed once per market; report unique-row-equivalent totals
+        # by taking each team's maximum counters across repeated projections.
+        unique = {}
+        for row in history_diags:
+            key = row.get("team") or (tuple(row.get("seasons_used", [])), row.get("latest_history_timestamp"), row.get("history_rows_available"))
+            unique[key] = row
+        rows = list(unique.values())
+        rejections = Counter()
+        for row in rows: rejections.update(row.get("rejection_reasons", {}))
+        loaded = sum(int(row.get("history_rows_loaded", 0)) for row in rows)
+        used = sum(int(row.get("history_rows_used", 0)) for row in rows)
+        return {"teams": len(rows), "rows_loaded": loaded, "rows_used": used,
+            "rows_rejected": sum(rejections.values()),
+            "minimum_history_failures": sum(int(row.get("history_rows_used", 0)) < int(row.get("minimum_required", 0)) for row in rows),
+            "rejected_future_rows": sum(int(row.get("rejected_future_rows", 0)) for row in rows),
+            "rejection_reasons": dict(sorted(rejections.items())),
+            "dominant_rejection_reason": max(rejections, key=rejections.get) if rejections else None}
 
     def _evaluate_team_market(self, predictor, game, market, game_odds, team_stats, config):
         """Create model evaluations first, then apply betting acceptance thresholds."""
