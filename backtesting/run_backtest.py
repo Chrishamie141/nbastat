@@ -41,7 +41,8 @@ def main() -> None:
         **({"results_dir": args.results_dir} if args.results_dir else {}),
         **({"db_path": args.db_path} if args.db_path else {}),
     )
-    ReplayEngine(config).run()
+    with ReplayEngine(config) as engine:
+        engine.run()
 
 
 if __name__ == "__main__":
