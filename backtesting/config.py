@@ -11,7 +11,9 @@ from .markets import normalize_markets
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 DATA_DIR = PACKAGE_ROOT / "data"
-SNAPSHOTS_DIR = DATA_DIR / "snapshots"
+# Historical snapshots live directly below ``data/<league>``.  Older callers
+# may still pass a custom root containing a ``snapshots`` directory.
+SNAPSHOTS_DIR = DATA_DIR
 RESULTS_DIR = PACKAGE_ROOT / "results"
 LOGS_DIR = PACKAGE_ROOT / "logs"
 DEFAULT_DB_PATH = DATA_DIR / "backtests.db"

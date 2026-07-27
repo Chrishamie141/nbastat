@@ -23,6 +23,12 @@ dist/
 build/
 coverage/
 
+# Rebuildable historical provider material.  Reports, schemas, and builders
+# remain versioned; real snapshots are local to avoid a very large repository.
+backtesting/data/nfl/
+backtesting/data/raw_cache/
+backtesting/data/provider_exports/
+
 # Binary assets
 *.png
 *.jpg
