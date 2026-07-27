@@ -1,5 +1,9 @@
 from argparse import Namespace
 from pathlib import Path
+import json
+import shutil
+
+import pytest
 
 from backtesting.config import BacktestConfig, PredictionMode
 from backtesting.grader import PredictionGrader
@@ -115,6 +119,40 @@ def test_grader_supports_team_markets_win_loss_and_push():
     assert grader.grade({"market": "total", "prediction": "over", "line": 44}, final)["grade"] == "push"
 
 
+@pytest.mark.parametrize("market", ["h2h", "moneyline"])
+@pytest.mark.parametrize("selection,grade", [
+    ("home", "win"), ("away", "loss"), ("BUF", "win"),
+    ("Buffalo Bills", "win"), ("Miami Dolphins", "loss"),
+])
+def test_h2h_aliases_and_team_names(market, selection, grade):
+    final = {"final_home_score": 24, "final_away_score": 20, "home_team": "BUF", "away_team": "Miami Dolphins"}
+    assert PredictionGrader().grade({"market": market, "selection": selection}, final)["grade"] == grade
+
+
+@pytest.mark.parametrize("selection,line,score,grade", [
+    ("PHI", -2.5, (24, 20), "win"), ("PHI", -4, (24, 20), "push"),
+    ("PHI", -4.5, (24, 20), "loss"), ("DAL", 3.5, (24, 20), "loss"),
+    ("DAL", 4, (24, 20), "push"), ("DAL", 4.5, (24, 20), "win"),
+])
+def test_spread_is_always_from_selected_team_perspective(selection, line, score, grade):
+    final = {"final_home_score": score[0], "final_away_score": score[1], "home_team": "PHI", "away_team": "DAL"}
+    assert PredictionGrader().grade({"market": "spreads", "selection": selection, "line": line}, final)["grade"] == grade
+
+
+@pytest.mark.parametrize("selection,line,grade", [("over", 43.5, "win"), ("under", 44.5, "win"), ("over", 44, "push")])
+def test_total_alias_grades_from_final_score(selection, line, grade):
+    final = {"final_home_score": 24, "final_away_score": 20, "home_team": "BUF", "away_team": "MIA"}
+    assert PredictionGrader().grade({"market": "totals", "selection": selection, "line": line}, final)["grade"] == grade
+
+
+def test_ungraded_predictions_have_specific_reasons():
+    grader = PredictionGrader()
+    assert grader.grade({"market": "h2h", "selection": "home"}, None)["ungraded_reason"] == "missing_outcome"
+    final = {"final_home_score": 24, "final_away_score": 20, "home_team": "BUF", "away_team": "MIA"}
+    assert grader.grade({"market": "spread", "selection": "BUF"}, final)["ungraded_reason"] == "missing_line"
+    assert grader.grade({"market": "total", "selection": "sideways", "line": 44}, final)["ungraded_reason"] == "unsupported_selection"
+
+
 def test_team_market_replay_generates_candidates_before_threshold_acceptance(tmp_path):
     class TeamMarketProvider(StubProvider):
         def get_games(self, league, season, week):
@@ -179,10 +217,6 @@ def test_offline_week_one_shape_evaluates_all_games_and_explains_every_no_bet(tm
     assert all(game["rejection_reasons"] and game["team_stats_available"] == 34 for game in evaluation["games"])
     coverage = next(iter(evaluation["weeks"].values()))["history_coverage"]
     assert coverage["teams"] == 32 and coverage["rows_loaded"] == 544 and coverage["rows_used"] == 544
-
-import json
-import shutil
-import pytest
 
 from backtesting.historical_provider import HistoricalSnapshotProvider
 from backtesting.import_historical_data import main as import_historical_main

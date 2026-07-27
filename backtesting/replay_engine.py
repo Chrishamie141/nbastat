@@ -61,14 +61,35 @@ class ReplayEngine:
                 prediction.setdefault("generated_timestamp", utc_now_iso())
                 frozen.append((self.store.save_prediction(self.metadata, week, prediction), prediction.copy()))
             outcomes_raw = getattr(self.provider, "get_outcomes")(self.config.league, self.config.season, week)
+            games_by_id = {(game.get("game_id") or game.get("id") or game.get("game")): game for game in games}
+            outcomes_raw = [
+                {**games_by_id.get(outcome.get("game_id") or outcome.get("game") or outcome.get("id"), {}), **outcome}
+                for outcome in outcomes_raw
+            ]
             outcomes = index_outcomes(outcomes_raw)
             graded_count = 0
+            grades: Counter[str] = Counter()
+            ungraded_reasons: Counter[str] = Counter()
             for prediction_id, prediction in frozen:
                 key = (prediction.get("game"), normalize_market(prediction.get("market")), prediction.get("player"))
                 grade = self.grader.grade(prediction, outcomes.get(key))
-                if grade.get("correct") is not None:
+                grades[grade["grade"]] += 1
+                if grade["grade"] in {"win", "loss", "push"}:
                     graded_count += 1
+                else:
+                    ungraded_reasons[grade.get("ungraded_reason") or "other"] += 1
                 self.store.grade_prediction(prediction_id, grade)
+                if os.getenv("BACKTESTING_DEBUG_PREDICTIONS") == "1":
+                    outcome = outcomes.get(key) or {}
+                    detail = {
+                        "game_id": prediction.get("game"), "market": normalize_market(prediction.get("market")),
+                        "selection": prediction.get("selection", prediction.get("prediction")), "line": prediction.get("line"),
+                        "odds": prediction.get("sportsbook_odds", prediction.get("odds")), "sportsbook": prediction.get("sportsbook"),
+                        "home_team": outcome.get("home_team"), "away_team": outcome.get("away_team"),
+                        "final_home_score": outcome.get("final_home_score"), "final_away_score": outcome.get("final_away_score"),
+                        "grade": grade["grade"], "ungraded_reason": grade.get("ungraded_reason"),
+                    }
+                    print(f"  Grade: {json.dumps(detail, sort_keys=True, default=str)}")
             print(f"Week {week}:")
             print(f"- Games loaded: {len(games)}")
             diag = self._odds_diagnostics(games, odds, predictions)
@@ -98,6 +119,14 @@ class ReplayEngine:
                     print(f"  {json.dumps(game_diagnostic, sort_keys=True, default=str)}")
             print(f"- Outcomes loaded: {len(outcomes_raw)}")
             print(f"- Predictions graded: {graded_count}")
+            print(f"- Accepted bets: {len(frozen)}")
+            print(f"- Graded: {graded_count}")
+            print(f"- Wins: {grades['win']}")
+            print(f"- Losses: {grades['loss']}")
+            print(f"- Pushes: {grades['push']}")
+            print(f"- Ungraded: {grades['ungraded']}")
+            if ungraded_reasons:
+                print("- Ungraded reasons: " + ", ".join(f"{reason}={count}" for reason, count in sorted(ungraded_reasons.items())))
         stored = self.store.load_predictions(self.metadata.run_id)
         metrics = self.metrics.calculate(stored)
         report_dir = None
@@ -106,6 +135,15 @@ class ReplayEngine:
         evaluation = self._aggregate_evaluation()
         summary = {"run_id": self.metadata.run_id, "mode": self.config.mode().value, "metrics": metrics, "evaluation": evaluation, "report_dir": str(report_dir) if report_dir else None}
         print(f"Final report: run_id={summary['run_id']} mode={summary['mode']} predictions={metrics.get('total_predictions', 0)}")
+        print(f"Accepted bets: {metrics['total_predictions']}")
+        print(f"Graded: {metrics['graded_predictions']}")
+        print(f"Wins: {metrics['wins']}")
+        print(f"Losses: {metrics['losses']}")
+        print(f"Pushes: {metrics['pushes']}")
+        print(f"Ungraded: {metrics['ungraded_predictions']}")
+        run_ungraded = Counter(row.get("ungraded_reason") or "other" for row in stored if row.get("grade") == "ungraded")
+        if run_ungraded:
+            print("Ungraded reasons: " + ", ".join(f"{reason}={count}" for reason, count in sorted(run_ungraded.items())))
         return summary
 
     def _weeks(self) -> range:

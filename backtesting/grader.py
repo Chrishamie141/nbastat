@@ -1,93 +1,165 @@
-"""Prediction grading utilities for historical betting outcomes."""
+"""Deterministic grading utilities for historical betting outcomes."""
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
-from .markets import normalize_market
+from .markets import CANONICAL_TEAM_MARKETS, normalize_market
+
+
+NFL_TEAMS = {
+    "ARI": "Arizona Cardinals", "ATL": "Atlanta Falcons", "BAL": "Baltimore Ravens",
+    "BUF": "Buffalo Bills", "CAR": "Carolina Panthers", "CHI": "Chicago Bears",
+    "CIN": "Cincinnati Bengals", "CLE": "Cleveland Browns", "DAL": "Dallas Cowboys",
+    "DEN": "Denver Broncos", "DET": "Detroit Lions", "GB": "Green Bay Packers",
+    "HOU": "Houston Texans", "IND": "Indianapolis Colts", "JAX": "Jacksonville Jaguars",
+    "KC": "Kansas City Chiefs", "LV": "Las Vegas Raiders", "LAC": "Los Angeles Chargers",
+    "LAR": "Los Angeles Rams", "MIA": "Miami Dolphins", "MIN": "Minnesota Vikings",
+    "NE": "New England Patriots", "NO": "New Orleans Saints", "NYG": "New York Giants",
+    "NYJ": "New York Jets", "PHI": "Philadelphia Eagles", "PIT": "Pittsburgh Steelers",
+    "SEA": "Seattle Seahawks", "SF": "San Francisco 49ers", "TB": "Tampa Bay Buccaneers",
+    "TEN": "Tennessee Titans", "WAS": "Washington Commanders",
+}
+_TEAM_ALIASES = {alias.casefold(): abbr for abbr, name in NFL_TEAMS.items() for alias in (abbr, name)}
+_TEAM_ALIASES.update({"jacksonville jaguars": "JAX", "washington football team": "WAS", "washington redskins": "WAS",
+                      "oakland raiders": "LV", "san diego chargers": "LAC", "st. louis rams": "LAR"})
+
+
+def canonical_team(value: Any) -> str:
+    """Return an NFL abbreviation for known abbreviations/full names."""
+    text = str(value or "").strip()
+    return _TEAM_ALIASES.get(text.casefold(), text.upper())
+
+
+def _ungraded(reason: str, actual: Any = None) -> dict[str, Any]:
+    return {"actual_result": actual, "correct": None, "margin": None,
+            "grade": "ungraded", "ungraded_reason": reason}
 
 
 class PredictionGrader:
-    """Compare frozen predictions with actual historical outcomes."""
+    """Compare a frozen prediction with a stored final outcome."""
 
     def grade(self, prediction: dict[str, Any], outcome: dict[str, Any] | None) -> dict[str, Any]:
-        """Grade one prediction as win, loss, push, or unresolved."""
         if not outcome:
-            return {"actual_result": None, "correct": None, "margin": None, "grade": "unresolved"}
-        actual = outcome.get("actual_result", outcome.get("result"))
-        line = prediction.get("line")
+            return _ungraded("missing_outcome")
         market = normalize_market(prediction.get("market"))
-        pick = str(prediction.get("prediction", "")).lower()
+        selection = prediction.get("selection", prediction.get("prediction"))
+        pick = str(selection or "").strip().casefold()
+        actual = outcome.get("actual_result", outcome.get("result"))
+
+        if market in CANONICAL_TEAM_MARKETS:
+            scores = self._scores(outcome)
+            home, away = canonical_team(outcome.get("home_team")), canonical_team(outcome.get("away_team"))
+
+            if market == "h2h":
+                if scores is None and actual is not None:
+                    expected = str(actual).strip().casefold()
+                    correct = pick == expected
+                    return self._result("win" if correct else "loss", actual)
+                if scores is None:
+                    return _ungraded("missing_final_score", actual)
+                home_score, away_score = scores
+                selected = home if pick == "home" else away if pick == "away" else canonical_team(selection)
+                if not selected or selected not in {home, away}:
+                    return _ungraded("unsupported_selection", actual)
+                if home_score == away_score:
+                    return self._result("push", "tie", 0.0)
+                winner = home if home_score > away_score else away
+                return self._result("win" if selected == winner else "loss", winner)
+
+            if scores is None:
+                return _ungraded("missing_final_score", actual)
+            home_score, away_score = scores
+
+            if market == "spread":
+                line = self._line(prediction)
+                if isinstance(line, dict):
+                    return line
+                selected_home = pick == "home" or canonical_team(selection) == home
+                selected_away = pick == "away" or canonical_team(selection) == away
+                if not selected_home and not selected_away:
+                    return _ungraded("unsupported_selection", actual)
+                selected_score, opponent_score = (home_score, away_score) if selected_home else (away_score, home_score)
+                margin = selected_score + line - opponent_score
+                return self._margin_result(margin, selected_score - opponent_score)
+
+            if pick not in {"over", "under"}:
+                return _ungraded("unsupported_selection", actual)
+            line = self._line(prediction)
+            if isinstance(line, dict):
+                return line
+            total = home_score + away_score
+            margin = total - line
+            if pick == "under":
+                margin = -margin
+            return self._margin_result(margin, total)
+
         if actual is None:
-            return {"actual_result": None, "correct": None, "margin": None, "grade": "unresolved"}
+            return _ungraded("missing_outcome")
+        if market in {"player_prop", "player props"} or pick in {"over", "under"}:
+            line = self._line(prediction)
+            if isinstance(line, dict):
+                return line
+            try:
+                margin = float(actual) - line
+            except (TypeError, ValueError):
+                return _ungraded("invalid_line", actual)
+            if pick == "under":
+                margin = -margin
+            return self._margin_result(margin, actual)
+        correct = pick == str(actual).strip().casefold()
+        return self._result("win" if correct else "loss", actual)
 
-        if market in {"total", "player_prop", "player props"} or pick in {"over", "under"}:
-            if market == "total" and outcome.get("final_home_score") is not None and outcome.get("final_away_score") is not None:
-                actual = float(outcome["final_home_score"]) + float(outcome["final_away_score"])
-            if line is None:
-                return self._binary(prediction, actual)
-            margin = float(actual) - float(line)
-            if margin == 0:
-                return {"actual_result": actual, "correct": None, "margin": 0.0, "grade": "push"}
-            correct = margin > 0 if pick != "under" else margin < 0
-            return {"actual_result": actual, "correct": correct, "margin": margin, "grade": "win" if correct else "loss"}
+    @staticmethod
+    def _scores(outcome: dict[str, Any]) -> tuple[float, float] | None:
+        try:
+            home, away = float(outcome["final_home_score"]), float(outcome["final_away_score"])
+            return (home, away) if math.isfinite(home) and math.isfinite(away) else None
+        except (KeyError, TypeError, ValueError):
+            return None
 
-        if market in {"spread"}:
-            selection = str(prediction.get("selection") or prediction.get("prediction") or "").lower()
-            home = str(outcome.get("home_team") or "").lower()
-            away = str(outcome.get("away_team") or "").lower()
-            if outcome.get("final_home_score") is not None and outcome.get("final_away_score") is not None:
-                home_margin = float(outcome["final_home_score"]) - float(outcome["final_away_score"])
-                selected_margin = -home_margin if selection in {"away", away} else home_margin
-            else:
-                selected_margin = float(outcome.get("margin", actual))
-            margin = selected_margin + float(line or 0)
-            if margin == 0:
-                return {"actual_result": actual, "correct": None, "margin": margin, "grade": "push"}
-            correct = margin > 0
-            return {"actual_result": actual, "correct": correct, "margin": margin, "grade": "win" if correct else "loss"}
+    @staticmethod
+    def _line(prediction: dict[str, Any]) -> float | dict[str, Any]:
+        if prediction.get("line") in (None, ""):
+            return _ungraded("missing_line")
+        try:
+            line = float(prediction["line"])
+            return line if math.isfinite(line) else _ungraded("invalid_line")
+        except (TypeError, ValueError):
+            return _ungraded("invalid_line")
 
-        if market == "h2h":
-            home = str(outcome.get("home_team") or "").casefold()
-            away = str(outcome.get("away_team") or "").casefold()
-            actual_key = str(actual).casefold()
-            pick_key = str(prediction.get("selection") or prediction.get("prediction") or "").casefold()
-            if actual_key == "home" and home: actual_key = home
-            elif actual_key == "away" and away: actual_key = away
-            if pick_key == "home" and home: pick_key = home
-            elif pick_key == "away" and away: pick_key = away
-            correct = pick_key == actual_key
-            return {"actual_result": actual, "correct": correct, "margin": None, "grade": "win" if correct else "loss"}
+    @classmethod
+    def _margin_result(cls, margin: float, actual: Any) -> dict[str, Any]:
+        return cls._result("push" if margin == 0 else "win" if margin > 0 else "loss", actual, margin)
 
-        return self._binary(prediction, actual)
-
-    def _binary(self, prediction: dict[str, Any], actual: Any) -> dict[str, Any]:
-        predicted = prediction.get("prediction")
-        correct = str(predicted).lower() == str(actual).lower()
-        return {"actual_result": actual, "correct": correct, "margin": None, "grade": "win" if correct else "loss"}
+    @staticmethod
+    def _result(grade: str, actual: Any, margin: float | None = None) -> dict[str, Any]:
+        return {"actual_result": actual, "correct": True if grade == "win" else False if grade == "loss" else None,
+                "margin": margin, "grade": grade, "ungraded_reason": None}
 
 
 def index_outcomes(outcomes: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict[str, Any]]:
-    """Index outcomes by run-stable game, market, and optional player keys."""
-    indexed = {}
+    """Index outcomes, deriving every team market directly from final scores."""
+    indexed: dict[tuple[Any, ...], dict[str, Any]] = {}
     for outcome in outcomes:
-        game = outcome.get("game") or outcome.get("game_id")
+        game = outcome.get("game") or outcome.get("game_id") or outcome.get("id")
         market_results = outcome.get("market_results") if isinstance(outcome.get("market_results"), dict) else {}
-        player_results = outcome.get("player_results") if isinstance(outcome.get("player_results"), dict) else {}
-        if market_results or player_results:
-            for market, result in market_results.items():
+        for market, result in market_results.items():
+            canonical = normalize_market(market)
+            indexed[(game, canonical, None)] = {**outcome, "game": game, "market": canonical, "actual_result": result}
+        # A final score is sufficient to grade all three team markets.  Do not
+        # require redundant market_results entries in historical snapshots.
+        if outcome.get("final_home_score") is not None and outcome.get("final_away_score") is not None:
+            for market in CANONICAL_TEAM_MARKETS:
+                indexed.setdefault((game, market, None), {**outcome, "game": game, "market": market})
+        for player, markets in (outcome.get("player_results") or {}).items():
+            for market, result in (markets or {}).items():
                 canonical = normalize_market(market)
-                row = {**outcome, "game": game, "market": canonical, "actual_result": result}
-                indexed[(game, canonical, None)] = row
-            for player, markets in player_results.items():
-                for market, result in (markets or {}).items():
-                    canonical = normalize_market(market)
-                    row = {**outcome, "game": game, "market": canonical, "player": player, "actual_result": result}
-                    indexed[(game, canonical, player)] = row
-                    indexed.setdefault((game, canonical, None), row)
-            continue
+                row = {**outcome, "game": game, "market": canonical, "player": player, "actual_result": result}
+                indexed[(game, canonical, player)] = row
+                indexed.setdefault((game, canonical, None), row)
         canonical = normalize_market(outcome.get("market"))
-        key = (game, canonical, outcome.get("player"))
-        indexed[key] = outcome
-        indexed.setdefault((game, canonical, None), outcome)
+        if canonical:
+            indexed[(game, canonical, outcome.get("player"))] = outcome
     return indexed
