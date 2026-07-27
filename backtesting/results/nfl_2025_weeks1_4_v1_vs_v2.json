@@ -1,0 +1,14 @@
+{
+  "end_week": 4,
+  "league": "nfl",
+  "models": {},
+  "paired": {
+    "counts": {},
+    "decisions": []
+  },
+  "schema_version": 1,
+  "season": 2025,
+  "start_week": 1,
+  "status": "not_run",
+  "warning": "Weeks 1\u20134 snapshots are not present in this checkout. No provider calls were made and no performance results were fabricated. Run the quota-gated build command locally, validate, then run compare_models."
+}

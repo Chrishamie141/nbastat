@@ -42,6 +42,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--check-providers", action="store_true")
     parser.add_argument("--odds-hours-before-kickoff", type=int, default=24)
     parser.add_argument("--require-backtest-ready", action="store_true")
+    parser.add_argument("--allow-paid-odds-fetch", action="store_true",
+                        help="Explicitly authorize historical Odds API requests that may consume paid quota.")
     parser.add_argument("--refresh", choices=("team-stats",), help="Refresh only free statistical history; preserves odds.json and never contacts The Odds API.")
     return parser.parse_args(argv)
 
@@ -62,6 +64,49 @@ def nfl_week_date_range(season: str | int, week: int) -> tuple[str, str]:
 def _complete_valid(data_dir: Path, league: str, season: str, week: int) -> bool:
     wdir = snapshot_week_dir(data_dir, league, season, week)
     return all((wdir / f"{d}.json").exists() for d in DATASETS) and validate_snapshot(data_dir, league, season, [week]).ok
+
+
+def _backtest_ready(data_dir: Path, league: str, season: str, week: int) -> bool:
+    """A resumable week must contain all baseline inputs, not merely optional files."""
+    wdir = snapshot_week_dir(data_dir, league, season, week)
+    try:
+        populated = all(json.loads((wdir / f"{d}.json").read_text()) for d in ("games", "odds", "team_stats", "outcomes"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return populated and validate_snapshot(data_dir, league, season, [week]).ok
+
+
+def request_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
+    """Inspect local files only and print the quota plan before source construction."""
+    plan = []
+    print(f"{args.league.upper()} {args.season} Weeks {args.start_week}–{args.end_week} build plan")
+    paid = 0
+    for week in range(args.start_week, args.end_week + 1):
+        wdir = snapshot_week_dir(args.data_dir, args.league, args.season, week)
+        loaded = {}
+        for dataset in ("games", "odds", "team_stats", "outcomes"):
+            try: loaded[dataset] = json.loads((wdir / f"{dataset}.json").read_text())
+            except (OSError, json.JSONDecodeError): loaded[dataset] = []
+        game_ids = {r.get("game_id") for r in loaded["games"]}
+        odds_ids = {r.get("game_id") for r in loaded["odds"]}
+        missing_games = len(game_ids - odds_ids) if game_ids else 0
+        ready = _backtest_ready(args.data_dir, args.league, args.season, week)
+        actions = [] if ready else [d for d in ("games", "odds", "team_stats", "outcomes") if not loaded[d]]
+        if loaded["games"] and missing_games: actions = [*([a for a in actions if a != "odds"]), "odds"]
+        requests = (missing_games if game_ids else None) if "odds" in actions else 0
+        if requests is not None:
+            paid += requests
+        row = {"week": week, "ready": ready, "counts": {k: len(v) for k,v in loaded.items()},
+               "games_with_odds": len(game_ids & odds_ids), "games_without_odds": missing_games,
+               "actions": actions, "expected_paid_requests": requests}
+        plan.append(row)
+        print(f"Week {week}:")
+        for name in ("games", "odds", "team_stats", "outcomes"):
+            print(f"{name.replace('_', ' ')}: {'present' if loaded[name] else 'missing'}")
+        print(f"action: {'SKIP' if ready else ', '.join('FETCH '+a.replace('_',' ').upper() for a in actions) or 'VALIDATE'}")
+    unknown = any(row["expected_paid_requests"] is None for row in plan)
+    print(f"Expected paid historical requests: {paid}{' + TBD after canonical games are fetched' if unknown else ''}")
+    return plan
 
 
 def _write_json(path: Path, records: Any, overwrite: bool) -> None:
@@ -151,7 +196,7 @@ def _provider_capabilities(sources: list[HistoricalSnapshotSource]) -> None:
 
 
 def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource], cache: RawCache, week: int) -> tuple[bool, dict[str, int], list[str]]:
-    if args.resume and _complete_valid(args.data_dir, args.league, args.season, week):
+    if args.resume and _backtest_ready(args.data_dir, args.league, args.season, week):
         print(f"{args.league.upper()} {args.season} Week {week}: skipped complete valid snapshot")
         return True, {d: 0 for d in DATASETS}, []
     wdir = snapshot_week_dir(args.data_dir, args.league, args.season, week)
@@ -164,12 +209,38 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
     raw: dict[str, list[dict[str, Any]]] = {}
     source_by_dataset: dict[str, str] = {}
     all_warnings: list[str] = []
-    games, warnings = _fetch_dataset(sources, cache, "games", args.league, args.season, week, week_range, [])
+    def existing(dataset: str) -> list[dict[str, Any]] | None:
+        if not args.resume:
+            return None
+        try:
+            value = json.loads((wdir / f"{dataset}.json").read_text())
+            return value if isinstance(value, list) else None
+        except (OSError, json.JSONDecodeError):
+            return None
+
+    games = existing("games")
+    if not games:
+        games, warnings = _fetch_dataset(sources, cache, "games", args.league, args.season, week, week_range, [])
+    else:
+        warnings = []
     all_warnings.extend(warnings)
     raw["games"] = games
     source_by_dataset["games"] = next((r.get("source") for r in games if r.get("source")), "unknown") if games else "none"
     for dataset in DATASETS[1:]:
-        rows, warnings = _fetch_dataset(sources, cache, dataset, args.league, args.season, week, week_range, games)
+        prior = existing(dataset)
+        if prior:
+            if dataset == "odds":
+                covered = {r.get("game_id") for r in prior}
+                missing_games = [g for g in games if g.get("game_id") not in covered]
+                if missing_games:
+                    fetched, warnings = _fetch_dataset(sources, cache, dataset, args.league, args.season, week, week_range, missing_games)
+                    rows = prior + fetched
+                else:
+                    rows, warnings = prior, []
+            else:
+                rows, warnings = prior, []
+        else:
+            rows, warnings = _fetch_dataset(sources, cache, dataset, args.league, args.season, week, week_range, games)
         raw[dataset] = rows
         source_by_dataset[dataset] = next((r.get("source") for r in rows if r.get("source")), "none") if rows else "none"
         all_warnings.extend(warnings)
@@ -245,6 +316,14 @@ def main(argv: list[str] | argparse.Namespace | None = None) -> int:
         print("Historical odds preserved; Odds API not requested.")
         return 1 if failed else 0
 
+    plan = request_plan(args)
+    if args.dry_run:
+        print("Dry run: zero external calls made.")
+        return 0
+    paid_needed = any("odds" in row["actions"] for row in plan)
+    if paid_needed and "odds-api" in args.providers and not getattr(args, "allow_paid_odds_fetch", False):
+        print("ERROR: paid historical odds fetch blocked; inspect the plan, then rerun with --allow-paid-odds-fetch.")
+        return 2
     try:
         sources = create_sources(args.providers, getattr(args, "odds_hours_before_kickoff", 24))
     except TypeError:
@@ -256,9 +335,13 @@ def main(argv: list[str] | argparse.Namespace | None = None) -> int:
     summary = BuildSummary(requested=args.end_week - args.start_week + 1)
     for week in range(args.start_week, args.end_week + 1):
         try:
-            if args.resume and _complete_valid(args.data_dir, args.league, args.season, week):
+            if args.resume and _backtest_ready(args.data_dir, args.league, args.season, week):
                 summary.skipped += 1
-                print(f"{args.league.upper()} {args.season} Week {week}: skipped complete valid snapshot")
+                if args.league.lower() == "nfl" and str(args.season) == "2025" and week == 1:
+                    print("Week 1: valid existing snapshot preserved; historical odds not requested.")
+                    print(f"{args.league.upper()} {args.season} Week {week}: skipped complete valid snapshot")
+                else:
+                    print(f"{args.league.upper()} {args.season} Week {week}: skipped complete valid snapshot")
                 continue
             ok, counts, warnings = build_week(args, sources, cache, week)
             summary.completed += int(ok)

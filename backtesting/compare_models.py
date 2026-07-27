@@ -42,6 +42,10 @@ def paired_decisions(model_rows: dict[str, list[dict[str, Any]]], models: list[s
         else: category = "neither"
         counts[category] += 1
         details.append({"game_id": key[0], "market": key[1], "category": category,
+            "selection_v1": a.get("selection") if a else None, "selection_v2": b.get("selection") if b else None,
+            "model_probability_v1": a.get("model_probability") if a else None,
+            "model_probability_v2": b.get("model_probability") if b else None,
+            "edge_v1": a.get("edge") if a else None, "edge_v2": b.get("edge") if b else None,
             "selection_difference": bool(a and b and a["selection"].casefold() != b["selection"].casefold()),
             "probability_difference_v2_minus_v1": (b["model_probability"]-a["model_probability"]) if a and b else None,
             "edge_difference_v2_minus_v1": (b["edge"]-a["edge"]) if a and b else None,
@@ -61,10 +65,13 @@ def compare(*, data_dir: Path, league: str, season: str, start_week: int, end_we
                 summary = engine.run()
                 rows = engine.store.load_predictions(summary["run_id"])
             game_meta = {g["game_id"]: g for g in summary["evaluation"].get("games", [])}
+            week_by_game = {g["game_id"]: int(week) for week, record in summary["evaluation"].get("weeks", {}).items()
+                            for g in record.get("games", [])}
             for row in rows:
                 row["run_id"] = summary["run_id"]
                 meta = game_meta.get(row["game"], {})
                 row.update({"model_version": model, "game_id": row["game"], "kickoff": meta.get("kickoff"),
+                    "week": week_by_game.get(row["game"]),
                     "home_team": meta.get("home_team"), "away_team": meta.get("away_team"),
                     "odds": row.get("sportsbook_odds")})
                 try: row["features"] = json.loads(row["features"] or "{}")
@@ -72,7 +79,12 @@ def compare(*, data_dir: Path, league: str, season: str, start_week: int, end_we
             rows_by_model[model] = rows
             universe.update((g["game_id"], d["market"]) for g in summary["evaluation"].get("games", []) for d in g.get("market_decisions", []))
             by_market = {market: [r for r in rows if r["market"] == market] for market in markets}
-            summaries[model] = {"overall": market_metrics(rows), "by_market": {m: market_metrics(v) for m,v in by_market.items()},
+            overall = market_metrics(rows, summary["evaluation"].get("candidates_evaluated", len(rows)))
+            by_week = {str(week): market_metrics([r for r in rows if r.get("week") == week],
+                summary["evaluation"].get("weeks", {}).get(str(week), {}).get("candidates_evaluated", 0))
+                for week in range(start_week, end_week + 1)}
+            summaries[model] = {"overall": overall, "by_market": {m: market_metrics(v) for m,v in by_market.items()},
+                "by_week": by_week,
                 "replay_evaluation": summary["evaluation"]}
     report = {"schema_version": 1, "league": league, "season": season, "start_week": start_week,
         "end_week": end_week, "models": summaries, "paired": paired_decisions(rows_by_model, list(models), universe),
@@ -85,7 +97,8 @@ def write_artifacts(report, rows, output: Path, bets: Path):
     output.write_text(json.dumps(report, indent=2, sort_keys=True, default=str)+"\n", encoding="utf-8")
     bets.parent.mkdir(parents=True, exist_ok=True)
     audit = []
-    for r in rows:
+    for source in rows:
+        r = dict(source)
         features = r.pop("features", {}) or {}
         audit.append({**r, "result": r.get("grade"), "profit_units": (r["sportsbook_odds"]/100 if r["sportsbook_odds"] > 0 else 100/abs(r["sportsbook_odds"])) if r["grade"] == "win" else -1 if r["grade"] == "loss" else 0,
             "rest_difference": ((features.get("home_days_since_last_game") or 0)-(features.get("away_days_since_last_game") or 0)),

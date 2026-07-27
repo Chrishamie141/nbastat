@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -49,6 +50,8 @@ class RawCache:
 
     root: Path = DATA_DIR / "raw_cache"
     overwrite: bool = False
+    hits: int = 0
+    misses: int = 0
 
     def path(self, provider: str, league: str, season: str, week: int, dataset: str) -> Path:
         return self.root / provider / league.lower() / str(season) / f"week_{int(week):02d}" / f"{dataset}.json"
@@ -56,13 +59,27 @@ class RawCache:
     def get_or_fetch(self, provider: str, league: str, season: str, week: int, dataset: str, fetcher: Callable[[], list[dict[str, Any]]]) -> list[dict[str, Any]]:
         path = self.path(provider, league, season, week, dataset)
         if path.exists() and not self.overwrite:
+            self.hits += 1
             return json.loads(path.read_text())
+        self.misses += 1
         last_exc: Exception | None = None
         for attempt in range(3):
             try:
                 rows = fetcher()
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n")
+                payload = path.read_bytes()
+                metadata = {
+                    "request_timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    "requested_historical_date": next((r.get("snapshot_timestamp") for r in rows if isinstance(r, dict) and r.get("snapshot_timestamp")), None),
+                    "provider": provider, "sport": league.lower(), "season": str(season),
+                    "week": int(week), "dataset": dataset,
+                    "markets": sorted({str(r.get("market")) for r in rows if isinstance(r, dict) and r.get("market")}),
+                    "event_count": len({r.get("event_id") or r.get("game_id") for r in rows if isinstance(r, dict)}),
+                    "response_sha256": hashlib.sha256(payload).hexdigest(),
+                    "api_usage_headers": {},
+                }
+                path.with_suffix(".metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
                 return rows
             except (HTTPError, URLError, TimeoutError, OSError) as exc:
                 last_exc = exc

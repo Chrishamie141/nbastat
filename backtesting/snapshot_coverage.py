@@ -36,6 +36,7 @@ def coverage(root: Path, sport: str = "nfl", requested_seasons: list[int] | None
             counts = {name: len(rows) for name, rows in loaded.items()}
             totals.update(counts)
             valid = 0
+            games_with_odds = {r.get("game_id") for r in loaded["odds"]} & {g.get("game_id") for g in loaded["games"]}
             for game in loaded["games"]:
                 reasons = validate_game(game, loaded["odds"], loaded["outcomes"], loaded["team_stats"])
                 if reasons:
@@ -43,7 +44,10 @@ def coverage(root: Path, sport: str = "nfl", requested_seasons: list[int] | None
                                        "game_id": game.get("game_id"), "reason_codes": reasons})
                 else:
                     valid += 1
-            periods.append({"season": int(season.name), "week": week, "valid_games": valid, **counts})
+            periods.append({"season": int(season.name), "week": week, "valid_games": valid,
+                "validation_status": "valid" if loaded["games"] and valid == len(loaded["games"]) else "invalid",
+                "games_with_odds": len(games_with_odds),
+                "games_without_odds": len(loaded["games"]) - len(games_with_odds), **counts})
     reason_counts = Counter(code for row in exclusions for code in row["reason_codes"])
     requested = sorted(set(requested_seasons or [int(p.name) for p in seasons]))
     available = sorted({row["season"] for row in periods})
