@@ -34,18 +34,23 @@ python -m backtesting.build_snapshots \
   --validate
 ```
 
-Historical build:
+Historical multi-season build (regular season and playoff week numbers are
+attempted; unavailable provider data is reported rather than invented):
 
 ```bash
-python -m backtesting.build_snapshots \
-  --league nfl \
-  --season 2025 \
-  --start-week 1 \
-  --end-week 18 \
-  --providers odds-api,espn,nfl-official,local-json \
-  --resume \
-  --validate
+python -m backtesting.build_nfl_historical_snapshots \
+  --season 2022 --season 2023 --season 2024 --season 2025
+python -m backtesting.validate_snapshots --sport nfl
+python -m backtesting.nfl_v1_v2_validation
 ```
+
+The output root is `backtesting/data/nfl/<season>/week_NN`. Real snapshots and
+raw caches are intentionally gitignored due to size and licensing. Construction
+may contact configured providers, but validation and V1/V2 evaluation read only
+the saved JSON files and are offline. Each week has `metadata.json` and
+`manifest.json` with source lineage, normalization version, cutoff policy, and
+record counts. Never point `BACKTESTING_LOCAL_EXPORT_DIR` at `tests/fixtures`:
+those records are synthetic and are not historical evidence.
 
 Strict build:
 

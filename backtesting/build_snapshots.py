@@ -9,7 +9,7 @@ from datetime import date, timedelta, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .config import DATA_DIR
+from .config import DATA_DIR, SNAPSHOTS_DIR
 from .snapshot_sources import DATASET_METHODS, HistoricalSnapshotSource, ProviderUnavailable, RawCache, create_sources, _redact
 from .snapshots import DATASETS, REQUIRED_DATASETS, SnapshotError, normalize_dataset, snapshot_week_dir, validate_snapshot
 
@@ -32,7 +32,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--season", required=True)
     parser.add_argument("--start-week", type=int, required=True)
     parser.add_argument("--end-week", type=int, required=True)
-    parser.add_argument("--data-dir", type=Path, default=DATA_DIR / "snapshots")
+    parser.add_argument("--data-dir", type=Path, default=SNAPSHOTS_DIR)
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--validate", action="store_true")
@@ -100,7 +100,21 @@ def _manifest(league: str, season: str, week: int, normalized: dict[str, list[di
         }
         if not count and not required:
             datasets[d]["reason"] = "historical provider unavailable or local export missing"
-    return {"league": league.lower(), "season": int(season), "week": int(week), "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"), "builder_version": "phase1-leakage-safe", "datasets": datasets, "warnings": warnings, "leakage_checks_passed": leakage_ok}
+    generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    games = normalized.get("games", [])
+    cutoffs = {str(g.get("game_id")): min(
+        (str(r.get("data_as_of") or r.get("captured_at")) for d in ("odds", "weather", "injuries")
+         for r in normalized.get(d, []) if r.get("game_id") == g.get("game_id") and (r.get("data_as_of") or r.get("captured_at"))),
+        default=None,
+    ) for g in games}
+    return {"league": league.lower(), "season": int(season), "week": int(week),
+        "generated_at": generated, "created_at": generated, "schema_version": 1,
+        "normalization_version": "nfl-historical-v1", "builder_version": "phase2-leakage-safe",
+        "cutoff_policy": "Every feature timestamp must be strictly before its game's kickoff; outcomes are grading-only.",
+        "prediction_cutoffs": cutoffs, "source_versions": source_by_dataset,
+        "source_lineage": {d: {"provider": info["source"], "records": info["records"],
+            "original_event_timestamp_field": "captured_at/data_as_of"} for d, info in datasets.items()},
+        "datasets": datasets, "warnings": warnings, "leakage_checks_passed": leakage_ok}
 
 
 def _refresh_manifest_dataset(wdir: Path, dataset: str, rows: list[dict[str, Any]]) -> None:
@@ -179,7 +193,9 @@ def build_week(args: argparse.Namespace, sources: list[HistoricalSnapshotSource]
             else:
                 _write_json(path, normalized[dataset], args.overwrite or args.resume)
         tmp_report = validate_snapshot(args.data_dir, args.league, args.season, [week], strict=args.strict, require_backtest_ready=getattr(args, "require_backtest_ready", False))
-        _write_json(wdir / "manifest.json", _manifest(args.league, args.season, week, normalized, all_warnings, source_by_dataset, tmp_report.ok), True)
+        metadata = _manifest(args.league, args.season, week, normalized, all_warnings, source_by_dataset, tmp_report.ok)
+        _write_json(wdir / "manifest.json", metadata, True)
+        _write_json(wdir / "metadata.json", metadata, True)
     for dataset in DATASETS:
         label = dataset.replace("_", " ").title()
         print(f"- {label} records: {len(normalized[dataset])}")

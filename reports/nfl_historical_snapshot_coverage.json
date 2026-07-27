@@ -1,0 +1,65 @@
+{
+  "available_seasons": [],
+  "coverage": {
+    "injuries": {
+      "percent_of_games": 0.0,
+      "records": 0
+    },
+    "odds": {
+      "percent_of_games": 0.0,
+      "records": 0
+    },
+    "outcomes": {
+      "percent_of_games": 0.0,
+      "records": 0
+    },
+    "player_stats": {
+      "percent_of_games": 0.0,
+      "records": 0
+    },
+    "team_stats": {
+      "percent_of_games": 0.0,
+      "records": 0
+    },
+    "weather": {
+      "percent_of_games": 0.0,
+      "records": 0
+    }
+  },
+  "dataset_records": {
+    "games": 0,
+    "injuries": 0,
+    "odds": 0,
+    "outcomes": 0,
+    "player_stats": 0,
+    "team_stats": 0,
+    "weather": 0
+  },
+  "excluded_games": [],
+  "exclusion_reason_counts": {},
+  "games_discovered": 0,
+  "games_successfully_snapshotted": 0,
+  "invalid_games": 0,
+  "missing_seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "periods": [],
+  "requested_seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "schema_version": 1,
+  "source_limitations": [
+    "ESPN supplies schedules, final outcomes, and completed prior-game history but not auditable historical market quotes.",
+    "The Odds API historical endpoint requires a key and an eligible paid plan; current odds are never substituted.",
+    "No timestamp-verifiable injury, pre-kickoff forecast, or player-history archive is bundled."
+  ],
+  "sport": "nfl",
+  "timestamp_limitations": "Only records with parseable timestamps strictly before kickoff are eligible inputs.",
+  "weeks_discovered": 0
+}
