@@ -359,6 +359,26 @@ class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
         kickoff = game.get("kickoff_time") or game.get("commence_time")
         home_team, away_team = normalize_team(game.get("home_team")), normalize_team(game.get("away_team"))
         home_rows, away_rows = self._safe_rows(game, histories, home_team), self._safe_rows(game, histories, away_team)
+        # V2 does not call V1.project(), so it must publish the provenance of
+        # its own completed-game rows. Previously the inherited empty mapping
+        # made replay aggregation report zero observations for valid forecasts.
+        start = parse_dt(kickoff)
+        self.last_diagnostics = {}
+        for team, rows in ((home_team, home_rows), (away_team, away_rows)):
+            matched = [r for r in histories if normalize_team(r.get("team")) == team]
+            future = [r for r in matched if start and (
+                (parse_dt(r.get("completed_at")) and parse_dt(r.get("completed_at")) >= start)
+                or (parse_dt(r.get("data_as_of") or r.get("captured_at")) and
+                    parse_dt(r.get("data_as_of") or r.get("captured_at")) >= start))]
+            self.last_diagnostics[team] = {
+                "team": team, "history_rows_available": len(matched),
+                "history_rows_loaded": len(matched), "history_rows_used": len(rows),
+                "minimum_required": self.MIN_GAME_HISTORY,
+                "seasons_used": sorted({int(r["season"]) for r in rows if r.get("season") is not None}),
+                "latest_history_timestamp": max((str(r.get("data_as_of") or r.get("completed_at")) for r in rows), default=None),
+                "rejected_future_rows": len(future),
+                "rejection_reasons": {"not_before_kickoff": len(future)} if future else {},
+            }
         if min(len(home_rows), len(away_rows)) < self.MIN_GAME_HISTORY:
             return None
         safe_all = []
@@ -396,6 +416,15 @@ class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
                     "elo_win_probability": elo_probability, "raw_model_probability": raw_probability,
                     **{f"home_{k}": v for k,v in self.rest_features(home_rows, kickoff).items()},
                     **{f"away_{k}": v for k,v in self.rest_features(away_rows, kickoff).items()}}
+        self.last_feature_diagnostics = {
+            "recency_weighted_form": {k: features[k] for k in ("home_weighted_points_for", "home_weighted_points_against", "away_weighted_points_for", "away_weighted_points_against")},
+            "recent_form": {k: features[k] for k in ("home_recent_points_for", "home_recent_points_against", "away_recent_points_for", "away_recent_points_against")},
+            "home_away_split": {k: features[k] for k in ("home_venue_points_for", "home_venue_points_against", "away_venue_points_for", "away_venue_points_against")},
+            "opponent_adjustment": {k: features[k] for k in ("home_offensive_strength", "home_defensive_strength", "away_offensive_strength", "away_defensive_strength")},
+            "rest": {k: v for k, v in features.items() if "days_since_last_game" in k or "short_week" in k or "extended_rest" in k},
+            "elo": {k: features[k] for k in ("home_elo", "away_elo", "elo_difference", "elo_win_probability")},
+            "scoring_variance": {k: features[k] for k in ("home_scoring_sd", "away_scoring_sd")},
+        }
         timestamp = max(str(r.get("data_as_of")) for r in home_rows+away_rows)
         margin_sd = max(8.0, sqrt(hf["scoring_sd"]**2+af["scoring_sd"]**2))
         total_sd = max(8.0, margin_sd)

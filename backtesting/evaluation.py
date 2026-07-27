@@ -10,6 +10,19 @@ from typing import Any, Iterable
 EDGE_BOUNDS = ((float("-inf"), 0, "<0%"), (0, .02, "0-2%"), (.02, .04, "2-4%"),
                (.04, .06, "4-6%"), (.06, .08, "6-8%"), (.08, .10, "8-10%"),
                (.10, float("inf"), "10%+"))
+CONFIDENCE_BOUNDS = ((0, .50, "<50%"), (.50, .55, "50-55%"), (.55, .60, "55-60%"),
+                     (.60, .65, "60-65%"), (.65, .70, "65-70%"), (.70, 1.000001, "70%+"))
+
+
+def american_profit(odds: float, result: str) -> float:
+    """Profit for a flat one-unit stake at an executable American price."""
+    price = float(odds)
+    if price == 0:
+        raise ValueError("American odds cannot be zero")
+    if result == "push": return 0.0
+    if result == "loss": return -1.0
+    if result != "win": raise ValueError(f"Unsupported result: {result}")
+    return price / 100 if price > 0 else 100 / abs(price)
 
 
 def probability_metrics(pairs: Iterable[tuple[float, int]]) -> dict[str, Any]:
@@ -41,8 +54,7 @@ def betting_metrics(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     profits = []
     for row in bets:
         odds = float(row["odds_used"])
-        profits.append((odds / 100 if odds > 0 else 100 / abs(odds)) if row["grade"] == "win"
-                       else -1.0 if row["grade"] == "loss" else 0.0)
+        profits.append(american_profit(odds, row["grade"]))
     wins = sum(r["grade"] == "win" for r in bets); losses = sum(r["grade"] == "loss" for r in bets)
     pushes = len(bets) - wins - losses
     equity = peak = drawdown = 0.0
@@ -51,8 +63,10 @@ def betting_metrics(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         equity += profit; peak = max(peak, equity); drawdown = max(drawdown, peak-equity)
         streak = streak + 1 if profit < 0 else 0; longest = max(longest, streak)
     risked = float(len(bets))
+    won = sum(max(0, p) for p in profits); lost = -sum(min(0, p) for p in profits)
     return {"bets": len(bets), "wins": wins, "losses": losses, "pushes": pushes,
             "win_rate": wins/(wins+losses) if wins+losses else None, "amount_risked": risked,
+            "units_won": won, "units_lost": lost, "net_units": sum(profits),
             "profit_loss": sum(profits), "roi": sum(profits)/risked if risked else None,
             "cumulative_profit": profits, "max_drawdown": drawdown, "longest_losing_streak": longest}
 
@@ -78,6 +92,19 @@ def edge_buckets(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                        "average_edge": sum(float(r.get("edge") or 0) for r in items)/len(items) if items else None,
                        "average_predicted_probability": sum(float(r.get("model_probability") or 0) for r in items)/len(items) if items else None,
                        "actual_win_rate": sum(r["grade"] == "win" for r in graded)/len(graded) if graded else None})
+    return result
+
+
+def confidence_buckets(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Evaluate observed results across fixed model-probability bands."""
+    values = list(rows); result = []
+    for low, high, label in CONFIDENCE_BOUNDS:
+        items = [r for r in values if r.get("model_probability") is not None and low <= float(r["model_probability"]) < high]
+        metric = betting_metrics(items)
+        graded = [r for r in items if r.get("grade") in {"win", "loss"}]
+        result.append({"bucket": label, "count": len(items), **metric,
+            "average_probability": sum(float(r["model_probability"]) for r in items)/len(items) if items else None,
+            "observed_win_rate": sum(r["grade"] == "win" for r in graded)/len(graded) if graded else None})
     return result
 
 

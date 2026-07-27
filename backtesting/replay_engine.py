@@ -11,6 +11,7 @@ from nfl_predictor import NFLPredictor
 
 from .config import BacktestConfig, PredictionMode
 from .grader import PredictionGrader, index_outcomes
+from .game_matching import normalize_team
 from .metrics import MetricsCalculator
 from .nfl_game_predictor import NFLGameMarketPredictor
 from .nfl_game_predictor import no_vig_probabilities, sportsbook_consensus
@@ -266,6 +267,7 @@ class ReplayEngine:
                 "candidates_rejected": sum(game_reasons.values()), "rejection_reasons": dict(sorted(game_reasons.items())),
                 "market_decisions": game_decisions,
                 "history": game_predictor.last_diagnostics,
+                **(self._game_history_diagnostics(game_predictor, game) if game_predictor.last_diagnostics else {}),
             })
         # NFLPredictor's team-market method is explicitly placeholder-only (zero projection), so replay must not
         # turn complete h2h/spread/total prices into fabricated bets.
@@ -298,6 +300,26 @@ class ReplayEngine:
             "rejected_future_rows": sum(int(row.get("rejected_future_rows", 0)) for row in rows),
             "rejection_reasons": dict(sorted(rejections.items())),
             "dominant_rejection_reason": max(rejections, key=rejections.get) if rejections else None}
+
+    @staticmethod
+    def _game_history_diagnostics(predictor, game):
+        """Flatten concise per-game provenance, never raw historical rows."""
+        home = predictor.last_diagnostics.get(normalize_team(game.get("home_team")), {})
+        away = predictor.last_diagnostics.get(normalize_team(game.get("away_team")), {})
+        result = {
+            "home_history_rows_loaded": home.get("history_rows_loaded", 0),
+            "home_history_rows_used": home.get("history_rows_used", 0),
+            "away_history_rows_loaded": away.get("history_rows_loaded", 0),
+            "away_history_rows_used": away.get("history_rows_used", 0),
+            "home_seasons_used": home.get("seasons_used", []),
+            "away_seasons_used": away.get("seasons_used", []),
+            "latest_home_history_timestamp": home.get("latest_history_timestamp"),
+            "latest_away_history_timestamp": away.get("latest_history_timestamp"),
+            "rejected_future_rows": home.get("rejected_future_rows", 0) + away.get("rejected_future_rows", 0),
+        }
+        if os.getenv("BACKTESTING_DEBUG_PREDICTIONS") == "1":
+            result["feature_components"] = getattr(predictor, "last_feature_diagnostics", {})
+        return result
 
     def _evaluate_team_market(self, predictor, game, market, game_odds, team_stats, config):
         """Create model evaluations first, then apply betting acceptance thresholds."""
@@ -340,7 +362,9 @@ class ReplayEngine:
             implied = self._implied_probability(row.get("odds"))
             consensus_implied = market_probability.get(selection.casefold(), implied)
             evaluated = {**row, "model_probability": probability, "implied_probability": consensus_implied,
-                         "execution_implied_probability": implied, "edge": probability - consensus_implied,
+                         "consensus_probability": consensus_implied, "execution_implied_probability": implied,
+                         "edge": probability - consensus_implied, "edge_vs_consensus": probability - consensus_implied,
+                         "edge_vs_execution": probability - implied,
                          "consensus_line": consensus.get("consensus_line")}
             key = selection.casefold()
             current = by_selection.get(key)
@@ -364,7 +388,10 @@ class ReplayEngine:
             if reason is not None:
                 continue
             selection = str(row["selection"])
-            accepted.append({"game": game.get("game_id") or game.get("id") or game.get("game"), "prediction": selection, "selection": selection, "market": market, "line": row.get("line"), "sportsbook_odds": row.get("odds"), "american_odds": row.get("odds"), "sportsbook": row.get("sportsbook"), "model_probability": row["model_probability"], "implied_probability": row["implied_probability"], "edge": row["edge"], "confidence": projection.confidence, "prediction_model_version": projection.model_version, "features_data_as_of": projection.data_as_of, "features": projection.features, "reasoning": f"{projection.model_version}: prior scoring offense/defense plus home-field adjustment", "team": selection if market != "total" else None, "home_away": "home" if selection.casefold() in {"home", str(game.get("home_team")).casefold()} else "away" if market != "total" else None, "game_type": game.get("game_type"), "clv": row.get("closing_line_value") or row.get("clv")})
+            projection_features = {**projection.features, "projected_home_points": projection.home_points,
+                "projected_away_points": projection.away_points, "projected_margin": projection.expected_margin,
+                "projected_total": projection.expected_total}
+            accepted.append({"game": game.get("game_id") or game.get("id") or game.get("game"), "prediction": selection, "selection": selection, "market": market, "line": row.get("line"), "sportsbook_odds": row.get("odds"), "american_odds": row.get("odds"), "sportsbook": row.get("sportsbook"), "model_probability": row["model_probability"], "implied_probability": row["execution_implied_probability"], "consensus_probability": row["consensus_probability"], "execution_implied_probability": row["execution_implied_probability"], "edge": row["edge"], "edge_vs_consensus": row["edge_vs_consensus"], "edge_vs_execution": row["edge_vs_execution"], "confidence": projection.confidence, "prediction_model_version": projection.model_version, "features_data_as_of": projection.data_as_of, "features": projection_features, "reasoning": f"{projection.model_version}: prior scoring offense/defense plus home-field adjustment", "team": selection if market != "total" else None, "home_away": "home" if selection.casefold() in {"home", str(game.get("home_team")).casefold()} else "away" if market != "total" else None, "game_type": game.get("game_type"), "clv": row.get("closing_line_value") or row.get("clv")})
         return accepted, decisions, reasons
 
     @staticmethod
