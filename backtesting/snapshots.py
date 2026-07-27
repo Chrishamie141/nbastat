@@ -19,7 +19,7 @@ SCHEMAS: dict[str, tuple[str, ...]] = {
     "weather": ("game_id", "captured_at", "temperature", "wind_speed", "precipitation", "conditions"),
     "injuries": ("team", "player", "position", "status", "captured_at"),
     "player_stats": ("player", "team", "season", "through_week", "stats"),
-    "team_stats": ("team", "season", "through_week", "stats"),
+    "team_stats": ("team", "season", "through_week"),
     "outcomes": ("game_id", "final_home_score", "final_away_score", "player_results", "market_results", "completed_at"),
 }
 
@@ -88,6 +88,12 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
             row.setdefault("season", str(season))
             row.setdefault("through_week", int(week) - 1)
             row.setdefault("record_role", record.get("record_role", "pregame_history"))
+            if name == "team_stats":
+                # Retain optional location and legacy aggregate stats while the
+                # required fields above describe auditable game observations.
+                for extra in ("week", "home_away", "stats", "opponent", "points_for", "points_against", "completed_at"):
+                    if extra in record:
+                        row[extra] = record[extra]
         if name != "injuries":
             row.setdefault("game_id", record.get("game_id"))
         row.setdefault("source", record.get("source", "unknown"))
@@ -223,6 +229,27 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
         for outcome in loaded.get("outcomes", []):
             if outcome.get("completed_at") and not _parse_iso(outcome.get("completed_at")):
                 report.add_error(f"invalid_completed_at: outcome for {outcome.get('game_id')}")
+        for row in loaded.get("team_stats", []):
+            role = row.get("record_role")
+            # Legacy provider aggregates remain readable. New completed-game
+            # history is held to the stronger provenance contract.
+            if role != "completed_game_history":
+                continue
+            required_history = ("season", "week", "team", "game_id", "opponent", "points_for", "points_against", "completed_at", "data_as_of", "record_role", "source")
+            missing_history = [field for field in required_history if row.get(field) is None]
+            if missing_history:
+                report.add_error(f"missing_team_history_provenance: team={row.get('team')} missing={missing_history}")
+            completed = _parse_iso(row.get("completed_at"))
+            known = _parse_iso(row.get("data_as_of"))
+            if row.get("is_pregame") is not False:
+                report.add_error(f"team_history_falsely_labeled_pregame: team={row.get('team')}")
+            if not completed or not known or known < completed:
+                report.add_error(f"missing_team_history_provenance: team={row.get('team')} game={row.get('game_id')}")
+            if str(row.get("season")) > str(season) or (str(row.get("season")) == str(season) and int(row.get("week", 0)) >= int(week)):
+                report.add_error(f"future_team_history: team={row.get('team')} season={row.get('season')} week={row.get('week')}")
+            for game in games:
+                if row.get("game_id") == game.get("game_id") and known and _parse_iso(game.get("kickoff_time")) and known >= _parse_iso(game.get("kickoff_time")):
+                    report.add_error(f"same_game_postgame_history: game={row.get('game_id')}")
         unmatched_odds: dict[str, int] = {}
         odds_identities: set[tuple[Any, ...]] = set()
         for odd in loaded.get("odds", []):

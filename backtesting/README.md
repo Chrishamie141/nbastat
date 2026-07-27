@@ -88,3 +88,34 @@ normalization; they were noisy diagnostics, not evidence that those provider
 IDs were persisted. The additional per-request boundary, semantic deduplication,
 persisted reconciliation metadata, and validator checks now make that property
 explicit and enforceable.
+
+## NFL completed-game team history
+
+NFL team-market replays use one `team_stats.json` per snapshot week. The file contains
+deduplicated completed-game observations from the preceding regular season plus
+already-completed games in the replay season; it does not duplicate history per
+target game. Each observation records `season`, `week`, `team`, `game_id`,
+`opponent`, `points_for`, `points_against`, optional `home_away`, `completed_at`,
+`data_as_of`, `record_role=completed_game_history`, and `source`. Historical
+outcomes are deliberately marked `is_pregame=false`; the predictor, rather than a
+misleading label, proves usability by requiring both timestamps to precede each
+target kickoff.
+
+The former ESPN adapter read each target game's boxscore and produced two
+current-game rows with non-scoring boxscore stats. Those rows could not provide
+pregame points-for/against and were correctly rejected. The adapter now builds
+history from ESPN's free completed scoreboards. Replay remains offline and reads
+only the persisted snapshot.
+
+To update only team history in an existing snapshot (preserving `odds.json` and
+never constructing an Odds API source), run:
+
+```bash
+python -m backtesting.build_snapshots --league nfl --season 2025 --start-week 1 --end-week 1 --refresh team-stats --validate
+```
+
+Then replay entirely from local files:
+
+```bash
+python -m backtesting.run_backtest --league nfl --season 2025 --start-week 1 --end-week 1 --markets h2h,spreads,totals
+```

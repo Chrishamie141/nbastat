@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from math import erf, sqrt
 from typing import Any
 
+from backtesting.game_matching import normalize_team
+
 
 MODEL_VERSION = "nfl-game-baseline-v1"
 
@@ -73,36 +75,80 @@ class NFLGameMarketPredictor:
 
     HOME_FIELD_POINTS = 1.5
     LEAGUE_POINTS = 22.5
+    MIN_GAME_HISTORY = 4
+
+    def __init__(self) -> None:
+        self.last_diagnostics: dict[str, Any] = {}
 
     def project(self, game: dict[str, Any], histories: list[dict[str, Any]]) -> GameProjection | None:
         kickoff = game.get("kickoff_time") or game.get("commence_time")
+        teams = {normalize_team(game.get("home_team")), normalize_team(game.get("away_team"))}
+        available = {team: 0 for team in teams}
+        rejected = {team: 0 for team in teams}
         def usable(row: dict[str, Any]) -> bool:
-            if row.get("team") not in {game.get("home_team"), game.get("away_team")} or not _before(row.get("data_as_of") or row.get("captured_at"), kickoff):
+            team = normalize_team(row.get("team"))
+            if team not in teams:
                 return False
+            available[team] += 1
+            timestamp = row.get("data_as_of") or row.get("captured_at")
+            if timestamp and not _before(timestamp, kickoff):
+                rejected[team] += 1
+                return False
+            if row.get("record_role") == "completed_game_history":
+                completed = row.get("completed_at")
+                if (not timestamp or not completed or not _before(completed, kickoff) or
+                    _before(timestamp, completed) or
+                    row.get("game_id") == game.get("game_id") or row.get("is_pregame") is not False):
+                    rejected[team] += 1
+                    return False
             try:
                 kickoff_year = datetime.fromisoformat(str(kickoff).replace("Z", "+00:00")).year
                 replay_season = int(game.get("season", kickoff_year))
                 row_season = int(row.get("season", replay_season))
                 if row_season < replay_season:
                     return True
-                replay_week = int(game.get("week"))
-                return row_season == replay_season and int(row.get("through_week", -1)) < replay_week
+                replay_week = int(game.get("week", 1))
+                row_week = int(row.get("week", row.get("through_week", -1)))
+                safe = row_season == replay_season and row_week < replay_week
+                if not safe: rejected[team] += 1
+                return safe
             except (TypeError, ValueError):
                 # Providers enforce the same season/week rule. For injected providers,
                 # a strict pre-kickoff data timestamp is the only safe fallback.
                 return bool(row.get("data_as_of") or row.get("captured_at"))
 
-        rows: dict[str, dict[str, Any]] = {}
-        for row in histories:
-            if usable(row):
-                key = str(row.get("team"))
+        usable_rows = [row for row in histories if usable(row)]
+        observations: dict[str, list[dict[str, Any]]] = {team: [] for team in teams}
+        aggregates: dict[str, tuple[Any, dict[str, Any]]] = {}
+        seen: set[tuple[Any, ...]] = set()
+        for row in usable_rows:
+            key = normalize_team(row.get("team"))
+            if row.get("record_role") == "completed_game_history":
+                identity = (row.get("season"), row.get("week"), row.get("game_id"), key)
+                if identity not in seen:
+                    seen.add(identity); observations[key].append(row)
+            else:
                 rank = (int(row.get("season", 0) or 0), int(row.get("through_week", -1) or -1), str(row.get("data_as_of") or row.get("captured_at") or ""))
-                current = rows.get(key)
+                current = aggregates.get(key)
                 if current is None or rank > current[0]:
-                    rows[key] = (rank, row)
-        rows = {key: value[1] for key, value in rows.items()}
-        home = rows.get(str(game.get("home_team")))
-        away = rows.get(str(game.get("away_team")))
+                    aggregates[key] = (rank, row)
+        rows: dict[str, dict[str, Any]] = {}
+        for team in teams:
+            games = observations[team]
+            if len(games) >= self.MIN_GAME_HISTORY:
+                rows[team] = {"team": team, "through_week": len(games),
+                    "data_as_of": max(str(r["data_as_of"]) for r in games),
+                    "stats": {"points_per_game": sum(float(r["points_for"]) for r in games)/len(games),
+                              "points_allowed_per_game": sum(float(r["points_against"]) for r in games)/len(games)}}
+            elif team in aggregates:
+                rows[team] = aggregates[team][1]
+        self.last_diagnostics = {team: {"history_rows_available": available[team],
+            "history_rows_used": len(observations[team]) if team in rows and observations[team] else int(rows.get(team, {}).get("through_week", 0) or 0),
+            "seasons_used": sorted({int(r["season"]) for r in observations[team]}) if team in rows else [],
+            "latest_history_timestamp": rows.get(team, {}).get("data_as_of"),
+            "rejected_future_rows": rejected[team]} for team in sorted(teams)}
+        home = rows.get(normalize_team(game.get("home_team")))
+        away = rows.get(normalize_team(game.get("away_team")))
         if not home or not away:
             return None
         home_stats = home.get("stats") if isinstance(home.get("stats"), dict) else home
