@@ -45,6 +45,14 @@ def test_market_normalization_accepts_odds_api_market_names():
     assert BacktestConfig(league="nfl", season="2025", markets=("moneylines", "spreads", "totals")).normalized_markets() == ("h2h", "spread", "total")
 
 
+def test_player_market_normalization_is_case_insensitive_and_canonical():
+    for value in ("pass_yds", "PASS_YDS", "Pass_Yds"):
+        assert normalize_market(value) == "PASS_YDS"
+    assert BacktestConfig(
+        league="nfl", season="2025", markets=("rush_yds", "Rec_Yds", "receptions", "pass_td")
+    ).normalized_markets() == ("RUSH_YDS", "REC_YDS", "RECEPTIONS", "PASS_TD")
+
+
 def test_match_game_reports_provider_id_and_datetime_team_diagnostics():
     games = [game() | {"the_odds_api_event_id": "odds-api-evt-1"}]
     assert match_game({"id":"odds-api-evt-1"}, games).strategy == "provider_game_id"

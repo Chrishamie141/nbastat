@@ -11,11 +11,12 @@ from nfl_predictor import NFLPredictor
 
 from .config import BacktestConfig, PredictionMode
 from .grader import PredictionGrader, index_outcomes
-from .historical_provider import HistoricalSnapshotProvider, PredictionDataProvider
 from .metrics import MetricsCalculator
 from .markets import CANONICAL_TEAM_MARKETS, normalize_market
+from .historical_provider import HistoricalSnapshotProvider, PredictionDataProvider
 from .prediction_store import PredictionStore
 from .reports import ReportExporter
+from .snapshots import SnapshotError
 from .utils import utc_now_iso
 from .versioning import RunMetadata, create_run_metadata
 
@@ -34,10 +35,12 @@ class ReplayEngine:
         self.metrics = MetricsCalculator()
         self.metadata: RunMetadata = create_run_metadata(config)
         self._last_prediction_diagnostics: dict[str, Any] = {}
+        self._evaluation_weeks: dict[str, dict[str, Any]] = {}
 
     def run(self) -> dict[str, Any]:
         """Execute the replay, grade predictions, export reports, and return a summary."""
         self.store.create_run(self.metadata)
+        self._evaluation_weeks = {}
         for week in self._weeks():
             self._last_prediction_diagnostics = {}
             games = self.provider.get_games(self.config.league, self.config.season, week)
@@ -51,6 +54,7 @@ class ReplayEngine:
                 predictions = self.prediction_factory(self.provider, self.config, week)
                 print(f"- Replay mode: {mode.value}")
             evaluation = self._last_prediction_diagnostics or self._fallback_evaluation(games, odds, predictions)
+            self._evaluation_weeks[str(week)] = evaluation
             frozen: list[tuple[int, dict[str, Any]]] = []
             for prediction in predictions:
                 prediction.setdefault("generated_timestamp", utc_now_iso())
@@ -94,7 +98,8 @@ class ReplayEngine:
         report_dir = None
         if self.config.export:
             report_dir = ReportExporter(self.config.results_dir).export(self.metadata, stored, metrics)
-        summary = {"run_id": self.metadata.run_id, "mode": self.config.mode().value, "metrics": metrics, "evaluation": self._last_prediction_diagnostics, "report_dir": str(report_dir) if report_dir else None}
+        evaluation = self._aggregate_evaluation()
+        summary = {"run_id": self.metadata.run_id, "mode": self.config.mode().value, "metrics": metrics, "evaluation": evaluation, "report_dir": str(report_dir) if report_dir else None}
         print(f"Final report: {summary}")
         return summary
 
@@ -129,7 +134,11 @@ class ReplayEngine:
         games = provider.get_games(config.league, config.season, week)
         odds = provider.get_odds(config.league, config.season, week)
         player_stats = provider.get_player_stats(config.league, config.season, week)
-        team_stats = provider.get_team_stats(config.league, config.season, week)
+        # The production adapter currently uses team history only to enrich
+        # diagnostics.  Missing optional history must not invalidate an
+        # otherwise complete player-prop replay.  A model that actually needs
+        # it should call provider.get_team_stats() itself, which remains strict.
+        team_stats = self._optional_team_stats(provider, config, week)
         requested = set(config.normalized_markets())
         supported_player_markets = {"PASS_YDS", "RUSH_YDS", "REC_YDS", "RECEPTIONS", "TD", "PASS_TD", "PASS_INT"}
         odds_by_game = {}
@@ -219,7 +228,48 @@ class ReplayEngine:
 
     def _fallback_evaluation(self, games: list[dict[str, Any]], odds: list[dict[str, Any]], predictions: list[dict[str, Any]]) -> dict[str, Any]:
         """Supply concise accounting for injected factories that predate diagnostics."""
-        return {"games_evaluated": len(games), "markets_evaluated": len({normalize_market(o.get("market")) for o in odds}), "candidates_evaluated": len(predictions), "bets_accepted": len(predictions), "no_bet_reasons": {}, "games": []}
+        reasons = {}
+        if not odds:
+            reasons["missing_historical_odds"] = len(games) or 1
+        elif not predictions:
+            reasons["no_predictions_generated"] = len(games) or 1
+        return {"games_evaluated": len(games), "markets_evaluated": len({normalize_market(o.get("market")) for o in odds if o.get("market")}), "candidates_evaluated": len(predictions), "bets_accepted": len(predictions), "no_bet_reasons": reasons, "games": []}
+
+    @staticmethod
+    def _optional_team_stats(provider: PredictionDataProvider, config: BacktestConfig, week: int) -> list[dict[str, Any]]:
+        """Load diagnostic-only team history, degrading an absent dataset to empty."""
+        try:
+            return provider.get_team_stats(config.league, config.season, week)
+        except AttributeError:
+            return []
+        except SnapshotError as exc:
+            if str(exc).startswith("No team_stats snapshot found"):
+                return []
+            raise
+
+    def _aggregate_evaluation(self) -> dict[str, Any]:
+        """Return complete per-week and run-level evaluation accounting."""
+        fields = ("games_evaluated", "markets_evaluated", "candidates_evaluated", "bets_accepted")
+        totals = {field: sum(int(record.get(field, 0)) for record in self._evaluation_weeks.values()) for field in fields}
+        reasons: Counter[str] = Counter()
+        for record in self._evaluation_weeks.values():
+            reasons.update(record.get("no_bet_reasons", {}))
+        evaluation: dict[str, Any] = {
+            "totals": totals,
+            "no_bet_reasons": dict(sorted(reasons.items())),
+            "weeks": dict(self._evaluation_weeks),
+        }
+        # Retain the original single-run fields for report consumers while the
+        # explicit totals/weeks structure supplies unambiguous aggregation.
+        evaluation.update(totals)
+        if len(self._evaluation_weeks) == 1:
+            only_week = next(iter(self._evaluation_weeks.values()))
+            evaluation["games"] = only_week.get("games", [])
+            if "supported_prediction_markets" in only_week:
+                evaluation["supported_prediction_markets"] = only_week["supported_prediction_markets"]
+        else:
+            evaluation["games"] = [game for record in self._evaluation_weeks.values() for game in record.get("games", [])]
+        return evaluation
 
     @staticmethod
     def _implied_probability(american_odds: Any) -> float | None:
