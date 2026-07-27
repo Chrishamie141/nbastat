@@ -7,7 +7,7 @@ from typing import Any
 
 
 def _accuracy(rows: list[dict[str, Any]]) -> float | None:
-    graded = [r for r in rows if r.get("correct") is not None]
+    graded = [r for r in rows if r.get("grade") in {"win", "loss"} or (not r.get("grade") and r.get("correct") is not None)]
     if not graded:
         return None
     return sum(1 for r in graded if bool(r.get("correct"))) / len(graded)
@@ -18,9 +18,10 @@ class MetricsCalculator:
 
     def calculate(self, predictions: list[dict[str, Any]]) -> dict[str, Any]:
         """Return all supported aggregate and segment metrics."""
-        graded = [p for p in predictions if p.get("correct") is not None]
-        wins = sum(1 for p in graded if bool(p.get("correct")))
-        losses = len(graded) - wins
+        graded = [p for p in predictions if p.get("grade") in {"win", "loss", "push"} or (not p.get("grade") and p.get("correct") is not None)]
+        wins = sum(p.get("grade") == "win" or (not p.get("grade") and bool(p.get("correct"))) for p in graded)
+        pushes = sum(p.get("grade") == "push" for p in graded)
+        losses = len(graded) - wins - pushes
         units_won = sum(self._profit(p) for p in graded if bool(p.get("correct")))
         units_lost = float(losses)
         roi = (units_won - units_lost) / len(graded) if graded else None
@@ -46,6 +47,8 @@ class MetricsCalculator:
             "calibration": self._calibration(predictions),
             "graded_predictions": len(graded),
             "total_predictions": len(predictions),
+            "wins": wins, "losses": losses, "pushes": pushes,
+            "ungraded_predictions": len(predictions) - len(graded),
         }
 
     def _profit(self, row: dict[str, Any]) -> float:

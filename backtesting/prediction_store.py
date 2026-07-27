@@ -42,10 +42,11 @@ class PredictionStore:
                     generated_timestamp TEXT NOT NULL, actual_result TEXT, correct INTEGER, margin REAL,
                     team TEXT, player TEXT, game_type TEXT, home_away TEXT, sportsbook_odds REAL, sportsbook TEXT, edge REAL, clv REAL,
                     model_probability REAL, implied_probability REAL, prediction_model_version TEXT, features_data_as_of TEXT, features TEXT,
+                    selection TEXT, grade TEXT, ungraded_reason TEXT,
                     FOREIGN KEY(run_id) REFERENCES runs(run_id)
                 )
             """)
-            for col, ddl in {"sportsbook_odds":"REAL", "sportsbook":"TEXT", "edge":"REAL", "clv":"REAL", "model_probability":"REAL", "implied_probability":"REAL", "prediction_model_version":"TEXT", "features_data_as_of":"TEXT", "features":"TEXT"}.items():
+            for col, ddl in {"sportsbook_odds":"REAL", "sportsbook":"TEXT", "edge":"REAL", "clv":"REAL", "model_probability":"REAL", "implied_probability":"REAL", "prediction_model_version":"TEXT", "features_data_as_of":"TEXT", "features":"TEXT", "selection":"TEXT", "grade":"TEXT", "ungraded_reason":"TEXT"}.items():
                 try:
                     conn.execute(f"ALTER TABLE predictions ADD COLUMN {col} {ddl}")
                 except sqlite3.OperationalError:
@@ -63,8 +64,8 @@ class PredictionStore:
                 INSERT INTO predictions (
                     run_id, model_version, league, season, week, game, prediction, confidence,
                     market, line, reasoning, generated_timestamp, team, player, game_type, home_away, sportsbook_odds, sportsbook, edge, clv,
-                    model_probability, implied_probability, prediction_model_version, features_data_as_of, features
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    model_probability, implied_probability, prediction_model_version, features_data_as_of, features, selection
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 metadata.run_id, metadata.model_version, metadata.league, metadata.season, week,
                 prediction.get("game"), str(prediction.get("prediction")), prediction.get("confidence"),
@@ -74,6 +75,7 @@ class PredictionStore:
                 prediction.get("sportsbook_odds"), prediction.get("sportsbook"), prediction.get("edge"), prediction.get("clv"),
                 prediction.get("model_probability"), prediction.get("implied_probability"), prediction.get("prediction_model_version"),
                 prediction.get("features_data_as_of"), __import__("json").dumps(prediction.get("features"), sort_keys=True) if prediction.get("features") else None,
+                prediction.get("selection", prediction.get("prediction")),
             ))
             return int(cur.lastrowid)
 
@@ -82,8 +84,8 @@ class PredictionStore:
         correct = grade.get("correct")
         with self.connect() as conn:
             conn.execute(
-                "UPDATE predictions SET actual_result=?, correct=?, margin=? WHERE id=?",
-                (None if grade.get("actual_result") is None else str(grade.get("actual_result")), None if correct is None else int(bool(correct)), grade.get("margin"), prediction_id),
+                "UPDATE predictions SET actual_result=?, correct=?, margin=?, grade=?, ungraded_reason=? WHERE id=?",
+                (None if grade.get("actual_result") is None else str(grade.get("actual_result")), None if correct is None else int(bool(correct)), grade.get("margin"), grade.get("grade"), grade.get("ungraded_reason"), prediction_id),
             )
 
     def load_predictions(self, run_id: str) -> list[dict[str, Any]]:
