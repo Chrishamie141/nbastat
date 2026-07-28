@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from backtesting.nfl_season import (
-    group_compatible_odds_requests, historical_quote_is_valid, plan_season,
+    execute_grouped_odds, group_compatible_odds_requests, historical_quote_is_valid, plan_season,
     season_coverage, season_registry,
 )
 
@@ -44,3 +44,58 @@ def test_season_plan_preserves_covered_week_and_exposes_partial_coverage(tmp_pat
     coverage = season_coverage(tmp_path, 2025, range(1, 4))
     assert coverage["status"] == "partial"
     assert coverage["weeks"][2]["games_without_odds"] == ["3"]
+
+
+class FixtureOddsProvider:
+    def __init__(self, partial=False):
+        self.partial = partial
+        self.calls = []
+        self.last_diagnostics = {}
+
+    def fetch_odds(self, season, week, games, snapshot_time=None):
+        self.calls.append(([g["game_id"] for g in games], snapshot_time))
+        selected = games[:1] if self.partial and len(games) > 1 else games
+        self.last_diagnostics = {"provider_events_received": len(selected),
+            "provider_events_matched": len(selected), "provider_events_discarded": 0}
+        return [{"game_id": g["game_id"], "event_id": "provider-" + g["game_id"],
+            "market": "h2h", "selection": g["home_team"], "line": 0, "odds": -110,
+            "sportsbook": "Fixture", "bookmaker": "fixture", "captured_at": snapshot_time,
+            "snapshot_timestamp": snapshot_time, "data_as_of": snapshot_time,
+            "provider_event_matched": True, "is_pregame": True,
+            "source": "the-odds-api-historical"} for g in selected]
+
+
+def test_grouped_execution_matches_individual_and_falls_back_atomically(tmp_path):
+    root = tmp_path / "snapshots"
+    folder = root / "nfl/2025/week_03"
+    folder.mkdir(parents=True)
+    games = [game("a", "2025-09-21T17:00:00Z", 3),
+             {**game("b", "2025-09-21T17:00:00Z", 3), "home_team": "CHI", "away_team": "GB"}]
+    (folder / "games.json").write_text(json.dumps(games))
+    (folder / "odds.json").write_text("[]")
+    provider = FixtureOddsProvider(partial=True)
+    diagnostics = execute_grouped_odds(root, 2025, [3], provider=provider)
+    rows = json.loads((folder / "odds.json").read_text())
+    assert {r["game_id"] for r in rows} == {"a", "b"}
+    assert len(provider.calls) == 2  # one group, one explicit safety fallback
+    assert diagnostics["games_requiring_fallback"] == ["b"]
+    assert diagnostics["games_incomplete"] == []
+    # Resume treats both persisted games as authoritative and makes no calls.
+    resumed = FixtureOddsProvider()
+    execute_grouped_odds(root, 2025, [3], provider=resumed)
+    assert resumed.calls == []
+
+
+def test_plan_uses_group_cache_identity_and_never_counts_existing_odds(tmp_path):
+    root = tmp_path / "snapshots"
+    folder = root / "nfl/2025/week_03"
+    folder.mkdir(parents=True)
+    games = [game("a", "2025-09-21T17:00:00Z", 3), game("b", "2025-09-21T17:00:00Z", 3)]
+    (folder / "games.json").write_text(json.dumps(games))
+    (folder / "odds.json").write_text("[]")
+    plan = plan_season(root, 2025, [3])
+    assert plan["totals"]["naive_request_count"] == 2
+    assert plan["totals"]["planned_grouped_requests"] == 1
+    assert plan["totals"]["paid_requests"] == 1
+    (folder / "odds.json").write_text(json.dumps([{"game_id": "a"}]))
+    assert plan_season(root, 2025, [3])["totals"]["naive_request_count"] == 1

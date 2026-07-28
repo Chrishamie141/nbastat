@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
-from nfl_providers import JsonRawCache, TEAM_MARKETS
+from nfl_providers import JsonRawCache, TEAM_MARKETS, TheOddsApiNflProvider
 
 from .snapshots import DATASETS, snapshot_path, validate_snapshot
 
@@ -72,13 +72,82 @@ def historical_quote_is_valid(game: dict[str, Any], quote: dict[str, Any], *,
     """Prove identity, pre-kickoff timing, and target tolerance for a grouped quote."""
     if str(quote.get("game_id")) != str(game.get("game_id")):
         return False
-    captured = quote.get("captured_at") or quote.get("timestamp") or quote.get("snapshot_timestamp")
-    if not captured:
+    captured = quote.get("captured_at") or quote.get("timestamp")
+    snapshot = quote.get("snapshot_timestamp") or captured
+    if not captured or not snapshot:
         return False
     kickoff = _time(game["kickoff_time"])
     seen = _time(captured)
+    snap = _time(snapshot)
     target = kickoff - timedelta(hours=hours_before)
-    return seen < kickoff and abs(seen - target) <= timedelta(minutes=max(0, tolerance_minutes))
+    return (seen <= snap < kickoff and
+            abs(snap - target) <= timedelta(minutes=max(0, tolerance_minutes)))
+
+
+def _request_params(timestamp: str) -> dict[str, Any]:
+    return {"regions": "us", "markets": ",".join(TEAM_MARKETS),
+            "oddsFormat": "american", "date": timestamp}
+
+
+def execute_grouped_odds(root: Path, season: str | int, weeks: Iterable[int], *,
+                         hours_before: int = 24, tolerance_minutes: int = 0,
+                         provider: TheOddsApiNflProvider | None = None) -> dict[str, Any]:
+    """Fetch grouped snapshots, safely reconcile them, then individually retry gaps."""
+    week_set = set(weeks)
+    games = [g for g in season_registry(root, season, week_set)
+             if not _load(snapshot_path(root, "nfl", season, int(g["week"]), "odds")) or
+             str(g["game_id"]) not in {str(r.get("game_id")) for r in _load(
+                 snapshot_path(root, "nfl", season, int(g["week"]), "odds"))}]
+    cache = JsonRawCache(Path(root).parent / "raw_cache")
+    provider = provider or TheOddsApiNflProvider(cache=cache)
+    diagnostics: dict[str, Any] = {"canonical_games_requested": len(games),
+        "provider_events_returned": 0, "matched_events": 0, "unmatched_events": 0,
+        "ambiguous_events": 0, "invalid_timestamp_events": 0,
+        "games_successfully_satisfied": [], "games_requiring_fallback": []}
+    accepted: dict[str, list[dict[str, Any]]] = {}
+    groups = group_compatible_odds_requests(games, hours_before=hours_before,
+                                             tolerance_minutes=tolerance_minutes)
+    for group in groups:
+        rows = provider.fetch_odds(season, min(int(g["week"]) for g in group["games"]),
+                                   group["games"], snapshot_time=group["timestamp"])
+        pd = getattr(provider, "last_diagnostics", {})
+        diagnostics["provider_events_returned"] += pd.get("provider_events_received", 0)
+        diagnostics["matched_events"] += pd.get("provider_events_matched", 0)
+        ambiguous = pd.get("provider_events_ambiguous", 0)
+        diagnostics["ambiguous_events"] += ambiguous
+        diagnostics["unmatched_events"] += pd.get("provider_events_discarded", 0) - ambiguous
+        for game in group["games"]:
+            valid = [r for r in rows if historical_quote_is_valid(
+                game, r, hours_before=hours_before, tolerance_minutes=tolerance_minutes)]
+            invalid = [r for r in rows if str(r.get("game_id")) == str(game["game_id"]) and r not in valid]
+            diagnostics["invalid_timestamp_events"] += len({r.get("event_id") for r in invalid})
+            if valid:
+                accepted[str(game["game_id"])] = valid
+            else:
+                diagnostics["games_requiring_fallback"].append(str(game["game_id"]))
+    # A fallback is explicit and uses the original per-game timestamp/cache identity.
+    for game in games:
+        gid = str(game["game_id"])
+        if gid in accepted:
+            continue
+        target = (_time(game["kickoff_time"]) - timedelta(hours=hours_before)).astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        rows = provider.fetch_odds(season, int(game["week"]), [game], snapshot_time=target)
+        valid = [r for r in rows if historical_quote_is_valid(game, r, hours_before=hours_before,
+                                                                tolerance_minutes=tolerance_minutes)]
+        if valid:
+            accepted[gid] = valid
+    for week in sorted(week_set):
+        path = snapshot_path(root, "nfl", season, week, "odds")
+        prior = _load(path)
+        additions = [row for game in games if int(game["week"]) == week
+                     for row in accepted.get(str(game["game_id"]), [])]
+        if additions:
+            identity = lambda r: tuple(r.get(k) for k in ("game_id", "snapshot_timestamp", "captured_at", "bookmaker", "market", "selection", "line", "odds"))
+            write_json_atomic(path, list({identity(r): r for r in prior + additions}.values()))
+    diagnostics["games_successfully_satisfied"] = sorted(accepted)
+    diagnostics["games_requiring_fallback"] = sorted(set(diagnostics["games_requiring_fallback"]))
+    diagnostics["games_incomplete"] = sorted(str(g["game_id"]) for g in games if str(g["game_id"]) not in accepted)
+    return diagnostics
 
 
 def _load(path: Path) -> list[dict[str, Any]]:
@@ -102,7 +171,7 @@ def plan_season(root: Path, season: str | int, weeks: Iterable[int], *, hours_be
         hits = 0
         for game in missing:
             target = (_time(game["kickoff_time"]) - timedelta(hours=hours_before)).astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-            params = {"regions": "us", "markets": ",".join(TEAM_MARKETS), "oddsFormat": "american", "date": target}
+            params = _request_params(target)
             hits += int(cache.path("odds-api", "nfl", season, week, "odds", params).exists())
         all_missing.extend(missing)
         paid = len(missing) - hits
@@ -113,15 +182,35 @@ def plan_season(root: Path, season: str | int, weeks: Iterable[int], *, hours_be
             "odds_status": "complete" if not missing and game_ids else "missing",
             "historical_requests_needed": len(missing), "cache_hits": hits,
             "paid_requests": paid, "estimated_credits": paid * len(TEAM_MARKETS) * 10})
-    optimized = len(group_compatible_odds_requests(all_missing, hours_before=hours_before,
-                                                    tolerance_minutes=tolerance_minutes))
+    groups = group_compatible_odds_requests(all_missing, hours_before=hours_before,
+                                             tolerance_minutes=tolerance_minutes)
+    grouped_hits = sum(cache.path("odds-api", "nfl", season,
+        min(int(g["week"]) for g in group["games"]), "odds", _request_params(group["timestamp"])).exists()
+        for group in groups)
+    grouped_paid = len(groups) - grouped_hits
+    # Attribute a cross-partition group to its earliest member. This keeps the
+    # weekly rows additive while the group itself remains one HTTP request.
+    for row in weekly:
+        owned = [group for group in groups if min(int(g["week"]) for g in group["games"]) == row["week"]]
+        row_hits = sum(cache.path("odds-api", "nfl", season, row["week"], "odds",
+                                  _request_params(group["timestamp"])).exists() for group in owned)
+        row.update({"naive_request_count": row["historical_requests_needed"],
+                    "planned_grouped_requests": len(owned),
+                    "individual_fallback_requests": 0, "cache_hits": row_hits,
+                    "paid_requests": len(owned) - row_hits,
+                    "estimated_credits": (len(owned) - row_hits) * len(TEAM_MARKETS) * 10})
     totals = {"season_games": sum(x["canonical_games"] for x in weekly), "season_weeks": len(weekly),
               "historical_http_requests": sum(x["paid_requests"] for x in weekly),
               "cache_hits": sum(x["cache_hits"] for x in weekly), "paid_requests": sum(x["paid_requests"] for x in weekly),
               "estimated_credits": sum(x["estimated_credits"] for x in weekly),
-              "naive_request_count": len(all_missing), "optimized_request_count": optimized}
+              "naive_request_count": len(all_missing), "planned_grouped_requests": len(groups),
+              "individual_fallback_requests": 0, "grouped_cache_hits": grouped_hits,
+              "paid_requests": grouped_paid, "historical_http_requests": grouped_paid,
+              "estimated_credits": grouped_paid * len(TEAM_MARKETS) * 10,
+              "optimized_request_count": len(groups)}
     return {"league": "nfl", "season": int(season), "weeks": weekly, "totals": totals,
-            "grouped_execution_enabled": False}
+            "grouped_execution_enabled": True,
+            "fallback_note": "Fresh grouped responses may add explicitly reported per-game safety fallbacks."}
 
 
 def season_coverage(root: Path, season: str | int, weeks: Iterable[int]) -> dict[str, Any]:
