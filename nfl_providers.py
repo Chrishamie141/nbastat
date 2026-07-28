@@ -261,14 +261,17 @@ class TheOddsApiNflProvider:
     name="odds-api"; supported_datasets={"odds"}
     def __init__(self, api_key=None, cache:JsonRawCache|None=None): self.api_key=api_key or os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY"); self.cache=cache or JsonRawCache()
     def fetch_odds(self, season, week, games, snapshot_time=None):
-        if not self.api_key: raise ProviderUnavailable("THE_ODDS_API_KEY is not set")
         endpoint="historical/sports" if snapshot_time else "sports"
         # The Odds API /odds endpoint supports game markets. NFL player props are event-level
         # markets and cause 422 INVALID_MARKET responses when mixed into this request.
         params={"apiKey":self.api_key,"regions":"us","markets":",".join(TEAM_MARKETS),"oddsFormat":"american"}
         if snapshot_time: params["date"]=snapshot_time
         url=f"{ODDS_API_BASE}/{endpoint}/{NFL_SPORT_KEY}/odds?{urlencode(params)}"
-        try: data=self.cache.get_or_fetch(self.name,"nfl",season,week,"odds",{k:v for k,v in params.items() if k!='apiKey'},lambda:_fetch_json(url))
+        def fetch():
+            if not self.api_key:
+                raise ProviderUnavailable("THE_ODDS_API_KEY is not set")
+            return _fetch_json(url)
+        try: data=self.cache.get_or_fetch(self.name,"nfl",season,week,"odds",{k:v for k,v in params.items() if k!='apiKey'},fetch)
         except HTTPError as e:
             detail = _read_http_error(e)
             safe_url = _redact_url(url)
@@ -278,11 +281,15 @@ class TheOddsApiNflProvider:
                 raise OddsApiRequestError(f"The Odds API rejected historical odds request (422: {detail}). url={safe_url}. Likely causes: invalid date, unsupported market for endpoint, unsupported event, or subscription limitation.") from e
             raise OddsApiRequestError(f"The Odds API odds request failed ({e.code}: {detail}). url={safe_url}") from e
         events=data.get("data",[]) if isinstance(data,dict) else data
+        response_timestamp = data.get("timestamp") if isinstance(data, dict) else snapshot_time
         self.last_diagnostics = {}
-        return normalize_odds_events(
+        rows = normalize_odds_events(
             events, games, diagnostics=self.last_diagnostics,
             debug=os.getenv("BACKTESTING_ODDS_DEBUG", "").lower() in {"1", "true", "yes"},
         )
+        for row in rows:
+            row["snapshot_timestamp"] = response_timestamp or snapshot_time
+        return rows
 
 def _event_row_count(event: dict[str, Any]) -> int:
     return sum(
@@ -321,12 +328,15 @@ def normalize_odds_events(events, games, *, diagnostics=None, debug=False):
                 for o in market.get("outcomes",[]) or []:
                     rows.append({"game_id":gid,"event_id":ev.get("id") or ev.get("event_id"),"provider_event_matched":True,"commence_time":ev.get("commence_time"),"home_team":ev.get("home_team"),"away_team":ev.get("away_team"),"league":ev.get("league") or ev.get("sport_key") or "nfl","market":normalize_market(market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":(0 if normalize_market(market.get("key")) == "h2h" and o.get("point") is None else o.get("point")),"odds":int(o.get("price")) if o.get("price") is not None else None,"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api","source":"the-odds-api-historical","data_as_of":market.get("last_update") or captured,"is_pregame":True})
     if diagnostics is not None:
+        ambiguous = sum("ambiguous_match" in diag.reasons for _, diag, _ in unmatched)
         diagnostics.update({
             "provider_events_received": len(unique_events),
             "provider_events_matched": len(matched_ids),
             "provider_events_discarded": len(unmatched),
             "odds_rows_persisted": len(rows),
         })
+        if ambiguous:
+            diagnostics["provider_events_ambiguous"] = ambiguous
     for ev, diag, affected_rows in unmatched:
         if debug:
             print(

@@ -7,7 +7,8 @@ from pathlib import Path
 
 from .build_snapshots import main as build_snapshots
 from .config import SNAPSHOTS_DIR
-from .nfl_season import plan_season, season_coverage, season_registry, write_json_atomic
+from .nfl_season import (execute_grouped_odds, plan_season, season_coverage,
+                         season_registry, write_json_atomic)
 
 
 def parse_args(argv=None):
@@ -50,9 +51,13 @@ def main(argv=None) -> int:
     elif plan["totals"]["paid_requests"] and not args.allow_paid_odds_fetch:
         print("Paid odds work blocked. Rerun with --allow-paid-odds-fetch after reviewing this exact plan.")
         prepare_status = prepare_status or 2
-    elif plan["totals"]["paid_requests"]:
-        prepare_status = build_snapshots(common + ["--providers", "odds-api,espn,local-json",
-                                                    "--allow-paid-odds-fetch", "--validate"])
+    elif plan["totals"]["naive_request_count"]:
+        diagnostics = execute_grouped_odds(args.data_dir, args.season, weeks,
+            hours_before=args.odds_hours_before_kickoff,
+            tolerance_minutes=args.grouping_tolerance_minutes)
+        print("Grouped odds reconciliation: " + json.dumps(diagnostics, sort_keys=True))
+        prepare_status = build_snapshots(common + ["--providers", "espn,local-json",
+                                                    "--validate"])
 
     registry = season_registry(args.data_dir, args.season, weeks)
     write_json_atomic(args.results_dir / f"nfl_{args.season}_season_games.json", registry)

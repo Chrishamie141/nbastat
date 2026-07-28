@@ -141,6 +141,23 @@ python -m backtesting.run_backtest --league nfl --season 2025 --start-week 1 --e
 ```
 # Offline NFL model comparison
 
+## Grouped NFL season odds
+
+Season planning is local/cache-only and grouped execution is range-limited, so
+Week 3 can be reviewed before authorizing any later paid ingestion:
+
+```bash
+python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --resume --plan
+python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --resume --validate --allow-paid-odds-fetch
+python -m backtesting.validate_snapshots --league nfl --season 2025 --start-week 3 --end-week 3
+```
+
+After inspecting the pilot, the remaining season can be planned (without paid
+requests) with `--start-week 3 --end-week 18 --resume --plan`. Grouped response
+cache keys cover provider, sport, season/week partition, historical date,
+regions, markets, and odds format; API keys are excluded. Existing games in an
+`odds.json` file are authoritative and are neither requested nor replaced.
+
 Run model versions over the same immutable snapshots and stored outcomes:
 
 ```bash
