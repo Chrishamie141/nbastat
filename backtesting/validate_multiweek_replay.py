@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .config import BacktestConfig, SNAPSHOTS_DIR
 from .outcomes import game_id, normalize_outcomes
-from .replay_engine import ReplayEngine
+from .replay_engine import ReplayEngine, probability_coherence_errors
 from .snapshots import SnapshotError, _parse_iso, validate_snapshot
 
 
@@ -36,6 +36,9 @@ def validate_multiweek_replay(league: str, season: str, start_week: int, end_wee
             identities.add(key)
         for row in finals:
             if game_id(row) not in game_ids: errors.append(f"unmatched_outcome: week={week} game={game_id(row)}")
+        final_ids = {game_id(row) for row in finals if row.get("final_home_score") is not None and row.get("final_away_score") is not None}
+        missing_finals = game_ids - final_ids
+        if missing_finals: errors.append(f"incomplete_outcome_coverage: week={week} missing={sorted(missing_finals)}")
         kickoff = {game_id(row): _parse_iso(row.get("kickoff_time")) for row in games}
         seen_odds = set()
         for row in odds:
@@ -55,6 +58,14 @@ def validate_multiweek_replay(league: str, season: str, start_week: int, end_wee
             errors.append(f"incomplete_grading: {replay['metrics']['ungraded_predictions']} predictions")
         if replay["metrics"]["total_predictions"] != replay["evaluation"]["totals"]["bets_accepted"]:
             errors.append("aggregation_mismatch: stored predictions != accepted bets")
+        candidate_rows = [{**row, "game_id": game.get("game_id")} for game in replay["evaluation"].get("games", []) for row in game.get("market_decisions", [])]
+        errors.extend(probability_coherence_errors(candidate_rows))
+        accepted = [row for row in candidate_rows if row.get("decision") == "accepted"]
+        conflicts = {}
+        for row in accepted:
+            conflicts.setdefault((row.get("game_id"), row.get("market"), row.get("model_version")), []).append(row)
+        for key, rows in conflicts.items():
+            if len(rows) > 1: errors.append(f"contradictory_market_selections: {key}")
     return {"ok": not errors, "errors": errors, "warnings": warnings, "counts": counts,
             "metrics": replay and replay["metrics"], "evaluation": replay and replay["evaluation"]}
 

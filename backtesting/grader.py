@@ -143,7 +143,10 @@ def index_outcomes(outcomes: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict
     """Index outcomes, deriving every team market directly from final scores."""
     indexed: dict[tuple[Any, ...], dict[str, Any]] = {}
     for outcome in outcomes:
-        game = outcome.get("game") or outcome.get("game_id") or outcome.get("id")
+        # ``game_id`` is the canonical identity assigned by normalize_outcomes.
+        # Real provider finals may retain a provider-specific ``game`` field;
+        # preferring it here silently bypasses reconciliation.
+        game = outcome.get("game_id") or outcome.get("game") or outcome.get("id")
         context = (str(outcome.get("league") or "").lower(), str(outcome.get("season") or ""), int(outcome.get("week") or 0))
         market_results = outcome.get("market_results") if isinstance(outcome.get("market_results"), dict) else {}
         for market, result in market_results.items():
