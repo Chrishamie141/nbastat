@@ -69,12 +69,26 @@ class JsonRawCache:
         digest = hashlib.sha256(json.dumps(identity, sort_keys=True, default=str).encode()).hexdigest()[:16]
         return self.root/provider/league.lower()/str(season)/f"week_{int(week):02d}"/f"{endpoint}-{digest}.json"
 
-    def get_or_fetch(self, provider: str, league: str, season: str|int, week: int, endpoint: str, params: dict[str, Any], fetcher):
+    def get_or_fetch(self, provider: str, league: str, season: str|int, week: int,
+                     endpoint: str, params: dict[str, Any], fetcher, *,
+                     overwrite: bool = False, replacement_reason: str | None = None):
         params = {k: v for k, v in params.items() if k.lower() not in {"apikey", "api_key"}}
         path = self.path(provider, league, season, week, endpoint, params)
-        if path.exists() and not self.overwrite:
+        replace = overwrite or self.overwrite
+        if path.exists() and not replace:
             self.hits += 1
             return json.loads(path.read_text())
+        invalidated = None
+        if path.exists() and replace:
+            # Preserve the exact response that caused validation to fail.  The
+            # quarantine name is deterministic for this replacement attempt and
+            # contains no request credentials.
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            invalidated = path.with_name(f"{path.stem}.invalid-{stamp}{path.suffix}")
+            path.rename(invalidated)
+            old_meta = path.with_suffix(".metadata.json")
+            if old_meta.exists():
+                old_meta.rename(invalidated.with_suffix(".metadata.json"))
         self.misses += 1
         data = fetcher(); path.parent.mkdir(parents=True, exist_ok=True)
         payload = (json.dumps(data, indent=2, sort_keys=True)+"\n").encode()
@@ -86,7 +100,11 @@ class JsonRawCache:
             "request_identity": self.identity(provider, league, season, week, endpoint, params),
             "markets": str(params.get("markets", "")).split(",") if params.get("markets") else [],
             "event_count": len(events) if isinstance(events, list) else 0,
-            "response_sha256": hashlib.sha256(payload).hexdigest(), "api_usage_headers": {}}
+            "response_sha256": hashlib.sha256(payload).hexdigest(), "api_usage_headers": {},
+            "previous_cache_invalidated": bool(invalidated),
+            "replacement_fetched": bool(invalidated),
+            "replacement_reason": replacement_reason,
+            "quarantined_cache_path": str(invalidated) if invalidated else None}
         path.with_suffix(".metadata.json").write_text(json.dumps(meta, indent=2, sort_keys=True)+"\n")
         return data
 
@@ -260,7 +278,8 @@ def _num(v):
 class TheOddsApiNflProvider:
     name="odds-api"; supported_datasets={"odds"}
     def __init__(self, api_key=None, cache:JsonRawCache|None=None): self.api_key=api_key or os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY"); self.cache=cache or JsonRawCache()
-    def fetch_odds(self, season, week, games, snapshot_time=None):
+    def fetch_odds(self, season, week, games, snapshot_time=None, *,
+                   overwrite_cache=False, replacement_reason=None):
         endpoint="historical/sports" if snapshot_time else "sports"
         # The Odds API /odds endpoint supports game markets. NFL player props are event-level
         # markets and cause 422 INVALID_MARKET responses when mixed into this request.
@@ -272,7 +291,9 @@ class TheOddsApiNflProvider:
                 raise ProviderUnavailable("THE_ODDS_API_KEY is not set")
             return _fetch_json(url)
         cache_hits_before = self.cache.hits
-        try: data=self.cache.get_or_fetch(self.name,"nfl",season,week,"odds",{k:v for k,v in params.items() if k!='apiKey'},fetch)
+        try: data=self.cache.get_or_fetch(self.name,"nfl",season,week,"odds",{k:v for k,v in params.items() if k!='apiKey'},fetch,
+                                          overwrite=overwrite_cache,
+                                          replacement_reason=replacement_reason)
         except HTTPError as e:
             detail = _read_http_error(e)
             safe_url = _redact_url(url)
@@ -284,6 +305,7 @@ class TheOddsApiNflProvider:
         events=data.get("data",[]) if isinstance(data,dict) else data
         response_timestamp = data.get("timestamp") if isinstance(data, dict) else snapshot_time
         self.last_diagnostics = {"raw_cache_hit": self.cache.hits > cache_hits_before,
+                                 "cache_replaced": bool(overwrite_cache),
                                  "requested_date": snapshot_time,
                                  "response_timestamp": response_timestamp}
         rows = normalize_odds_events(

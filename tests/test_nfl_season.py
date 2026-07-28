@@ -163,3 +163,70 @@ def test_raw_invalid_cache_does_not_satisfy_or_hide_paid_work(tmp_path):
     assert plan["totals"]["games_with_usable_cached_odds"] == 0
     assert plan["totals"]["paid_requests"] == 1
     assert plan["weeks"][0]["odds_status"] == "missing"
+
+
+def test_malformed_cache_is_explicit_and_plans_replacement(tmp_path):
+    root = tmp_path / "snapshots"; folder = root / "nfl/2025/week_03"; folder.mkdir(parents=True)
+    games = [game("a", "2025-09-21T17:00:00Z", 3)]
+    (folder / "games.json").write_text(json.dumps(games)); (folder / "odds.json").write_text("[]")
+    from nfl_providers import JsonRawCache
+    from backtesting.nfl_season import _request_params
+    target = group_compatible_odds_requests(games, tolerance_minutes=5)[0]["timestamp"]
+    path = JsonRawCache(root.parent / "raw_cache").path("odds-api", "nfl", 2025, 3, "odds", _request_params(target))
+    path.parent.mkdir(parents=True); path.write_text("{not json")
+    plan = plan_season(root, 2025, [3])
+    assert plan["requests"][0]["cache_state"] == "malformed"
+    assert plan["totals"]["total_paid_request_budget"] == 1
+
+
+def test_cache_overwrite_quarantines_invalid_response_and_fetches(tmp_path):
+    from nfl_providers import JsonRawCache
+    cache = JsonRawCache(tmp_path)
+    args = ("odds-api", "nfl", 2025, 3, "odds", {"date": "target"})
+    path = cache.path(*args); path.parent.mkdir(parents=True); path.write_text("{bad")
+    calls = []
+    value = cache.get_or_fetch(*args, lambda: calls.append(1) or {"data": []},
+                               overwrite=True, replacement_reason="malformed_json")
+    assert value == {"data": []} and calls == [1]
+    assert list(path.parent.glob("*.invalid-*.json"))
+    meta = json.loads(path.with_suffix(".metadata.json").read_text())
+    assert meta["previous_cache_invalidated"] and meta["replacement_fetched"]
+    assert meta["replacement_reason"] == "malformed_json"
+
+
+def test_partial_group_accounts_for_two_individual_fallbacks(tmp_path):
+    root = tmp_path / "snapshots"; folder = root / "nfl/2025/week_03"; folder.mkdir(parents=True)
+    games = [game("a", "2025-09-21T17:00:00Z", 3),
+             {**game("b", "2025-09-21T17:00:00Z", 3), "home_team": "B", "away_team": "BB"},
+             {**game("c", "2025-09-21T17:00:00Z", 3), "home_team": "C", "away_team": "CC"}]
+    (folder / "games.json").write_text(json.dumps(games)); (folder / "odds.json").write_text("[]")
+    write_group_cache(root, games, cached_payload("2025-09-20T16:58:00Z"))
+    plan = plan_season(root, 2025, [3])
+    assert plan["requests"][0]["validated_games"] == ["a"]
+    assert plan["requests"][0]["invalid_games"] == ["b", "c"]
+    assert plan["totals"]["grouped_paid_requests"] == 0
+    assert plan["totals"]["individual_fallback_paid_requests"] == 2
+    assert plan["totals"]["paid_requests"] == 2
+
+
+def test_paid_budget_guard_stops_before_unreviewed_fallback(tmp_path):
+    from backtesting.nfl_season import PaidRequestBudgetExceeded
+    root = tmp_path / "snapshots"; folder = root / "nfl/2025/week_03"; folder.mkdir(parents=True)
+    games = [game("a", "2025-09-21T17:00:00Z", 3), game("b", "2025-09-21T17:00:00Z", 3)]
+    (folder / "games.json").write_text(json.dumps(games)); (folder / "odds.json").write_text("[]")
+    provider = FixtureOddsProvider(partial=True)
+    import pytest
+    with pytest.raises(PaidRequestBudgetExceeded) as error:
+        execute_grouped_odds(root, 2025, [3], provider=provider, paid_request_budget=1)
+    assert error.value.additional_paid_requests_required == 1
+    assert len(provider.calls) == 1
+
+
+def test_audit_mode_skips_preparation_and_does_not_mutate(tmp_path, monkeypatch):
+    import backtesting.build_nfl_season as command
+    root = tmp_path / "snapshots"; root.mkdir()
+    before = list(tmp_path.rglob("*"))
+    monkeypatch.setattr(command, "build_snapshots", lambda *_: (_ for _ in ()).throw(AssertionError("provider path")))
+    assert command.main(["--season", "2025", "--start-week", "3", "--end-week", "3",
+                         "--data-dir", str(root), "--audit-odds-cache"]) == 0
+    assert list(tmp_path.rglob("*")) == before
