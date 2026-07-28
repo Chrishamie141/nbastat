@@ -38,3 +38,41 @@ Regression tests cover a valid historical Odds API payload, `h2h`/`spreads`/`tot
 No additional Odds API call was necessary. Existing fixtures and unit tests cover the normalization pipeline.
 
 Ready for final live verification.
+
+## Historical snapshot timestamp semantics
+
+The historical `/odds` envelope `timestamp` is `snapshot_timestamp`: the
+point-in-time provider snapshot selected for the requested `date`. The service
+may select the closest snapshot at or before that date, so equality with the
+requested timestamp is not assumed. The default five-minute tolerance models
+that provider snapshot resolution, and is one-sided: a snapshot after the
+prediction target is never accepted.
+
+A market's `last_update` is retained as `market_last_update`. It describes when
+the bookmaker market last changed; it is not snapshot retrieval time. For
+normalized historical rows, `captured_at` and `data_as_of` are the envelope
+`snapshot_timestamp`, meaning the instant at which the complete quote can be
+proved knowable. Validation still requires `market_last_update <=
+snapshot_timestamp`; a future market update is evidence of leakage and is
+rejected.
+
+Cache files are raw evidence, not coverage. Planning normalizes and reconciles
+each cached payload, then separately reports game-level `raw_cache_hits`,
+`validated_cache_hits`, and `invalid_cache_hits`. Only a validated hit can make
+odds coverage complete or remove a replacement request from the paid-work plan.
+A grouped response at timestamp T deliberately retains its timestamp/parameter
+cache identity and can satisfy every canonical game reconciled from that same
+snapshot.
+
+Use the cache-only timestamp audit (it never calls The Odds API):
+
+```bash
+python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --no-prepare --audit-odds-cache
+```
+
+After reviewing that audit, re-normalize a valid existing Week 3 cache without
+paid access:
+
+```bash
+python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --no-prepare --resume --validate
+```

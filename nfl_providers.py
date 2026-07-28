@@ -271,6 +271,7 @@ class TheOddsApiNflProvider:
             if not self.api_key:
                 raise ProviderUnavailable("THE_ODDS_API_KEY is not set")
             return _fetch_json(url)
+        cache_hits_before = self.cache.hits
         try: data=self.cache.get_or_fetch(self.name,"nfl",season,week,"odds",{k:v for k,v in params.items() if k!='apiKey'},fetch)
         except HTTPError as e:
             detail = _read_http_error(e)
@@ -282,13 +283,20 @@ class TheOddsApiNflProvider:
             raise OddsApiRequestError(f"The Odds API odds request failed ({e.code}: {detail}). url={safe_url}") from e
         events=data.get("data",[]) if isinstance(data,dict) else data
         response_timestamp = data.get("timestamp") if isinstance(data, dict) else snapshot_time
-        self.last_diagnostics = {}
+        self.last_diagnostics = {"raw_cache_hit": self.cache.hits > cache_hits_before,
+                                 "requested_date": snapshot_time,
+                                 "response_timestamp": response_timestamp}
         rows = normalize_odds_events(
             events, games, diagnostics=self.last_diagnostics,
             debug=os.getenv("BACKTESTING_ODDS_DEBUG", "").lower() in {"1", "true", "yes"},
         )
         for row in rows:
             row["snapshot_timestamp"] = response_timestamp or snapshot_time
+            # A historical quote was knowable at the returned snapshot.  A
+            # bookmaker's last update is provenance about the market, not the
+            # time at which we obtained the historical snapshot.
+            row["captured_at"] = response_timestamp or snapshot_time
+            row["data_as_of"] = response_timestamp or snapshot_time
         return rows
 
 def _event_row_count(event: dict[str, Any]) -> int:
@@ -326,7 +334,7 @@ def normalize_odds_events(events, games, *, diagnostics=None, debug=False):
         for book in ev.get("bookmakers",[]) or []:
             for market in book.get("markets",[]) or []:
                 for o in market.get("outcomes",[]) or []:
-                    rows.append({"game_id":gid,"event_id":ev.get("id") or ev.get("event_id"),"provider_event_matched":True,"commence_time":ev.get("commence_time"),"home_team":ev.get("home_team"),"away_team":ev.get("away_team"),"league":ev.get("league") or ev.get("sport_key") or "nfl","market":normalize_market(market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":(0 if normalize_market(market.get("key")) == "h2h" and o.get("point") is None else o.get("point")),"odds":int(o.get("price")) if o.get("price") is not None else None,"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api","source":"the-odds-api-historical","data_as_of":market.get("last_update") or captured,"is_pregame":True})
+                    rows.append({"game_id":gid,"event_id":ev.get("id") or ev.get("event_id"),"provider_event_matched":True,"commence_time":ev.get("commence_time"),"home_team":ev.get("home_team"),"away_team":ev.get("away_team"),"league":ev.get("league") or ev.get("sport_key") or "nfl","market":normalize_market(market.get("key")),"selection":o.get("description") or o.get("name"),"player":o.get("description"),"line":(0 if normalize_market(market.get("key")) == "h2h" and o.get("point") is None else o.get("point")),"odds":int(o.get("price")) if o.get("price") is not None else None,"sportsbook":book.get("title") or book.get("key"),"bookmaker":book.get("key"),"market_last_update":market.get("last_update"),"captured_at":market.get("last_update") or captured,"provider":"the-odds-api","source":"the-odds-api-historical","data_as_of":market.get("last_update") or captured,"is_pregame":True})
     if diagnostics is not None:
         ambiguous = sum("ambiguous_match" in diag.reasons for _, diag, _ in unmatched)
         diagnostics.update({
