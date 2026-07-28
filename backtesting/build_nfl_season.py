@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .build_snapshots import main as build_snapshots
 from .config import SNAPSHOTS_DIR
-from .nfl_season import (execute_grouped_odds, plan_season, season_coverage,
+from .nfl_season import (audit_cached_odds, execute_grouped_odds, plan_season, season_coverage,
                          season_registry, write_json_atomic)
 
 
@@ -24,7 +24,10 @@ def parse_args(argv=None):
     parser.add_argument("--prepare", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--allow-paid-odds-fetch", action="store_true")
     parser.add_argument("--odds-hours-before-kickoff", type=int, default=24)
-    parser.add_argument("--grouping-tolerance-minutes", type=int, default=0)
+    parser.add_argument("--grouping-tolerance-minutes", type=int, default=5,
+                        help="Maximum safe age of the provider snapshot before the target (default: 5)")
+    parser.add_argument("--audit-odds-cache", action="store_true",
+                        help="Print requested/snapshot/market timestamp deltas without network access")
     return parser.parse_args(argv)
 
 
@@ -43,6 +46,12 @@ def main(argv=None) -> int:
         prepare_status = build_snapshots(common + ["--providers", "espn,local-json"] + (["--validate"] if args.validate else []))
 
     weeks = range(args.start_week, args.end_week + 1)
+    if args.audit_odds_cache:
+        print(json.dumps(audit_cached_odds(args.data_dir, args.season, weeks,
+            hours_before=args.odds_hours_before_kickoff,
+            tolerance_minutes=args.grouping_tolerance_minutes), indent=2, sort_keys=True))
+        print("CACHE AUDIT: no Odds API requests were made.")
+        return prepare_status
     plan = plan_season(args.data_dir, args.season, weeks, hours_before=args.odds_hours_before_kickoff,
                        tolerance_minutes=args.grouping_tolerance_minutes)
     print(json.dumps(plan, indent=2, sort_keys=True))
@@ -56,6 +65,7 @@ def main(argv=None) -> int:
             hours_before=args.odds_hours_before_kickoff,
             tolerance_minutes=args.grouping_tolerance_minutes)
         print("Grouped odds reconciliation: " + json.dumps(diagnostics, sort_keys=True))
+        print(f"paid requests made = {diagnostics['grouped_paid_requests'] + diagnostics['fallback_paid_requests']}")
         prepare_status = build_snapshots(common + ["--providers", "espn,local-json",
                                                     "--validate"])
 
