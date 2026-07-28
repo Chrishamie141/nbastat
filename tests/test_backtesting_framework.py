@@ -6,7 +6,8 @@ import shutil
 import pytest
 
 from backtesting.config import BacktestConfig, PredictionMode
-from backtesting.grader import PredictionGrader
+from backtesting.grader import PredictionGrader, index_outcomes, lookup_outcome
+from backtesting.outcomes import normalize_outcomes
 from backtesting.historical_provider import HistoricalSnapshotProvider
 from backtesting.replay_engine import ReplayEngine
 
@@ -416,3 +417,61 @@ def test_team_markets_reject_missing_or_future_history(tmp_path):
     evaluation=ReplayEngine(config,provider=Provider()).run()["evaluation"]
     assert evaluation["candidates_evaluated"] == 0
     assert evaluation["no_bet_reasons"] == {"insufficient_pregame_history": 1}
+
+
+class MultiWeekProvider(StubProvider):
+    """Two meetings with reversed venues and provider-specific outcome IDs."""
+    def get_games(self, league, season, week):
+        home, away = (("BUF", "MIA") if week == 1 else ("MIA", "BUF"))
+        return [{"game_id": f"canonical-{week}", "event_id": f"finals-{week}", "league": league,
+                 "season": season, "week": week, "home_team": home, "away_team": away,
+                 "kickoff_time": f"2025-09-{week * 7:02d}T17:00:00Z"}]
+    def get_odds(self, league, season, week):
+        return [{"game_id": f"canonical-{week}", "market": "h2h", "selection": "home", "odds": 100,
+                 "sportsbook": "fixture", "captured_at": f"2025-09-{week * 7:02d}T12:00:00Z"}]
+    def get_outcomes(self, league, season, week):
+        # The final feed carries event_id as game_id; reconciliation must occur once, centrally.
+        return [{"game_id": f"finals-{week}", "final_home_score": 24, "final_away_score": 20,
+                 "completed_at": f"2025-09-{week * 7:02d}T21:00:00Z"}]
+
+
+def _home_factory(provider, config, week):
+    return [{"game": f"canonical-{week}", "market": "h2h", "selection": "home", "prediction": "home",
+             "confidence": 70, "generated_timestamp": f"2025-09-{week * 7:02d}T12:30:00Z",
+             "prediction_model_version": config.model_version, "model_probability": .6, "edge": .1,
+             "sportsbook_odds": 100}]
+
+
+def test_multiweek_outcomes_use_canonical_week_identity_and_reversed_home_away(tmp_path):
+    provider = MultiWeekProvider()
+    games = provider.get_games("nfl", "2025", 2)
+    normalized = normalize_outcomes(provider.get_outcomes("nfl", "2025", 2), games, "nfl", "2025", 2)
+    assert normalized[0]["game_id"] == "canonical-2"
+    assert normalized[0]["home_team"] == "MIA" and normalized[0]["away_team"] == "BUF"
+    combined = normalize_outcomes(provider.get_outcomes("nfl", "2025", 1), provider.get_games("nfl", "2025", 1), "nfl", "2025", 1) + normalized
+    index = index_outcomes(combined)
+    assert lookup_outcome(index, {"game": "canonical-2", "market": "h2h"}, "nfl", "2025", 2)["week"] == 2
+    assert lookup_outcome(index, {"game": "canonical-2", "market": "h2h"}, "nfl", "2025", 1) is None
+
+
+def test_multiweek_grading_aggregation_and_sequential_equivalence(tmp_path):
+    provider = MultiWeekProvider()
+    def run(start, end, name):
+        config = BacktestConfig(league="nfl", season="2025", start_week=start, end_week=end,
+            export=False, db_path=tmp_path/name, data_dir=tmp_path, model_version="v1")
+        engine = ReplayEngine(config, provider=provider, prediction_factory=_home_factory)
+        summary = engine.run(); rows = engine.store.load_predictions(summary["run_id"])
+        return summary, [{key: row[key] for key in ("week", "game", "market", "selection", "model_probability", "edge", "grade")} for row in rows]
+    week1, rows1 = run(1, 1, "w1.db"); week2, rows2 = run(2, 2, "w2.db"); season, season_rows = run(1, 2, "season.db")
+    assert season_rows == rows1 + rows2
+    assert season["metrics"]["graded_predictions"] == week1["metrics"]["graded_predictions"] + week2["metrics"]["graded_predictions"] == 2
+    assert season["metrics"]["wins"] == 2 and season["metrics"]["ungraded_predictions"] == 0
+
+
+def test_prediction_store_deduplicates_canonical_prediction_identity(tmp_path, monkeypatch):
+    monkeypatch.setattr("backtesting.versioning.git_commit_hash", lambda: "unknown")
+    config = BacktestConfig(league="nfl", season="2025", start_week=1, end_week=1, export=False,
+        db_path=tmp_path/"dedup.db", data_dir=tmp_path, model_version="v1")
+    engine = ReplayEngine(config, provider=MultiWeekProvider(), prediction_factory=lambda p, c, w: _home_factory(p, c, w) * 2)
+    summary = engine.run()
+    assert summary["metrics"]["total_predictions"] == 1
