@@ -179,3 +179,35 @@ betting performance retains pushes at zero profit. Reported model edge uses
 the consensus/no-vig probability; payouts and ROI always use the separately
 stored executable sportsbook price. Small samples are explicitly labelled
 exploratory and must not be used to tune model formulas or thresholds.
+
+## NFL betting engine
+
+`backtesting.nfl_bet_engine` is the model-independent portfolio layer. It
+normalizes frozen candidates and builds singles, winner, same-game, and slate
+tickets. Same-game tickets report joint probability and EV as unavailable
+until a correlation-aware estimator exists; marginal probabilities are never
+blindly multiplied.
+
+These fixed starting policies were not fitted to Weeks 1–6:
+
+| Policy | probability | edge | EV | confidence | value | legs | game/team exposure | underdogs |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| SAFE | .58 | .015 | .01 | .62 | .40 | 2–3 | 1 / 1 | no |
+| BALANCED | .52 | .02 | .015 | .54 | .48 | 2–4 | 1 / 1 | yes |
+| AGGRESSIVE | .40 | .025 | .02 | .44 | .56 | 3–6 | 1 / 2 | yes |
+
+Confidence weights model probability (70%), market quality (10%), data
+completeness (10%), and calibration evidence (10%, neutral if absent). Value
+separately weights normalized edge (55%), EV (35%), and model agreement (10%,
+neutral if absent). Raw probability, edge, and EV remain authoritative.
+
+```bash
+python -m backtesting.evaluate_nfl_bet_engine \
+  --season 2025 --start-week 1 --end-week 6 \
+  --models nfl_game_baseline_v1,nfl_game_baseline_v2 \
+  --ticket-types singles,winner,sgp,slate \
+  --risk-profiles safe,balanced,aggressive --stake 10 \
+  --output backtesting/results/nfl_2025_weeks1_6_bet_engine.json \
+  --tickets backtesting/results/nfl_2025_weeks1_6_tickets.csv \
+  --markdown backtesting/results/nfl_2025_weeks1_6_bet_engine.md
+```
