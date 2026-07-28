@@ -225,6 +225,13 @@ def test_outcome_reconciliation_deduplicates_to_latest_complete_final():
     assert outcomes[0]["final_home_score"] == 24
 
 
+def test_final_status_with_scores_repairs_stale_completed_false():
+    games = [{"game_id":"espn-1","home_team":"BUF","away_team":"MIA"}]
+    row = normalize_outcomes([{"game_id":"espn-1","status":"STATUS_FINAL","completed":False,
+                               "final_home_score":24,"final_away_score":0}], games, "nfl", "2025", 2)[0]
+    assert row["completed"] is True
+
+
 @pytest.mark.parametrize("selection,line,score,grade", [
     ("PHI", -2.5, (24, 20), "win"), ("PHI", -4, (24, 20), "push"),
     ("PHI", -4.5, (24, 20), "loss"), ("DAL", 3.5, (24, 20), "loss"),

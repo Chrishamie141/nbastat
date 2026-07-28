@@ -124,7 +124,46 @@ class EspnNflProvider:
         home=next((c for c in competitors if c.get("homeAway")=="home"),{}); away=next((c for c in competitors if c.get("homeAway")=="away"),{})
         status=(e.get("status") or {}).get("type") or {}
         return {"game_id":f"espn-{e.get('id')}","espn_event_id":e.get("id"),"league":"nfl","season":str(season),"week":int(week),"kickoff_time":_iso(e.get("date")),"home_team":normalize_team((home.get("team") or {}).get("abbreviation") or (home.get("team") or {}).get("displayName")),"away_team":normalize_team((away.get("team") or {}).get("abbreviation") or (away.get("team") or {}).get("displayName")),"venue":(comps.get("venue") or {}).get("fullName"),"status":status.get("name") or status.get("state"),"final_home_score": int(home.get("score",0) or 0),"final_away_score": int(away.get("score",0) or 0),"source":"espn","captured_at":_iso(e.get("date")),"data_as_of":_iso(e.get("date")),"is_pregame":True}
-    def fetch_outcomes(self, season, week, games): return [{"game_id":g["game_id"],"source":"espn","captured_at":g.get("kickoff_time"),"data_as_of":g.get("kickoff_time"),"is_pregame":False,"season":str(season),"week":int(week),"final_home_score":g.get("final_home_score"),"final_away_score":g.get("final_away_score"),"player_results":{},"market_results":{"moneyline":"home" if (g.get("final_home_score") or 0)>(g.get("final_away_score") or 0) else "away"},"completed_at":g.get("kickoff_time")} for g in games if str(g.get("status","")).lower() in {"status_final","final","post"}]
+    def fetch_outcomes(self, season, week, games):
+        """Extract finals from the scoreboard, not the lossy schedule rows.
+
+        Persisted ``games.json`` deliberately has a schedule schema and older
+        snapshots therefore do not carry scores.  The ESPN scoreboard is the
+        outcome source of truth; competitor roles, rather than array order,
+        orient its scores.
+        """
+        canonical = {}
+        for game in games:
+            event_id = str(game.get("espn_event_id") or str(game.get("game_id", "")).removeprefix("espn-"))
+            canonical[event_id] = game
+        rows=[]
+        for event in self._scoreboard(season, week).get("events", []):
+            status = ((event.get("status") or {}).get("type") or {})
+            is_final = bool(status.get("completed")) or str(status.get("name") or status.get("state") or "").lower() in {"status_final", "final", "post"}
+            if not is_final:
+                continue
+            competitors = (((event.get("competitions") or [{}])[0]).get("competitors") or [])
+            by_role = {c.get("homeAway"): c for c in competitors if c.get("homeAway") in {"home", "away"}}
+            try:
+                home_score, away_score = int(by_role["home"]["score"]), int(by_role["away"]["score"])
+            except (KeyError, TypeError, ValueError):
+                # A final without two parseable role-oriented scores is not a
+                # gradeable outcome and must not be fabricated.
+                continue
+            event_id = str(event.get("id"))
+            game = canonical.get(event_id, {})
+            home = normalize_team((by_role["home"].get("team") or {}).get("abbreviation") or (by_role["home"].get("team") or {}).get("displayName"))
+            away = normalize_team((by_role["away"].get("team") or {}).get("abbreviation") or (by_role["away"].get("team") or {}).get("displayName"))
+            completed_at = _iso(event.get("date"))
+            winner = "home" if home_score > away_score else "away" if away_score > home_score else "tie"
+            rows.append({"league":"nfl","season":str(season),"week":int(week),
+                "game_id":game.get("game_id") or f"espn-{event_id}", "provider_event_id":event_id,
+                "home_team":game.get("home_team") or home,"away_team":game.get("away_team") or away,
+                "final_home_score":home_score,"final_away_score":away_score,"completed":True,
+                "status":status.get("name") or status.get("state"),"completed_at":completed_at,
+                "captured_at":completed_at,"data_as_of":completed_at,"is_pregame":False,
+                "source":"espn-scoreboard","player_results":{},"market_results":{"moneyline":winner}})
+        return rows
     def fetch_player_stats(self, season, week, games):
         rows=[]
         for g in games:

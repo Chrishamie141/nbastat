@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import numbers
 from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -85,6 +86,16 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
             for extra in ("event_id", "snapshot_timestamp", "provider_event_matched", "commence_time"):
                 if extra in record:
                     row[extra] = record[extra]
+        if name == "outcomes":
+            # Preserve the canonical completed-outcome contract and provider
+            # audit identifiers in addition to the legacy schema fields.
+            for extra in ("league", "week", "home_team", "away_team", "completed",
+                          "provider_event_id", "source_event_id", "raw_event_id",
+                          "source_game_id", "status", "audit_metadata"):
+                if extra in record:
+                    row[extra] = record[extra]
+            row.setdefault("league", league.lower())
+            row.setdefault("completed", row.get("final_home_score") is not None and row.get("final_away_score") is not None)
         if name in {"player_stats", "team_stats"}:
             row.setdefault("season", str(season))
             row.setdefault("through_week", int(week) - 1)
@@ -242,6 +253,19 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
                 report.add_error(f"unmatched_outcome: week={week} game={outcome.get('source_game_id') or outcome.get('game_id')}")
             if outcome.get("completed_at") and not _parse_iso(outcome.get("completed_at")):
                 report.add_error(f"invalid_completed_at: outcome for {outcome.get('game_id')}")
+            home, away = outcome.get("final_home_score"), outcome.get("final_away_score")
+            if not isinstance(home, numbers.Real) or isinstance(home, bool) or not isinstance(away, numbers.Real) or isinstance(away, bool):
+                report.add_error(f"incomplete_outcome_coverage: outcome scores must be numeric for {outcome.get('game_id')}")
+                continue
+            if outcome.get("completed") is not True:
+                report.add_error(f"incomplete_outcome_coverage: completed must be true for {outcome.get('game_id')}")
+            stored = (outcome.get("market_results") or {}).get("moneyline")
+            expected = "home" if home > away else "away" if away > home else "tie"
+            home_team = str(outcome.get("home_team") or "").upper()
+            away_team = str(outcome.get("away_team") or "").upper()
+            aliases = {"home": {"home", home_team}, "away": {"away", away_team}, "tie": {"tie", "draw"}}
+            if stored is not None and str(stored).upper() not in {v.upper() for v in aliases[expected]}:
+                report.add_error(f"outcome_integrity_error: moneyline={stored} disagrees with scores for {outcome.get('game_id')}")
         for row in loaded.get("team_stats", []):
             role = row.get("record_role")
             # Legacy provider aggregates remain readable. New completed-game

@@ -6,10 +6,33 @@ from nfl_providers import EspnNflProvider, TheOddsApiNflProvider, NflOfficialPro
 EVENT={"id":"401","date":"2025-09-07T17:00:00Z","status":{"type":{"name":"STATUS_FINAL"}},"competitions":[{"venue":{"fullName":"Stadium"},"competitors":[{"homeAway":"home","score":"24","team":{"abbreviation":"BUF","displayName":"Buffalo Bills"}},{"homeAway":"away","score":"17","team":{"abbreviation":"MIA","displayName":"Miami Dolphins"}}]}]}
 BOX={"boxscore":{"players":[{"team":{"abbreviation":"BUF"},"statistics":[{"name":"passing","labels":["C/ATT","YDS","TD","INT","SACKS"],"athletes":[{"athlete":{"displayName":"Test Quarterback"},"stats":["20/30","270","2","1","3"]}]},{"name":"receiving","labels":["REC","YDS","TD","TGTS"],"athletes":[{"athlete":{"displayName":"Wide Out"},"stats":["7","90","1","9"]}]}]}],"teams":[{"team":{"abbreviation":"BUF"},"statistics":[{"name":"total yards","displayValue":"400"},{"name":"passing yards","displayValue":"270"},{"name":"rushing yards","displayValue":"130"},{"name":"turnovers","displayValue":"1"},{"name":"first downs","displayValue":"22"},{"name":"total plays","displayValue":"64"},{"name":"possession time","displayValue":"31:00"}]}]}}
 
-def test_espn_schedule_and_final_score_normalization():
+def test_espn_schedule_and_final_score_normalization(monkeypatch):
     p=EspnNflProvider(); g=p.normalize_game(EVENT,"2025",1)
     assert g["game_id"]=="espn-401" and g["home_team"]=="BUF" and g["final_home_score"]==24
+    monkeypatch.setattr(p, "_scoreboard", lambda season, week: {"events":[EVENT]})
     assert p.fetch_outcomes("2025",1,[g])[0]["market_results"]["moneyline"]=="home"
+
+def test_espn_outcomes_extract_role_oriented_scores_and_preserve_zero(monkeypatch):
+    event = {"id":"401","date":"2025-09-07T17:00:00Z",
+        "status":{"type":{"name":"STATUS_FINAL","completed":True}},
+        "competitions":[{"competitors":[
+            {"homeAway":"away","score":"0","winner":False,"team":{"abbreviation":"MIA"}},
+            {"homeAway":"home","score":"24","winner":True,"team":{"abbreviation":"BUF"}},
+        ]}]}
+    provider = EspnNflProvider()
+    monkeypatch.setattr(provider, "_scoreboard", lambda season, week: {"events":[event]})
+    row = provider.fetch_outcomes("2025", 2, [{"game_id":"espn-401","home_team":"BUF","away_team":"MIA"}])[0]
+    assert (row["final_home_score"], row["final_away_score"]) == (24, 0)
+    assert row["completed"] is True
+    assert row["provider_event_id"] == "401"
+
+def test_espn_outcomes_ignore_unfinished_games(monkeypatch):
+    event = {"id":"402","date":"2025-09-07T17:00:00Z",
+        "status":{"type":{"name":"STATUS_IN_PROGRESS","completed":False}},
+        "competitions":[{"competitors":[]}]}
+    provider = EspnNflProvider()
+    monkeypatch.setattr(provider, "_scoreboard", lambda season, week: {"events":[event]})
+    assert provider.fetch_outcomes("2025", 2, []) == []
 
 def test_espn_player_and_team_box_score_normalization():
     players=normalize_espn_player_boxscore(BOX,"2025",0); teams=normalize_espn_team_boxscore(BOX,"2025",0)

@@ -126,7 +126,9 @@ def normalize_outcomes(
             "match_method": method or "unmatched",
             "match_success": game is not None,
         })
-        row["completed"] = bool(raw.get("completed", row["final_home_score"] is not None and row["final_away_score"] is not None))
+        has_scores = row["final_home_score"] is not None and row["final_away_score"] is not None
+        final_status = str(raw.get("status") or "").lower() in {"status_final", "final", "post"}
+        row["completed"] = bool(has_scores and (raw.get("completed") is True or final_status or "completed" not in raw))
         if source_game_id:
             row["source_game_id"] = source_game_id
         for field in ("provider_event_id", "source_event_id", "raw_event_id"):
