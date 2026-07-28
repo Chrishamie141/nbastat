@@ -8,7 +8,7 @@ ticket probability, and settlement concerns.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from enum import Enum
 from hashlib import sha256
 import math
@@ -47,13 +47,18 @@ class BetPolicy:
     maximum_team_exposure: int
     allow_underdogs: bool
     require_diversification: bool
+    # Soft, auditable construction objectives (decimal return, including stake).
+    preferred_min_decimal_odds: float | None = None
+    preferred_max_decimal_odds: float | None = None
+    maximum_probability_cost: float = .55
+    minimum_incremental_value: float = .015
 
 
 # Conservative starting rules chosen a priori, not fitted to historical weeks.
 DEFAULT_POLICIES = {
-    RiskProfile.SAFE: BetPolicy(RiskProfile.SAFE, .58, .015, .01, .62, .40, 2, 3, 1, 1, False, True),
-    RiskProfile.BALANCED: BetPolicy(RiskProfile.BALANCED, .52, .02, .015, .54, .48, 2, 4, 1, 1, True, True),
-    RiskProfile.AGGRESSIVE: BetPolicy(RiskProfile.AGGRESSIVE, .40, .025, .02, .44, .56, 3, 6, 1, 2, True, True),
+    RiskProfile.SAFE: BetPolicy(RiskProfile.SAFE, .58, .015, .01, .62, .40, 2, 3, 1, 1, False, True, 2.5, 6., .48, .025),
+    RiskProfile.BALANCED: BetPolicy(RiskProfile.BALANCED, .52, .02, .015, .54, .48, 2, 4, 1, 1, True, True, 5., 16., .58, .015),
+    RiskProfile.AGGRESSIVE: BetPolicy(RiskProfile.AGGRESSIVE, .40, .025, .02, .44, .56, 2, 6, 1, 2, True, True, 10., None, .68, .01),
 }
 
 
@@ -82,6 +87,9 @@ class BetCandidate:
     calibration_score: float | None = None; model_agreement: float | None = None
     market_quality: float = 1.; data_completeness: float = 1.
     reasons: tuple[str, ...] = ()
+    anchor_score: float | None = None; anchor_rank: int | None = None
+    anchor_reasons: tuple[str, ...] = ()
+    projected_home_score: float | None = None; projected_away_score: float | None = None
 
     @property
     def candidate_id(self) -> str:
@@ -131,7 +139,36 @@ def normalize_candidate(row: dict[str, Any]) -> BetCandidate:
         calibration_score=float(calibration) if calibration is not None else None,
         model_agreement=float(agreement) if agreement is not None else None,
         market_quality=float(row.get("market_quality", 1)), data_completeness=completeness,
+        projected_home_score=_optional_float(row.get("projected_home_score")),
+        projected_away_score=_optional_float(row.get("projected_away_score")),
     )
+
+
+def _optional_float(value: Any) -> float | None:
+    return None if value in (None, "") else float(value)
+
+
+def rank_winner_anchors(candidates: Iterable[BetCandidate]) -> list[BetCandidate]:
+    """Rank H2H legs by likelihood and evidence, rather than betting edge.
+
+    Formula: 55% model win probability, 20% market consensus, 10% agreement,
+    10% data completeness and 5% calibration quality.  Edge intentionally is
+    exposed on the candidate but excluded from the likelihood-dominant score.
+    """
+    scored=[]
+    for candidate in candidates:
+        if candidate.market != "h2h": continue
+        agreement = candidate.model_agreement if candidate.model_agreement is not None else max(0., 1-abs(candidate.model_probability-candidate.implied_probability)*4)
+        calibration = candidate.calibration_score if candidate.calibration_score is not None else .5
+        score=.55*candidate.model_probability+.20*candidate.implied_probability+.10*agreement+.10*candidate.data_completeness+.05*calibration
+        reasons=[]
+        if candidate.model_probability >= .65: reasons.append("high_absolute_win_probability")
+        if abs(candidate.model_probability-candidate.implied_probability) <= .05: reasons.append("strong_market_agreement")
+        if candidate.data_completeness >= .9: reasons.append("high_data_quality")
+        if candidate.implied_probability >= .5: reasons.append("favorite_anchor")
+        scored.append((score,candidate,reasons))
+    scored.sort(key=lambda x:(-x[0],-x[1].model_probability,x[1].candidate_id))
+    return [replace(c,anchor_score=round(score,12),anchor_rank=i,anchor_reasons=tuple(reasons)) for i,(score,c,reasons) in enumerate(scored,1)]
 
 
 @dataclass
@@ -145,6 +182,17 @@ class Ticket:
     construction_reasons: list[str]; rejection_reasons: list[str] = field(default_factory=list)
     warning_reasons: list[str] = field(default_factory=list); historical_grade: str | None = None
     stake: float = 0.; payout: float | None = None; profit: float | None = None
+    raw_joint_probability: float | None = None
+    adjusted_joint_probability: float | None = None
+    joint_probability_status: str = "unavailable"
+    raw_ticket_ev: float | None = None; adjusted_ticket_ev: float | None = None
+    ticket_ev_status: str = "unavailable"
+    mean_leg_probability: float | None = None; minimum_leg_probability: float | None = None
+    uncertainty_warning: str | None = None
+    objective_name: str | None = None; objective_score: float | None = None
+    game_script: str | None = None; game_script_reasons: list[str] = field(default_factory=list)
+    script_alignment_score: float | None = None; leg_quality_score: float | None = None
+    recommendation_score: float | None = None
 
     def as_dict(self) -> dict[str, Any]: return asdict(self)
 
@@ -163,6 +211,56 @@ class BuildResult:
     def no_bet(self) -> bool: return not self.tickets
 
 
+@dataclass
+class RecommendationSlot:
+    status: str
+    ticket: Ticket | None = None
+    reasons: list[str] = field(default_factory=list)
+
+    def as_dict(self): return asdict(self)
+
+
+@dataclass
+class RecommendationSlate:
+    model_name: str; week: int; slate_date: str
+    best_singles: list[Ticket]; all_qualified_singles: list[Ticket]
+    winner_parlays: dict[str, RecommendationSlot]
+    sgps: dict[str, Any]; best_sgp: RecommendationSlot
+    slate_parlays: dict[str, RecommendationSlot]
+
+    def as_dict(self): return asdict(self)
+
+
+def recommendation_slot(result: BuildResult, reason: str="insufficient_qualifying_legs") -> RecommendationSlot:
+    return RecommendationSlot("recommended",result.tickets[0],[]) if result.tickets else RecommendationSlot("no_bet",None,[reason])
+
+
+def aggregate_rejections(rejections: Iterable[Rejection | dict[str,Any]], examples_per_reason: int=2,
+                         debug: bool=False) -> dict[str,Any]:
+    rows=[asdict(x) if isinstance(x,Rejection) else dict(x) for x in rejections]
+    counts=Counter(str(x.get("reason","unknown")) for x in rows); examples=defaultdict(list)
+    for row in rows:
+        if len(examples[str(row.get("reason","unknown"))]) < examples_per_reason: examples[str(row.get("reason","unknown"))].append(row)
+    result={"reason_counts":dict(sorted(counts.items())),"representative_examples":dict(sorted(examples.items()))}
+    if debug: result["records"]=rows
+    return result
+
+
+def parlay_reliability(tickets: Iterable[Ticket]) -> dict[str,Any]:
+    """Observed reliability buckets for graded independent-game parlays."""
+    probability=defaultdict(lambda:{"tickets":0,"wins":0}); legs=defaultdict(lambda:{"tickets":0,"wins":0})
+    for ticket in tickets:
+        p=ticket.raw_joint_probability
+        if p is None or ticket.historical_grade not in {"win","loss"}: continue
+        low=min(int(p*10)*10,90); pkey=f"{low}-{low+10}%"
+        lkey="5+" if ticket.number_of_legs>=5 else str(ticket.number_of_legs)
+        for bucket,key in ((probability,pkey),(legs,lkey)):
+            bucket[key]["tickets"]+=1; bucket[key]["wins"]+=ticket.historical_grade=="win"
+    for bucket in (probability,legs):
+        for value in bucket.values(): value["observed_hit_rate"]=value["wins"]/value["tickets"]
+    return {"probability_buckets":dict(sorted(probability.items())),"leg_count_diagnostics":dict(sorted(legs.items()))}
+
+
 class JointProbabilityEstimator(Protocol):
     def estimate(self, legs: list[BetCandidate]) -> tuple[float | None, str]: ...
 
@@ -172,6 +270,11 @@ class ConservativeJointProbabilityEstimator:
         if len({leg.game_id for leg in legs}) != len(legs):
             return None, "correlated_probability_unavailable"
         return math.prod(leg.model_probability for leg in legs), "independence_assumption"
+
+
+class ProbabilityCalibrator(Protocol):
+    """Optional held-out calibration adapter; implementations must be model-agnostic."""
+    def calibrate_joint(self, raw_probability: float, legs: list[BetCandidate]) -> float | None: ...
 
 
 def canonical_selection(candidate: BetCandidate) -> str | None:
@@ -190,6 +293,8 @@ def conflict_reason(left: BetCandidate, right: BetCandidate) -> str | None:
     if left.market == right.market == "h2h" and canonical_selection(left) != canonical_selection(right): return "conflicting_selection"
     if left.market == right.market == "total" and left.line == right.line and left.selection.casefold() != right.selection.casefold(): return "conflicting_selection"
     if left.market == right.market == "spread" and canonical_selection(left) != canonical_selection(right): return "conflicting_selection"
+    if left.game_id == right.game_id and {left.market,right.market} == {"h2h","spread"}:
+        if canonical_selection(left) == canonical_selection(right): return "redundant_same_team_position"
     return None
 
 
@@ -212,27 +317,44 @@ def _rank(c: BetCandidate, profile: RiskProfile) -> tuple[Any, ...]:
 
 
 def _make_ticket(ticket_type: TicketType, profile: RiskProfile, legs: list[BetCandidate], stake: float,
-                 estimator: JointProbabilityEstimator, reasons: list[str]) -> Ticket:
+                 estimator: JointProbabilityEstimator, reasons: list[str], calibrator: ProbabilityCalibrator | None = None,
+                 objective_name: str | None = None, objective_score: float | None = None) -> Ticket:
     if len({leg.model_name for leg in legs}) != 1: raise ValueError("mixed_model_ticket")
     decimal = math.prod(leg.decimal_odds for leg in legs)
     joint, correlation = estimator.estimate(legs)
-    fair = 1 / joint if joint else None
-    ev = joint * decimal - 1 if joint is not None else None
+    is_sgp=ticket_type is TicketType.SAME_GAME_PARLAY
+    raw_joint=None if is_sgp else joint
+    adjusted=calibrator.calibrate_joint(raw_joint,legs) if calibrator is not None and raw_joint is not None else None
+    status="unavailable_correlated" if is_sgp else "calibrated" if adjusted is not None else "provisional" if raw_joint is not None else "unavailable"
+    fair = 1 / adjusted if adjusted else (1/raw_joint if raw_joint else None)
+    raw_ev=raw_joint*decimal-1 if raw_joint is not None else None
+    adjusted_ev=adjusted*decimal-1 if adjusted is not None else None
+    ev=adjusted_ev
     raw = "|".join([ticket_type.value, profile.value, *(leg.candidate_id for leg in legs)])
     games = Counter(leg.game_id for leg in legs); teams = Counter(t for leg in legs for t in leg.teams_exposed)
-    warnings = ["correlation_probability_unavailable"] if joint is None else []
-    return Ticket(sha256(raw.encode()).hexdigest()[:24], ticket_type.value, profile.value, legs[0].model_name,
+    warnings = ["correlation_probability_unavailable"] if is_sgp else (["uncalibrated_probability_compounding"] if adjusted is None else [])
+    if raw_ev is not None and raw_ev > 1: warnings.append("extreme_estimated_ev")
+    ticket=Ticket(sha256(raw.encode()).hexdigest()[:24], ticket_type.value, profile.value, legs[0].model_name,
                   min((leg.snapshot_timestamp for leg in legs), default=""), legs, len(legs), decimal,
-                  decimal_to_american(decimal), joint, fair, ev,
-                  {"average_confidence": sum(x.confidence_score for x in legs)/len(legs), "average_value": sum(x.value_score for x in legs)/len(legs)},
-                  correlation, {"games": dict(games), "teams": dict(teams)}, reasons, warning_reasons=warnings, stake=stake)
+                  decimal_to_american(decimal), raw_joint, fair, raw_ev,
+                  {"average_confidence": sum(x.confidence_score for x in legs)/len(legs), "average_value": sum(x.value_score for x in legs)/len(legs),
+                   "leg_probabilities":[x.model_probability for x in legs],"edge_inputs":[x.edge for x in legs]},
+                  correlation, {"games": dict(games), "teams": dict(teams)}, reasons, warning_reasons=warnings, stake=stake,
+                  raw_joint_probability=raw_joint,adjusted_joint_probability=adjusted,joint_probability_status=status,
+                  raw_ticket_ev=raw_ev,adjusted_ticket_ev=adjusted_ev,ticket_ev_status="calibrated" if adjusted is not None else "unavailable" if is_sgp else "provisional",
+                  mean_leg_probability=sum(x.model_probability for x in legs)/len(legs),minimum_leg_probability=min(x.model_probability for x in legs),
+                  uncertainty_warning="uncalibrated_probability_compounding" if raw_joint is not None and adjusted is None else None,
+                  objective_name=objective_name,objective_score=objective_score)
+    return ticket
 
 
 class TicketEngine:
     def __init__(self, policies: dict[RiskProfile, BetPolicy] | None = None,
-                 estimator: JointProbabilityEstimator | None = None):
+                 estimator: JointProbabilityEstimator | None = None,
+                 calibrator: ProbabilityCalibrator | None = None):
         self.policies = policies or DEFAULT_POLICIES
         self.estimator = estimator or ConservativeJointProbabilityEstimator()
+        self.calibrator = calibrator
 
     def singles(self, candidates: Iterable[BetCandidate], profile: RiskProfile = RiskProfile.BALANCED, stake: float = 10) -> BuildResult:
         result = BuildResult(); policy = self.policies[profile]
@@ -245,27 +367,79 @@ class TicketEngine:
         if not result.tickets: result.rejections.append(Rejection(None, "insufficient_qualifying_legs"))
         return result
 
+    def recommendation_slate(self, candidates: Iterable[BetCandidate], model_name: str, week: int,
+                             slate_date: str="", top_n: int=5, stake: float=10) -> RecommendationSlate:
+        candidates=list(candidates); all_singles=[]
+        for profile in RiskProfile: all_singles.extend(self.singles(candidates,profile,stake).tickets)
+        unique={t.legs[0].candidate_id:t for t in all_singles}
+        ranked=sorted(unique.values(),key=lambda t:_rank(t.legs[0],RiskProfile.BALANCED))
+        winner={}; slate={}
+        for profile in RiskProfile:
+            winner[profile.value]=recommendation_slot(self.winner_parlay(candidates,profile),"insufficient_qualifying_anchors")
+            slate[profile.value]=recommendation_slot(self.slate_parlay(candidates,profile),"insufficient_diversified_candidates")
+        sgp_result=self.same_game_parlays(candidates,RiskProfile.BALANCED,stake)
+        by_game={}
+        for game_id in sorted({x.game_id for x in candidates}):
+            tickets=[t for t in sgp_result.tickets if t.legs[0].game_id==game_id]
+            by_game[game_id]=RecommendationSlot("recommended",tickets[0]) if tickets else RecommendationSlot("no_bet",reasons=["insufficient_game_script_confidence"])
+        best=max(sgp_result.tickets,key=lambda t:t.recommendation_score or 0,default=None)
+        return RecommendationSlate(model_name,week,slate_date,ranked[:top_n],ranked,winner,{"by_game":by_game},
+                                   RecommendationSlot("recommended",best) if best else RecommendationSlot("no_bet",reasons=["no_coherent_sgp"]),slate)
+
     def winner_parlay(self, candidates: Iterable[BetCandidate], profile: RiskProfile, stake: float = 10) -> BuildResult:
-        return self._diversified(candidates, profile, TicketType.WINNER_PARLAY, stake, markets={"h2h"})
+        ranked=rank_winner_anchors(candidates)
+        policy=self.policies[profile]
+        # SAFE anchors answer "most likely to win"; value underdogs remain singles.
+        if profile is RiskProfile.SAFE:
+            ranked=[c for c in ranked if c.model_probability >= policy.minimum_model_probability and c.implied_probability >= .5]
+        return self._diversified(ranked, profile, TicketType.WINNER_PARLAY, stake, markets={"h2h"}, anchor_mode=True)
 
     def slate_parlay(self, candidates: Iterable[BetCandidate], profile: RiskProfile, stake: float = 10) -> BuildResult:
         return self._diversified(candidates, profile, TicketType.SLATE_PARLAY, stake, markets={"h2h", "spread", "total"})
 
-    def _diversified(self, candidates: Iterable[BetCandidate], profile: RiskProfile, kind: TicketType, stake: float, markets: set[str]) -> BuildResult:
+    def _diversified(self, candidates: Iterable[BetCandidate], profile: RiskProfile, kind: TicketType, stake: float, markets: set[str], anchor_mode: bool=False) -> BuildResult:
         policy=self.policies[profile]; result=BuildResult(); chosen=[]; game_counts=Counter(); team_counts=Counter()
-        for candidate in sorted((c for c in candidates if c.market in markets), key=lambda c:_rank(c, profile)):
+        pool=sorted((c for c in candidates if c.market in markets),key=(lambda c:(c.anchor_rank or 999,c.candidate_id)) if anchor_mode else lambda c:_rank(c,profile))
+        for candidate in pool:
             reasons=eligibility_reasons(candidate, policy)
             if any(conflict_reason(candidate, existing) for existing in chosen): reasons.append(next(conflict_reason(candidate,x) for x in chosen if conflict_reason(candidate,x)))
             if game_counts[candidate.game_id] >= policy.maximum_legs_per_game: reasons.append("same_game_exposure_limit")
             if any(team_counts[t] >= policy.maximum_team_exposure for t in candidate.teams_exposed): reasons.append("same_team_exposure_limit")
-            if reasons: result.rejections.extend(Rejection(candidate.candidate_id,r) for r in dict.fromkeys(reasons)); continue
+            if reasons:
+                for reason in dict.fromkeys(reasons):
+                    category="leg_rejected_exposure" if reason in {"same_game_exposure_limit","same_team_exposure_limit"} else "leg_rejected_quality"
+                    result.rejections.extend((Rejection(candidate.candidate_id,reason),Rejection(candidate.candidate_id,category,reason)))
+                continue
+            if chosen:
+                old_probability=math.prod(x.model_probability for x in chosen)
+                new_probability=old_probability*candidate.model_probability
+                probability_cost=(old_probability-new_probability)/old_probability
+                if probability_cost > policy.maximum_probability_cost:
+                    result.rejections.append(Rejection(candidate.candidate_id,"leg_rejected_probability_cost",f"cost={probability_cost:.6f}")); continue
+                payout_gain=math.prod(x.decimal_odds for x in chosen)*(candidate.decimal_odds-1)
+                incremental=(.55*candidate.value_score+.25*min(1.,payout_gain/5)+.20*candidate.confidence_score-probability_cost*.35)
+                if incremental < policy.minimum_incremental_value:
+                    result.rejections.append(Rejection(candidate.candidate_id,"leg_rejected_low_incremental_value",f"score={incremental:.6f}")); continue
             chosen.append(candidate); game_counts[candidate.game_id]+=1
+            result.rejections.append(Rejection(candidate.candidate_id,"leg_added",f"position={len(chosen)}"))
             for team in candidate.teams_exposed: team_counts[team]+=1
+            odds=math.prod(x.decimal_odds for x in chosen)
+            if len(chosen) >= policy.minimum_legs and policy.preferred_min_decimal_odds and odds >= policy.preferred_min_decimal_odds: break
             if len(chosen) == policy.maximum_legs: break
         if len(chosen) < policy.minimum_legs:
             result.rejections.append(Rejection(None,"insufficient_qualifying_legs")); return result
-        result.tickets.append(_make_ticket(kind,profile,chosen,stake,self.estimator,["policy_thresholds_met","diversified_across_games"]))
+        objective={RiskProfile.SAFE:"cash_probability_score",RiskProfile.BALANCED:"risk_adjusted_value_score",RiskProfile.AGGRESSIVE:"upside_score"}[profile]
+        score=self._objective(chosen,profile)
+        result.tickets.append(_make_ticket(kind,profile,chosen,stake,self.estimator,["policy_thresholds_met","diversified_across_games","incremental_objective_improved"],self.calibrator,objective,score))
         return result
+
+    @staticmethod
+    def _objective(legs: list[BetCandidate], profile: RiskProfile) -> float:
+        joint=math.prod(x.model_probability for x in legs); odds=math.prod(x.decimal_odds for x in legs)
+        quality=sum((x.anchor_score if x.anchor_score is not None else x.confidence_score) for x in legs)/len(legs)
+        if profile is RiskProfile.SAFE: return round(.75*joint+.25*quality,12)
+        if profile is RiskProfile.BALANCED: return round(.40*joint+.35*quality+.25*min(1.,odds/10),12)
+        return round(.25*joint+.30*quality+.45*min(1.,odds/20),12)
 
     def same_game_parlays(self, candidates: Iterable[BetCandidate], profile: RiskProfile, stake: float = 10) -> BuildResult:
         """Construct game-script-aware tickets; never applies independent multiplication."""
@@ -277,14 +451,35 @@ class TicketEngine:
                 reasons=eligibility_reasons(c,policy)
                 if reasons: result.rejections.extend(Rejection(c.candidate_id,r) for r in reasons)
                 else: eligible.append(c)
-            pair=self._coherent_pair(eligible)
-            if not pair: result.rejections.append(Rejection(None,"incoherent_game_script",game_id)); continue
-            result.tickets.append(_make_ticket(TicketType.SAME_GAME_PARLAY,profile,pair,stake,self.estimator,["coherent_game_script","correlation_not_quantified"]))
+            script,script_reasons=self.classify_game_script(eligible)
+            pair=self._coherent_pair(eligible,script)
+            if not pair: result.rejections.append(Rejection(None,"insufficient_game_script_confidence" if script=="uncertain" else "incoherent_game_script",game_id)); continue
+            ticket=_make_ticket(TicketType.SAME_GAME_PARLAY,profile,pair,stake,self.estimator,["coherent_game_script","correlation_not_quantified"],self.calibrator)
+            ticket.game_script=script; ticket.game_script_reasons=script_reasons
+            ticket.script_alignment_score=.9; ticket.leg_quality_score=sum(x.confidence_score for x in pair)/2
+            ticket.recommendation_score=round(.6*ticket.script_alignment_score+.4*ticket.leg_quality_score,12)
+            result.tickets.append(ticket)
         if not result.tickets: result.rejections.append(Rejection(None,"insufficient_qualifying_legs"))
         return result
 
     @staticmethod
-    def _coherent_pair(candidates: list[BetCandidate]) -> list[BetCandidate] | None:
+    def classify_game_script(candidates: list[BetCandidate]) -> tuple[str,list[str]]:
+        if not candidates: return "uncertain",["missing_candidates"]
+        sample=candidates[0]; h=sample.projected_home_score; a=sample.projected_away_score
+        if h is None or a is None:
+            h2h=[x for x in candidates if x.market=="h2h"]
+            total=[x for x in candidates if x.market=="total"]
+            if not h2h or not total: return "uncertain",["missing_score_projection"]
+            favorite=max(h2h,key=lambda x:x.model_probability); high=any(x.selection.casefold()=="over" and x.model_probability>=.52 for x in total)
+            if favorite.model_probability>=.6: return ("favorite_controls_high_scoring" if high else "favorite_controls_low_scoring"),["favorite_probability", "projected_total_direction"]
+            return ("close_high_scoring" if high else "close_low_scoring"),["close_win_probabilities","projected_total_direction"]
+        margin=abs(h-a); total=h+a; reasons=[f"projected_margin={margin:.1f}",f"projected_total={total:.1f}"]
+        if margin>=5: return ("favorite_controls_high_scoring" if total>=47 else "favorite_controls_low_scoring"),reasons
+        if margin<=3: return ("close_high_scoring" if total>=47 else "close_low_scoring"),reasons
+        return "underdog_live",reasons
+
+    @staticmethod
+    def _coherent_pair(candidates: list[BetCandidate], script: str | None=None) -> list[BetCandidate] | None:
         # Supported initial scripts: favorite ML + over; underdog spread + under.
         for first in candidates:
             for second in candidates:
@@ -292,7 +487,8 @@ class TicketEngine:
                 legs={first.market: first, second.market: second}
                 if set(legs)=={"h2h","total"}:
                     ml,total=legs["h2h"],legs["total"]
-                    if ml.implied_probability >= .5 and total.selection.casefold()=="over": return [ml,total]
+                    direction="over" if script in (None,"favorite_controls_high_scoring","close_high_scoring") else "under"
+                    if ml.implied_probability >= .5 and total.selection.casefold()==direction: return [ml,total]
                 if set(legs)=={"spread","total"}:
                     spread,total=legs["spread"],legs["total"]
                     if (spread.line or 0)>0 and total.selection.casefold()=="under": return [spread,total]
@@ -312,3 +508,30 @@ def grade_ticket(ticket: Ticket, outcomes: dict[str, dict[str, Any]]) -> Ticket:
     ticket.payout = ticket.stake * effective if grade=="win" else ticket.stake if grade=="push" else 0 if grade=="loss" else None
     ticket.profit = ticket.payout-ticket.stake if ticket.payout is not None else None
     return ticket
+
+
+def render_recommendation_slate(slate: RecommendationSlate) -> str:
+    lines=[f"NFL WEEK {slate.week} — {slate.model_name.upper()}","","BEST SINGLES"]
+    if not slate.best_singles: lines += ["NO BET","No singles met the configured quality floor."]
+    for i,ticket in enumerate(slate.best_singles,1):
+        leg=ticket.legs[0]; line="" if leg.line is None else f" {leg.line:+g}"
+        lines += [f"{i}. {leg.selection} {leg.market.upper()}{line}",f"   model {leg.model_probability:.0%} | market {leg.implied_probability:.0%} | edge {leg.edge:+.1%}",f"   {ticket.risk_profile.upper()}"]
+    for name,slot in slate.winner_parlays.items():
+        lines += ["",f"TEAM WINNER PARLAY — {name.upper()}"]
+        lines += _render_slot(slot)
+    lines += ["","BEST SGP"]+_render_slot(slate.best_sgp,sgp=True)
+    for name,slot in slate.slate_parlays.items():
+        lines += ["",f"BEST SLATE PARLAY — {name.upper()}"]+_render_slot(slot)
+    return "\n".join(lines)
+
+
+def _render_slot(slot: RecommendationSlot, sgp: bool=False) -> list[str]:
+    if slot.status != "recommended" or slot.ticket is None: return ["NO BET",*slot.reasons]
+    ticket=slot.ticket; lines=[f"{x.selection} {x.market.upper()}"+(f" {x.line:+g}" if x.line is not None else "") for x in ticket.legs]
+    if sgp:
+        lines += [f"Game script: {ticket.game_script}","Joint EV: Unavailable — correlated legs"]
+    else:
+        estimate="calibrated" if ticket.joint_probability_status=="calibrated" else "provisional"
+        lines += [f"Estimated probability: {estimate} {ticket.raw_joint_probability:.0%}" if ticket.raw_joint_probability is not None else "Estimated probability: unavailable",
+                  f"Price: {ticket.combined_american_odds:+d}"]
+    return lines

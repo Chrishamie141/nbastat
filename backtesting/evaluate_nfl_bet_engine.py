@@ -12,7 +12,8 @@ from typing import Any
 from .config import SNAPSHOTS_DIR
 from .historical_provider import HistoricalSnapshotProvider
 from .markets import normalize_market
-from .nfl_bet_engine import RiskProfile, TicketEngine, grade_ticket, normalize_candidate
+from .nfl_bet_engine import (RiskProfile, TicketEngine, aggregate_rejections,
+                             grade_ticket, normalize_candidate, parlay_reliability)
 from .nfl_game_predictor import NFLGameMarketPredictor
 
 
@@ -43,7 +44,8 @@ def generate_candidates(provider: HistoricalSnapshotProvider, season: str, week:
             except (KeyError,TypeError,ValueError): rejected.append({"game_id":gid,"reason":"invalid_quote"}); continue
             row={**quote,**game,"model_name":model,"market":market,"american_odds":american,"implied_probability":implied,
                  "model_probability":probability,"edge":probability-implied,"expected_value":probability*(1+(american/100 if american>0 else 100/abs(american)))-1,
-                 "snapshot_timestamp":quote.get("snapshot_timestamp") or quote.get("captured_at"),"data_as_of":projection.data_as_of}
+                 "snapshot_timestamp":quote.get("snapshot_timestamp") or quote.get("captured_at"),"data_as_of":projection.data_as_of,
+                 "projected_home_score":projection.home_points,"projected_away_score":projection.away_points}
             key=(market,str(quote.get("selection")).casefold(),quote.get("line"))
             candidate=normalize_candidate(row)
             if key not in best or candidate.expected_value>best[key].expected_value: best[key]=candidate
@@ -64,7 +66,7 @@ def _metrics(tickets, opportunities: int, no_bets: int) -> dict[str,Any]:
             "leg_level_win_rate":sum(l.final_result=="win" for l in legs)/sum(l.final_result in {"win","loss"} for l in legs) if any(l.final_result in {"win","loss"} for l in legs) else None}
 
 
-def evaluate(season: str, start_week: int, end_week: int, models: list[str], ticket_types: list[str], profiles: list[RiskProfile], stake: float, data_dir: Path=SNAPSHOTS_DIR):
+def evaluate(season: str, start_week: int, end_week: int, models: list[str], ticket_types: list[str], profiles: list[RiskProfile], stake: float, data_dir: Path=SNAPSHOTS_DIR, debug_rejections: bool=False):
     provider=HistoricalSnapshotProvider(data_dir); engine=TicketEngine(); all_tickets=[]; rejections=[]; strategy=defaultdict(lambda:{"tickets":[],"opportunities":0,"no_bets":0})
     for week in range(start_week,end_week+1):
         outcomes={str(x.get("game_id")):x for x in provider.get_outcomes("nfl",season,week)}
@@ -88,9 +90,16 @@ def evaluate(season: str, start_week: int, end_week: int, models: list[str], tic
     weekly=defaultdict(lambda:Counter())
     for t in all_tickets:
         week=t.legs[0].week; weekly[str(week)][t.historical_grade]+=1; weekly[str(week)]["profit"]+=t.profit or 0
-    return {"schema_version":1,"dataset":{"league":"nfl","season":season,"start_week":start_week,"end_week":end_week,"offline_only":True},
+    rejection_summary=aggregate_rejections(rejections,debug=debug_rejections)
+    ordering={model:{"safe_gt_balanced":None,"balanced_gt_aggressive":None} for model in models}
+    for model in models:
+        values={p:metrics.get(f"{model}:winner:{p}",{}).get("average_estimated_joint_probability") for p in ("safe","balanced","aggressive")}
+        if values["safe"] is not None and values["balanced"] is not None: ordering[model]["safe_gt_balanced"]=values["safe"]>values["balanced"]
+        if values["balanced"] is not None and values["aggressive"] is not None: ordering[model]["balanced_gt_aggressive"]=values["balanced"]>values["aggressive"]
+    return {"schema_version":2,"dataset":{"league":"nfl","season":season,"start_week":start_week,"end_week":end_week,"offline_only":True},
             "models":models,"strategy_metrics":metrics,"weekly_performance":{k:dict(v) for k,v in sorted(weekly.items())},
-            "tickets":[t.as_dict() for t in all_tickets],"rejections":rejections,
+            "tickets":[t.as_dict() for t in all_tickets],"rejections":rejections if debug_rejections else [],"rejection_summary":rejection_summary,
+            "risk_ordering":ordering,"parlay_reliability":parlay_reliability(all_tickets),
             "candidate_comparison":{"ticket_legs":sum(len(t.legs) for t in all_tickets),"note":"Ticket ROI is a variance-sensitive construction metric; it is separate from prediction quality."}}
 
 
@@ -102,7 +111,7 @@ def render_markdown(result):
         if section=="Dataset readiness": lines += [f"Offline immutable snapshots: **yes**. Season {result['dataset']['season']}, Weeks {result['dataset']['start_week']}–{result['dataset']['end_week']}."]
         elif section in {"Singles","Winner Parlays","Same Game Parlays","Slate Parlays"}: lines += ["```json",json.dumps({k:v for k,v in result["strategy_metrics"].items() if section.split()[0].lower() in k.replace("winner","winner").replace("same","sgp")},indent=2,sort_keys=True),"```"]
         elif section=="Weekly performance": lines += ["```json",json.dumps(result["weekly_performance"],indent=2,sort_keys=True),"```"]
-        elif section=="Rejection/no-bet diagnostics": lines += [f"Machine-readable rejection records: **{len(result['rejections'])}**."]
+        elif section=="Rejection/no-bet diagnostics": lines += ["```json",json.dumps(result.get("rejection_summary",{}),indent=2,sort_keys=True),"```"]
         elif section=="Ticket examples": lines += ["```json",json.dumps(result["tickets"][:2],indent=2,sort_keys=True),"```"]
         elif section=="Key weaknesses": lines += ["- SGP joint probability and EV remain unavailable without a correlation-aware estimator.","- A short replay is descriptive, not evidence of superiority."]
         elif section=="Recommended next research": lines += ["- Add simulation-backed SGP correlation estimates and evaluate on a held-out season."]
@@ -125,9 +134,10 @@ def main():
     parser=argparse.ArgumentParser(description="Offline deterministic NFL ticket replay")
     parser.add_argument("--season",default="2025"); parser.add_argument("--start-week",type=int,default=1); parser.add_argument("--end-week",type=int,default=6)
     parser.add_argument("--models",default="nfl_game_baseline_v1,nfl_game_baseline_v2"); parser.add_argument("--ticket-types",default="singles,winner,sgp,slate")
+    parser.add_argument("--debug-rejections",action="store_true",help="Include every rejection record instead of only counts/examples")
     parser.add_argument("--risk-profiles",default="safe,balanced,aggressive"); parser.add_argument("--stake",type=float,default=10); parser.add_argument("--data-dir",type=Path,default=SNAPSHOTS_DIR)
     parser.add_argument("--output",type=Path,required=True); parser.add_argument("--tickets",type=Path,required=True); parser.add_argument("--markdown",type=Path,required=True); args=parser.parse_args()
-    result=evaluate(args.season,args.start_week,args.end_week,args.models.split(","),args.ticket_types.split(","),[RiskProfile(x) for x in args.risk_profiles.split(",")],args.stake,args.data_dir)
+    result=evaluate(args.season,args.start_week,args.end_week,args.models.split(","),args.ticket_types.split(","),[RiskProfile(x) for x in args.risk_profiles.split(",")],args.stake,args.data_dir,args.debug_rejections)
     write_artifacts(result,args.output,args.tickets,args.markdown); print(f"Wrote {len(result['tickets'])} tickets (offline only)")
 
 if __name__=="__main__": main()
