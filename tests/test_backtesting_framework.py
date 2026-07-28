@@ -191,6 +191,40 @@ def test_real_schema_provider_game_field_is_reconciled_to_canonical_id():
     assert PredictionGrader().grade(prediction, lookup_outcome(indexed, prediction, "nfl", "2025", 2))["grade"] == "win"
 
 
+def test_week_two_scoreboard_shape_reconciles_provider_event_and_grades():
+    """The real Week 2 shape has an export id plus a bare ESPN provider id."""
+    fixture = Path("tests/fixtures/backtesting/nfl/2025/week_02/provider_outcomes.json")
+    raw = json.loads(fixture.read_text())
+    games = [{"game_id": "espn-401999002", "league": "nfl", "season": "2025", "week": 2,
+              "home_team": "BUF", "away_team": "MIA", "kickoff_time": "2025-09-19T00:15:00Z"}]
+    outcomes = normalize_outcomes(raw, games, "nfl", "2025", 2)
+    assert len(outcomes) == 1
+    assert outcomes[0]["game_id"] == outcomes[0]["game"] == "espn-401999002"
+    assert outcomes[0]["source_game_id"] == "scoreboard-final-002"
+    assert outcomes[0]["provider_event_id"] == "401999002"
+    assert outcomes[0]["match_method"] == "provider_id_alias"
+    assert outcomes[0]["match_success"] is True
+    assert (outcomes[0]["final_home_score"], outcomes[0]["final_away_score"]) == (31, 21)
+    indexed = index_outcomes(outcomes)
+    prediction = {"game": "espn-401999002", "market": "h2h", "selection": "BUF"}
+    final = lookup_outcome(indexed, prediction, "nfl", "2025", 2)
+    assert PredictionGrader().grade(prediction, final)["grade"] == "win"
+
+
+def test_outcome_reconciliation_deduplicates_to_latest_complete_final():
+    games = [{"game_id": "espn-1", "home_team": "BUF", "away_team": "MIA"}]
+    raw = [
+        {"provider_event_id": "1", "home": "BUF", "away": "MIA", "completed_at": "2025-09-01T20:00:00Z",
+         "scores": {"home": 24, "away": 20}, "completed": True},
+        {"provider_event_id": "1", "home": "BUF", "away": "MIA", "completed_at": "2025-09-01T19:00:00Z",
+         "scores": {"home": 21, "away": 20}, "completed": True},
+    ]
+    outcomes = normalize_outcomes(raw, games, "nfl", "2025", 2)
+    assert len(outcomes) == 1
+    assert outcomes[0]["game_id"] == "espn-1"
+    assert outcomes[0]["final_home_score"] == 24
+
+
 @pytest.mark.parametrize("selection,line,score,grade", [
     ("PHI", -2.5, (24, 20), "win"), ("PHI", -4, (24, 20), "push"),
     ("PHI", -4.5, (24, 20), "loss"), ("DAL", 3.5, (24, 20), "loss"),

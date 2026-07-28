@@ -224,12 +224,22 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
                 report.add_error(f"Game from wrong week for {league.upper()} {season} Week {week}: {game.get('game_id')}")
             if not _parse_iso(game.get("kickoff_time")):
                 report.add_error(f"invalid_kickoff_time: {game.get('game_id')} for {league.upper()} {season} Week {week}")
-        outcome_ids = {o.get("game_id") for o in loaded.get("outcomes", [])}
+        # Outcome files are provider material; games.json is the authoritative
+        # identity universe. Validate the same reconciled rows replay will grade.
+        from .outcomes import normalize_outcomes
+        normalized_outcomes = normalize_outcomes(
+            loaded.get("outcomes", []), games, league, season, week
+        )
+        outcome_ids = {o.get("game_id") for o in normalized_outcomes}
+        if len(outcome_ids) != len(normalized_outcomes):
+            report.add_error(f"duplicate_canonical_outcome: {league.upper()} {season} Week {week}")
         for gid in sorted(game_ids - outcome_ids):
             report.add_error(f"Game without matching outcome for {league.upper()} {season} Week {week}: {gid}")
         for gid in sorted(outcome_ids - game_ids):
             report.add_error(f"Outcome without matching game for {league.upper()} {season} Week {week}: {gid}")
-        for outcome in loaded.get("outcomes", []):
+        for outcome in normalized_outcomes:
+            if not outcome.get("match_success"):
+                report.add_error(f"unmatched_outcome: week={week} game={outcome.get('source_game_id') or outcome.get('game_id')}")
             if outcome.get("completed_at") and not _parse_iso(outcome.get("completed_at")):
                 report.add_error(f"invalid_completed_at: outcome for {outcome.get('game_id')}")
         for row in loaded.get("team_stats", []):
