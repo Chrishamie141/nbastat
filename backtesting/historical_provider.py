@@ -80,5 +80,8 @@ class HistoricalSnapshotProvider:
             return False
 
     def get_outcomes(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
-        """Return final outcomes loaded only after predictions have been frozen."""
-        return self._snapshot(league, season, week, "outcomes")
+        """Return finals reconciled to the same week's canonical game universe."""
+        from .outcomes import normalize_outcomes
+        raw = self._snapshot(league, season, week, "outcomes")
+        games = self.get_games(league, season, week)
+        return normalize_outcomes(raw, games, league, season, week)

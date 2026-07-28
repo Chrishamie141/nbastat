@@ -36,9 +36,14 @@ def validate_multiweek_replay(league: str, season: str, start_week: int, end_wee
             identities.add(key)
         for row in finals:
             if game_id(row) not in game_ids: errors.append(f"unmatched_outcome: week={week} game={game_id(row)}")
-        final_ids = {game_id(row) for row in finals if row.get("final_home_score") is not None and row.get("final_away_score") is not None}
+        final_id_list = [game_id(row) for row in finals if row.get("final_home_score") is not None and row.get("final_away_score") is not None]
+        if len(final_id_list) != len(set(final_id_list)):
+            errors.append(f"duplicate_canonical_outcome: week={week}")
+        final_ids = set(final_id_list)
         missing_finals = game_ids - final_ids
         if missing_finals: errors.append(f"incomplete_outcome_coverage: week={week} missing={sorted(missing_finals)}")
+        unknown_finals = final_ids - game_ids
+        if unknown_finals: errors.append(f"unknown_outcome_game_ids: week={week} unknown={sorted(unknown_finals)}")
         kickoff = {game_id(row): _parse_iso(row.get("kickoff_time")) for row in games}
         seen_odds = set()
         for row in odds:
