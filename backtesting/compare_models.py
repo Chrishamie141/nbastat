@@ -112,8 +112,10 @@ def main():
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--league", default="nfl"); p.add_argument("--season", required=True)
     p.add_argument("--start-week", type=int, required=True); p.add_argument("--end-week", type=int, required=True)
     p.add_argument("--markets", default="h2h,spread,total"); p.add_argument("--models", default="nfl_game_baseline_v1,nfl_game_baseline_v2")
-    p.add_argument("--data-dir", type=Path, default=SNAPSHOTS_DIR); p.add_argument("--output", type=Path, default=Path("reports/model_comparison.json")); p.add_argument("--bets", type=Path, default=Path("reports/model_comparison_bets.csv"))
+    p.add_argument("--data-dir", type=Path, default=SNAPSHOTS_DIR); p.add_argument("--output", type=Path); p.add_argument("--bets", type=Path)
     a=p.parse_args(); report, rows=compare(data_dir=a.data_dir, league=a.league, season=a.season, start_week=a.start_week, end_week=a.end_week, markets=tuple(a.markets.split(",")), models=tuple(a.models.split(",")))
-    write_artifacts(report, rows, a.output, a.bets); print(WARNING)
+    output = a.output or Path(f"backtesting/results/{a.league}_{a.season}_v1_vs_v2.json")
+    bets = a.bets or Path(f"backtesting/results/{a.league}_{a.season}_v1_vs_v2_bets.csv")
+    write_artifacts(report, rows, output, bets); print(WARNING)
 
 if __name__ == "__main__": main()

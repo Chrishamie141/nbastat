@@ -39,7 +39,10 @@ class HistoricalSnapshotProvider:
 
     def get_games(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return games known before kickoff for the requested historical week."""
-        return self._snapshot(league, season, week, "games")
+        # Stable kickoff ordering makes season and one-week replay equivalent
+        # regardless of filesystem/provider response order.
+        return sorted(self._snapshot(league, season, week, "games"),
+                      key=lambda row: (str(row.get("kickoff_time") or ""), str(row.get("game_id") or "")))
 
     def get_odds(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return odds snapshots available before kickoff."""
