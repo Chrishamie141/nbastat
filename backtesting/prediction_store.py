@@ -96,6 +96,11 @@ class PredictionStore:
                     cursor.execute(f"ALTER TABLE predictions ADD COLUMN {col} {ddl}")
                 except sqlite3.OperationalError:
                     pass
+            cursor.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS prediction_identity
+                ON predictions(run_id, season, week, COALESCE(game,''), COALESCE(market,''),
+                    COALESCE(selection,''), COALESCE(prediction_model_version,''), generated_timestamp)
+            """)
 
     def create_run(self, metadata: RunMetadata) -> None:
         """Insert a new unique run record."""
@@ -106,7 +111,7 @@ class PredictionStore:
         """Freeze and store a single prediction before outcomes are loaded."""
         with self._cursor() as cursor:
             cursor.execute("""
-                INSERT INTO predictions (
+                INSERT OR IGNORE INTO predictions (
                     run_id, model_version, league, season, week, game, prediction, confidence,
                     market, line, reasoning, generated_timestamp, team, player, game_type, home_away, sportsbook_odds, sportsbook, edge, clv,
                     model_probability, implied_probability, prediction_model_version, features_data_as_of, features,
@@ -125,7 +130,16 @@ class PredictionStore:
                 prediction.get("edge_vs_consensus"), prediction.get("edge_vs_execution"),
                 prediction.get("selection", prediction.get("prediction")),
             ))
-            return int(cursor.lastrowid)
+            if cursor.rowcount:
+                return int(cursor.lastrowid)
+            cursor.execute("""SELECT id FROM predictions WHERE run_id=? AND season=? AND week=?
+                AND game IS ? AND market IS ? AND selection IS ? AND prediction_model_version IS ?
+                AND generated_timestamp=?""", (
+                metadata.run_id, metadata.season, week, prediction.get("game"), prediction.get("market"),
+                prediction.get("selection", prediction.get("prediction")), prediction.get("prediction_model_version"),
+                prediction.get("generated_timestamp"),
+            ))
+            return int(cursor.fetchone()[0])
 
     def grade_prediction(self, prediction_id: int, grade: dict[str, Any]) -> None:
         """Attach actual result, correctness, and margin to a frozen prediction."""

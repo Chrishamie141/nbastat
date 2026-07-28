@@ -10,7 +10,8 @@ from typing import Any, Callable
 from nfl_predictor import NFLPredictor
 
 from .config import BacktestConfig, PredictionMode
-from .grader import PredictionGrader, index_outcomes
+from .grader import PredictionGrader, index_outcomes, lookup_outcome
+from .outcomes import normalize_outcomes
 from .game_matching import normalize_team
 from .metrics import MetricsCalculator
 from .nfl_game_predictor import NFLGameMarketPredictor
@@ -76,30 +77,34 @@ class ReplayEngine:
             evaluation = self._last_prediction_diagnostics or self._fallback_evaluation(games, odds, predictions)
             self._evaluation_weeks[str(week)] = evaluation
             frozen: list[tuple[int, dict[str, Any]]] = []
+            frozen_ids: set[int] = set()
             for prediction in predictions:
                 prediction.setdefault("generated_timestamp", utc_now_iso())
-                frozen.append((self.store.save_prediction(self.metadata, week, prediction), prediction.copy()))
+                prediction_id = self.store.save_prediction(self.metadata, week, prediction)
+                if prediction_id not in frozen_ids:
+                    frozen.append((prediction_id, prediction.copy()))
+                    frozen_ids.add(prediction_id)
+            # Persistence identity is authoritative for accepted-bet totals.
+            evaluation["bets_accepted"] = len(frozen)
             outcomes_raw = getattr(self.provider, "get_outcomes")(self.config.league, self.config.season, week)
-            games_by_id = {(game.get("game_id") or game.get("id") or game.get("game")): game for game in games}
-            outcomes_raw = [
-                {**games_by_id.get(outcome.get("game_id") or outcome.get("game") or outcome.get("id"), {}), **outcome}
-                for outcome in outcomes_raw
-            ]
+            outcomes_raw = normalize_outcomes(outcomes_raw, games, self.config.league, self.config.season, week)
             outcomes = index_outcomes(outcomes_raw)
             graded_count = 0
             grades: Counter[str] = Counter()
             ungraded_reasons: Counter[str] = Counter()
+            game_grades: dict[str, Counter[str]] = {}
             for prediction_id, prediction in frozen:
-                key = (prediction.get("game"), normalize_market(prediction.get("market")), prediction.get("player"))
-                grade = self.grader.grade(prediction, outcomes.get(key))
+                outcome = lookup_outcome(outcomes, prediction, self.config.league, self.config.season, week)
+                grade = self.grader.grade(prediction, outcome)
                 grades[grade["grade"]] += 1
                 if grade["grade"] in {"win", "loss", "push"}:
                     graded_count += 1
                 else:
                     ungraded_reasons[grade.get("ungraded_reason") or "other"] += 1
+                game_grades.setdefault(str(prediction.get("game")), Counter())[grade["grade"]] += 1
                 self.store.grade_prediction(prediction_id, grade)
                 if os.getenv("BACKTESTING_DEBUG_PREDICTIONS") == "1":
-                    outcome = outcomes.get(key) or {}
+                    outcome = outcome or {}
                     detail = {
                         "game_id": prediction.get("game"), "market": normalize_market(prediction.get("market")),
                         "selection": prediction.get("selection", prediction.get("prediction")), "line": prediction.get("line"),
@@ -136,6 +141,13 @@ class ReplayEngine:
                 print("- Prediction diagnostics:")
                 for game_diagnostic in evaluation.get("games", []):
                     print(f"  {json.dumps(game_diagnostic, sort_keys=True, default=str)}")
+                print("- Grading diagnostics (week, game_id, home_team, away_team, prediction_count, outcome_found, graded_count, ungraded_count):")
+                outcome_game_ids = {str(row.get("game_id")) for row in outcomes_raw}
+                for game in games:
+                    gid = str(game.get("game_id") or game.get("id") or game.get("game"))
+                    counts = game_grades.get(gid, Counter())
+                    graded = counts["win"] + counts["loss"] + counts["push"]
+                    print(f"  {week}, {gid}, {game.get('home_team')}, {game.get('away_team')}, {sum(counts.values())}, {gid in outcome_game_ids}, {graded}, {counts['ungraded']}")
             print(f"- Outcomes loaded: {len(outcomes_raw)}")
             print(f"- Predictions graded: {graded_count}")
             print(f"- Accepted bets: {len(frozen)}")

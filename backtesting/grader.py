@@ -144,22 +144,43 @@ def index_outcomes(outcomes: list[dict[str, Any]]) -> dict[tuple[Any, ...], dict
     indexed: dict[tuple[Any, ...], dict[str, Any]] = {}
     for outcome in outcomes:
         game = outcome.get("game") or outcome.get("game_id") or outcome.get("id")
+        context = (str(outcome.get("league") or "").lower(), str(outcome.get("season") or ""), int(outcome.get("week") or 0))
         market_results = outcome.get("market_results") if isinstance(outcome.get("market_results"), dict) else {}
         for market, result in market_results.items():
             canonical = normalize_market(market)
             indexed[(game, canonical, None)] = {**outcome, "game": game, "market": canonical, "actual_result": result}
+            indexed[(*context, game, canonical, None)] = indexed[(game, canonical, None)]
         # A final score is sufficient to grade all three team markets.  Do not
         # require redundant market_results entries in historical snapshots.
         if outcome.get("final_home_score") is not None and outcome.get("final_away_score") is not None:
             for market in CANONICAL_TEAM_MARKETS:
                 indexed.setdefault((game, market, None), {**outcome, "game": game, "market": market})
+                indexed.setdefault((*context, game, market, None), indexed[(game, market, None)])
         for player, markets in (outcome.get("player_results") or {}).items():
             for market, result in (markets or {}).items():
                 canonical = normalize_market(market)
                 row = {**outcome, "game": game, "market": canonical, "player": player, "actual_result": result}
                 indexed[(game, canonical, player)] = row
+                indexed[(*context, game, canonical, player)] = row
                 indexed.setdefault((game, canonical, None), row)
         canonical = normalize_market(outcome.get("market"))
         if canonical:
             indexed[(game, canonical, outcome.get("player"))] = outcome
+            indexed[(*context, game, canonical, outcome.get("player"))] = outcome
     return indexed
+
+
+def lookup_outcome(index: dict[tuple[Any, ...], dict[str, Any]], prediction: dict[str, Any], league: str, season: str, week: int) -> dict[str, Any] | None:
+    """Look up a final with season/week isolation and a legacy-index fallback."""
+    game = prediction.get("game_id") or prediction.get("game")
+    market = normalize_market(prediction.get("market"))
+    player = prediction.get("player")
+    contextual = (str(league).lower(), str(season), int(week), game, market, player)
+    result = index.get(contextual)
+    if result is not None:
+        return result
+    # Old callers may index context-free fixtures.  Never use that fallback
+    # once a contextual index is present: doing so would cross week boundaries.
+    if not any(len(key) == 6 for key in index):
+        return index.get((game, market, player))
+    return None
