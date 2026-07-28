@@ -10,7 +10,7 @@ from .grader import canonical_team
 
 def game_id(row: dict[str, Any]) -> str | None:
     """Return the provider-independent game identifier carried by a record."""
-    value = row.get("game_id") or row.get("game") or row.get("id")
+    value = row.get("game_id") or row.get("game") or row.get("id") or row.get("event_id")
     return str(value) if value not in (None, "") else None
 
 
@@ -45,6 +45,8 @@ def normalize_outcomes(
             if len(candidates) == 1:
                 game = candidates[0]
         canonical_id = game_id(game or {}) or source_id
+        # Keep the raw identity for audit, but make the canonical game identity
+        # authoritative even when the provider calls its event ``game``.
         row = {**(game or {}), **raw}
         row.update({
             "league": str(row.get("league") or league).lower(),
@@ -61,5 +63,7 @@ def normalize_outcomes(
         })
         if source_id and source_id != canonical_id:
             row["source_game_id"] = source_id
+        if game is not None:
+            row["game"] = canonical_id
         normalized.append(row)
     return normalized

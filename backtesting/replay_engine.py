@@ -25,6 +25,36 @@ from .utils import utc_now_iso
 from .versioning import RunMetadata, create_run_metadata
 
 PredictionFactory = Callable[[PredictionDataProvider, BacktestConfig, int], list[dict[str, Any]]]
+PROBABILITY_TOLERANCE = 1e-9
+
+
+def probability_coherence_errors(rows: list[dict[str, Any]], *, tolerance: float = PROBABILITY_TOLERANCE) -> list[str]:
+    """Return selection-orientation violations from candidate diagnostics."""
+    errors: list[str] = []
+    by_game_market: dict[tuple[Any, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        probability = row.get("model_probability")
+        if probability is None:
+            continue
+        if not 0.0 <= float(probability) <= 1.0:
+            errors.append(f"probability_out_of_bounds: {row.get('game_id')} {row.get('market')} {row.get('selection')}")
+        by_game_market.setdefault((row.get("game_id"), normalize_market(row.get("market"))), []).append(row)
+    for (game, market), candidates in by_game_market.items():
+        pairs: list[tuple[dict[str, Any], dict[str, Any]]] = []
+        if market == "h2h" and len(candidates) == 2:
+            pairs = [(candidates[0], candidates[1])]
+        elif market == "total":
+            pairs = [(a, b) for i, a in enumerate(candidates) for b in candidates[i + 1:]
+                     if a.get("line") == b.get("line") and {str(a.get("selection")).casefold(), str(b.get("selection")).casefold()} == {"over", "under"}]
+        elif market == "spread":
+            pairs = [(a, b) for i, a in enumerate(candidates) for b in candidates[i + 1:]
+                     if a.get("line") is not None and b.get("line") is not None
+                     and abs(float(a["line"]) + float(b["line"])) <= tolerance]
+        for left, right in pairs:
+            total = float(left["model_probability"]) + float(right["model_probability"])
+            if abs(total - 1.0) >= tolerance:
+                errors.append(f"{market}_probability_incoherent: {game} {left.get('selection')}/{right.get('selection')} sum={total}")
+    return errors
 
 
 class ReplayEngine:
@@ -421,6 +451,22 @@ class ReplayEngine:
                 "projected_away_points": projection.away_points, "projected_margin": projection.expected_margin,
                 "projected_total": projection.expected_total}
             accepted.append({"game": game.get("game_id") or game.get("id") or game.get("game"), "prediction": selection, "selection": selection, "market": market, "line": row.get("line"), "sportsbook_odds": row.get("odds"), "american_odds": row.get("odds"), "sportsbook": row.get("sportsbook"), "model_probability": row["model_probability"], "implied_probability": row["execution_implied_probability"], "consensus_probability": row["consensus_probability"], "execution_implied_probability": row["execution_implied_probability"], "edge": row["edge"], "edge_vs_consensus": row["edge_vs_consensus"], "edge_vs_execution": row["edge_vs_execution"], "confidence": projection.confidence, "prediction_model_version": projection.model_version, "features_data_as_of": projection.data_as_of, "features": projection_features, "reasoning": f"{projection.model_version}: prior scoring offense/defense plus home-field adjustment", "team": selection if market != "total" else None, "home_away": "home" if selection.casefold() in {"home", str(game.get("home_team")).casefold()} else "away" if market != "total" else None, "game_type": game.get("game_type"), "clv": row.get("closing_line_value") or row.get("clv")})
+        coherence_rows = [{**row, "game_id": game.get("game_id") or game.get("id") or game.get("game")} for _, row in by_selection.values()]
+        coherence_errors = probability_coherence_errors(coherence_rows)
+        if coherence_errors:
+            raise AssertionError("; ".join(coherence_errors))
+        # Normal evaluation records one model conviction per mutually exclusive
+        # market.  If stale/inconsistent book prices make both sides clear the
+        # threshold, retain only the highest-EV side.  Arbitrage belongs in a
+        # separate execution strategy and must not inflate model performance.
+        if len(accepted) > 1:
+            winner = max(accepted, key=lambda row: (row["edge"], row["edge_vs_execution"], str(row["selection"])))
+            rejected = {str(row["selection"]).casefold() for row in accepted if row is not winner}
+            accepted = [winner]
+            reasons["conflicting_selection"] += len(rejected)
+            for decision in decisions:
+                if str(decision.get("selection")).casefold() in rejected and decision.get("decision") == "accepted":
+                    decision.update(decision="rejected", rejection_reason="conflicting_selection", reason="conflicting_selection")
         return accepted, decisions, reasons
 
     @staticmethod

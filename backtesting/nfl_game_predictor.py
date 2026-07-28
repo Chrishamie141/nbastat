@@ -63,15 +63,23 @@ class GameProjection:
         return 0.5 * (1.0 + erf((value - mean) / (standard_deviation * sqrt(2.0))))
 
     def probability(self, market: str, selection: str, line: float | None = None, *, home_team: str, away_team: str) -> float:
-        selection_key = selection.casefold()
-        is_home = selection_key in {"home", home_team.casefold()}
+        selection_key = selection.strip().casefold()
+        normalized_selection = normalize_team(selection)
+        is_home = selection_key == "home" or normalized_selection == normalize_team(home_team)
+        is_away = selection_key == "away" or normalized_selection == normalize_team(away_team)
         if market == "h2h":
+            if not is_home and not is_away:
+                raise ValueError(f"selection is not a team in this game: {selection}")
             home_win = self.raw_home_win_probability if self.raw_home_win_probability is not None else 1.0 - self._cdf(0.0, self.expected_margin, self.margin_standard_deviation)
             return home_win if is_home else 1.0 - home_win
         if market == "spread":
+            if not is_home and not is_away:
+                raise ValueError(f"selection is not a team in this game: {selection}")
             selected_margin = self.expected_margin if is_home else -self.expected_margin
             return 1.0 - self._cdf(0.0, selected_margin + float(line or 0), self.margin_standard_deviation)
         if market == "total":
+            if selection_key not in {"over", "under"}:
+                raise ValueError(f"selection is not over/under: {selection}")
             over = 1.0 - self._cdf(float(line), self.expected_total, self.total_standard_deviation)
             return over if selection_key == "over" else 1.0 - over
         raise ValueError(f"unsupported market: {market}")

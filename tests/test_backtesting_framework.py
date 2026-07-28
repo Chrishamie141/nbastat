@@ -9,7 +9,8 @@ from backtesting.config import BacktestConfig, PredictionMode
 from backtesting.grader import PredictionGrader, index_outcomes, lookup_outcome
 from backtesting.outcomes import normalize_outcomes
 from backtesting.historical_provider import HistoricalSnapshotProvider
-from backtesting.replay_engine import ReplayEngine
+from backtesting.replay_engine import ReplayEngine, probability_coherence_errors
+from backtesting.nfl_game_predictor import GameProjection
 
 
 class StubProvider:
@@ -128,6 +129,66 @@ def test_grader_supports_team_markets_win_loss_and_push():
 def test_h2h_aliases_and_team_names(market, selection, grade):
     final = {"final_home_score": 24, "final_away_score": 20, "home_team": "BUF", "away_team": "Miami Dolphins"}
     assert PredictionGrader().grade({"market": market, "selection": selection}, final)["grade"] == grade
+
+
+@pytest.mark.parametrize("home,away", [("KC", "PHI"), ("Kansas City Chiefs", "Philadelphia Eagles")])
+def test_h2h_probability_is_selection_oriented_for_team_names(home, away):
+    projection = GameProjection(24, 21, 3, 45, 70, None, {}, raw_home_win_probability=.545)
+    assert projection.probability("h2h", home, home_team="KC", away_team="PHI") == pytest.approx(.545)
+    assert projection.probability("h2h", away, home_team="KC", away_team="PHI") == pytest.approx(.455)
+
+
+def test_spread_and_total_opposite_sides_are_coherent():
+    projection = GameProjection(24, 21, 3, 45, 70, None, {})
+    home = projection.probability("spread", "KC", -2.5, home_team="KC", away_team="PHI")
+    away = projection.probability("spread", "PHI", 2.5, home_team="KC", away_team="PHI")
+    over = projection.probability("total", "over", 45.5, home_team="KC", away_team="PHI")
+    under = projection.probability("total", "under", 45.5, home_team="KC", away_team="PHI")
+    assert home + away == pytest.approx(1)
+    assert over + under == pytest.approx(1)
+
+
+def test_probability_coherence_reports_invariant_violations():
+    rows = [
+        {"game_id": "g", "market": "h2h", "selection": "KC", "model_probability": .6},
+        {"game_id": "g", "market": "h2h", "selection": "PHI", "model_probability": .6},
+    ]
+    assert probability_coherence_errors(rows) == ["h2h_probability_incoherent: g KC/PHI sum=1.2"]
+
+
+def test_opposing_positive_ev_h2h_bets_keep_only_highest_edge(tmp_path):
+    class ConflictProvider(StubProvider):
+        def get_games(self, *args):
+            return [{"game_id": "g", "home_team": "KC", "away_team": "PHI", "kickoff_time": "2025-09-14T17:00:00Z"}]
+        def get_odds(self, *args):
+            return [{"game_id": "g", "market": "h2h", "selection": team, "odds": 200,
+                     "sportsbook": book, "captured_at": "2025-09-13T17:00:00Z"}
+                    for team, book in (("KC", "home-only"), ("PHI", "away-only"))]
+        def get_team_stats(self, *args):
+            return [{"team": team, "season": 2024, "through_week": 18,
+                     "stats": {"points_per_game": 24, "points_allowed_per_game": 24}}
+                    for team in ("KC", "PHI")]
+        def get_outcomes(self, *args):
+            return [{"game_id": "g", "home_team": "KC", "away_team": "PHI",
+                     "final_home_score": 20, "final_away_score": 17}]
+    config = BacktestConfig(league="nfl", season="2025", start_week=2, end_week=2,
+                            markets=("h2h",), export=False, db_path=tmp_path / "conflict.db")
+    summary = ReplayEngine(config, provider=ConflictProvider()).run()
+    assert summary["evaluation"]["bets_accepted"] == 1
+    assert summary["evaluation"]["no_bet_reasons"] == {"conflicting_selection": 1}
+
+
+def test_real_schema_provider_game_field_is_reconciled_to_canonical_id():
+    games = [{"game_id": "canonical-week-2", "event_id": "provider-2", "home_team": "KC", "away_team": "PHI"}]
+    raw = [{"game": "provider-2", "home_team": "Kansas City Chiefs", "away_team": "Philadelphia Eagles",
+            "final_home_score": 17, "final_away_score": 20}]
+    outcomes = normalize_outcomes(raw, games, "nfl", "2025", 2)
+    assert outcomes[0]["game_id"] == outcomes[0]["game"] == "canonical-week-2"
+    assert outcomes[0]["source_game_id"] == "provider-2"
+    indexed = index_outcomes(outcomes)
+    prediction = {"game": "canonical-week-2", "market": "h2h", "selection": "PHI"}
+    assert lookup_outcome(indexed, prediction, "nfl", "2025", 2)["game_id"] == "canonical-week-2"
+    assert PredictionGrader().grade(prediction, lookup_outcome(indexed, prediction, "nfl", "2025", 2))["grade"] == "win"
 
 
 @pytest.mark.parametrize("selection,line,score,grade", [

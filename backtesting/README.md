@@ -2,6 +2,21 @@
 
 NFL snapshots use a multi-provider architecture based on The Odds API, ESPN, optional verified NFL data, OpenWeather, and local JSON exports.
 
+## Coherent market selection policy
+
+Team-market probabilities are selection-oriented outputs of one game projection:
+moneyline sides must sum to one, opposite spread sides at inverse lines must sum
+to one (the continuous baseline assigns zero push mass), and over/under at the
+same total must sum to one. Replay raises an invariant error rather than grading
+an incoherent candidate set.
+
+Normal model evaluation records at most one conviction in a mutually exclusive
+market. If unusual or stale prices give both sides positive model edge, replay
+keeps the highest consensus edge (then execution edge as a tie-breaker) and
+labels the other side `conflicting_selection`. Such prices may represent market
+arbitrage, but arbitrage execution is deliberately separate and opposing bets
+are not counted as independent model predictions.
+
 ## Environment variables
 
 - `THE_ODDS_API_KEY`: The Odds API for NFL h2h, spreads, totals, player props, bookmaker metadata, and historical point-in-time odds when the subscription supports them.
