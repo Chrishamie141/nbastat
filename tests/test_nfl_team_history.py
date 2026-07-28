@@ -81,6 +81,44 @@ def test_team_stats_refresh_never_constructs_odds_source_and_preserves_odds(tmp_
     assert "Historical odds preserved; Odds API not requested." in capsys.readouterr().out
 
 
+def test_outcome_refresh_preserves_other_datasets_and_updates_manifest(tmp_path, monkeypatch, capsys):
+    week_dir = tmp_path / "nfl/2025/week_02"
+    week_dir.mkdir(parents=True)
+    games = [{"game_id":"espn-401","league":"nfl","season":"2025","week":2,
+              "kickoff_time":"2025-09-11T00:00:00Z","home_team":"GB","away_team":"WAS",
+              "venue":"Field","status":"STATUS_FINAL","source":"espn","captured_at":"2025-09-11T00:00:00Z",
+              "data_as_of":"2025-09-11T00:00:00Z","is_pregame":True}]
+    (week_dir / "games.json").write_text(json.dumps(games))
+    preserved = {name: (b'[{"opaque":true}]\n' if name == "odds" else f'[{json.dumps({"dataset": name})}]\n'.encode())
+                 for name in ("odds", "team_stats", "player_stats")}
+    for name, payload in preserved.items():
+        (week_dir / f"{name}.json").write_bytes(payload)
+    odds_meta = {"source":"paid-historical","records":1,"opaque":True}
+    (week_dir / "manifest.json").write_text(json.dumps({"datasets":{"odds":odds_meta,"outcomes":{"records":1,"source":"old"}}}))
+
+    class Finals:
+        supported_datasets = {"outcomes"}
+        def fetch_outcomes(self, *args):
+            return [{"game_id":"espn-401","league":"nfl","season":"2025","week":2,
+                     "home_team":"GB","away_team":"WAS","final_home_score":0,"final_away_score":7,
+                     "completed":True,"completed_at":"2025-09-11T04:00:00Z","source":"espn-scoreboard",
+                     "captured_at":"2025-09-11T04:00:00Z","data_as_of":"2025-09-11T04:00:00Z",
+                     "is_pregame":False,"player_results":{},"market_results":{"moneyline":"away"}}]
+    monkeypatch.setattr("backtesting.build_snapshots.create_sources", lambda spec: [Finals()] if spec == "espn" else pytest.fail("odds source requested"))
+    args = Namespace(league="nfl", season="2025", start_week=2, end_week=2,
+                     data_dir=tmp_path, refresh="outcomes", validate=False)
+    assert build_main(args) == 0
+    assert all((week_dir / f"{name}.json").read_bytes() == payload for name, payload in preserved.items())
+    outcome = json.loads((week_dir / "outcomes.json").read_text())[0]
+    assert outcome["final_home_score"] == 0 and outcome["completed"] is True
+    manifest = json.loads((week_dir / "manifest.json").read_text())
+    assert manifest["datasets"]["odds"] == odds_meta
+    assert manifest["datasets"]["outcomes"]["records"] == 1
+    assert len(manifest["datasets"]["outcomes"]["sha256"]) == 64
+    assert manifest["source_lineage"]["outcomes"]["provider"] == "espn-scoreboard"
+    assert "Historical odds preserved; Odds API not requested." in capsys.readouterr().out
+
+
 def test_completed_history_survives_provider_and_normalization_with_zero_score(tmp_path):
     week_dir = tmp_path / "nfl/2025/week_01"
     week_dir.mkdir(parents=True)

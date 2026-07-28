@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
 from dataclasses import dataclass, field
 from datetime import date, timedelta, datetime, timezone
 from pathlib import Path
@@ -46,7 +47,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--require-backtest-ready", action="store_true")
     parser.add_argument("--allow-paid-odds-fetch", action="store_true",
                         help="Explicitly authorize historical Odds API requests that may consume paid quota.")
-    parser.add_argument("--refresh", choices=("team-stats",), help="Refresh only free statistical history; preserves odds.json and never contacts The Odds API.")
+    parser.add_argument("--refresh", choices=("team-stats", "outcomes"), help="Refresh one free ESPN dataset; preserves odds.json and never contacts The Odds API.")
     return parser.parse_args(argv)
 
 
@@ -232,8 +233,14 @@ def _refresh_manifest_dataset(wdir: Path, dataset: str, rows: list[dict[str, Any
         "records": len(rows),
         "status": "complete" if rows else "optional_empty",
         "refreshed_at": now,
+        "sha256": hashlib.sha256((wdir / f"{dataset}.json").read_bytes()).hexdigest(),
     })
     manifest.setdefault("datasets", {})[dataset] = previous
+    manifest.setdefault("source_versions", {})[dataset] = previous["source"]
+    manifest.setdefault("source_lineage", {})[dataset] = {
+        "provider": previous["source"], "records": len(rows),
+        "original_event_timestamp_field": "captured_at/data_as_of",
+    }
     manifest["refreshed_at"] = now
     tmp = wdir / "manifest.json.tmp"
     tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
@@ -370,6 +377,37 @@ def main(argv: list[str] | argparse.Namespace | None = None) -> int:
                     report = validate_snapshot(args.data_dir, args.league, args.season, [week])
                     if not report.ok:
                         raise SnapshotError("; ".join(report.errors))
+            except Exception as exc:
+                failed += 1; print(f"ERROR: {_redact(str(exc))}")
+        print("Historical odds preserved; Odds API not requested.")
+        return 1 if failed else 0
+
+    if getattr(args, "refresh", None) == "outcomes":
+        # Construct ESPN only: this path cannot instantiate or call the paid
+        # odds provider, and atomically replaces only outcomes plus its
+        # manifest entry.
+        sources = create_sources("espn")
+        failed = 0
+        for week in range(args.start_week, args.end_week + 1):
+            wdir = snapshot_week_dir(args.data_dir, args.league, args.season, week)
+            try:
+                games = json.loads((wdir / "games.json").read_text())
+                source = next(s for s in sources if "outcomes" in s.supported_datasets)
+                rows = source.fetch_outcomes(args.league, args.season, week, nfl_week_date_range(args.season, week), games)
+                from .outcomes import normalize_outcomes
+                normalized = normalize_outcomes(rows, games, args.league, args.season, week)
+                if len(normalized) != len(games):
+                    raise SnapshotError(f"incomplete outcome refresh: games={len(games)} outcomes={len(normalized)}")
+                normalized = normalize_dataset("outcomes", normalized, args.league, args.season, week)
+                tmp = wdir / "outcomes.json.tmp"
+                tmp.write_text(json.dumps(normalized, indent=2, sort_keys=True) + "\n")
+                tmp.replace(wdir / "outcomes.json")
+                _refresh_manifest_dataset(wdir, "outcomes", normalized)
+                if args.validate:
+                    report = validate_snapshot(args.data_dir, args.league, args.season, [week])
+                    if not report.ok:
+                        raise SnapshotError("; ".join(report.errors))
+                print(f"NFL {args.season} Week {week}: complete outcomes={len(normalized)}")
             except Exception as exc:
                 failed += 1; print(f"ERROR: {_redact(str(exc))}")
         print("Historical odds preserved; Odds API not requested.")

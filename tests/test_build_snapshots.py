@@ -52,6 +52,7 @@ def args(tmp_path, **kw):
 def test_cli_argument_parsing():
     ns = parse_args(["--league","nfl","--season","2025","--start-week","1","--end-week","18","--overwrite","--resume","--validate","--dry-run","--providers","local-json","--strict"])
     assert ns.league == "nfl" and ns.end_week == 18 and ns.strict and ns.providers == "local-json"
+    assert parse_args(["--league","nfl","--season","2025","--start-week","2","--end-week","2","--refresh","outcomes"]).refresh == "outcomes"
 
 
 def test_fake_provider_creates_week_folder_and_valid_snapshot(tmp_path, monkeypatch):
