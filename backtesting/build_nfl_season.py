@@ -7,8 +7,8 @@ from pathlib import Path
 
 from .build_snapshots import main as build_snapshots
 from .config import SNAPSHOTS_DIR
-from .nfl_season import (audit_cached_odds, execute_grouped_odds, plan_season, season_coverage,
-                         season_registry, write_json_atomic)
+from .nfl_season import (PaidRequestBudgetExceeded, audit_cached_odds, execute_grouped_odds,
+                         plan_season, season_coverage, season_registry, write_json_atomic)
 
 
 def parse_args(argv=None):
@@ -33,6 +33,15 @@ def parse_args(argv=None):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    weeks = range(args.start_week, args.end_week + 1)
+    # Audit is an early-return mode: no preparation/provider construction and no
+    # manifest, snapshot, coverage, or result writes are reachable from here.
+    if args.audit_odds_cache:
+        print(json.dumps(audit_cached_odds(args.data_dir, args.season, weeks,
+            hours_before=args.odds_hours_before_kickoff,
+            tolerance_minutes=args.grouping_tolerance_minutes), indent=2, sort_keys=True))
+        print("CACHE AUDIT: offline, non-mutating; no provider was constructed.")
+        return 0
     common = ["--league", "nfl", "--season", str(args.season), "--start-week", str(args.start_week),
               "--end-week", str(args.end_week), "--data-dir", str(args.data_dir), "--resume",
               "--odds-hours-before-kickoff", str(args.odds_hours_before_kickoff)]
@@ -45,13 +54,6 @@ def main(argv=None) -> int:
     elif args.prepare:
         prepare_status = build_snapshots(common + ["--providers", "espn,local-json"] + (["--validate"] if args.validate else []))
 
-    weeks = range(args.start_week, args.end_week + 1)
-    if args.audit_odds_cache:
-        print(json.dumps(audit_cached_odds(args.data_dir, args.season, weeks,
-            hours_before=args.odds_hours_before_kickoff,
-            tolerance_minutes=args.grouping_tolerance_minutes), indent=2, sort_keys=True))
-        print("CACHE AUDIT: no Odds API requests were made.")
-        return prepare_status
     plan = plan_season(args.data_dir, args.season, weeks, hours_before=args.odds_hours_before_kickoff,
                        tolerance_minutes=args.grouping_tolerance_minutes)
     print(json.dumps(plan, indent=2, sort_keys=True))
@@ -61,9 +63,16 @@ def main(argv=None) -> int:
         print("Paid odds work blocked. Rerun with --allow-paid-odds-fetch after reviewing this exact plan.")
         prepare_status = prepare_status or 2
     elif plan["totals"]["naive_request_count"]:
-        diagnostics = execute_grouped_odds(args.data_dir, args.season, weeks,
-            hours_before=args.odds_hours_before_kickoff,
-            tolerance_minutes=args.grouping_tolerance_minutes)
+        try:
+            diagnostics = execute_grouped_odds(args.data_dir, args.season, weeks,
+                hours_before=args.odds_hours_before_kickoff,
+                tolerance_minutes=args.grouping_tolerance_minutes,
+                paid_request_budget=plan["totals"]["total_paid_request_budget"])
+        except PaidRequestBudgetExceeded as error:
+            print(f"additional_paid_requests_required={error.additional_paid_requests_required}")
+            print(f"revised_estimated_credits={error.revised_estimated_credits}")
+            print("STOPPED: inspect the revised plan and explicitly reauthorize another run.")
+            return 3
         print("Grouped odds reconciliation: " + json.dumps(diagnostics, sort_keys=True))
         print(f"paid requests made = {diagnostics['grouped_paid_requests'] + diagnostics['fallback_paid_requests']}")
         prepare_status = build_snapshots(common + ["--providers", "espn,local-json",

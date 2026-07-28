@@ -147,10 +147,17 @@ Season planning is local/cache-only and grouped execution is range-limited, so
 Week 3 can be reviewed before authorizing any later paid ingestion:
 
 ```bash
-python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --resume --plan
+python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --audit-odds-cache
+python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --plan --resume --validate
 python -m backtesting.build_nfl_season --season 2025 --start-week 3 --end-week 3 --resume --validate --allow-paid-odds-fetch
 python -m backtesting.validate_snapshots --league nfl --season 2025 --start-week 3 --end-week 3
 ```
+
+Audit mode returns before schedule preparation or provider construction and is
+strictly read-only. The plan distinguishes `missing`, `raw_valid`,
+`raw_invalid`, and `malformed` request caches. Inspect its grouped and
+individual fallback counts and total paid-request budget before running the
+authorized command; execution stops rather than exceeding that budget.
 
 After inspecting the pilot, the remaining season can be planned (without paid
 requests) with `--start-week 3 --end-week 18 --resume --plan`. Grouped response
