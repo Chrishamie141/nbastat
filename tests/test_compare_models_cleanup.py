@@ -76,3 +76,47 @@ def test_replay_engine_preserves_injected_store_ownership(tmp_path):
         pass
     assert store.connect() is not None
     store.close()
+
+
+def test_diagnostic_helpers_and_markdown_artifact(tmp_path):
+    from backtesting.compare_models import calibration_metrics, favorite_underdog, market_metrics, projection_metrics, render_markdown
+
+    rows = [
+        {"game_id": "g", "market": "h2h", "grade": "win", "model_probability": .65,
+         "consensus_probability": .55, "sportsbook_odds": -110, "line": None, "features": {"projected_home_points": 24,
+         "projected_away_points": 20, "projected_total": 44, "projected_margin": 4},
+         "final_home_score": 27, "final_away_score": 17},
+        # A second market for the same game must not double-weight projection error.
+        {"game_id": "g", "market": "spread", "grade": "loss", "model_probability": .55,
+         "line": 3.5, "sportsbook_odds": -110, "features": {"projected_home_points": 24, "projected_away_points": 20,
+         "projected_total": 44, "projected_margin": 4}, "final_home_score": 27, "final_away_score": 17},
+    ]
+    calibration = calibration_metrics(rows)
+    assert calibration["covered_count"] == 2
+    assert calibration["ece"] == pytest.approx((abs(0 - .55) + abs(1 - .65)) / 2)
+    assert favorite_underdog(rows[0]) == "favorite"
+    assert favorite_underdog(rows[1]) == "underdog"
+    projection = projection_metrics(rows)
+    assert projection["home_score"] == {"count": 1, "mae": 3, "rmse": 3}
+    assert projection["margin"]["mae"] == 6
+
+    report = {"warning": "exploratory", "conclusion": "mixed/inconclusive",
+              "dataset": {"games_eligible": 1, "games_discovered": 1, "games_excluded": 0,
+                          "readiness": {"1": {"status": "pass", "reasons": []}}},
+              "models": {"v1": {"overall": market_metrics(rows)}, "v2": {"overall": market_metrics(rows)}}}
+    markdown = render_markdown(report)
+    for heading in ("Dataset/readiness", "Weekly performance", "Calibration", "Model agreement",
+                    "Projection error", "Recommended V3 research priorities"):
+        assert f"## {heading}" in markdown
+
+
+def test_artifact_csv_has_stable_audit_contract(tmp_path):
+    import csv
+    from backtesting.compare_models import CSV_FIELDS
+
+    report = {"warning": "exploratory", "conclusion": "mixed/inconclusive", "dataset": {"games_eligible": 0, "games_discovered": 0, "games_excluded": 0, "readiness": {}}, "models": {}}
+    rows = []
+    output, bets, markdown = tmp_path / "report.json", tmp_path / "bets.csv", tmp_path / "report.md"
+    write_artifacts(report, rows, output, bets, markdown)
+    assert tuple(next(csv.reader(bets.open()))) == CSV_FIELDS
+    assert output.exists() and markdown.exists()
