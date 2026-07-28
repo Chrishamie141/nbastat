@@ -7,7 +7,8 @@ from backtesting.evaluate_nfl_bet_engine import render_markdown, write_artifacts
 from backtesting.nfl_bet_engine import (
     DEFAULT_POLICIES, BetCandidate, ConservativeJointProbabilityEstimator,
     RiskProfile, TicketEngine, TicketType, _make_ticket, american_to_decimal,
-    conflict_reason, grade_ticket, normalize_candidate,
+    aggregate_rejections, conflict_reason, grade_ticket, normalize_candidate,
+    parlay_reliability, rank_winner_anchors, render_recommendation_slate,
 )
 
 
@@ -110,3 +111,37 @@ def test_json_csv_markdown_artifacts(tmp_path):
     assert json.loads(paths[0].read_text())["dataset"]["season"]=="2025"
     assert paths[1].read_text().startswith("ticket_id")
     assert "# NFL Betting Engine Evaluation" in paths[2].read_text()
+
+
+def test_anchor_ranking_and_safe_underdog_separation():
+    favorite=candidate(probability=.72,implied=.68,odds=-210)
+    dog=candidate(game="g2",home="C",away="D",selection="C",probability=.44,implied=.35,odds=186)
+    ranked=rank_winner_anchors([dog,favorite])
+    assert ranked[0].candidate_id==favorite.candidate_id and ranked[0].anchor_rank==1
+    engine=TicketEngine({RiskProfile.SAFE:permissive(RiskProfile.SAFE,minimum_legs=2)})
+    assert engine.winner_parlay([favorite,dog],RiskProfile.SAFE).no_bet
+
+
+def test_probability_status_extreme_ev_and_correlated_structural_score():
+    longshot=candidate(probability=.9,implied=.1,odds=900)
+    other=candidate(game="g2",home="C",away="D",selection="C",probability=.9,implied=.1,odds=900)
+    ticket=_make_ticket(TicketType.SLATE_PARLAY,RiskProfile.BALANCED,[longshot,other],10,ConservativeJointProbabilityEstimator(),[])
+    assert ticket.raw_joint_probability==pytest.approx(.81)
+    assert ticket.adjusted_joint_probability is None and ticket.ticket_ev_status=="provisional"
+    assert "extreme_estimated_ev" in ticket.warning_reasons
+    sgp=TicketEngine({RiskProfile.BALANCED:permissive()}).same_game_parlays([candidate(implied=.7,odds=-200),candidate(market="total",selection="over",line=45)],RiskProfile.BALANCED).tickets[0]
+    assert sgp.joint_probability_status=="unavailable_correlated"
+    assert sgp.recommendation_score and sgp.raw_joint_probability is None
+
+
+def test_recommendation_slate_renderer_aggregation_and_diagnostics():
+    legs=[candidate(),candidate(game="g2",home="C",away="D",selection="C")]
+    engine=TicketEngine({p:permissive(p,minimum_legs=2,maximum_legs=2) for p in RiskProfile})
+    slate=engine.recommendation_slate(legs,"nfl_game_baseline_v1",1,top_n=1)
+    assert len(slate.best_singles)==1 and set(slate.winner_parlays)=={"safe","balanced","aggressive"}
+    assert "BEST SINGLES" in render_recommendation_slate(slate)
+    summary=aggregate_rejections([{"reason":"x"},{"reason":"x"}],debug=False)
+    assert summary["reason_counts"]=={"x":2} and "records" not in summary
+    ticket=slate.winner_parlays["balanced"].ticket; ticket.historical_grade="win"
+    diagnostics=parlay_reliability([ticket])
+    assert diagnostics["leg_count_diagnostics"]["2"]["observed_hit_rate"]==1
