@@ -14,6 +14,7 @@ from backtesting.team_history import COMPLETED_GAME_HISTORY, PREGAME_AGGREGATE
 
 V1_MODEL_VERSION = "nfl_game_baseline_v1"
 V2_MODEL_VERSION = "nfl_game_baseline_v2"
+V3_MODEL_VERSION = "nfl_game_baseline_v3"
 MODEL_VERSION = V1_MODEL_VERSION
 
 
@@ -450,4 +451,7 @@ class NFLGameMarketPredictor:
             return NFLGameMarketPredictorV1()
         if normalized == V2_MODEL_VERSION:
             return NFLGameMarketPredictorV2(config)
+        if normalized == V3_MODEL_VERSION:
+            from .nfl_v3 import NFLGameMarketPredictorV3
+            return NFLGameMarketPredictorV3(config)
         raise ValueError(f"Unsupported NFL game model version: {model_version}")
