@@ -206,6 +206,7 @@ class Rejection:
 class BuildResult:
     tickets: list[Ticket] = field(default_factory=list)
     rejections: list[Rejection] = field(default_factory=list)
+    diagnostics: dict[str, Any] = field(default_factory=dict)
 
     @property
     def no_bet(self) -> bool: return not self.tickets
@@ -341,7 +342,7 @@ def _make_ticket(ticket_type: TicketType, profile: RiskProfile, legs: list[BetCa
                    "leg_probabilities":[x.model_probability for x in legs],"edge_inputs":[x.edge for x in legs]},
                   correlation, {"games": dict(games), "teams": dict(teams)}, reasons, warning_reasons=warnings, stake=stake,
                   raw_joint_probability=raw_joint,adjusted_joint_probability=adjusted,joint_probability_status=status,
-                  raw_ticket_ev=raw_ev,adjusted_ticket_ev=adjusted_ev,ticket_ev_status="calibrated" if adjusted is not None else "unavailable" if is_sgp else "provisional",
+                  raw_ticket_ev=raw_ev,adjusted_ticket_ev=adjusted_ev,ticket_ev_status="calibrated" if adjusted is not None else "unavailable_correlated" if is_sgp else "provisional",
                   mean_leg_probability=sum(x.model_probability for x in legs)/len(legs),minimum_leg_probability=min(x.model_probability for x in legs),
                   uncertainty_warning="uncalibrated_probability_compounding" if raw_joint is not None and adjusted is None else None,
                   objective_name=objective_name,objective_score=objective_score)
@@ -442,25 +443,132 @@ class TicketEngine:
         return round(.25*joint+.30*quality+.45*min(1.,odds/20),12)
 
     def same_game_parlays(self, candidates: Iterable[BetCandidate], profile: RiskProfile, stake: float = 10) -> BuildResult:
-        """Construct game-script-aware tickets; never applies independent multiplication."""
-        policy=self.policies[profile]; result=BuildResult(); grouped=defaultdict(list)
-        for candidate in candidates: grouped[candidate.game_id].append(candidate)
-        for game_id in sorted(grouped):
+        """Construct a small, auditable set of game-script tickets.
+
+        SGP leg eligibility is deliberately separate from singles eligibility.  An
+        SGP is ranked on structural evidence, not marginal EV, and consequently a
+        leg need not clear the standalone edge/value rules.  It must still clear
+        profile-specific probability, confidence, and data-quality floors.
+        """
+        result=BuildResult(); grouped=defaultdict(list)
+        # The model identity is part of the grouping key so callers cannot
+        # accidentally compose evidence from different prediction systems.
+        for candidate in candidates: grouped[(candidate.model_name,candidate.game_id)].append(candidate)
+        funnel=Counter({"games_evaluated":0,"games_with_2_candidate_markets":0,
+                        "games_with_coherent_script_candidates":0,"games_passing_script_confidence":0,
+                        "games_with_structurally_compatible_leg_pairs":0,"games_rejected_redundant_positions":0,
+                        "games_rejected_conflicting_selections":0,"games_rejected_quality_thresholds":0,
+                        "sgp_tickets_generated":0,"no_bet_games":0})
+        availability=[]; examples=[]
+        for model_name,game_id in sorted(grouped):
+            funnel["games_evaluated"]+=1; game=sorted(grouped[(model_name,game_id)],key=lambda x:_rank(x,profile))
+            markets=sorted({c.market for c in game})
+            availability.append({"game_id":game_id,"model_name":model_name,"moneyline":"h2h" in markets,"spread":"spread" in markets,
+                                 "total":"total" in markets,"player_props":sorted(m for m in markets if m not in {"h2h","spread","total"}),
+                                 "candidate_count":len(game)})
+            if len(markets)<2:
+                self._sgp_reject(result,funnel,examples,game_id,"insufficient_market_diversity","games_rejected_quality_thresholds"); continue
+            funnel["games_with_2_candidate_markets"]+=1
             eligible=[]
-            for c in sorted(grouped[game_id],key=lambda x:_rank(x,profile)):
-                reasons=eligibility_reasons(c,policy)
-                if reasons: result.rejections.extend(Rejection(c.candidate_id,r) for r in reasons)
+            for c in game:
+                reasons=self._sgp_leg_reasons(c,profile)
+                if reasons: result.rejections.extend(Rejection(c.candidate_id,r,game_id) for r in reasons)
                 else: eligible.append(c)
-            script,script_reasons=self.classify_game_script(eligible)
-            pair=self._coherent_pair(eligible,script)
-            if not pair: result.rejections.append(Rejection(None,"insufficient_game_script_confidence" if script=="uncertain" else "incoherent_game_script",game_id)); continue
-            ticket=_make_ticket(TicketType.SAME_GAME_PARLAY,profile,pair,stake,self.estimator,["coherent_game_script","correlation_not_quantified"],self.calibrator)
+            if len({c.market for c in eligible})<2:
+                self._sgp_reject(result,funnel,examples,game_id,"sgp_leg_quality_threshold","games_rejected_quality_thresholds"); continue
+            scripts=self._script_candidates(eligible)
+            if not scripts:
+                self._sgp_reject(result,funnel,examples,game_id,"no_coherent_script_candidates"); continue
+            funnel["games_with_coherent_script_candidates"]+=1
+            threshold={RiskProfile.SAFE:.72,RiskProfile.BALANCED:.60,RiskProfile.AGGRESSIVE:.50}[profile]
+            scripts=[s for s in scripts if s[1]>=threshold]
+            if not scripts:
+                self._sgp_reject(result,funnel,examples,game_id,"insufficient_game_script_confidence"); continue
+            funnel["games_passing_script_confidence"]+=1
+            choices=[]; saw_conflict=saw_redundancy=False
+            max_legs=3 if profile is RiskProfile.AGGRESSIVE else 2
+            for script,alignment,reasons in scripts:
+                legs=self._legs_for_script(eligible,script,max_legs)
+                if legs:
+                    quality=sum((.45*x.confidence_score+.30*x.model_probability+.15*x.market_quality+.10*x.data_completeness) for x in legs)/len(legs)
+                    # Structural score, explicitly not a probability.
+                    score=.55*alignment+.35*quality+.10*min(x.data_completeness for x in legs)
+                    choices.append((round(score,12),script,alignment,reasons,legs,quality))
+                for a in eligible:
+                    for b in eligible:
+                        reason=conflict_reason(a,b)
+                        saw_conflict |= reason=="conflicting_selection"; saw_redundancy |= reason=="redundant_same_team_position"
+            if not choices:
+                if saw_redundancy: funnel["games_rejected_redundant_positions"]+=1
+                if saw_conflict: funnel["games_rejected_conflicting_selections"]+=1
+                self._sgp_reject(result,funnel,examples,game_id,"no_structurally_compatible_pair"); continue
+            funnel["games_with_structurally_compatible_leg_pairs"]+=1
+            score,script,alignment,script_reasons,pair,quality=sorted(choices,key=lambda x:(-x[0],x[1],tuple(c.candidate_id for c in x[4])))[0]
+            ticket=_make_ticket(TicketType.SAME_GAME_PARLAY,profile,pair,stake,self.estimator,["coherent_game_script","structural_ranking_only","correlation_not_quantified"],self.calibrator)
             ticket.game_script=script; ticket.game_script_reasons=script_reasons
-            ticket.script_alignment_score=.9; ticket.leg_quality_score=sum(x.confidence_score for x in pair)/2
-            ticket.recommendation_score=round(.6*ticket.script_alignment_score+.4*ticket.leg_quality_score,12)
-            result.tickets.append(ticket)
+            ticket.script_alignment_score=alignment; ticket.leg_quality_score=round(quality,12); ticket.recommendation_score=score
+            result.tickets.append(ticket); funnel["sgp_tickets_generated"]+=1
+        funnel["no_bet_games"]=funnel["games_evaluated"]-funnel["sgp_tickets_generated"]
+        result.diagnostics={"funnel":dict(funnel),"market_availability":availability,"representative_rejections":examples}
         if not result.tickets: result.rejections.append(Rejection(None,"insufficient_qualifying_legs"))
         return result
+
+    @staticmethod
+    def _sgp_reject(result, funnel, examples, game_id, reason, counter=None):
+        result.rejections.append(Rejection(None,reason,game_id))
+        if counter: funnel[counter]+=1
+        if len(examples)<8: examples.append({"game_id":game_id,"reason":reason})
+
+    @staticmethod
+    def _sgp_leg_reasons(candidate: BetCandidate, profile: RiskProfile) -> list[str]:
+        probability,confidence,quality={RiskProfile.SAFE:(.55,.60,.85),RiskProfile.BALANCED:(.48,.52,.75),RiskProfile.AGGRESSIVE:(.40,.44,.65)}[profile]
+        reasons=[]
+        if candidate.model_probability<probability: reasons.append("sgp_insufficient_probability")
+        if candidate.confidence_score<confidence: reasons.append("sgp_insufficient_confidence")
+        if min(candidate.market_quality,candidate.data_completeness)<quality: reasons.append("sgp_insufficient_market_data_quality")
+        return reasons
+
+    @staticmethod
+    def _script_candidates(candidates: list[BetCandidate]) -> list[tuple[str,float,list[str]]]:
+        sample=candidates[0]; h=sample.projected_home_score; a=sample.projected_away_score
+        sides=[c for c in candidates if c.market in {"h2h","spread"}]; totals=[c for c in candidates if c.market=="total"]
+        scripts=[]
+        if sides and totals:
+            best_side=max(sides,key=lambda c:(c.model_probability,c.confidence_score,-len(c.candidate_id)))
+            margin=abs(h-a) if h is not None and a is not None else abs(best_side.model_probability-.5)*20
+            reasons=[f"side_confidence={best_side.model_probability:.3f}",f"projected_margin={margin:.1f}"]
+            if best_side.market=="h2h" or (best_side.line or 0)<0:
+                scripts.append(("FAVORITE_CONTROL",min(.95,.55+margin/25),reasons))
+            if best_side.market=="spread" and (best_side.line or 0)>0:
+                scripts.append(("CLOSE_GAME",min(.9,.62+best_side.model_probability-.5),reasons))
+            for direction,name in (("over","SHOOTOUT"),("under","LOW_SCORING")):
+                matching=[c for c in totals if c.selection.casefold()==direction]
+                if matching:
+                    best=max(matching,key=lambda c:c.model_probability)
+                    scripts.append((name,min(.95,.45+.6*best.model_probability),[f"{direction}_confidence={best.model_probability:.3f}"]))
+        return scripts
+
+    @staticmethod
+    def _legs_for_script(candidates: list[BetCandidate], script: str, max_legs: int) -> list[BetCandidate] | None:
+        direction="over" if script=="SHOOTOUT" else "under" if script in {"LOW_SCORING","CLOSE_GAME"} else None
+        total=[c for c in candidates if c.market=="total" and (direction is None or c.selection.casefold()==direction)]
+        if script=="FAVORITE_CONTROL": sides=[c for c in candidates if c.market in {"h2h","spread"} and (c.market=="h2h" or (c.line or 0)<0)]
+        elif script=="CLOSE_GAME": sides=[c for c in candidates if c.market=="spread" and (c.line or 0)>0]
+        else: sides=[c for c in candidates if c.market in {"h2h","spread"}]
+        pairs=[]
+        for side in sides:
+            for scoring in total:
+                if not conflict_reason(side,scoring): pairs.append([side,scoring])
+        if not pairs: return None
+        pairs.sort(key=lambda legs:(-sum(c.confidence_score for c in legs),tuple(c.candidate_id for c in legs)))
+        legs=pairs[0]
+        # A third leg is admitted only when it adds a distinct, non-redundant
+        # market position and is stronger than the existing average.
+        if max_legs==3:
+            baseline=sum(c.confidence_score for c in legs)/2
+            extras=[c for c in candidates if c not in legs and c.market not in {x.market for x in legs} and c.confidence_score>=baseline and not any(conflict_reason(c,x) for x in legs)]
+            if extras: legs.append(sorted(extras,key=lambda c:(-c.confidence_score,c.candidate_id))[0])
+        return legs
 
     @staticmethod
     def classify_game_script(candidates: list[BetCandidate]) -> tuple[str,list[str]]:

@@ -145,3 +145,44 @@ def test_recommendation_slate_renderer_aggregation_and_diagnostics():
     ticket=slate.winner_parlays["balanced"].ticket; ticket.historical_grade="win"
     diagnostics=parlay_reliability([ticket])
     assert diagnostics["leg_count_diagnostics"]["2"]["observed_hit_rate"]==1
+
+
+def test_sgp_leg_can_fail_single_value_gate_but_support_script():
+    policy=replace(DEFAULT_POLICIES[RiskProfile.BALANCED],minimum_value_score=.99)
+    engine=TicketEngine({RiskProfile.BALANCED:policy})
+    favorite=candidate(probability=.72,implied=.70,odds=-233)
+    total=candidate(market="total",selection="over",line=44.5,probability=.62,implied=.60,odds=-150)
+    assert engine.singles([favorite],RiskProfile.BALANCED).no_bet
+    ticket=engine.same_game_parlays([favorite,total],RiskProfile.BALANCED).tickets[0]
+    assert ticket.game_script in {"FAVORITE_CONTROL","SHOOTOUT"}
+    assert ticket.recommendation_score is not None
+
+
+def test_sgp_profile_behavior_funnel_and_structural_ranking_are_deterministic():
+    candidates=[replace(candidate(probability=.64,implied=.60,odds=-150),data_completeness=.8),
+                replace(candidate(market="total",selection="over",line=45,probability=.58,implied=.52,odds=-110),data_completeness=.8)]
+    engine=TicketEngine()
+    safe=engine.same_game_parlays(candidates,RiskProfile.SAFE)
+    balanced_one=engine.same_game_parlays(candidates,RiskProfile.BALANCED)
+    balanced_two=engine.same_game_parlays(reversed(candidates),RiskProfile.BALANCED)
+    assert safe.no_bet
+    assert balanced_one.tickets[0].ticket_id==balanced_two.tickets[0].ticket_id
+    funnel=balanced_one.diagnostics["funnel"]
+    assert funnel["games_evaluated"]==1
+    assert funnel["games_with_2_candidate_markets"]==1
+    assert funnel["sgp_tickets_generated"]+funnel["no_bet_games"]==1
+    assert balanced_one.tickets[0].adjusted_joint_probability is None
+    assert balanced_one.tickets[0].adjusted_ticket_ev is None
+    assert balanced_one.tickets[0].joint_probability_status=="unavailable_correlated"
+    assert balanced_one.tickets[0].ticket_ev_status=="unavailable_correlated"
+
+
+def test_aggressive_sgp_does_not_add_redundant_third_leg():
+    policy=permissive(RiskProfile.AGGRESSIVE)
+    engine=TicketEngine({RiskProfile.AGGRESSIVE:policy})
+    legs=[candidate(probability=.7,implied=.65,odds=-185),
+          candidate(market="spread",selection="A",line=-3,probability=.65,implied=.55,odds=-122),
+          candidate(market="total",selection="over",line=45,probability=.61,implied=.52,odds=-110)]
+    ticket=engine.same_game_parlays(legs,RiskProfile.AGGRESSIVE).tickets[0]
+    assert ticket.number_of_legs==2
+    assert not ({"h2h","spread"} <= {leg.market for leg in ticket.legs})
