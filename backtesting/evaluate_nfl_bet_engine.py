@@ -67,7 +67,7 @@ def _metrics(tickets, opportunities: int, no_bets: int) -> dict[str,Any]:
 
 
 def evaluate(season: str, start_week: int, end_week: int, models: list[str], ticket_types: list[str], profiles: list[RiskProfile], stake: float, data_dir: Path=SNAPSHOTS_DIR, debug_rejections: bool=False):
-    provider=HistoricalSnapshotProvider(data_dir); engine=TicketEngine(); all_tickets=[]; rejections=[]; strategy=defaultdict(lambda:{"tickets":[],"opportunities":0,"no_bets":0})
+    provider=HistoricalSnapshotProvider(data_dir); engine=TicketEngine(); all_tickets=[]; rejections=[]; sgp_diagnostics=[]; strategy=defaultdict(lambda:{"tickets":[],"opportunities":0,"no_bets":0})
     for week in range(start_week,end_week+1):
         outcomes={str(x.get("game_id")):x for x in provider.get_outcomes("nfl",season,week)}
         for model in models:
@@ -78,6 +78,7 @@ def evaluate(season: str, start_week: int, end_week: int, models: list[str], tic
                 for kind in ticket_types:
                     key=f"{model}:{kind}:{profile.value}"; strategy[key]["opportunities"]+=1; built=builders[kind]()
                     if built.no_bet: strategy[key]["no_bets"]+=1
+                    if kind=="sgp": sgp_diagnostics.append({"model":model,"week":week,"risk_profile":profile.value,**built.diagnostics})
                     rejections.extend({**asdict(r),"week":week,"model":model,"strategy":kind,"risk_profile":profile.value} for r in built.rejections)
                     for ticket in built.tickets:
                         # Grade a copy of every leg for candidate comparison/audit.
@@ -99,22 +100,47 @@ def evaluate(season: str, start_week: int, end_week: int, models: list[str], tic
     return {"schema_version":2,"dataset":{"league":"nfl","season":season,"start_week":start_week,"end_week":end_week,"offline_only":True},
             "models":models,"strategy_metrics":metrics,"weekly_performance":{k:dict(v) for k,v in sorted(weekly.items())},
             "tickets":[t.as_dict() for t in all_tickets],"rejections":rejections if debug_rejections else [],"rejection_summary":rejection_summary,
-            "risk_ordering":ordering,"parlay_reliability":parlay_reliability(all_tickets),
+            "risk_ordering":ordering,"parlay_reliability":parlay_reliability(all_tickets),"sgp_diagnostics":sgp_diagnostics,
             "candidate_comparison":{"ticket_legs":sum(len(t.legs) for t in all_tickets),"note":"Ticket ROI is a variance-sensitive construction metric; it is separate from prediction quality."}}
 
 
-SECTIONS=("Dataset readiness","Singles","Winner Parlays","Same Game Parlays","Slate Parlays","SAFE vs BALANCED vs AGGRESSIVE","V1 vs V2","Weekly performance","Exposure diagnostics","Rejection/no-bet diagnostics","Ticket examples","Key weaknesses","Recommended next research")
+SECTIONS=("Dataset readiness","Singles","Winner Parlays","Same Game Parlay Funnel","SGP Market Availability","SGP Recommendations","SGP Rejection Reasons","Slate Parlays","SAFE vs BALANCED vs AGGRESSIVE","V1 vs V2","Weekly performance","Exposure diagnostics","Rejection/no-bet diagnostics","Ticket examples","Key weaknesses","Recommended next research")
 def render_markdown(result):
-    lines=["# NFL Betting Engine Evaluation","","> Prediction quality and ticket-construction quality are reported separately. This small sample does not establish strategy superiority.",""]
+    lines=["# NFL Betting Engine Evaluation","","> Prediction quality and ticket-construction quality are reported separately. Structural SGP scores are not probabilities.",""]
+    diagnostics=result.get("sgp_diagnostics",[])
     for section in SECTIONS:
         lines += [f"## {section}"]
         if section=="Dataset readiness": lines += [f"Offline immutable snapshots: **yes**. Season {result['dataset']['season']}, Weeks {result['dataset']['start_week']}–{result['dataset']['end_week']}."]
-        elif section in {"Singles","Winner Parlays","Same Game Parlays","Slate Parlays"}: lines += ["```json",json.dumps({k:v for k,v in result["strategy_metrics"].items() if section.split()[0].lower() in k.replace("winner","winner").replace("same","sgp")},indent=2,sort_keys=True),"```"]
-        elif section=="Weekly performance": lines += ["```json",json.dumps(result["weekly_performance"],indent=2,sort_keys=True),"```"]
+        elif section in {"Singles","Winner Parlays","Slate Parlays"}:
+            token={"Singles":":singles:","Winner Parlays":":winner:","Slate Parlays":":slate:"}[section]
+            lines += ["```json",json.dumps({k:v for k,v in result.get("strategy_metrics",{}).items() if token in k},indent=2,sort_keys=True),"```"]
+        elif section=="Same Game Parlay Funnel":
+            for row in diagnostics:
+                funnel=row["funnel"]; lines += [f"### {row['model']} — Week {row['week']} — {row['risk_profile'].upper()}","```json",json.dumps(funnel,indent=2,sort_keys=True),"```"]
+                if not funnel.get("sgp_tickets_generated"):
+                    stages=[(k,v) for k,v in funnel.items() if k.startswith("games_rejected_") and v]
+                    dominant=max(stages,key=lambda x:(x[1],x[0]),default=("no_coherent_or_confident_script",funnel.get("no_bet_games",0)))
+                    lines += [f"**Zero SGPs:** dominant terminal stage: `{dominant[0]}` ({dominant[1]} games)."]
+        elif section=="SGP Market Availability":
+            summary=Counter()
+            for row in diagnostics:
+                for game in row.get("market_availability",[]):
+                    for market in ("moneyline","spread","total"): summary[market]+=bool(game.get(market))
+                    summary["player_props"]+=bool(game.get("player_props"))
+            lines += ["Historical snapshots only; unavailable markets are not synthesized.","```json",json.dumps(dict(sorted(summary.items())),indent=2),"```"]
+        elif section=="SGP Recommendations":
+            tickets=[t for t in result.get("tickets",[]) if t.get("ticket_type")=="same_game_parlay"]
+            scripts=Counter(t.get("game_script") for t in tickets); legs=sum(t.get("number_of_legs",0) for t in tickets)
+            no_bets=sum(d.get("funnel",{}).get("no_bet_games",0) for d in diagnostics)
+            lines += [f"Tickets: **{len(tickets)}**; NO-BET games: **{no_bets}**; average legs: **{legs/len(tickets):.2f}**." if tickets else f"Tickets: **0**; NO-BET games: **{no_bets}**; average legs: **n/a**.",f"Game-script distribution: `{json.dumps(dict(sorted(scripts.items())))}`","```json",json.dumps(tickets[:5],indent=2,sort_keys=True),"```"]
+        elif section=="SGP Rejection Reasons":
+            examples=[{"model":d["model"],"week":d["week"],"risk_profile":d["risk_profile"],**x} for d in diagnostics for x in d.get("representative_rejections",[])]
+            lines += ["```json",json.dumps(examples[:20],indent=2,sort_keys=True),"```"]
+        elif section=="Weekly performance": lines += ["```json",json.dumps(result.get("weekly_performance",{}),indent=2,sort_keys=True),"```"]
         elif section=="Rejection/no-bet diagnostics": lines += ["```json",json.dumps(result.get("rejection_summary",{}),indent=2,sort_keys=True),"```"]
-        elif section=="Ticket examples": lines += ["```json",json.dumps(result["tickets"][:2],indent=2,sort_keys=True),"```"]
+        elif section=="Ticket examples": lines += ["```json",json.dumps(result.get("tickets",[])[:2],indent=2,sort_keys=True),"```"]
         elif section=="Key weaknesses": lines += ["- SGP joint probability and EV remain unavailable without a correlation-aware estimator.","- A short replay is descriptive, not evidence of superiority."]
-        elif section=="Recommended next research": lines += ["- Add simulation-backed SGP correlation estimates and evaluate on a held-out season."]
+        elif section=="Recommended next research": lines += ["- Add a correlation-aware estimator trained only on data preceding each replay week."]
         else: lines += ["See the deterministic strategy metrics in the JSON artifact."]
         lines.append("")
     return "\n".join(lines)
