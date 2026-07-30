@@ -16,7 +16,8 @@ from .nfl_game_predictor import NFLGameMarketPredictor
 from .nfl_simulation import NFLGameSimulator, audit_player_stats
 from .nfl_v3 import NFLV3Config
 from .snapshots import snapshot_week_dir
-from .team_history import prediction_cutoff, prediction_cutoff_source
+from .team_history import (filter_market_quotes, prediction_cutoff,
+                           prediction_cutoff_source)
 
 MODELS = ("nfl_game_baseline_v1", "nfl_game_baseline_v2", "nfl_game_baseline_v3")
 
@@ -30,7 +31,9 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
     exclusions=[]
     coverage={"games_evaluated":0,"team_rows_loaded":0,"team_rows_used":0,
               "player_rows_loaded":0,"player_rows_used":0,"future_rows_rejected":0,
-              "player_rows_rejected_unknown_timestamp":0}
+              "player_rows_rejected_unknown_timestamp":0,"market_rows_loaded":0,
+              "market_rows_used":0,"market_rows_rejected_future":0,
+              "cutoff_sources":{"prediction_cutoff":0,"prediction_timestamp":0,"kickoff_fallback":0}}
     readiness={"READY":0,"NOT_READY_NO_PLAYER_DATA":0,"NOT_READY_INSUFFICIENT_HISTORY":0}
     started=perf_counter()
     for week in range(start,end+1):
@@ -39,6 +42,7 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
         weekly_player_rows=json.loads(player_path.read_text()) if player_path.exists() else []
         all_player_rows.extend(weekly_player_rows)
         games=provider.get_games("nfl",str(season),week)
+        weekly_odds=provider.get_odds("nfl",str(season),week)
         outcomes={str(o.get("game_id")):o for o in provider.get_outcomes("nfl",str(season),week)}
         predictor=NFLGameMarketPredictor(model_version, NFLV3Config() if model_version==MODELS[2] else None)
         for index,game in enumerate(games):
@@ -52,6 +56,13 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
             coverage["future_rows_rejected"] += league_filter.rejected_future + player_filter.rejected_future
             coverage["player_rows_rejected_unknown_timestamp"] += player_filter.rejected_unknown_timestamp
             cutoff=prediction_cutoff(game)
+            source=prediction_cutoff_source(game)
+            coverage["cutoff_sources"][source] = coverage["cutoff_sources"].get(source, 0) + 1
+            game_odds=[row for row in weekly_odds if str(row.get("game_id")) == str(game.get("game_id"))]
+            eligible_odds, market_filter=filter_market_quotes(game,game_odds)
+            coverage["market_rows_loaded"] += market_filter["loaded"]
+            coverage["market_rows_used"] += market_filter["eligible"]
+            coverage["market_rows_rejected_future"] += market_filter["rejected_future"]
             history_diagnostic={
                 "league_team_rows_loaded":league_filter.loaded,"league_team_rows_eligible":len(league_histories),
                 "league_team_rows_rejected_future":league_filter.rejected_future,
@@ -63,8 +74,10 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
                 "historical_seasons":sorted({str(r.get("season")) for r in league_histories}),
                 "latest_team_history_timestamp":league_filter.latest_timestamp,
                 "latest_player_history_timestamp":player_filter.latest_timestamp,
+                "latest_market_snapshot_timestamp":market_filter["latest_timestamp"],
+                "eligible_market_quote_ids":[str(q.get("quote_id") or q.get("id") or q.get("snapshot_timestamp") or q.get("captured_at")) for q in eligible_odds],
                 "prediction_cutoff":cutoff.isoformat().replace("+00:00","Z") if cutoff else None,
-                "cutoff_source":prediction_cutoff_source(game)}
+                "cutoff_source":source}
             if os.getenv("BACKTESTING_DEBUG_HISTORY") == "1":
                 for dataset, filtered in (("team_stats",team_filter),("player_stats",player_filter)):
                     for offender in filtered.rejected_rows:

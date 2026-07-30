@@ -80,12 +80,23 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
                     row[extra] = record[extra]
             # Preserve explicit prediction boundaries rather than replacing
             # their semantics with kickoff during snapshot normalization.
+            parsed_boundaries = {}
             for field in ("kickoff_time", "prediction_cutoff", "prediction_timestamp"):
                 if row.get(field) is not None:
                     from .game_matching import parse_dt
                     parsed = parse_dt(row[field])
-                    if parsed:
-                        row[field] = parsed.isoformat().replace("+00:00", "Z")
+                    if not parsed:
+                        raise SnapshotError(f"invalid_{field}: game_id={row.get('game_id')}; {field}={row.get(field)!r}; source={record.get('source', 'unknown')}")
+                    parsed_boundaries[field] = parsed
+                    row[field] = parsed.isoformat().replace("+00:00", "Z")
+            kickoff = parsed_boundaries.get("kickoff_time")
+            for field in ("prediction_cutoff", "prediction_timestamp"):
+                if kickoff and parsed_boundaries.get(field) and parsed_boundaries[field] > kickoff:
+                    raise SnapshotError(
+                        f"{field}_after_kickoff: game_id={row.get('game_id')}; kickoff_time={row.get('kickoff_time')}; "
+                        f"prediction_cutoff={row.get('prediction_cutoff')}; prediction_timestamp={row.get('prediction_timestamp')}; "
+                        f"source={record.get('source', 'unknown')}"
+                    )
         if name == "odds" and "market" in row:
             row["market"] = normalize_market(row["market"])
             row.setdefault("bookmaker", record.get("bookmaker") or record.get("sportsbook"))
@@ -246,8 +257,21 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
                 report.add_error(f"Game from wrong season for {league.upper()} {season} Week {week}: {game.get('game_id')}")
             if int(game.get("week", -1)) != int(week):
                 report.add_error(f"Game from wrong week for {league.upper()} {season} Week {week}: {game.get('game_id')}")
-            if not _parse_iso(game.get("kickoff_time")):
+            kickoff = _parse_iso(game.get("kickoff_time"))
+            if not kickoff:
                 report.add_error(f"invalid_kickoff_time: {game.get('game_id')} for {league.upper()} {season} Week {week}")
+            for field in ("prediction_cutoff", "prediction_timestamp"):
+                value = game.get(field)
+                if value in (None, ""):
+                    continue
+                boundary = _parse_iso(value)
+                detail = (f"game_id={game.get('game_id')}; kickoff_time={game.get('kickoff_time')}; "
+                          f"prediction_cutoff={game.get('prediction_cutoff')}; prediction_timestamp={game.get('prediction_timestamp')}; "
+                          f"source={game.get('source', 'unknown')}")
+                if not boundary:
+                    report.add_error(f"invalid_{field}: {detail}")
+                elif kickoff and boundary > kickoff:
+                    report.add_error(f"{field}_after_kickoff: {detail}")
         # Outcome files are provider material; games.json is the authoritative
         # identity universe. Validate the same reconciled rows replay will grade.
         from .outcomes import normalize_outcomes
@@ -338,15 +362,24 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
             for row in loaded.get(dataset, []):
                 captured_at = row.get("captured_at")
                 kickoff = kickoff_by_game.get(row.get("game_id"))
+                game = next((g for g in games if g.get("game_id") == row.get("game_id")), {})
+                from .team_history import prediction_cutoff
+                availability_cutoff = prediction_cutoff(game)
+                explicit_cutoff = any(game.get(field) not in (None, "") for field in ("prediction_cutoff", "prediction_timestamp"))
                 if dataset == "odds" and row.get("is_pregame") is not True:
                     report.add_error(f"odds_not_pregame: {row.get('game_id')}")
                 for timestamp_field in (("captured_at", "data_as_of") if dataset == "odds" else ("captured_at",)):
                     timestamp = row.get(timestamp_field)
                     if dataset == "odds" and (not timestamp or not _parse_iso(timestamp)):
                         report.add_error(f"invalid_odds_timestamp: {timestamp_field}; game={row.get('game_id')}")
-                    if timestamp and kickoff and _parse_iso(timestamp) and _parse_iso(kickoff) and _parse_iso(timestamp) >= _parse_iso(kickoff):
-                        code = "odds_after_kickoff" if dataset == "odds" else "weather_after_kickoff"
-                        report.add_error(f"{code}: Future-data leakage in {dataset} for {league.upper()} {season} Week {week}: {row.get('game_id')} {timestamp_field} at/after kickoff")
+                    parsed_timestamp = _parse_iso(timestamp) if timestamp else None
+                    if dataset == "odds" and parsed_timestamp and availability_cutoff and (parsed_timestamp > availability_cutoff or (not explicit_cutoff and parsed_timestamp == availability_cutoff)):
+                        if not explicit_cutoff and parsed_timestamp == availability_cutoff:
+                            report.add_error(f"odds_after_kickoff: Future-data leakage in odds for {league.upper()} {season} Week {week}: {row.get('game_id')} {timestamp_field} at/after kickoff")
+                        else:
+                            report.add_error(f"odds_after_prediction_cutoff: Future-data leakage in odds for {league.upper()} {season} Week {week}: {row.get('game_id')} {timestamp_field} after {availability_cutoff.isoformat()}")
+                    elif dataset == "weather" and parsed_timestamp and kickoff and _parse_iso(kickoff) and parsed_timestamp >= _parse_iso(kickoff):
+                        report.add_error(f"weather_after_kickoff: Future-data leakage in weather for {league.upper()} {season} Week {week}: {row.get('game_id')} {timestamp_field} at/after kickoff")
                 if dataset == "weather" and str(row.get("source", "")).lower() in {"openweather", "current", "live"}:
                     report.add_error(f"weather_not_historical: current/live weather cannot be used for historical game {row.get('game_id')}")
         for row in loaded.get("injuries", []):
