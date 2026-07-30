@@ -14,6 +14,7 @@ from typing import Any, Iterable
 
 from .game_matching import normalize_team, parse_dt
 from .team_history import prediction_cutoff
+from .player_identity import normalize_player_id
 
 STAT_FIELDS = ("passing_attempts", "completions", "passing_yards", "passing_tds",
                "rushing_attempts", "rushing_yards", "rushing_tds", "targets",
@@ -48,7 +49,7 @@ def _name(value: Any) -> str:
 
 def player_game_identity(row: dict[str, Any]) -> tuple[str, str, str]:
     """Provider ID first; controlled name fallback remains team-scoped."""
-    player = str(row.get("player_id") or "")
+    player = normalize_player_id(row.get("player_id")) or ""
     if not player:
         player = f"name:{_name(row.get('player_name') or row.get('player'))}"
     return str(row.get("game_id") or ""), normalize_team(row.get("team")), player
@@ -104,7 +105,7 @@ def canonicalize_player_history(rows: Iterable[dict[str, Any]], *, league: str =
     rejected = Counter(); collisions: dict[str, set[str]] = defaultdict(set)
     for raw in rows:
         row = dict(raw); stats = _stats(row)
-        if not (row.get("player_id") or row.get("player") or row.get("player_name")):
+        if not (normalize_player_id(row.get("player_id")) or row.get("player") or row.get("player_name")):
             rejected["missing_player_identity"] += 1; continue
         if not row.get("team"):
             rejected["missing_team_identity"] += 1; continue
@@ -114,8 +115,8 @@ def canonicalize_player_history(rows: Iterable[dict[str, Any]], *, league: str =
         if not identity[0]:
             rejected["schema_mismatch"] += 1; continue
         row["_canonical_stats"] = stats; grouped[identity].append(row)
-        if row.get("player_id"):
-            collisions[str(row["player_id"])].add(_name(row.get("player_name") or row.get("player")))
+        if normalize_player_id(row.get("player_id")):
+            collisions[normalize_player_id(row["player_id"])].add(_name(row.get("player_name") or row.get("player")))
     observations=[]; conflicts=[]
     for identity, parts in sorted(grouped.items()):
         first=parts[0]; game=games.get(identity[0], {})
@@ -132,7 +133,7 @@ def canonicalize_player_history(rows: Iterable[dict[str, Any]], *, league: str =
         completed=(kickoff+timedelta(hours=6)) if kickoff else parse_dt(first.get("completed_at"))
         known=completed or history_known_at(first)
         timestamp=known.isoformat().replace("+00:00", "Z") if known else None
-        player_id=str(first.get("player_id") or identity[2])
+        player_id=normalize_player_id(first.get("player_id")) or identity[2]
         position=normalize_position(first.get("position")); position_source="provider"
         if position == "UNKNOWN":
             # Legacy snapshots discarded ESPN's position. A conservative,
@@ -181,7 +182,7 @@ def filter_player_history(game: dict[str, Any], rows: Iterable[dict[str, Any]], 
     target=str(game.get("game_id") or ""); accepted=[]; reasons=Counter(); latest=None; rows=list(rows)
     for row in rows:
         reason=None; known=history_known_at(row)
-        if not (row.get("player_id") or row.get("player_name")): reason="missing_player_identity"
+        if not (normalize_player_id(row.get("player_id")) or row.get("player_name")): reason="missing_player_identity"
         elif not row.get("team"): reason="missing_team_identity"
         elif not any(row.get(f) is not None for f in STAT_FIELDS): reason="missing_stat_values"
         elif row.get("record_role") != "completed_game_history": reason="unsupported_record_role"
@@ -197,4 +198,4 @@ def filter_player_history(game: dict[str, Any], rows: Iterable[dict[str, Any]], 
 
 def extract_player_outcome(rows: Iterable[dict[str, Any]], game_id: str, player_id: str) -> dict[str, Any] | None:
     return next((r for r in rows if str(r.get("game_id"))==str(game_id) and
-                 str(r.get("player_id"))==str(player_id)), None)
+                 normalize_player_id(r.get("player_id"))==normalize_player_id(player_id)), None)

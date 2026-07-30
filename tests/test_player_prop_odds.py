@@ -6,6 +6,7 @@ from backtesting.markets import normalize_player_prop_market
 from backtesting.player_prop_acquisition import plan_acquisition
 from backtesting.player_prop_odds import (availability, execution_and_consensus, filter_player_quotes,
     grade_quote, normalize_provider_outcomes, pair_quotes, reconcile_player, simulation_fair_sgp_price)
+from backtesting.player_identity import normalize_player_id
 
 PLAYERS=[{"game_id":"g1","player_id":"p1","player_name":"Pat Passer","team":"BUF"}]
 def event(lines=(250.5,250.5)):
@@ -22,6 +23,28 @@ def test_reconciliation_failures():
     assert reconcile_player({"description":"Nobody"},PLAYERS,game_id="g1").status == "UNKNOWN"
     assert reconcile_player({"description":"Pat Passer","team":"MIA"},PLAYERS,game_id="g1").status == "UNKNOWN"
     assert reconcile_player({"description":"Pat Passer"},PLAYERS*2,game_id="g1").status == "EXACT_NAME_TEAM"
+
+@pytest.mark.parametrize("value", [None, "", "  ", "None", "none", "null", "NULL"])
+def test_null_player_id_spellings_are_missing(value):
+    assert normalize_player_id(value) is None
+
+def test_literal_null_id_uses_real_history_fallback_for_qb():
+    players=[{"game_id":"g1","player_id":"None","player_name":"Week One QB","team":"DAL","position":"QB"}]
+    rec=reconcile_player({"description":"Week One QB","player_id":"null","team":"DAL"},players,game_id="g1")
+    assert rec.status == "EXACT_NAME_TEAM_GAME"
+    assert rec.canonical_player_id == "history:g1:DAL:week one qb"
+    rows,_=normalize_provider_outcomes(event={"id":"e1","bookmakers":[{"key":"b","markets":[
+        {"key":"player_pass_yds","outcomes":[{"name":"Over","description":"Week One QB","team":"DAL","point":250.5,"price":-110}]}]}]},
+        league="nfl",season=2025,week=1,game_id="g1",canonical_players=players,
+        snapshot_timestamp="2025-09-01T00:00:00Z")
+    assert rows[0]["canonical_player_id"].startswith("history:g1:DAL:")
+    assert rows[0]["reconciliation_method"] == "EXACT_NAME_TEAM_GAME"
+
+def test_current_game_identity_metadata_needs_no_feature_stats():
+    roster_identity={"game_id":"g1","athlete_id":"12345","player_name":"Rookie QB","team":"PHI","position":"QB"}
+    rec=reconcile_player({"description":"Rookie QB","team":"PHI"},[roster_identity],game_id="g1")
+    assert rec.canonical_player_id == "12345"
+    assert "stats" not in rec.player
 
 def test_missing_ids_do_not_collapse_players_or_quote_identity():
     players=[{"game_id":"g1","player_name":f"Player {n}","team":"BUF"} for n in range(100)]

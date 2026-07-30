@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from .markets import CANONICAL_PLAYER_PROP_MARKETS, normalize_player_prop_market
 from .player_prop_odds import availability
+from .player_identity import normalize_player_id
 
 
 def _json_files(root: Path):
@@ -26,10 +27,10 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
         if path.name == "player_prop_rebuild_audit.json" and isinstance(payload,dict):
             for event_report in (payload.get("event_coverage") or {}).values():
                 for market,stages in (event_report.get("funnel") or {}).items():
-                    target=funnel.setdefault(market,{key:0 for key in ("raw_rows","normalized_rows","identity_matched","timestamp_eligible","deduplicated","paired","persisted","rejected")})
+                    target=funnel.setdefault(market,{key:0 for key in ("raw","normalized","identity_matched","identity_ambiguous","identity_unknown","timestamp_eligible","deduplicated","paired","persisted","rejected")})
                     target.setdefault("rejections",{})
                     for key in tuple(target):
-                        if key != "rejections": target[key]+=int(stages.get(key,0))
+                        if key != "rejections": target[key]+=int(stages.get(key,stages.get(key+"_rows",0)))
                     for reason,count in stages.get("rejections",{}).items(): target["rejections"][reason]=target["rejections"].get(reason,0)+count
             continue
         candidates=payload if isinstance(payload,list) else payload.get("data", payload.get("quotes", [])) if isinstance(payload,dict) else []
@@ -58,7 +59,7 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
     events.update(str(r.get("provider_event_id")) for r in filtered if r.get("provider_event_id"))
     covered=sorted({int(r.get("week")) for r in filtered if r.get("week")})
     markets=Counter(r["market"] for r in filtered)
-    reconciled=[r for r in filtered if r.get("canonical_player_id")]
+    reconciled=[r for r in filtered if normalize_player_id(r.get("canonical_player_id")) is not None]
     avail=availability(reconciled, requested_weeks=range(start_week,end_week+1))
     from .player_prop_odds import pair_quotes
     complete=sum(p["complete"] for p in pair_quotes(reconciled))
@@ -66,29 +67,39 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
     ambiguous=sum(r.get("reconciliation_status") == "ambiguous_player" for r in filtered)
     invalid_ts=sum(not (r.get("provider_snapshot_timestamp") or r.get("snapshot_timestamp")) for r in filtered)
     line_ready="READY" if reconciled else "NOT_READY"; price_ready="READY" if complete else "NOT_READY"
-    canonical_ids={str(r.get("canonical_player_id")) for r in reconciled if r.get("canonical_player_id") not in (None,"")}
+    canonical_ids={normalize_player_id(r.get("canonical_player_id")) for r in reconciled}
     provider_names={str(r.get("provider_player_name")) for r in filtered if r.get("provider_player_name") not in (None,"")}
-    missing_ids=sum(r.get("canonical_player_id") in (None,"") for r in filtered)
-    fallback={str(r.get("provider_player_name")).strip().casefold() for r in filtered if r.get("canonical_player_id") in (None,"") and r.get("provider_player_name")}
+    missing_ids=sum(normalize_player_id(r.get("canonical_player_id")) is None for r in filtered)
+    literal_none_ids=sum(str(r.get("canonical_player_id")).strip().casefold() in {"none","null"} for r in filtered if r.get("canonical_player_id") is not None)
+    fallback={str(r.get("provider_player_name")).strip().casefold() for r in filtered if normalize_player_id(r.get("canonical_player_id")) is None and r.get("provider_player_name")}
     identities_by_id={}
     for r in reconciled:
-        if r.get("canonical_player_id"):
+        if normalize_player_id(r.get("canonical_player_id")):
             name=" ".join("".join(c for c in str(r.get("provider_player_name") or r.get("player_name") or "").casefold() if c.isalnum() or c.isspace()).split())
             identities_by_id.setdefault(str(r["canonical_player_id"]),set()).add((name,str(r.get("team") or "").casefold()))
     identity_collisions={key:sorted([list(v) for v in values]) for key,values in identities_by_id.items() if len(values)>1}
     collisions=len(identity_collisions)
+    match_methods=Counter(str(r.get("reconciliation_method") or r.get("reconciliation_status") or "UNKNOWN") for r in reconciled)
+    funnel_ambiguous=sum(int(stages.get("identity_ambiguous",0)) for stages in funnel.values())
+    funnel_unknown=sum(int(stages.get("identity_unknown",0)) for stages in funnel.values())
     invariant_errors=[]
     if sum(markets.values()) != len(filtered): invariant_errors.append("coverage_by_market_sum_must_equal_quote_count")
     return {"network_contacted":False,"files_inspected":len(inspected),"inspected_files":inspected,"invalid_files":invalid,
             "existing_prop_rows":len(filtered),"reconciled_rows":len(reconciled),"events":len(events),"bookmakers":sorted(books),
             "games":len({r.get("game_id") for r in filtered if r.get("game_id")}),"players":len(canonical_ids | {"fallback:"+n for n in fallback}),
             "unique_canonical_player_ids":len(canonical_ids),"unique_provider_player_names":len(provider_names),
-            "quotes_missing_canonical_player_id":missing_ids,"quotes_using_fallback_identity":sum(1 for r in filtered if r.get("canonical_player_id") in (None,"") and r.get("provider_player_name")),
+            "quotes_missing_canonical_player_id":missing_ids,"accepted_quotes_with_null_id":missing_ids-literal_none_ids,
+            "accepted_quotes_with_literal_none_id":literal_none_ids,
+            "quotes_using_fallback_identity":sum(1 for r in filtered if normalize_player_id(r.get("canonical_player_id")) is None and r.get("provider_player_name")),
             "identity_collision_count":collisions,"identity_collisions":identity_collisions,
+            "identity_match_method_counts":dict(sorted(match_methods.items())),
+            "fallback_ids_used":sum(1 for value in canonical_ids if value.startswith("history:")),
+            "provider_id_matches":match_methods.get("EXACT_PROVIDER_ID",0),
+            "name_team_game_matches":match_methods.get("EXACT_NAME_TEAM_GAME",0),
             "markets":dict(sorted(markets.items())),"weeks_covered":covered,
             "missing_markets":sorted(set(CANONICAL_PLAYER_PROP_MARKETS)-set(markets)),"coverage":avail,
             "quote_count":len(filtered),"paired_over_under_count":complete,"gradeable_quote_count":complete*2,
-            "unmatched_player_count":unmatched,"ambiguous_player_count":ambiguous,"invalid_timestamp_count":invalid_ts,
+            "unmatched_player_count":unmatched+funnel_unknown,"ambiguous_player_count":ambiguous+funnel_ambiguous,"invalid_timestamp_count":invalid_ts,
             "coverage_by_market":dict(sorted(markets.items())),"coverage_by_week":dict(sorted(Counter(int(r.get("week") or 0) for r in filtered).items())),
             "historical_line_readiness":line_ready,"historical_price_readiness":price_ready,
             "PLAYER_IDENTITY_READY":"READY" if reconciled and not collisions and not missing_ids else "PARTIAL" if reconciled and not collisions else "NOT_READY",
