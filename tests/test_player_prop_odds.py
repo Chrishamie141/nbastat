@@ -39,6 +39,23 @@ def test_offline_audit_partial_and_plan(tmp_path):
     assert report["network_contacted"] is False and report["coverage"]["passing_yards"]["HISTORICAL_PRICE_READY"] == "PARTIAL"
     plan=plan_acquisition([{"game_id":"g1","provider_event_id":"e1"}],tmp_path)
     assert plan["network_contacted"] is False and plan["requests_required"] == 1 and plan["estimated_credits"] == 60
+def test_audit_identity_does_not_count_null_as_a_player(tmp_path):
+    d=tmp_path/"nfl/2025/week_01"; d.mkdir(parents=True)
+    rows=quotes()+[{**quotes()[0],"canonical_player_id":None,"provider_player_name":"Fallback Person"}]
+    (d/"player_prop_odds.json").write_text(json.dumps(rows))
+    report=audit_cache(tmp_path,season=2025,start_week=1,end_week=1)
+    assert report["unique_canonical_player_ids"]==1
+    assert report["players"]==2 and report["quotes_missing_canonical_player_id"]==1
+    assert report["quotes_using_fallback_identity"]==1 and report["invariants_passed"]
+
+def test_raw_event_object_market_discovery(tmp_path):
+    d=tmp_path/"raw_cache/nfl/2025/week_01"; d.mkdir(parents=True)
+    raw=event(); raw["bookmakers"][0]["markets"].append({"key":"player_pass_tds","outcomes":[
+        {"name":"Over","description":"Pat Passer","point":1.5,"price":110},
+        {"name":"Under","description":"Pat Passer","point":1.5,"price":-130}]})
+    (d/"response.json").write_text(json.dumps({"timestamp":"2025-09-01T11:00:00Z","data":raw}))
+    report=audit_cache(tmp_path,season=2025,start_week=1,end_week=1)
+    assert report["raw_provider_coverage"]=={"player_pass_tds":2,"player_pass_yds":2}
 def test_missing_pricing_and_fair_sgp_label():
     assert availability([],requested_weeks=[1])["passing_yards"]["HISTORICAL_PRICE_READY"] == "NOT_READY"
     fair=simulation_fair_sgp_price(.25); assert fair["simulation_fair_decimal_odds"] == 4 and fair["sportsbook_ev"] is None and "MODEL_FAIR" in fair["price_type"]
