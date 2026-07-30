@@ -33,6 +33,50 @@ def prediction_cutoff_source(game: dict[str, Any]) -> str | None:
     return None
 
 
+MARKET_TIMESTAMP_FIELDS = ("snapshot_timestamp", "captured_at", "data_as_of", "market_last_update")
+
+
+def market_quote_known_at(row: dict[str, Any]):
+    """Return the latest timestamp constraining when a quote was knowable.
+
+    Every supplied provenance timestamp is a constraint.  A malformed value
+    makes the quote ineligible rather than permitting fallback to another
+    (possibly earlier) field.
+    """
+    values = []
+    for field in MARKET_TIMESTAMP_FIELDS:
+        value = row.get(field)
+        if value not in (None, ""):
+            parsed = parse_dt(value)
+            if parsed is None:
+                return None
+            values.append(parsed)
+    return max(values) if values else None
+
+
+def filter_market_quotes(game: dict[str, Any], rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Freeze historical quotes at the game's authoritative cutoff (inclusive)."""
+    cutoff = prediction_cutoff(game)
+    if cutoff is None:
+        raise ValueError("target game has no valid prediction cutoff")
+    eligible, rejected_future, rejected_unknown = [], 0, 0
+    latest = None
+    for row in rows:
+        known = market_quote_known_at(row)
+        if known is None:
+            rejected_unknown += 1
+        elif known > cutoff:
+            rejected_future += 1
+        else:
+            eligible.append(row)
+            latest = known if latest is None or known > latest else latest
+    return eligible, {
+        "loaded": len(rows), "eligible": len(eligible),
+        "rejected_future": rejected_future, "rejected_unknown_timestamp": rejected_unknown,
+        "latest_timestamp": latest.isoformat().replace("+00:00", "Z") if latest else None,
+    }
+
+
 def history_known_at(row: dict[str, Any]):
     """Return when a historical fact was provably available.
 

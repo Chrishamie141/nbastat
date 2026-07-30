@@ -3,8 +3,8 @@ from __future__ import annotations
 from backtesting.nfl_simulation import NFLGameSimulator
 from backtesting.historical_provider import HistoricalSnapshotProvider
 from backtesting.nfl_game_predictor import NFLGameMarketPredictorV2
-from backtesting.snapshots import normalize_dataset, snapshot_week_dir
-from backtesting.team_history import filter_game_history, prediction_cutoff
+from backtesting.snapshots import SnapshotError, normalize_dataset, snapshot_week_dir
+from backtesting.team_history import filter_game_history, filter_market_quotes, prediction_cutoff
 
 
 def game(game_id="target", kickoff="2025-09-08T20:20:00Z"):
@@ -111,6 +111,40 @@ def test_snapshot_preserves_prediction_timestamp_and_player_history_is_optional(
     assert loaded["prediction_timestamp"] == "2025-09-07T20:20:00Z"
     views = provider.get_game_histories("nfl", "2025", 2, loaded)
     assert views.player_history.rows == [] and views.player_history.loaded == 0
+
+
+def test_prediction_boundary_normalization_rules_and_precedence():
+    base = {**game(), "prediction_cutoff": "2025-09-08T20:20:00Z"}
+    assert normalize_dataset("games", [base], "nfl", "2025", 2)[0]["prediction_cutoff"] == base["kickoff_time"]
+    both = {**game(), "prediction_cutoff": "2025-09-07T10:00:00Z",
+            "prediction_timestamp": "2025-09-07T12:00:00Z"}
+    assert prediction_cutoff(both).isoformat() == "2025-09-07T10:00:00+00:00"
+    for field, value, code in (
+        ("prediction_cutoff", "bad", "invalid_prediction_cutoff"),
+        ("prediction_cutoff", "2025-09-09T00:00:00Z", "prediction_cutoff_after_kickoff"),
+        ("prediction_timestamp", "2025-09-09T00:00:00Z", "prediction_timestamp_after_kickoff"),
+    ):
+        try:
+            normalize_dataset("games", [{**game(), field: value}], "nfl", "2025", 2)
+        except SnapshotError as exc:
+            assert code in str(exc) and "game_id=target" in str(exc) and "source=" in str(exc)
+        else:
+            raise AssertionError(f"normalization accepted {field}={value}")
+
+
+def test_market_quotes_share_explicit_cutoff_boundary():
+    target = {**game(kickoff="2025-09-14T17:00:00Z"),
+              "prediction_cutoff": "2025-09-13T17:00:00Z"}
+    rows = [{"id": name, "captured_at": stamp} for name, stamp in (
+        ("eligible", "2025-09-13T16:00:00Z"),
+        ("saturday-late", "2025-09-13T18:00:00Z"),
+        ("sunday", "2025-09-14T16:00:00Z"))]
+    eligible, diagnostic = filter_market_quotes(target, rows)
+    assert [row["id"] for row in eligible] == ["eligible"]
+    assert diagnostic["rejected_future"] == 2
+    team_result = filter_game_history(target, [team("eligible-history", "2025-09-13T16:00:00Z"),
+                                                team("late-history", "2025-09-13T18:00:00Z")], dataset="team")
+    assert [row["game_id"] for row in team_result.rows] == ["eligible-history"]
 
 
 def test_v2_provider_view_preserves_league_wide_features(tmp_path):

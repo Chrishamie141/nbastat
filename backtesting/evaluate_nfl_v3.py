@@ -12,7 +12,7 @@ from typing import Any
 
 from .config import SNAPSHOTS_DIR
 from .evaluation import error_metrics, probability_metrics
-from .game_matching import match_game, normalize_team, parse_dt
+from .game_matching import match_game, normalize_team
 from .historical_provider import HistoricalSnapshotProvider
 from .markets import normalize_market
 from .nfl_game_predictor import (NFLGameMarketPredictor, V1_MODEL_VERSION,
@@ -22,6 +22,8 @@ from .nfl_v3 import (NFLResearchSplit, NFLV3Config, V3_MODEL_VERSION,
                      verify_holdout_manifest)
 from .outcomes import normalize_outcomes
 from .snapshots import SnapshotError, snapshot_week_dir
+from .team_history import (filter_market_quotes, market_quote_known_at, prediction_cutoff,
+                           prediction_cutoff_source)
 
 REQUIRED_EVALUATION_DATASETS = ("games", "outcomes", "team_stats", "odds")
 SUPPORTED_MODELS = (V1_MODEL_VERSION, V2_MODEL_VERSION, V3_MODEL_VERSION)
@@ -74,11 +76,9 @@ def _canonical_odds(games: list[dict[str, Any]], odds: list[dict[str, Any]]) -> 
 
 
 def _market_context(game: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """Build strictly pre-kickoff, no-vig home-side context for V3."""
-    kickoff = parse_dt(game.get("kickoff_time") or game.get("commence_time"))
-    valid = [row for row in rows if normalize_market(row.get("market")) == "h2h"
-             and parse_dt(row.get("captured_at") or row.get("snapshot_timestamp"))
-             and kickoff and parse_dt(row.get("captured_at") or row.get("snapshot_timestamp")) < kickoff
+    """Build cutoff-frozen, no-vig home-side context for V3."""
+    frozen, _diagnostics = filter_market_quotes(game, rows)
+    valid = [row for row in frozen if normalize_market(row.get("market")) == "h2h"
              and row.get("odds") not in (None, "", 0) and row.get("selection")]
     probabilities = []
     by_book: dict[str, list[dict[str, Any]]] = {}
@@ -97,7 +97,7 @@ def _market_context(game: dict[str, Any], rows: list[dict[str, Any]]) -> dict[st
                 probabilities.append(probability)
     if not probabilities:
         return None
-    captured = max(str(row.get("captured_at") or row.get("snapshot_timestamp")) for row in valid)
+    captured = max(market_quote_known_at(row) for row in valid).isoformat().replace("+00:00", "Z")
     return {"moneyline_probability": median(probabilities), "captured_at": captured}
 
 
@@ -144,6 +144,8 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
     exclusions: list[dict[str, Any]] = []
     diagnostics: dict[str, Any] = {"snapshots_discovered": 0, "weeks_discovered": [], "games_loaded": 0,
         "games_with_complete_outcomes": 0, "games_with_usable_historical_features": 0,
+        "cutoff_sources": {"prediction_cutoff": 0, "prediction_timestamp": 0, "kickoff_fallback": 0},
+        "future_market_rows_rejected": 0,
         "predictions_generated_per_model": {model: 0 for model in models},
         "games_evaluated_per_model": {model: 0 for model in models}}
     for week in range(start, end + 1):
@@ -152,13 +154,14 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
         diagnostics["snapshots_discovered"] += 1
         diagnostics["weeks_discovered"].append(week)
         games = provider.get_games("nfl", str(season), week)
-        histories = provider.get_team_stats("nfl", str(season), week)
         outcomes = normalize_outcomes(provider.get_outcomes("nfl", str(season), week), games, "nfl", str(season), week)
         outcome_map = {str(o["game_id"]): o for o in outcomes if o.get("match_success")}
         odds_by_game = _canonical_odds(games, provider.get_odds("nfl", str(season), week))
         diagnostics["games_loaded"] += len(games)
         for game in games:
             game_id = str(game.get("game_id"))
+            cutoff_source = prediction_cutoff_source(game)
+            diagnostics["cutoff_sources"][cutoff_source] = diagnostics["cutoff_sources"].get(cutoff_source, 0) + 1
             outcome = outcome_map.get(game_id)
             if not outcome or not outcome.get("completed") or outcome.get("final_home_score") is None or outcome.get("final_away_score") is None:
                 exclusions.append({"week": week, "game_id": game_id, "reason": "incomplete_or_unmatched_outcome"})
@@ -166,9 +169,13 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
             diagnostics["games_with_complete_outcomes"] += 1
             projections = {}
             game_odds = odds_by_game.get(game_id, [])
-            context = _market_context(game, game_odds)
+            frozen_odds, market_diagnostic = filter_market_quotes(game, game_odds)
+            diagnostics["future_market_rows_rejected"] += market_diagnostic["rejected_future"]
+            context = _market_context(game, frozen_odds)
+            views = provider.get_game_histories("nfl", str(season), week, game)
             for model in models:
                 predictor = NFLGameMarketPredictor(model, config if model == V3_MODEL_VERSION else None)
+                histories = views.target_team_history.rows if model == V1_MODEL_VERSION else views.league_team_history.rows
                 projections[model] = predictor.project(game, histories, context) if model == V3_MODEL_VERSION else predictor.project(game, histories)
                 if projections[model] is None:
                     exclusions.append({"week": week, "game_id": game_id, "model": model,
@@ -178,7 +185,7 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
                 projection = projections[model]
                 home, away = str(game["home_team"]), str(game["away_team"])
                 actual_home, actual_away = float(outcome["final_home_score"]), float(outcome["final_away_score"])
-                spread, total = _market_lines(game, game_odds)
+                spread, total = _market_lines(game, frozen_odds)
                 probabilities = {"h2h": projection.probability("h2h", home, home_team=home, away_team=away),
                     "spread": projection.probability("spread", home, spread, home_team=home, away_team=away) if spread is not None else None,
                     "total": projection.probability("total", "over", total, home_team=home, away_team=away) if total is not None else None}
@@ -191,6 +198,13 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
                     "outcome": int(actual_home > actual_away) if actual_home != actual_away else None,
                     "projected_home": projection.home_points, "projected_away": projection.away_points,
                     "actual_home": actual_home, "actual_away": actual_away,
+                    "cutoff_diagnostics": {"prediction_cutoff": prediction_cutoff(game).isoformat().replace("+00:00", "Z"),
+                        "cutoff_source": prediction_cutoff_source(game),
+                        "latest_team_feature_timestamp": views.league_team_history.latest_timestamp,
+                        "latest_player_feature_timestamp": views.player_history.latest_timestamp,
+                        "latest_market_snapshot_timestamp": market_diagnostic["latest_timestamp"],
+                        "eligible_market_quote_ids": [str(q.get("quote_id") or q.get("id") or q.get("snapshot_timestamp") or q.get("captured_at")) for q in frozen_odds],
+                        "future_market_rows_rejected": market_diagnostic["rejected_future"]},
                     "feature_diagnostics": getattr(predictor, "last_feature_diagnostics", {}),
                     "v3_probabilities": ({key: projection.features.get(key) for key in
                         ("football_probability", "market_probability", "blended_probability")}
