@@ -44,13 +44,17 @@ def inspect_cache(path: Path, *, event_id: str, requested_at: str,
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return "invalid", None, [f"malformed_json: {exc}"]
-    event = payload.get("data") if isinstance(payload, dict) else None
+    data = payload.get("data") if isinstance(payload, dict) else payload
+    if isinstance(data, list):
+        matches=[item for item in data if isinstance(item,dict) and str(item.get("id") or item.get("event_id")) == str(event_id)]
+        event=matches[0] if len(matches)==1 else None
+    else: event=data
     errors: list[str] = []
-    if not isinstance(payload, dict) or not isinstance(event, dict):
-        errors.append("response must contain one data event object")
+    if not isinstance(event, dict):
+        errors.append("response must contain one matching event object")
     else:
         if str(event.get("id") or event.get("event_id")) != str(event_id): errors.append("unmatched_event")
-        if not isinstance(payload.get("timestamp"), str): errors.append("missing_provider_snapshot_timestamp")
+        if isinstance(payload,dict) and "data" in payload and not isinstance(payload.get("timestamp"), str): errors.append("missing_provider_snapshot_timestamp")
         returned = {m.get("key") for b in event.get("bookmakers", []) if isinstance(b, dict)
                     for m in b.get("markets", []) if isinstance(m, dict)}
         unexpected = returned - set(keys)

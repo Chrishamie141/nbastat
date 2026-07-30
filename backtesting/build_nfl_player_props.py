@@ -44,7 +44,9 @@ def load_registry(root: Path, season: int, start: int, end: int) -> list[dict[st
 def _players(directory: Path, games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows=_load(directory/"player_stats.json",[]); expanded=[]
     for row in rows:
-        copy=dict(row); copy.setdefault("player_id",copy.get("canonical_player_id") or copy.get("athlete_id")); copy.setdefault("player_name",copy.get("player") or copy.get("name"))
+        copy=dict(row)
+        if not copy.get("player_id"): copy["player_id"]=copy.get("canonical_player_id") or copy.get("athlete_id")
+        if not copy.get("player_name"): copy["player_name"]=copy.get("player") or copy.get("name")
         if copy.get("game_id"): expanded.append(copy)
         else:
             for game in games:
@@ -96,8 +98,14 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
                 print(f"Paid request {paid+1}/{budget}: {_redact_url(url)}")
                 payload=cache.get_or_fetch("odds-api","nfl",season,week,"event-player-props",params,lambda:_fetch_json(url),overwrite=state=="invalid",replacement_reason="validated player-prop cache replacement")
                 paid+=1
-            event=payload["data"]; normalized,rejected=normalize_provider_outcomes(event,league="nfl",season=season,week=week,game_id=str(game["game_id"]),canonical_players=players,
-                snapshot_timestamp=payload["timestamp"],requested_snapshot_timestamp=rec["requested_snapshot_timestamp"])
+            data=payload.get("data",payload) if isinstance(payload,dict) else payload
+            candidates=data if isinstance(data,list) else [data]
+            matching=[e for e in candidates if isinstance(e,dict) and str(e.get("id") or e.get("event_id"))==str(rec["provider_event_id"])]
+            if len(matching)!=1: raise ValueError(f"cache must contain exactly one event {rec['provider_event_id']}")
+            event=matching[0]; envelope_timestamp=payload.get("timestamp") if isinstance(payload,dict) else None
+            snapshot_timestamp=envelope_timestamp or rec["requested_snapshot_timestamp"]
+            normalized,rejected=normalize_provider_outcomes(event,league="nfl",season=season,week=week,game_id=str(game["game_id"]),canonical_players=players,
+                snapshot_timestamp=snapshot_timestamp,requested_snapshot_timestamp=rec["requested_snapshot_timestamp"])
             raw_counts={}
             for book in event.get("bookmakers",[]) or []:
                 for market in book.get("markets",[]) or []:
@@ -132,14 +140,39 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
             for item in rejected:
                 key=str(item.get("market") or (item.get("quote") or {}).get("provider_market") or "unknown")
                 reasons.setdefault(key,{}); reasons[key][item["reason"]]=reasons[key].get(item["reason"],0)+1
+            canonical_raw={}; canonical_normalized={}; canonical_persisted={}
+            from .markets import normalize_player_prop_market
+            for key,count in raw_counts.items():
+                canonical=normalize_player_prop_market(key)
+                if canonical: canonical_raw[canonical]=canonical_raw.get(canonical,0)+count
+            for key,count in normalized_counts.items():
+                canonical=normalize_player_prop_market(key)
+                if canonical: canonical_normalized[canonical]=canonical_normalized.get(canonical,0)+count
+            for key,count in persisted_counts.items():
+                canonical=normalize_player_prop_market(key)
+                if canonical: canonical_persisted[canonical]=canonical_persisted.get(canonical,0)+count
+            funnel={}
+            for market in sorted(set(canonical_raw)|set(canonical_normalized)|set(canonical_persisted)):
+                market_rejections={}
+                for provider_key,counts in reasons.items():
+                    if normalize_player_prop_market(provider_key)==market or provider_key==market:
+                        for reason,count in counts.items(): market_rejections[reason]=market_rejections.get(reason,0)+count
+                raw=canonical_raw.get(market,0); norm=canonical_normalized.get(market,0); persisted_count=canonical_persisted.get(market,0)
+                funnel[market]={"raw_rows":raw,"normalized_rows":norm,"identity_matched":norm,
+                    "timestamp_eligible":sum(q.get("market")==market for q in safe),
+                    "deduplicated":sum(q.get("market")==market for q in eligible),
+                    "paired":persisted_count,"persisted":persisted_count,"rejected":raw-persisted_count,
+                    "rejections":dict(sorted(market_rejections.items()))}
             event_coverage[rec["provider_event_id"]]={"raw_provider":dict(sorted(raw_counts.items())),
                 "normalized":dict(sorted(normalized_counts.items())),"persisted":dict(sorted(persisted_counts.items())),
-                "rejections":reasons}
+                "funnel":funnel,"rejections":reasons}
         errors=validate_player_prop_rows(rows,games,players)
         if errors and validate: raise ValueError("player_prop_odds validation failed:\n"+"\n".join(errors))
         counters={}
         for item in all_rejected: counters[item["reason"]]=counters.get(item["reason"],0)+1
         persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"rejection_counters":counters,"validation_errors":errors}
+        _atomic_json(directory/"player_prop_rebuild_audit.json",{"network_contacted":False,"paid_requests_made":paid,
+            "event_coverage":event_coverage,"rejection_counters":counters})
     return {"network_contacted":bool(paid),"paid_requests_made":paid,"paid_request_budget":budget,
             "weeks":weekly,"event_coverage":event_coverage,"rejected":all_rejected}
 

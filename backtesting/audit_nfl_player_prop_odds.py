@@ -13,11 +13,25 @@ def _json_files(root: Path):
 
 
 def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> dict[str, Any]:
-    rows=[]; events=set(); books=set(); inspected=[]; invalid=[]; raw_markets=Counter(); raw_by_event={}
-    for path in _json_files(root):
+    rows=[]; events=set(); books=set(); inspected=[]; invalid=[]; raw_markets=Counter(); raw_by_event={}; funnel={}
+    roots=[root]
+    raw_root=root.parent/"raw_cache"
+    if raw_root.exists() and raw_root.resolve()!=root.resolve(): roots.append(raw_root)
+    files=sorted({p for search_root in roots for p in _json_files(search_root)
+                  if str(season) in p.parts and (week:=row_week(p)) and start_week<=week<=end_week})
+    for path in files:
         inspected.append(str(path))
         try: payload=json.loads(path.read_text())
         except (OSError, json.JSONDecodeError): invalid.append(str(path)); continue
+        if path.name == "player_prop_rebuild_audit.json" and isinstance(payload,dict):
+            for event_report in (payload.get("event_coverage") or {}).values():
+                for market,stages in (event_report.get("funnel") or {}).items():
+                    target=funnel.setdefault(market,{key:0 for key in ("raw_rows","normalized_rows","identity_matched","timestamp_eligible","deduplicated","paired","persisted","rejected")})
+                    target.setdefault("rejections",{})
+                    for key in tuple(target):
+                        if key != "rejections": target[key]+=int(stages.get(key,0))
+                    for reason,count in stages.get("rejections",{}).items(): target["rejections"][reason]=target["rejections"].get(reason,0)+count
+            continue
         candidates=payload if isinstance(payload,list) else payload.get("data", payload.get("quotes", [])) if isinstance(payload,dict) else []
         # canonical files
         for row in candidates if isinstance(candidates,list) else []:
@@ -56,10 +70,13 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
     provider_names={str(r.get("provider_player_name")) for r in filtered if r.get("provider_player_name") not in (None,"")}
     missing_ids=sum(r.get("canonical_player_id") in (None,"") for r in filtered)
     fallback={str(r.get("provider_player_name")).strip().casefold() for r in filtered if r.get("canonical_player_id") in (None,"") and r.get("provider_player_name")}
-    names_by_id={}
+    identities_by_id={}
     for r in reconciled:
-        if r.get("canonical_player_id"): names_by_id.setdefault(str(r["canonical_player_id"]),set()).add(str(r.get("provider_player_name") or r.get("player_name") or "").casefold())
-    collisions=sum(len(names)>1 for names in names_by_id.values())
+        if r.get("canonical_player_id"):
+            name=" ".join("".join(c for c in str(r.get("provider_player_name") or r.get("player_name") or "").casefold() if c.isalnum() or c.isspace()).split())
+            identities_by_id.setdefault(str(r["canonical_player_id"]),set()).add((name,str(r.get("team") or "").casefold()))
+    identity_collisions={key:sorted([list(v) for v in values]) for key,values in identities_by_id.items() if len(values)>1}
+    collisions=len(identity_collisions)
     invariant_errors=[]
     if sum(markets.values()) != len(filtered): invariant_errors.append("coverage_by_market_sum_must_equal_quote_count")
     return {"network_contacted":False,"files_inspected":len(inspected),"inspected_files":inspected,"invalid_files":invalid,
@@ -67,17 +84,19 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
             "games":len({r.get("game_id") for r in filtered if r.get("game_id")}),"players":len(canonical_ids | {"fallback:"+n for n in fallback}),
             "unique_canonical_player_ids":len(canonical_ids),"unique_provider_player_names":len(provider_names),
             "quotes_missing_canonical_player_id":missing_ids,"quotes_using_fallback_identity":sum(1 for r in filtered if r.get("canonical_player_id") in (None,"") and r.get("provider_player_name")),
-            "identity_collision_count":collisions,
+            "identity_collision_count":collisions,"identity_collisions":identity_collisions,
             "markets":dict(sorted(markets.items())),"weeks_covered":covered,
             "missing_markets":sorted(set(CANONICAL_PLAYER_PROP_MARKETS)-set(markets)),"coverage":avail,
             "quote_count":len(filtered),"paired_over_under_count":complete,"gradeable_quote_count":complete*2,
             "unmatched_player_count":unmatched,"ambiguous_player_count":ambiguous,"invalid_timestamp_count":invalid_ts,
             "coverage_by_market":dict(sorted(markets.items())),"coverage_by_week":dict(sorted(Counter(int(r.get("week") or 0) for r in filtered).items())),
             "historical_line_readiness":line_ready,"historical_price_readiness":price_ready,
+            "PLAYER_IDENTITY_READY":"READY" if reconciled and not collisions and not missing_ids else "PARTIAL" if reconciled and not collisions else "NOT_READY",
             "PLAYER_PROP_LINE_READY":line_ready,"PLAYER_PROP_PRICE_READY":price_ready,"PLAYER_PROP_GRADING_READY":"READY",
             "MODEL_SGP_READY":"READY","HISTORICAL_SGP_BOOK_PRICE_READY":"NOT_READY",
             "raw_provider_coverage":dict(sorted(raw_markets.items())),
             "raw_provider_coverage_by_event":{event:dict(sorted(counts.items())) for event,counts in sorted(raw_by_event.items())},
+            "market_funnel":dict(sorted(funnel.items())),
             "invariant_errors":invariant_errors,"invariants_passed":not invariant_errors,
             "cache_state":"usable" if reconciled else "raw_props_require_reconciliation" if raw_markets else "no_player_props"}
 
