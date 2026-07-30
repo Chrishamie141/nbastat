@@ -44,6 +44,11 @@ class PlayerUsage:
     rush_attempt_share_proxy: float = 0.0
     reception_share_proxy: float = 0.0
     receiving_yard_share_proxy: float = 0.0
+    target_share_proxy: float = 0.0
+    rushing_yard_share_proxy: float = 0.0
+    raw_shares: dict[str, float] = field(default_factory=dict)
+    shrunk_shares: dict[str, float] = field(default_factory=dict)
+    latest_observation: str | None = None
     availability: str = "unknown"
     availability_confidence: float = 0.0
     source_data_as_of: str | None = None
@@ -76,16 +81,33 @@ class PlayerParticipationModel:
                         games[gid] = games.get(gid, 0.0) + _number(other, market)
                 team_totals[market] = sum(games.values())
             # Beta-style shrinkage prevents one-game players receiving extreme shares.
-            share = lambda key, prior: (totals[key] + 3 * prior) / (team_totals[key] + 3) if team_totals[key] + 3 else prior
+            def share(key, prior): return (totals.get(key,0) + 3 * prior) / (team_totals.get(key,0) + 3)
+            share_keys=("passing_attempts","rushing_attempts","targets","receptions","receiving_yards","rushing_yards")
+            for key in share_keys:
+                totals[key]=sum(_number(r,key) for r in history)
+                games={}
+                for other in rows:
+                    known=history_known_at(other)
+                    if known and cutoff and known<cutoff and normalize_team(other.get("team"))==team:
+                        gid=str(other.get("game_id") or other.get("week") or known)
+                        games[gid]=games.get(gid,0.0)+_number(other,key)
+                team_totals[key]=sum(games.values())
+            priors={"passing_attempts":.02,"rushing_attempts":.08,"targets":.08,
+                    "receptions":.08,"receiving_yards":.08,"rushing_yards":.08}
+            raw={k:(totals[k]/team_totals[k] if team_totals[k] else 0.0) for k in share_keys}
+            shrunk={k:min(1.0,share(k,priors[k])) for k in share_keys}
             latest = history[-1]
             result.append(PlayerUsage(
                 player_id=player, player_name=str(latest.get("player_name") or latest.get("player") or player),
                 team=team, position=str(latest.get("position") or "UNKNOWN").upper(), games_observed=len(history),
                 recent_participation_rate=min(1.0, len(history[-3:]) / 3),
-                passing_attempt_share_proxy=min(1.0, share("passing_yards", .02)),
-                rush_attempt_share_proxy=min(1.0, share("rushing_attempts", .08)),
-                reception_share_proxy=min(1.0, share("receptions", .08)),
-                receiving_yard_share_proxy=min(1.0, share("receiving_yards", .08)),
+                passing_attempt_share_proxy=shrunk["passing_attempts"],
+                rush_attempt_share_proxy=shrunk["rushing_attempts"],
+                reception_share_proxy=shrunk["receptions"],
+                receiving_yard_share_proxy=shrunk["receiving_yards"],
+                target_share_proxy=shrunk["targets"], rushing_yard_share_proxy=shrunk["rushing_yards"],
+                raw_shares=raw, shrunk_shares=shrunk,
+                latest_observation=str(latest.get("known_at") or latest.get("data_as_of") or latest.get("completed_at")),
                 availability=str(latest.get("availability") or "unknown"),
                 availability_confidence=1.0 if latest.get("availability") is not None else 0.0,
                 source_data_as_of=str(latest.get("data_as_of") or latest.get("completed_at"))))
@@ -291,6 +313,9 @@ def audit_player_stats(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for market in PLAYER_MARKETS:
         present=sum(row.get(market) is not None for row in rows)
         markets[market]={"player_game_rows": present, "missing": n-present, "missing_rate": (n-present)/n if n else 0,
-                         "outcomes_gradeable": present > 0}
+            "outcomes_gradeable": present > 0,
+            "feature_history": "FEATURE_HISTORY_READY" if present else "NOT_READY",
+            "outcome_grading": "OUTCOME_GRADING_READY" if present else "NOT_READY",
+            "historical_line": "NOT_READY"}
     return {"rows": n, "markets": markets,
             "identity_issues": sum(not (r.get("player_id") or r.get("player") or r.get("player_name")) or not r.get("team") for r in rows)}

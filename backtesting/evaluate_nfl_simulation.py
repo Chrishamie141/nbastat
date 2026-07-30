@@ -28,6 +28,9 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
         raise ValueError("development simulation evaluation may not expose holdout Week 7+")
     analytics = evaluate_analytic(root, season, start, end, list(MODELS), NFLV3Config(), "DEVELOPMENT RESULT")
     provider=HistoricalSnapshotProvider(root); simulator=NFLGameSimulator(); rows=[]; all_player_rows=[]
+    canonical_players, canonical_audit = provider.canonical_player_history("nfl",str(season))
+    rejection_histogram={key:0 for key in canonical_audit["rejections"]}
+    modeled_examples=[]; correlation_values=[]
     exclusions=[]
     coverage={"games_evaluated":0,"team_rows_loaded":0,"team_rows_used":0,
               "player_rows_loaded":0,"player_rows_used":0,"future_rows_rejected":0,
@@ -55,6 +58,7 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
             coverage["player_rows_used"] += len(player_rows)
             coverage["future_rows_rejected"] += league_filter.rejected_future + player_filter.rejected_future
             coverage["player_rows_rejected_unknown_timestamp"] += player_filter.rejected_unknown_timestamp
+            for reason,count in player_filter.rejection_histogram.items(): rejection_histogram[reason]+=count
             cutoff=prediction_cutoff(game)
             source=prediction_cutoff_source(game)
             coverage["cutoff_sources"][source] = coverage["cutoff_sources"].get(source, 0) + 1
@@ -100,6 +104,11 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
                 continue
             result=simulator.simulate(game,histories,player_rows,None,model_version,simulations,seed+week*1000+index,projection)
             ready_players=len({player for player, _market in result.player_outcomes})
+            modeled_examples.extend(sorted({player for player,_ in result.player_outcomes})[:3])
+            qbs=[key for key in result.player_outcomes if key[1]=="passing_yards"]
+            receivers=[key for key in result.player_outcomes if key[1]=="receiving_yards"]
+            if qbs and receivers:
+                correlation_values.append(result.correlation(qbs[0],receivers[0])["pearson"])
             readiness["READY"] += ready_players
             if not ready_players:
                 readiness["NOT_READY_NO_PLAYER_DATA" if not player_filter.loaded else "NOT_READY_INSUFFICIENT_HISTORY"] += 1
@@ -118,12 +127,20 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
         "total_mae":mae(((r["simulated_home"]+r["simulated_away"],r["actual_home"]+r["actual_away"]) for r in rows))}
     return {"title":"NFL Simulation Development Evaluation","season":season,"weeks":[start,end],
             "configuration":{"model_version":model_version,"simulation_version":"nfl-game-simulation-v1","simulations_per_game":simulations,"base_seed":seed},
-            "dataset_readiness":audit_player_stats(all_player_rows),"team_score_simulation":simulation_summary,
+            "dataset_readiness":audit_player_stats(canonical_players),"player_schema_audit":canonical_audit,
+            "team_score_simulation":simulation_summary,
             "history_coverage":coverage,"game_exclusions":exclusions,
-            "analytic_comparison":analytics["models"],"player_prop_metrics":{"readiness_counts":readiness},
-            "correlations":{"status":"per-game diagnostics available on SimulationResult","causal_claim":False},
+            "analytic_comparison":analytics["models"],"player_prop_metrics":{"readiness_counts":readiness,
+                "players_modeled":len(set(modeled_examples)),"examples":sorted(set(modeled_examples))[:12]},
+            "player_history":{"provider_rows_discovered":canonical_audit["provider_rows"],
+                "canonical_player_game_observations":len(canonical_players),
+                "eligible_historical_observations":coverage["player_rows_used"],
+                "rejection_histogram":rejection_histogram},
+            "correlations":{"qb_passing_to_receiver_yards_mean":sum(correlation_values)/len(correlation_values) if correlation_values else None,
+                "observations":len(correlation_values),"causal_claim":False},
             "runtime":{"seconds":elapsed,"games":len(rows),"simulations":len(rows)*simulations},
-            "readiness":{"team_markets":"READY","player_props":"PARTIAL","historical_sgp":"PARTIAL","anytime_td":"NOT READY"},
+            "readiness":{"team_markets":"READY","player_props":"READY_WHERE_HISTORY_ELIGIBLE",
+                "historical_sgp":"NOT_READY_NO_HISTORICAL_PLAYER_PRICES","anytime_td":"NOT READY"},
             "known_limitations":["No historical injury/active-status source; availability confidence is explicit.",
                 "Player prop backtests require canonical postgame player outcomes and historical prop lines.",
                 "The initial score distribution requires calibration on a larger development sample."],"rows":rows}
