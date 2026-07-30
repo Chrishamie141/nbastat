@@ -86,6 +86,11 @@ class HistoricalSnapshotProvider:
         """Return odds snapshots available before kickoff."""
         return self._snapshot(league, season, week, "odds")
 
+    def get_player_prop_odds(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
+        """Load historical individual-leg prices offline; never use current odds."""
+        path=snapshot_path(self.data_dir,league,season,week,"player_prop_odds")
+        return self._snapshot(league,season,week,"player_prop_odds") if path.exists() else []
+
     def get_weather(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return weather snapshots available before kickoff."""
         return self._snapshot(league, season, week, "weather")

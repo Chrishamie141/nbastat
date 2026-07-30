@@ -44,7 +44,7 @@ python -m backtesting.audit_nfl_player_prop_odds \
 ```
 
 Store normalized rows separately at each week's
-`odds_player_props.json`; do not rewrite `odds.json`. Existing team snapshots
+`player_prop_odds.json`; do not rewrite `odds.json`. Existing team snapshots
 therefore remain backward compatible. Raw provider cache payloads are audited
 and reused before acquisition, but raw names are not gradeable until reconciled.
 
@@ -89,3 +89,18 @@ Only after reviewing the printed quota estimate, setting the API key, and adding
 `--acknowledge-quota` will it make exactly one request. Acquire historical prop
 odds before building a final SGP selector; otherwise individual-bet evaluation
 and sportsbook SGP comparison have no genuine execution prices.
+
+
+## Quota-safe Week 1 ingestion
+
+Planning reads only canonical games, historical team odds, and the raw cache. All six markets share one event request. Historical billing is explicit as `10 × regions × markets`: for `us`, one six-market HTTP request is estimated at 60 credits. HTTP request and credit totals are reported separately. Cache identity includes provider, sport, event, requested timestamp, regions, markets, and odds format, but never an API key. Valid entries are immutable; an invalid entry is quarantined only during an explicitly authorized replacement.
+
+```bash
+python -m backtesting.build_nfl_player_props --season 2025 --start-week 1 --end-week 1 --plan
+python -m backtesting.build_nfl_player_props --season 2025 --start-week 1 --end-week 1 --resume --validate --allow-paid-fetch
+python -m backtesting.audit_nfl_player_prop_odds --season 2025 --start-week 1 --end-week 1
+```
+
+The requested timestamp is the authoritative prediction cutoff. Requested time, provider snapshot time, bookmaker update, capture time, and data-as-of remain separate. Post-cutoff snapshots and post-snapshot market updates are rejected. Weeks 2–6 require a separate reviewed plan; paid pilot execution is restricted to Week 1.
+
+Individual prices are not a historical parlay quote. Joint output remains model-derived (`MODEL_FAIR_SGP`), while `HISTORICAL_SGP_BOOK_PRICE_READY` remains `NOT_READY` until a genuine provider price exists. Conservative identity and leakage safety take priority over coverage; current or fabricated fallback prices are never used.
