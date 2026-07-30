@@ -16,7 +16,7 @@ from .nfl_game_predictor import NFLGameMarketPredictor
 from .nfl_simulation import NFLGameSimulator, audit_player_stats
 from .nfl_v3 import NFLV3Config
 from .snapshots import snapshot_week_dir
-from .team_history import prediction_cutoff
+from .team_history import prediction_cutoff, prediction_cutoff_source
 
 MODELS = ("nfl_game_baseline_v1", "nfl_game_baseline_v2", "nfl_game_baseline_v3")
 
@@ -31,7 +31,7 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
     coverage={"games_evaluated":0,"team_rows_loaded":0,"team_rows_used":0,
               "player_rows_loaded":0,"player_rows_used":0,"future_rows_rejected":0,
               "player_rows_rejected_unknown_timestamp":0}
-    readiness={"READY":0,"NOT_READY_INSUFFICIENT_HISTORY":0}
+    readiness={"READY":0,"NOT_READY_NO_PLAYER_DATA":0,"NOT_READY_INSUFFICIENT_HISTORY":0}
     started=perf_counter()
     for week in range(start,end+1):
         directory=snapshot_week_dir(root,"nfl",season,week)
@@ -42,24 +42,29 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
         outcomes={str(o.get("game_id")):o for o in provider.get_outcomes("nfl",str(season),week)}
         predictor=NFLGameMarketPredictor(model_version, NFLV3Config() if model_version==MODELS[2] else None)
         for index,game in enumerate(games):
-            team_filter, player_filter = provider.get_game_histories("nfl",str(season),week,game)
-            histories=team_filter.rows; player_rows=player_filter.rows
-            coverage["team_rows_loaded"] += team_filter.loaded
-            coverage["team_rows_used"] += len(histories)
+            views = provider.get_game_histories("nfl",str(season),week,game)
+            league_filter, team_filter, player_filter = views.league_team_history, views.target_team_history, views.player_history
+            league_histories=league_filter.rows; histories=team_filter.rows; player_rows=player_filter.rows
+            coverage["team_rows_loaded"] += league_filter.loaded
+            coverage["team_rows_used"] += len(league_histories)
             coverage["player_rows_loaded"] += player_filter.loaded
             coverage["player_rows_used"] += len(player_rows)
-            coverage["future_rows_rejected"] += team_filter.rejected_future + player_filter.rejected_future
+            coverage["future_rows_rejected"] += league_filter.rejected_future + player_filter.rejected_future
             coverage["player_rows_rejected_unknown_timestamp"] += player_filter.rejected_unknown_timestamp
             cutoff=prediction_cutoff(game)
             history_diagnostic={
-                "team_rows_loaded":team_filter.loaded,"team_rows_eligible":len(histories),
-                "team_rows_rejected_future":team_filter.rejected_future,
+                "league_team_rows_loaded":league_filter.loaded,"league_team_rows_eligible":len(league_histories),
+                "league_team_rows_rejected_future":league_filter.rejected_future,
+                "target_team_rows_eligible":len(histories),
                 "player_rows_loaded":player_filter.loaded,"player_rows_eligible":len(player_rows),
                 "player_rows_rejected_future":player_filter.rejected_future,
                 "player_rows_rejected_unknown_timestamp":player_filter.rejected_unknown_timestamp,
-                "latest_team_history_timestamp":team_filter.latest_timestamp,
+                "league_teams":sorted({str(r.get("team")) for r in league_histories}),
+                "historical_seasons":sorted({str(r.get("season")) for r in league_histories}),
+                "latest_team_history_timestamp":league_filter.latest_timestamp,
                 "latest_player_history_timestamp":player_filter.latest_timestamp,
-                "prediction_cutoff":cutoff.isoformat().replace("+00:00","Z") if cutoff else None}
+                "prediction_cutoff":cutoff.isoformat().replace("+00:00","Z") if cutoff else None,
+                "cutoff_source":prediction_cutoff_source(game)}
             if os.getenv("BACKTESTING_DEBUG_HISTORY") == "1":
                 for dataset, filtered in (("team_stats",team_filter),("player_stats",player_filter)):
                     for offender in filtered.rejected_rows:
@@ -72,7 +77,8 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
                             "captured_at":offender.get("captured_at"),"record_role":offender.get("record_role"),
                             "source":offender.get("source"),"rejection_reason":offender.get("rejection_reason")}
                         print("History rejection: "+json.dumps(detail,sort_keys=True,default=str))
-            projection=predictor.project(game,histories, None) if model_version==MODELS[2] else predictor.project(game,histories)
+            predictor_history = histories if model_version == MODELS[0] else league_histories
+            projection=predictor.project(game,predictor_history, None) if model_version==MODELS[2] else predictor.project(game,predictor_history)
             outcome=outcomes.get(str(game.get("game_id")))
             if projection is None or not outcome or outcome.get("final_home_score") is None:
                 reason="projection_unavailable" if projection is None else "outcome_unavailable"
@@ -82,13 +88,14 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
             result=simulator.simulate(game,histories,player_rows,None,model_version,simulations,seed+week*1000+index,projection)
             ready_players=len({player for player, _market in result.player_outcomes})
             readiness["READY"] += ready_players
-            if not ready_players: readiness["NOT_READY_INSUFFICIENT_HISTORY"] += 1
+            if not ready_players:
+                readiness["NOT_READY_NO_PLAYER_DATA" if not player_filter.loaded else "NOT_READY_INSUFFICIENT_HISTORY"] += 1
             actual_home=float(outcome["final_home_score"]); actual_away=float(outcome["final_away_score"])
             rows.append({"week":week,"game_id":str(game.get("game_id")),"home_win_probability":result.market_probability("moneyline")["home"],
                          "home_win":int(actual_home>actual_away),"simulated_home":float(result.home_points.mean()),
                          "simulated_away":float(result.away_points.mean()),"actual_home":actual_home,"actual_away":actual_away,
                          "history_diagnostics":history_diagnostic,
-                         "player_prop_readiness":"READY" if ready_players else "NOT_READY_INSUFFICIENT_HISTORY"})
+                         "player_prop_readiness":"READY" if ready_players else ("NOT_READY_NO_PLAYER_DATA" if not player_filter.loaded else "NOT_READY_INSUFFICIENT_HISTORY")})
             coverage["games_evaluated"] += 1
     elapsed=perf_counter()-started
     probs=probability_metrics((r["home_win_probability"],r["home_win"]) for r in rows)

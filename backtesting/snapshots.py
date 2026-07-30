@@ -16,7 +16,7 @@ from .markets import CANONICAL_TEAM_MARKETS, SUPPORTED_MARKETS, normalize_market
 from .team_history import canonicalize_team_history
 
 SCHEMAS: dict[str, tuple[str, ...]] = {
-    "games": ("game_id", "league", "season", "week", "kickoff_time", "home_team", "away_team", "venue", "status"),
+    "games": ("game_id", "league", "season", "week", "kickoff_time", "prediction_cutoff", "prediction_timestamp", "home_team", "away_team", "venue", "status"),
     "odds": ("game_id", "market", "selection", "line", "odds", "sportsbook", "captured_at"),
     "weather": ("game_id", "captured_at", "temperature", "wind_speed", "precipitation", "conditions"),
     "injuries": ("team", "player", "position", "status", "captured_at"),
@@ -24,6 +24,9 @@ SCHEMAS: dict[str, tuple[str, ...]] = {
     "team_stats": ("team", "season", "through_week"),
     "outcomes": ("game_id", "final_home_score", "final_away_score", "player_results", "market_results", "completed_at"),
 }
+# These fields are part of the persisted contract when supplied, while legacy
+# snapshots remain valid without them and truthfully fall back to kickoff.
+OPTIONAL_SCHEMA_FIELDS = {"games": frozenset({"prediction_cutoff", "prediction_timestamp"})}
 
 
 class SnapshotError(RuntimeError):
@@ -75,6 +78,14 @@ def normalize_dataset(name: str, records: list[dict[str, Any]], league: str, sea
             for extra in ("players", "game_type"):
                 if extra in record:
                     row[extra] = record[extra]
+            # Preserve explicit prediction boundaries rather than replacing
+            # their semantics with kickoff during snapshot normalization.
+            for field in ("kickoff_time", "prediction_cutoff", "prediction_timestamp"):
+                if row.get(field) is not None:
+                    from .game_matching import parse_dt
+                    parsed = parse_dt(row[field])
+                    if parsed:
+                        row[field] = parsed.isoformat().replace("+00:00", "Z")
         if name == "odds" and "market" in row:
             row["market"] = normalize_market(row["market"])
             row.setdefault("bookmaker", record.get("bookmaker") or record.get("sportsbook"))
@@ -211,7 +222,9 @@ def validate_snapshot(root: Path, league: str, season: str, weeks: list[int] | N
             if not data and (dataset in REQUIRED_DATASETS or strict or require_backtest_ready):
                 report.add_error(f"Empty required dataset {dataset} for {league.upper()} {season} Week {week}")
             report.counts[f"week_{week}.{dataset}"] = len(data)
-            missing = [f for f in SCHEMAS[dataset] if any(f not in r for r in data)]
+            required_fields = [f for f in SCHEMAS[dataset]
+                               if f not in OPTIONAL_SCHEMA_FIELDS.get(dataset, ())]
+            missing = [f for f in required_fields if any(f not in r for r in data)]
             if missing:
                 report.add_error(f"Malformed {dataset} records for {league.upper()} {season} Week {week}: missing fields {sorted(set(missing))}")
             seen = set()

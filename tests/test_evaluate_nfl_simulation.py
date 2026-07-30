@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from backtesting.nfl_simulation import NFLGameSimulator
+from backtesting.historical_provider import HistoricalSnapshotProvider
+from backtesting.nfl_game_predictor import NFLGameMarketPredictorV2
+from backtesting.snapshots import normalize_dataset, snapshot_week_dir
 from backtesting.team_history import filter_game_history, prediction_cutoff
 
 
@@ -82,3 +85,58 @@ def test_filtering_before_simulation_produces_diagnostics_and_team_result():
     result = NFLGameSimulator().simulate(target, [], filtered.rows, None, "v3", 20, 141)
     assert len(result.home_points) == 20
     assert filtered.loaded == 2 and len(filtered.rows) == 1 and filtered.rejected_future == 1
+
+
+def test_cutoff_rejects_every_observation_after_explicit_prediction_time():
+    target = {**game(kickoff="2025-09-07T13:00:00Z"),
+              "prediction_cutoff": "2025-09-06T13:00:00Z"}
+    rows = [team("accepted", "2025-09-06T12:00:00Z"),
+            team("saturday-late", "2025-09-06T14:00:00Z"),
+            team("sunday", "2025-09-07T10:00:00Z")]
+    result = filter_game_history(target, rows, dataset="team")
+    assert [row["game_id"] for row in result.rows] == ["accepted"]
+    assert result.rejected_future == 2
+
+
+def test_snapshot_preserves_prediction_timestamp_and_player_history_is_optional(tmp_path):
+    normalized = normalize_dataset("games", [{**game(), "prediction_timestamp": "2025-09-07T12:20:00-08:00",
+                                                "prediction_cutoff": None}], "nfl", "2025", 2)
+    assert normalized[0]["prediction_timestamp"] == "2025-09-07T20:20:00Z"
+    directory = snapshot_week_dir(tmp_path, "nfl", 2025, 2)
+    directory.mkdir(parents=True)
+    (directory / "games.json").write_text(__import__("json").dumps(normalized))
+    (directory / "team_stats.json").write_text("[]")
+    provider = HistoricalSnapshotProvider(tmp_path)
+    loaded = provider.get_games("nfl", "2025", 2)[0]
+    assert loaded["prediction_timestamp"] == "2025-09-07T20:20:00Z"
+    views = provider.get_game_histories("nfl", "2025", 2, loaded)
+    assert views.player_history.rows == [] and views.player_history.loaded == 0
+
+
+def test_v2_provider_view_preserves_league_wide_features(tmp_path):
+    target = game(kickoff="2025-10-01T20:00:00Z")
+    target["prediction_cutoff"] = "2025-10-01T19:00:00Z"
+    rows = []
+    teams = ("BUF", "MIA", "NYJ", "DAL")
+    for week in range(1, 5):
+        stamp = f"2025-09-{week:02d}T20:00:00Z"
+        for index, name in enumerate(teams):
+            opponent = teams[(index + 1) % len(teams)]
+            rows.append({**team(f"g-{week}-{name}", stamp, week=week, name=name),
+                         "opponent": opponent, "home_away": "home" if index % 2 == 0 else "away",
+                         "points_for": 20 + index + week, "points_against": 17 + index})
+    directory = snapshot_week_dir(tmp_path, "nfl", 2025, 5)
+    directory.mkdir(parents=True)
+    (directory / "team_stats.json").write_text(__import__("json").dumps(rows))
+    provider = HistoricalSnapshotProvider(tmp_path)
+    views = provider.get_game_histories("nfl", "2025", 5, target)
+    assert {r["team"] for r in views.league_team_history.rows} == set(teams)
+    assert {r["team"] for r in views.target_team_history.rows} == {"BUF", "MIA"}
+    direct = NFLGameMarketPredictorV2().project(target, rows)
+    through_evaluator = NFLGameMarketPredictorV2().project(target, views.league_team_history.rows)
+    assert direct is not None and through_evaluator is not None
+    assert (direct.home_points, direct.away_points, direct.expected_margin, direct.expected_total) == (
+        through_evaluator.home_points, through_evaluator.away_points,
+        through_evaluator.expected_margin, through_evaluator.expected_total)
+    for feature in ("home_elo", "away_elo", "home_offensive_strength", "away_defensive_strength"):
+        assert direct.features[feature] == through_evaluator.features[feature]
