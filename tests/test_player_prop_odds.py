@@ -15,11 +15,41 @@ def quotes(ev=None): return normalize_provider_outcomes(ev or event(),league="nf
 
 def test_aliases_and_unsupported():
     assert normalize_player_prop_market("player_reception_yds") == "receiving_yards"
+    assert normalize_player_prop_market("player_pass_yds") == "passing_yards"
+    assert normalize_player_prop_market("player_pass_tds") == "passing_tds"
     assert normalize_player_prop_market("player_anytime_td") is None
 def test_reconciliation_failures():
-    assert reconcile_player({"description":"Nobody"},PLAYERS,game_id="g1").status == "unknown_player"
-    assert reconcile_player({"description":"Pat Passer","team":"MIA"},PLAYERS,game_id="g1").status == "team_mismatch"
-    assert reconcile_player({"description":"Pat Passer"},PLAYERS*2,game_id="g1").status == "ambiguous_player"
+    assert reconcile_player({"description":"Nobody"},PLAYERS,game_id="g1").status == "UNKNOWN"
+    assert reconcile_player({"description":"Pat Passer","team":"MIA"},PLAYERS,game_id="g1").status == "UNKNOWN"
+    assert reconcile_player({"description":"Pat Passer"},PLAYERS*2,game_id="g1").status == "EXACT_NAME_TEAM"
+
+def test_missing_ids_do_not_collapse_players_or_quote_identity():
+    players=[{"game_id":"g1","player_name":f"Player {n}","team":"BUF"} for n in range(100)]
+    resolved=[reconcile_player({"description":p["player_name"]},players,game_id="g1") for p in players]
+    assert len({r.canonical_player_id for r in resolved}) == 100
+    base={"league":"nfl","season":2025,"week":1,"game_id":"g1","canonical_player_id":None,
+          "market":"receptions","bookmaker":"book","line":2.5,"selection":"OVER",
+          "provider_snapshot_timestamp":"2025-09-01T00:00:00Z","market_last_update":"2025-09-01T00:00:00Z","american_odds":-110}
+    from backtesting.player_prop_odds import deduplicate_quotes
+    rows,diag=deduplicate_quotes([{**base,"provider_player_name":"Player A"},{**base,"provider_player_name":"Player B"}])
+    assert len(rows)==2 and diag["duplicate_conflict"]==0
+
+def test_provider_id_preference_and_team_ambiguity():
+    players=[{"game_id":"g1","player_id":"p1","player_name":"Same Name","team":"BUF"},
+             {"game_id":"g1","player_id":"p2","player_name":"Same Name","team":"MIA"}]
+    assert reconcile_player({"player_id":"p2","description":"Wrong"},players,game_id="g1").canonical_player_id=="p2"
+    assert reconcile_player({"description":"Same Name"},players,game_id="g1").status=="AMBIGUOUS"
+    assert reconcile_player({"description":"Same Name","team":"BUF"},players,game_id="g1").canonical_player_id=="p1"
+    same_team=players+[{"game_id":"g1","player_id":"p3","player_name":"Same Name","team":"BUF"}]
+    assert reconcile_player({"description":"Same Name","team":"BUF"},same_team,game_id="g1").status=="AMBIGUOUS"
+
+def test_reconciliation_index_is_game_scoped():
+    from backtesting.player_prop_odds import build_player_history_index
+    index=build_player_history_index([
+        {"game_id":"g1","player_id":"p1","player_name":"Shared Name","team":"BUF"},
+        {"game_id":"g2","player_id":"p2","player_name":"Shared Name","team":"BUF"}])
+    assert reconcile_player({"description":"Shared Name"},index,game_id="g1").canonical_player_id=="p1"
+    assert reconcile_player({"description":"Shared Name"},index,game_id="g2").canonical_player_id=="p2"
 def test_pair_no_vig_and_different_lines():
     assert pair_quotes(quotes())[0]["no_vig_over"] == pytest.approx(.5)
     assert len(pair_quotes(quotes(event((249.5,251.5))))) == 2
@@ -56,6 +86,14 @@ def test_raw_event_object_market_discovery(tmp_path):
     (d/"response.json").write_text(json.dumps({"timestamp":"2025-09-01T11:00:00Z","data":raw}))
     report=audit_cache(tmp_path,season=2025,start_week=1,end_week=1)
     assert report["raw_provider_coverage"]=={"player_pass_tds":2,"player_pass_yds":2}
+    assert report["raw_provider_coverage_by_event"]["e1"]=={"player_pass_tds":2,"player_pass_yds":2}
+
+def test_audit_identity_collision_readiness(tmp_path):
+    d=tmp_path/"nfl/2025/week_01"; d.mkdir(parents=True)
+    rows=quotes()+[{**quotes()[0],"provider_player_name":"Materially Different","team":"MIA"}]
+    (d/"player_prop_odds.json").write_text(json.dumps(rows))
+    report=audit_cache(tmp_path,season=2025,start_week=1,end_week=1)
+    assert report["identity_collision_count"]==1 and report["PLAYER_IDENTITY_READY"]=="NOT_READY"
 def test_missing_pricing_and_fair_sgp_label():
     assert availability([],requested_weeks=[1])["passing_yards"]["HISTORICAL_PRICE_READY"] == "NOT_READY"
     fair=simulation_fair_sgp_price(.25); assert fair["simulation_fair_decimal_odds"] == 4 and fair["sportsbook_ev"] is None and "MODEL_FAIR" in fair["price_type"]

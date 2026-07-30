@@ -50,31 +50,76 @@ class Reconciliation:
     status: str
     canonical_player_id: str | None = None
     player: dict[str, Any] | None = None
+    candidate_count: int = 0
+
+
+EXACT_PROVIDER_ID = "EXACT_PROVIDER_ID"
+EXACT_NAME_TEAM_GAME = "EXACT_NAME_TEAM_GAME"
+EXACT_NAME_TEAM = "EXACT_NAME_TEAM"
+AMBIGUOUS = "AMBIGUOUS"
+UNKNOWN = "UNKNOWN"
+
+
+@dataclass(frozen=True)
+class PlayerHistoryIndex:
+    """Immutable game-scoped player history; never cached by name alone."""
+    by_game: dict[str, tuple[dict[str, Any], ...]]
+
+    @classmethod
+    def build(cls, players: Iterable[dict[str, Any]]) -> "PlayerHistoryIndex":
+        grouped: dict[str,list[dict[str,Any]]] = {}
+        for player in players: grouped.setdefault(str(player.get("game_id") or ""),[]).append(player)
+        return cls({game:tuple(sorted(rows,key=lambda p:(_name(p.get("player_name") or p.get("name") or p.get("player")),normalize_team(p.get("team")),str(p.get("player_id") or p.get("canonical_player_id") or p.get("athlete_id") or "")))) for game,rows in grouped.items()})
+
+    def players_for_game(self, game_id: str) -> tuple[dict[str, Any], ...]:
+        return self.by_game.get(str(game_id),())
+
+
+def build_player_history_index(players: Iterable[dict[str, Any]]) -> PlayerHistoryIndex:
+    return PlayerHistoryIndex.build(players)
 
 
 def _name(value: Any) -> str:
     return " ".join("".join(c for c in str(value or "").casefold() if c.isalnum() or c.isspace()).split())
 
 
-def reconcile_player(provider_player: dict[str, Any], canonical_players: Iterable[dict[str, Any]], *,
+def _player_id(player: dict[str, Any], *, game_id: str) -> str:
+    """Return a stable ID without ever turning a missing ID into ``"None"``.
+
+    Some historical ESPN rows have no athlete ID.  Their controlled fallback
+    is deliberately scoped by normalized name, historical team membership and
+    game.  This is a canonical history identity, not a global display-name ID.
+    """
+    supplied = player.get("player_id") or player.get("canonical_player_id") or player.get("athlete_id")
+    if supplied not in (None, ""): return str(supplied)
+    return "history:%s:%s:%s" % (str(game_id), normalize_team(player.get("team")), _name(player.get("player_name") or player.get("name") or player.get("player")))
+
+
+def reconcile_player(provider_player: dict[str, Any], canonical_players: Iterable[dict[str, Any]] | PlayerHistoryIndex, *,
                      game_id: str, team: str | None = None) -> Reconciliation:
-    """Resolve identity conservatively; ambiguity and team mismatch never attach."""
-    players = [p for p in canonical_players if str(p.get("game_id")) == str(game_id)]
-    provider_id = provider_player.get("canonical_player_id") or provider_player.get("player_id")
-    stable = [p for p in players if provider_id and str(p.get("player_id") or p.get("canonical_player_id")) == str(provider_id)]
+    """Resolve identity conservatively using ID, game, name and membership."""
+    index=canonical_players if isinstance(canonical_players,PlayerHistoryIndex) else build_player_history_index(canonical_players)
+    players = list(index.players_for_game(game_id))
+    provider_id = provider_player.get("canonical_player_id") or provider_player.get("player_id") or provider_player.get("athlete_id")
+    stable = [p for p in players if provider_id and _player_id(p,game_id=game_id) == str(provider_id)]
     # The Odds API uses ``name`` for the side (Over/Under) and ``description``
     # for the participant, so description intentionally precedes name.
-    candidates = stable or [p for p in players if _name(p.get("player_name") or p.get("name")) == _name(provider_player.get("player_name") or provider_player.get("description") or provider_player.get("name"))]
-    if not candidates: return Reconciliation("unknown_player")
+    candidates = stable or [p for p in players if _name(p.get("player_name") or p.get("name") or p.get("player")) == _name(provider_player.get("player_name") or provider_player.get("description") or provider_player.get("name"))]
+    if not candidates: return Reconciliation(UNKNOWN,candidate_count=0)
     wanted_team = normalize_team(team or provider_player.get("team"))
     if wanted_team:
         matching = [p for p in candidates if normalize_team(p.get("team")) == wanted_team]
-        if not matching: return Reconciliation("team_mismatch")
+        if not matching: return Reconciliation(UNKNOWN,candidate_count=0)
         candidates = matching
-    ids = {str(p.get("player_id") or p.get("canonical_player_id")) for p in candidates}
-    if len(candidates) != 1 or len(ids) != 1: return Reconciliation("ambiguous_player")
-    player = candidates[0]
-    return Reconciliation("matched", next(iter(ids)), player)
+    # Category-split history can contain repeated records for the same player.
+    # Collapse only records that resolve to the same non-null canonical ID.
+    by_id: dict[str,list[dict[str,Any]]] = {}
+    for candidate in candidates: by_id.setdefault(_player_id(candidate,game_id=game_id),[]).append(candidate)
+    if len(by_id) != 1: return Reconciliation(AMBIGUOUS,candidate_count=len(by_id))
+    canonical_id, copies = next(iter(by_id.items())); player=dict(copies[0])
+    player["player_id"] = canonical_id
+    status = EXACT_PROVIDER_ID if stable else EXACT_NAME_TEAM_GAME if wanted_team else EXACT_NAME_TEAM
+    return Reconciliation(status, canonical_id, player, 1)
 
 
 def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: int, week: int,
@@ -83,16 +128,17 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                                 requested_snapshot_timestamp: str | None = None,
                                 captured_at: str | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Flatten a provider event while preserving every book/line/side quote."""
-    rows, rejected = [], []
+    rows, rejected = [], []; player_index=build_player_history_index(canonical_players)
     for book in event.get("bookmakers", []) or []:
         for raw_market in book.get("markets", []) or []:
             market = normalize_player_prop_market(raw_market.get("key"))
             for outcome in raw_market.get("outcomes", []) or []:
                 if not market:
                     rejected.append({"reason": "unsupported_market", "market": raw_market.get("key")}); continue
-                rec = reconcile_player(outcome, canonical_players, game_id=game_id, team=outcome.get("team"))
-                if rec.status != "matched":
-                    rejected.append({"reason": rec.status, "market": market, "player": outcome.get("description")}); continue
+                rec = reconcile_player(outcome, player_index, game_id=game_id, team=outcome.get("team"))
+                if rec.status not in {EXACT_PROVIDER_ID,EXACT_NAME_TEAM_GAME,EXACT_NAME_TEAM}:
+                    reason="ambiguous_player" if rec.status == AMBIGUOUS else "unknown_player"
+                    rejected.append({"reason":reason,"market":market,"player":outcome.get("description"),"candidate_count":rec.candidate_count}); continue
                 try:
                     line = float(outcome["point"])
                 except (KeyError, TypeError, ValueError) as exc:
@@ -114,8 +160,9 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                     "side":row["selection"],"sportsbook":row["bookmaker"],"provider":"the-odds-api",
                     "requested_snapshot_timestamp":requested_snapshot_timestamp or snapshot_timestamp,
                     "provider_snapshot_timestamp":snapshot_timestamp,"captured_at":captured_at or snapshot_timestamp,
-                    "reconciliation_method":"stable_id" if outcome.get("player_id") else "exact_name_game_team",
-                    "reconciliation_status":"matched","reconciliation_confidence":"exact"})
+                    "provider_player_id":outcome.get("player_id") or outcome.get("athlete_id"),
+                    "reconciliation_method":rec.status,"reconciliation_status":rec.status,
+                    "reconciliation_candidate_count":rec.candidate_count,"reconciliation_confidence":"exact"})
                 rows.append(row)
     return rows, rejected
 
@@ -133,6 +180,11 @@ def canonical_quote_identity(row: dict[str, Any]) -> tuple[Any, ...]:
     for field in CANONICAL_QUOTE_IDENTITY_FIELDS:
         if field == "selection": values.append(str(row.get("selection") or row.get("side") or "").upper())
         elif field == "provider_snapshot_timestamp": values.append(row.get(field) or row.get("snapshot_timestamp"))
+        elif field == "canonical_player_id":
+            canonical=row.get(field) or row.get("player_id")
+            # Diagnostic/rejected rows must not make unrelated players collide
+            # merely because final canonical reconciliation is unavailable.
+            values.append(canonical or "provider:"+_name(row.get("provider_player_id") or row.get("provider_player_name") or row.get("description") or row.get("player_name")))
         else: values.append(row.get(field))
     return tuple(values)
 
@@ -198,7 +250,7 @@ def validate_player_prop_rows(rows: Iterable[dict[str, Any]], games: Iterable[di
         identity=canonical_quote_identity(row)
         if identity in seen: errors.append(f"{prefix}: duplicate_canonical_quote_identity")
         seen.add(identity)
-        if row.get("reconciliation_status") not in {None,"matched"}: errors.append(f"{prefix}: deterministic_player_reconciliation")
+        if row.get("reconciliation_status") not in {None,"matched",EXACT_PROVIDER_ID,EXACT_NAME_TEAM_GAME,EXACT_NAME_TEAM}: errors.append(f"{prefix}: deterministic_player_reconciliation")
     return errors
 
 
