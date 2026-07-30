@@ -40,11 +40,23 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
     markets=Counter(r["market"] for r in filtered)
     reconciled=[r for r in filtered if r.get("canonical_player_id")]
     avail=availability(reconciled, requested_weeks=range(start_week,end_week+1))
+    from .player_prop_odds import pair_quotes
+    complete=sum(p["complete"] for p in pair_quotes(reconciled))
+    unmatched=sum(r.get("reconciliation_status") in {"unknown_player","unmatched"} for r in filtered)
+    ambiguous=sum(r.get("reconciliation_status") == "ambiguous_player" for r in filtered)
+    invalid_ts=sum(not (r.get("provider_snapshot_timestamp") or r.get("snapshot_timestamp")) for r in filtered)
+    line_ready="READY" if reconciled else "NOT_READY"; price_ready="READY" if complete else "NOT_READY"
     return {"network_contacted":False,"files_inspected":len(inspected),"inspected_files":inspected,"invalid_files":invalid,
             "existing_prop_rows":len(filtered),"reconciled_rows":len(reconciled),"events":len(events),"bookmakers":sorted(books),
             "games":len({r.get("game_id") for r in filtered if r.get("game_id")}),"players":len({r.get("canonical_player_id") for r in reconciled}),
             "markets":dict(sorted(markets.items())),"weeks_covered":covered,
             "missing_markets":sorted(set(CANONICAL_PLAYER_PROP_MARKETS)-set(markets)),"coverage":avail,
+            "quote_count":len(filtered),"paired_over_under_count":complete,"gradeable_quote_count":complete*2,
+            "unmatched_player_count":unmatched,"ambiguous_player_count":ambiguous,"invalid_timestamp_count":invalid_ts,
+            "coverage_by_market":dict(sorted(markets.items())),"coverage_by_week":dict(sorted(Counter(int(r.get("week") or 0) for r in filtered).items())),
+            "historical_line_readiness":line_ready,"historical_price_readiness":price_ready,
+            "PLAYER_PROP_LINE_READY":line_ready,"PLAYER_PROP_PRICE_READY":price_ready,"PLAYER_PROP_GRADING_READY":"READY",
+            "MODEL_SGP_READY":"READY","HISTORICAL_SGP_BOOK_PRICE_READY":"NOT_READY",
             "cache_state":"usable" if reconciled else "raw_props_require_reconciliation" if filtered else "no_player_props"}
 
 
@@ -55,7 +67,7 @@ def row_week(path: Path) -> int:
 
 
 def main(argv=None):
-    p=argparse.ArgumentParser(description=__doc__); p.add_argument("--snapshot-root",type=Path,required=True); p.add_argument("--season",type=int,required=True); p.add_argument("--start-week",type=int,required=True); p.add_argument("--end-week",type=int,required=True); p.add_argument("--json",action="store_true")
+    p=argparse.ArgumentParser(description=__doc__); p.add_argument("--snapshot-root",type=Path,default=Path("backtesting/data/snapshots")); p.add_argument("--season",type=int,required=True); p.add_argument("--start-week",type=int,required=True); p.add_argument("--end-week",type=int,required=True); p.add_argument("--json",action="store_true")
     a=p.parse_args(argv); report=audit_cache(a.snapshot_root,season=a.season,start_week=a.start_week,end_week=a.end_week)
     print(json.dumps(report,indent=2,sort_keys=True)); return 0
 if __name__ == "__main__": raise SystemExit(main())
