@@ -44,6 +44,32 @@ SUPPORTED_MARKETS = {market.value for market in Market} | {"moneyline"}
 CANONICAL_TEAM_MARKETS = (Market.H2H.value, Market.SPREAD.value, Market.TOTAL.value)
 ODDS_API_TEAM_MARKETS = ("h2h", "spreads", "totals")
 
+# The only player markets approved for the first pricing evaluation.  Provider
+# keys belong here (and nowhere in simulation/grading code).
+PLAYER_PROP_MARKET_ALIASES = {
+    "player_pass_yds": "passing_yards",
+    "player_pass_tds": "passing_tds",
+    "player_rush_attempts": "rushing_attempts",
+    "player_rush_yds": "rushing_yards",
+    "player_receptions": "receptions",
+    "player_reception_yds": "receiving_yards",
+    "passing_yards": "passing_yards",
+    "passing_tds": "passing_tds",
+    "rushing_attempts": "rushing_attempts",
+    "rushing_yards": "rushing_yards",
+    "receptions": "receptions",
+    "receiving_yards": "receiving_yards",
+}
+CANONICAL_PLAYER_PROP_MARKETS = tuple(dict.fromkeys(PLAYER_PROP_MARKET_ALIASES.values()))
+ODDS_API_PLAYER_PROP_MARKETS = tuple(
+    key for key in PLAYER_PROP_MARKET_ALIASES if key.startswith("player_")
+)
+
+
+def normalize_player_prop_market(value: Any) -> str | None:
+    """Return a supported canonical prop market, or ``None`` explicitly."""
+    return PLAYER_PROP_MARKET_ALIASES.get(str(value or "").strip().casefold())
+
 # Internal player markets are intentionally upper-case.  Keep this lookup
 # separate from provider aliases so values stored by older snapshots (and CLI
 # values with arbitrary casing) meet predictor output at the same canonical
