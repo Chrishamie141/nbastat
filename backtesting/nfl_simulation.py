@@ -14,7 +14,8 @@ from typing import Any, Iterable, Protocol
 
 import numpy as np
 
-from .game_matching import normalize_team, parse_dt
+from .game_matching import normalize_team
+from .team_history import history_known_at, prediction_cutoff
 
 SIMULATION_VERSION = "nfl-game-simulation-v1"
 PLAYER_MARKETS = ("passing_yards", "passing_tds", "rushing_attempts", "rushing_yards",
@@ -51,10 +52,10 @@ class PlayerUsage:
 class PlayerParticipationModel:
     """Creates explicitly named usage proxies from rows known before kickoff."""
     def build(self, game: dict[str, Any], rows: list[dict[str, Any]]) -> list[PlayerUsage]:
-        cutoff = parse_dt(game.get("kickoff_time") or game.get("commence_time"))
+        cutoff = prediction_cutoff(game)
         grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
         for row in rows:
-            known = parse_dt(row.get("data_as_of") or row.get("completed_at") or row.get("captured_at"))
+            known = history_known_at(row)
             if not cutoff or not known or known >= cutoff or row.get("game_id") == game.get("game_id"):
                 continue
             team = normalize_team(row.get("team")); player = str(row.get("player_id") or row.get("player") or row.get("player_name") or "")
@@ -69,7 +70,7 @@ class PlayerParticipationModel:
             for market in PLAYER_MARKETS:
                 games: dict[str, float] = {}
                 for other in rows:
-                    known = parse_dt(other.get("data_as_of") or other.get("completed_at") or other.get("captured_at"))
+                    known = history_known_at(other)
                     if known and cutoff and known < cutoff and normalize_team(other.get("team")) == team:
                         gid = str(other.get("game_id") or other.get("week") or known)
                         games[gid] = games.get(gid, 0.0) + _number(other, market)
@@ -231,9 +232,9 @@ class NFLGameSimulator:
                  projection: Any | None = None) -> SimulationResult:
         if num_simulations <= 0: raise ValueError("num_simulations must be positive")
         kickoff = str(game.get("kickoff_time") or game.get("commence_time") or "")
-        cutoff = parse_dt(kickoff)
+        cutoff = prediction_cutoff(game)
         for row in pregame_team_history + pregame_player_history:
-            known = parse_dt(row.get("data_as_of") or row.get("completed_at") or row.get("captured_at"))
+            known = history_known_at(row)
             if known and cutoff and known >= cutoff: raise ValueError("future history row violates simulation cutoff")
         home_mean = float(getattr(projection, "home_points", game.get("projected_home_points", 22.5)))
         away_mean = float(getattr(projection, "away_points", game.get("projected_away_points", 21.0)))

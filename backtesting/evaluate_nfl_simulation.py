@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -15,6 +16,7 @@ from .nfl_game_predictor import NFLGameMarketPredictor
 from .nfl_simulation import NFLGameSimulator, audit_player_stats
 from .nfl_v3 import NFLV3Config
 from .snapshots import snapshot_week_dir
+from .team_history import prediction_cutoff
 
 MODELS = ("nfl_game_baseline_v1", "nfl_game_baseline_v2", "nfl_game_baseline_v3")
 
@@ -25,25 +27,69 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
         raise ValueError("development simulation evaluation may not expose holdout Week 7+")
     analytics = evaluate_analytic(root, season, start, end, list(MODELS), NFLV3Config(), "DEVELOPMENT RESULT")
     provider=HistoricalSnapshotProvider(root); simulator=NFLGameSimulator(); rows=[]; all_player_rows=[]
+    exclusions=[]
+    coverage={"games_evaluated":0,"team_rows_loaded":0,"team_rows_used":0,
+              "player_rows_loaded":0,"player_rows_used":0,"future_rows_rejected":0,
+              "player_rows_rejected_unknown_timestamp":0}
+    readiness={"READY":0,"NOT_READY_INSUFFICIENT_HISTORY":0}
     started=perf_counter()
     for week in range(start,end+1):
         directory=snapshot_week_dir(root,"nfl",season,week)
         player_path=directory/"player_stats.json"
-        player_rows=json.loads(player_path.read_text()) if player_path.exists() else []
-        all_player_rows.extend(player_rows)
-        histories=provider.get_team_stats("nfl",str(season),week)
+        weekly_player_rows=json.loads(player_path.read_text()) if player_path.exists() else []
+        all_player_rows.extend(weekly_player_rows)
         games=provider.get_games("nfl",str(season),week)
         outcomes={str(o.get("game_id")):o for o in provider.get_outcomes("nfl",str(season),week)}
         predictor=NFLGameMarketPredictor(model_version, NFLV3Config() if model_version==MODELS[2] else None)
         for index,game in enumerate(games):
+            team_filter, player_filter = provider.get_game_histories("nfl",str(season),week,game)
+            histories=team_filter.rows; player_rows=player_filter.rows
+            coverage["team_rows_loaded"] += team_filter.loaded
+            coverage["team_rows_used"] += len(histories)
+            coverage["player_rows_loaded"] += player_filter.loaded
+            coverage["player_rows_used"] += len(player_rows)
+            coverage["future_rows_rejected"] += team_filter.rejected_future + player_filter.rejected_future
+            coverage["player_rows_rejected_unknown_timestamp"] += player_filter.rejected_unknown_timestamp
+            cutoff=prediction_cutoff(game)
+            history_diagnostic={
+                "team_rows_loaded":team_filter.loaded,"team_rows_eligible":len(histories),
+                "team_rows_rejected_future":team_filter.rejected_future,
+                "player_rows_loaded":player_filter.loaded,"player_rows_eligible":len(player_rows),
+                "player_rows_rejected_future":player_filter.rejected_future,
+                "player_rows_rejected_unknown_timestamp":player_filter.rejected_unknown_timestamp,
+                "latest_team_history_timestamp":team_filter.latest_timestamp,
+                "latest_player_history_timestamp":player_filter.latest_timestamp,
+                "prediction_cutoff":cutoff.isoformat().replace("+00:00","Z") if cutoff else None}
+            if os.getenv("BACKTESTING_DEBUG_HISTORY") == "1":
+                for dataset, filtered in (("team_stats",team_filter),("player_stats",player_filter)):
+                    for offender in filtered.rejected_rows:
+                        detail={"target_game_id":game.get("game_id"),"target_week":week,
+                            "target_kickoff":game.get("kickoff_time") or game.get("commence_time"),
+                            "prediction_cutoff":history_diagnostic["prediction_cutoff"],"dataset_type":dataset,
+                            "offending_row_game_id":offender.get("game_id"),"player":offender.get("player_name") or offender.get("player"),
+                            "team":offender.get("team"),"row_season":offender.get("season"),"row_week":offender.get("week"),
+                            "data_as_of":offender.get("data_as_of"),"completed_at":offender.get("completed_at"),
+                            "captured_at":offender.get("captured_at"),"record_role":offender.get("record_role"),
+                            "source":offender.get("source"),"rejection_reason":offender.get("rejection_reason")}
+                        print("History rejection: "+json.dumps(detail,sort_keys=True,default=str))
             projection=predictor.project(game,histories, None) if model_version==MODELS[2] else predictor.project(game,histories)
             outcome=outcomes.get(str(game.get("game_id")))
-            if projection is None or not outcome or outcome.get("final_home_score") is None: continue
+            if projection is None or not outcome or outcome.get("final_home_score") is None:
+                reason="projection_unavailable" if projection is None else "outcome_unavailable"
+                exclusions.append({"week":week,"game_id":str(game.get("game_id")),"reason":reason,
+                                   "history_diagnostics":history_diagnostic})
+                continue
             result=simulator.simulate(game,histories,player_rows,None,model_version,simulations,seed+week*1000+index,projection)
+            ready_players=len({player for player, _market in result.player_outcomes})
+            readiness["READY"] += ready_players
+            if not ready_players: readiness["NOT_READY_INSUFFICIENT_HISTORY"] += 1
             actual_home=float(outcome["final_home_score"]); actual_away=float(outcome["final_away_score"])
             rows.append({"week":week,"game_id":str(game.get("game_id")),"home_win_probability":result.market_probability("moneyline")["home"],
                          "home_win":int(actual_home>actual_away),"simulated_home":float(result.home_points.mean()),
-                         "simulated_away":float(result.away_points.mean()),"actual_home":actual_home,"actual_away":actual_away})
+                         "simulated_away":float(result.away_points.mean()),"actual_home":actual_home,"actual_away":actual_away,
+                         "history_diagnostics":history_diagnostic,
+                         "player_prop_readiness":"READY" if ready_players else "NOT_READY_INSUFFICIENT_HISTORY"})
+            coverage["games_evaluated"] += 1
     elapsed=perf_counter()-started
     probs=probability_metrics((r["home_win_probability"],r["home_win"]) for r in rows)
     mae=lambda values: sum(abs(a-b) for a,b in values)/len(rows) if rows else None
@@ -53,7 +99,8 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
     return {"title":"NFL Simulation Development Evaluation","season":season,"weeks":[start,end],
             "configuration":{"model_version":model_version,"simulation_version":"nfl-game-simulation-v1","simulations_per_game":simulations,"base_seed":seed},
             "dataset_readiness":audit_player_stats(all_player_rows),"team_score_simulation":simulation_summary,
-            "analytic_comparison":analytics["models"],"player_prop_metrics":{},
+            "history_coverage":coverage,"game_exclusions":exclusions,
+            "analytic_comparison":analytics["models"],"player_prop_metrics":{"readiness_counts":readiness},
             "correlations":{"status":"per-game diagnostics available on SimulationResult","causal_claim":False},
             "runtime":{"seconds":elapsed,"games":len(rows),"simulations":len(rows)*simulations},
             "readiness":{"team_markets":"READY","player_props":"PARTIAL","historical_sgp":"PARTIAL","anytime_td":"NOT READY"},
@@ -65,9 +112,12 @@ def evaluate(root: Path, season: int, start: int, end: int, model_version: str,
 def markdown(report: dict[str,Any]) -> str:
     readiness=report["readiness"]; sim=report["team_score_simulation"]
     sections=["# NFL Simulation Development Evaluation","## Dataset readiness",f"Player-game rows: {report['dataset_readiness']['rows']}",
+      "## Leakage-safe history coverage",json.dumps(report["history_coverage"],sort_keys=True),
+      "## Team-simulation exclusions",json.dumps(report["game_exclusions"],sort_keys=True),
       "## Team score simulation",f"Games: {sim['games']}; margin MAE: {sim['margin_mae']}; total MAE: {sim['total_mae']}",
       "## Moneyline probabilities",json.dumps(sim["moneyline"],sort_keys=True),"## Spread probabilities","Simulation API supports cover/win/push counts for arbitrary lines.",
       "## Total probabilities","Simulation API supports over/under/push counts for arbitrary lines.","## Player prop coverage",json.dumps(report["dataset_readiness"]["markets"],sort_keys=True),
+      "Readiness: "+json.dumps(report["player_prop_metrics"]["readiness_counts"],sort_keys=True),
       "## QB passing","PARTIAL: passing yards and passing TD distributions.","## RB rushing","PARTIAL: attempts and yards where history supports them.",
       "## Receiving","PARTIAL: receptions and receiving yards.","## Calibration","Simulation results are retained beside V1/V2/V3 analytic metrics.",
       "## Simulation correlations","Empirical Pearson diagnostics are available; they are not causal claims.","## Runtime",json.dumps(report["runtime"],sort_keys=True),
