@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 from decimal import Decimal
 from statistics import median
 from typing import Any, Iterable
+import json
 
 from .game_matching import normalize_team
 from .markets import CANONICAL_PLAYER_PROP_MARKETS, normalize_player_prop_market
@@ -93,10 +94,13 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                 if rec.status != "matched":
                     rejected.append({"reason": rec.status, "market": market, "player": outcome.get("description")}); continue
                 try:
-                    american = int(outcome["price"]); decimal = decimal_from_american(american)
                     line = float(outcome["point"])
                 except (KeyError, TypeError, ValueError) as exc:
-                    rejected.append({"reason":"malformed_market","market":market,"player":outcome.get("description"),"detail":str(exc)}); continue
+                    rejected.append({"reason":"malformed_line","market":market,"player":outcome.get("description"),"detail":str(exc)}); continue
+                try:
+                    american = int(outcome["price"]); decimal = decimal_from_american(american)
+                except (KeyError, TypeError, ValueError) as exc:
+                    rejected.append({"reason":"malformed_price","market":market,"player":outcome.get("description"),"detail":str(exc)}); continue
                 row = PlayerPropQuote(
                     league.lower(), int(season), int(week), str(game_id), rec.canonical_player_id or "",
                     str((rec.player or {}).get("player_name") or (rec.player or {}).get("name")),
@@ -114,6 +118,46 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                     "reconciliation_status":"matched","reconciliation_confidence":"exact"})
                 rows.append(row)
     return rows, rejected
+
+
+# One quote is one side at one exact line, book, and provider snapshot.  Price is
+# deliberately not in the identity: two source copies with different prices are
+# a conflict for the same quote, not two independently actionable quotes.
+CANONICAL_QUOTE_IDENTITY_FIELDS = ("league", "season", "week", "game_id",
+    "canonical_player_id", "market", "bookmaker", "line", "selection",
+    "provider_snapshot_timestamp")
+
+
+def canonical_quote_identity(row: dict[str, Any]) -> tuple[Any, ...]:
+    values=[]
+    for field in CANONICAL_QUOTE_IDENTITY_FIELDS:
+        if field == "selection": values.append(str(row.get("selection") or row.get("side") or "").upper())
+        elif field == "provider_snapshot_timestamp": values.append(row.get(field) or row.get("snapshot_timestamp"))
+        else: values.append(row.get(field))
+    return tuple(values)
+
+
+def deduplicate_quotes(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Collapse source duplicates with deterministic, timestamp-aware precedence."""
+    groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    for row in rows: groups.setdefault(canonical_quote_identity(row), []).append(row)
+    result=[]; exact=conflicts=0; conflict_details=[]
+    for identity, copies in groups.items():
+        serialized=[json.dumps(r,sort_keys=True,separators=(",",":")) for r in copies]
+        unique={value for value in serialized}
+        if len(copies)>1:
+            if len(unique)==1: exact += len(copies)-1
+            else:
+                conflicts += len(unique)-1
+                conflict_details.append({"identity":list(identity),"copies":len(copies),
+                                         "prices":sorted({r.get("american_odds") for r in copies},key=repr)})
+        # Prefer the most recently updated source value; JSON is a stable
+        # tiebreaker when the provider supplies contradictory copies at once.
+        chosen=max(copies,key=lambda r:(parse_dt(r.get("market_last_update")) or parse_dt("1970-01-01T00:00:00Z"),
+                                        json.dumps(r,sort_keys=True,separators=(",",":"))))
+        result.append(chosen)
+    result.sort(key=canonical_quote_identity)
+    return result,{"duplicate_exact":exact,"duplicate_conflict":conflicts,"conflicts":conflict_details}
 
 
 def filter_player_quotes(game: dict[str, Any], quotes: list[dict[str, Any]]):
@@ -145,8 +189,13 @@ def validate_player_prop_rows(rows: Iterable[dict[str, Any]], games: Iterable[di
         if not snap: errors.append(f"{prefix}: invalid_provider_snapshot")
         elif cutoff and snap > cutoff: errors.append(f"{prefix}: provider_snapshot_after_cutoff")
         if row.get("market_last_update") and not update: errors.append(f"{prefix}: invalid_market_last_update")
-        elif update and snap and update > snap: errors.append(f"{prefix}: market_update_after_provider_snapshot")
-        identity=(row.get("game_id"),row.get("canonical_player_id"),row.get("market"),row.get("bookmaker"),row.get("line"),str(row.get("selection") or row.get("side")).upper(),row.get("provider_snapshot_timestamp") or row.get("snapshot_timestamp"))
+        # Historical envelope timestamps identify the provider's selected
+        # archive record.  Bookmaker last_update is leakage-safe when it is no
+        # later than the requested as-of boundary (and the game cutoff).
+        requested=parse_dt(row.get("requested_snapshot_timestamp"))
+        if requested and snap and snap > requested: errors.append(f"{prefix}: provider_snapshot_after_requested_snapshot")
+        if update and requested and update > requested: errors.append(f"{prefix}: market_update_after_requested_snapshot")
+        identity=canonical_quote_identity(row)
         if identity in seen: errors.append(f"{prefix}: duplicate_canonical_quote_identity")
         seen.add(identity)
         if row.get("reconciliation_status") not in {None,"matched"}: errors.append(f"{prefix}: deterministic_player_reconciliation")

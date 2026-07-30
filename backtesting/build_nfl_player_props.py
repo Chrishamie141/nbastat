@@ -10,7 +10,8 @@ from nfl_providers import (JsonRawCache, NFL_SPORT_KEY, ODDS_API_BASE, ProviderU
                            _fetch_json, _redact_url)
 from .config import SNAPSHOTS_DIR
 from .player_prop_acquisition import inspect_cache, plan_acquisition, request_params
-from .player_prop_odds import normalize_provider_outcomes, pair_quotes, validate_player_prop_rows
+from .player_prop_odds import (deduplicate_quotes, normalize_provider_outcomes, pair_quotes,
+                               validate_player_prop_rows)
 from .snapshots import snapshot_week_dir
 
 
@@ -76,7 +77,7 @@ def persist_week(directory: Path, rows: list[dict[str, Any]]) -> None:
 
 def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
             allow_paid: bool, resume: bool, validate: bool) -> dict[str, Any]:
-    budget=int(plan["total_paid_request_budget"]); paid=0; all_rejected=[]; weekly={}
+    budget=int(plan["total_paid_request_budget"]); paid=0; all_rejected=[]; weekly={}; event_coverage={}
     key=os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
     cache=JsonRawCache(cache_root)
     games_by_week={}
@@ -97,24 +98,58 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
                 paid+=1
             event=payload["data"]; normalized,rejected=normalize_provider_outcomes(event,league="nfl",season=season,week=week,game_id=str(game["game_id"]),canonical_players=players,
                 snapshot_timestamp=payload["timestamp"],requested_snapshot_timestamp=rec["requested_snapshot_timestamp"])
+            raw_counts={}
+            for book in event.get("bookmakers",[]) or []:
+                for market in book.get("markets",[]) or []:
+                    key=str(market.get("key")); raw_counts[key]=raw_counts.get(key,0)+len(market.get("outcomes",[]) or [])
+            normalized_counts={}
+            for quote in normalized: normalized_counts[quote["provider_market"]]=normalized_counts.get(quote["provider_market"],0)+1
             # Leakage and pair integrity are hard persistence boundaries.
             from .player_prop_odds import filter_player_quotes
             eligible,diag=filter_player_quotes(game,normalized)
+            # The provider envelope is an archive-record identity, while the
+            # requested timestamp is the as-of safety boundary.
+            from .game_matching import parse_dt
+            safe=[]
+            for quote in eligible:
+                update=parse_dt(quote.get("market_last_update")); requested=parse_dt(quote.get("requested_snapshot_timestamp"))
+                provider=parse_dt(quote.get("provider_snapshot_timestamp"))
+                reason = "future_snapshot" if provider and requested and provider > requested else \
+                         "invalid_market_timestamp" if not update or (requested and update > requested) else None
+                if reason: rejected.append({"reason":reason,"quote":quote})
+                else: safe.append(quote)
+            eligible,dedup=deduplicate_quotes(safe)
+            rejected.extend({"reason":"duplicate_exact"} for _ in range(dedup["duplicate_exact"]))
+            rejected.extend({"reason":"duplicate_conflict","detail":d} for d in dedup["conflicts"])
             complete={p["key"] for p in pair_quotes(eligible) if p["complete"]}
             incomplete=[q for q in eligible if tuple(q.get(k) for k in ("game_id","canonical_player_id","market","bookmaker","line","snapshot_timestamp")) not in complete]
             rejected.extend({"reason":"incomplete_over_under_pair","quote":q} for q in incomplete)
             rows.extend(q for q in eligible if q not in incomplete); all_rejected.extend(rejected)
+            persisted=[q for q in eligible if q not in incomplete]
+            persisted_counts={}
+            for quote in persisted: persisted_counts[quote["provider_market"]]=persisted_counts.get(quote["provider_market"],0)+1
+            reasons={}
+            for item in rejected:
+                key=str(item.get("market") or (item.get("quote") or {}).get("provider_market") or "unknown")
+                reasons.setdefault(key,{}); reasons[key][item["reason"]]=reasons[key].get(item["reason"],0)+1
+            event_coverage[rec["provider_event_id"]]={"raw_provider":dict(sorted(raw_counts.items())),
+                "normalized":dict(sorted(normalized_counts.items())),"persisted":dict(sorted(persisted_counts.items())),
+                "rejections":reasons}
         errors=validate_player_prop_rows(rows,games,players)
         if errors and validate: raise ValueError("player_prop_odds validation failed:\n"+"\n".join(errors))
-        persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"validation_errors":errors}
-    return {"paid_requests_made":paid,"paid_request_budget":budget,"weeks":weekly,"rejected":all_rejected}
+        counters={}
+        for item in all_rejected: counters[item["reason"]]=counters.get(item["reason"],0)+1
+        persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"rejection_counters":counters,"validation_errors":errors}
+    return {"network_contacted":bool(paid),"paid_requests_made":paid,"paid_request_budget":budget,
+            "weeks":weekly,"event_coverage":event_coverage,"rejected":all_rejected}
 
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--season",type=int,required=True); p.add_argument("--start-week",type=int,required=True); p.add_argument("--end-week",type=int,required=True)
-    p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--cache-root",type=Path); p.add_argument("--plan",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--validate",action="store_true"); p.add_argument("--allow-paid-fetch",action="store_true")
+    p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--cache-root",type=Path); p.add_argument("--plan",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--rebuild-from-cache",action="store_true",help="require validated cache hits and prohibit every network request"); p.add_argument("--validate",action="store_true"); p.add_argument("--allow-paid-fetch",action="store_true")
     a=p.parse_args(argv)
     if a.end_week<a.start_week: p.error("end-week must be >= start-week")
+    if a.rebuild_from_cache and a.allow_paid_fetch: p.error("--rebuild-from-cache cannot be combined with --allow-paid-fetch")
     if a.allow_paid_fetch and (a.start_week!=1 or a.end_week!=1): p.error("first paid pilot is restricted to Week 1")
     cache_root=a.cache_root or a.snapshot_root.parent/"raw_cache"; games=load_registry(a.snapshot_root,a.season,a.start_week,a.end_week)
     plan=plan_acquisition(games,cache_root,season=a.season); print(json.dumps(plan,indent=2,sort_keys=True))
