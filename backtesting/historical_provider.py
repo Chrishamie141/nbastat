@@ -9,6 +9,7 @@ from typing import Any, Protocol
 from .snapshots import SnapshotError, snapshot_path
 from .team_history import (COMPLETED_GAME_HISTORY, PREGAME_AGGREGATE,
                            canonicalize_team_history, filter_game_history)
+from .player_history import canonicalize_player_history, filter_player_history
 
 
 class PredictionDataProvider(Protocol):
@@ -40,6 +41,28 @@ class HistoricalSnapshotProvider:
 
     def __init__(self, data_dir: Path):
         self.data_dir = Path(data_dir)
+        self._canonical_player_cache: dict[tuple[str, str], tuple[list[dict[str, Any]], dict[str, Any]]] = {}
+
+    def canonical_player_history(self, league: str, season: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """Build one indexed view across weekly snapshots, never per player/sim."""
+        key=(league.lower(),str(season))
+        if key in self._canonical_player_cache:
+            return self._canonical_player_cache[key]
+        raw=[]; games={}; base=self.data_dir/league.lower()
+        # Include any available prior season and the target season. Eligibility
+        # remains timestamp-driven, so scanning a future snapshot cannot leak.
+        for directory in sorted(base.glob("*/week_*")):
+            try: directory_season=int(directory.parent.name)
+            except ValueError: continue
+            if directory_season > int(season): continue
+            game_path=directory/"games.json"
+            if game_path.exists():
+                for game in __import__("json").loads(game_path.read_text()): games[str(game.get("game_id"))]=game
+            player_path=directory/"player_stats.json"
+            if player_path.exists(): raw.extend(__import__("json").loads(player_path.read_text()))
+        canonical, audit=canonicalize_player_history(raw,league=league,games=games)
+        self._canonical_player_cache[key]=(canonical,audit)
+        return canonical,audit
 
     def _snapshot(self, league: str, season: str, week: int, name: str) -> list[dict[str, Any]]:
         path = snapshot_path(self.data_dir, league, season, week, name)
@@ -86,12 +109,11 @@ class HistoricalSnapshotProvider:
                            game: dict[str, Any]):
         """Return per-game histories and filtering diagnostics from one snapshot."""
         team_rows = [canonicalize_team_history(r) for r in self._snapshot(league, season, week, "team_stats")]
-        player_path = snapshot_path(self.data_dir, league, season, week, "player_stats")
-        player_rows = self._snapshot(league, season, week, "player_stats") if player_path.exists() else []
+        player_rows, _audit = self.canonical_player_history(league, season)
         return HistoryViews(
             filter_game_history(game, team_rows, dataset="team", target_teams_only=False),
             filter_game_history(game, team_rows, dataset="team"),
-            filter_game_history(game, player_rows, dataset="player"),
+            filter_player_history(game, player_rows),
         )
 
     @staticmethod

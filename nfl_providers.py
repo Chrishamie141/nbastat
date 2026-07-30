@@ -256,7 +256,10 @@ def normalize_espn_player_boxscore(data, season, through_week):
                     elif label in {"car"}: stats["attempts"]=_num(val)
                     elif label in {"rec"}: stats["receptions"]=_num(val)
                     elif label in {"tgts","targets"}: stats["targets"]=_num(val)
-                if stats: out.append({"player":a.get("displayName"),"team":abbr,"season":season,"through_week":through_week,"stats":stats})
+                if stats: out.append({"player_id":a.get("id") or a.get("uid"),
+                    "player":a.get("displayName"),"player_name":a.get("displayName"),
+                    "position":((a.get("position") or {}).get("abbreviation") if isinstance(a.get("position"),dict) else a.get("position")),
+                    "team":abbr,"season":season,"through_week":through_week,"stats":stats})
     return out
 
 def normalize_espn_team_boxscore(data, season, through_week):
