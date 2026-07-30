@@ -15,6 +15,7 @@ from .game_matching import normalize_team
 from .markets import CANONICAL_PLAYER_PROP_MARKETS, normalize_player_prop_market
 from .team_history import filter_market_quotes, prediction_cutoff
 from .game_matching import parse_dt
+from .player_identity import first_player_id, normalize_player_id
 
 
 def decimal_from_american(price: int | float) -> float:
@@ -40,7 +41,7 @@ class PlayerPropQuote:
     def __post_init__(self):
         if self.market not in CANONICAL_PLAYER_PROP_MARKETS: raise ValueError(f"unsupported market: {self.market}")
         if self.selection not in {"OVER", "UNDER"}: raise ValueError("selection must be OVER or UNDER")
-        if not self.canonical_player_id: raise ValueError("canonical_player_id is required")
+        if normalize_player_id(self.canonical_player_id) is None: raise ValueError("canonical_player_id is required")
 
     def to_dict(self) -> dict[str, Any]: return asdict(self)
 
@@ -69,10 +70,18 @@ class PlayerHistoryIndex:
     def build(cls, players: Iterable[dict[str, Any]]) -> "PlayerHistoryIndex":
         grouped: dict[str,list[dict[str,Any]]] = {}
         for player in players: grouped.setdefault(str(player.get("game_id") or ""),[]).append(player)
-        return cls({game:tuple(sorted(rows,key=lambda p:(_name(p.get("player_name") or p.get("name") or p.get("player")),normalize_team(p.get("team")),str(p.get("player_id") or p.get("canonical_player_id") or p.get("athlete_id") or "")))) for game,rows in grouped.items()})
+        return cls({game:tuple(sorted(rows,key=lambda p:(_name(p.get("player_name") or p.get("name") or p.get("player")),normalize_team(p.get("team")),first_player_id(p.get("player_id"),p.get("canonical_player_id"),p.get("athlete_id")) or ""))) for game,rows in grouped.items()})
 
     def players_for_game(self, game_id: str) -> tuple[dict[str, Any], ...]:
         return self.by_game.get(str(game_id),())
+
+    def identity_records_for_game(self, game_id: str) -> list[dict[str, Any]]:
+        """Expose auditable identity metadata without any statistical values."""
+        return [{"canonical_player_id":_player_id(player,game_id=str(game_id)),
+                 "provider_player_id":first_player_id(player.get("player_id"),player.get("athlete_id")),
+                 "normalized_name":_name(player.get("player_name") or player.get("name") or player.get("player")),
+                 "team":normalize_team(player.get("team")),"position":player.get("position")}
+                for player in self.players_for_game(game_id)]
 
 
 def build_player_history_index(players: Iterable[dict[str, Any]]) -> PlayerHistoryIndex:
@@ -90,8 +99,8 @@ def _player_id(player: dict[str, Any], *, game_id: str) -> str:
     is deliberately scoped by normalized name, historical team membership and
     game.  This is a canonical history identity, not a global display-name ID.
     """
-    supplied = player.get("player_id") or player.get("canonical_player_id") or player.get("athlete_id")
-    if supplied not in (None, ""): return str(supplied)
+    supplied = first_player_id(player.get("player_id"), player.get("canonical_player_id"), player.get("athlete_id"))
+    if supplied is not None: return supplied
     return "history:%s:%s:%s" % (str(game_id), normalize_team(player.get("team")), _name(player.get("player_name") or player.get("name") or player.get("player")))
 
 
@@ -100,8 +109,8 @@ def reconcile_player(provider_player: dict[str, Any], canonical_players: Iterabl
     """Resolve identity conservatively using ID, game, name and membership."""
     index=canonical_players if isinstance(canonical_players,PlayerHistoryIndex) else build_player_history_index(canonical_players)
     players = list(index.players_for_game(game_id))
-    provider_id = provider_player.get("canonical_player_id") or provider_player.get("player_id") or provider_player.get("athlete_id")
-    stable = [p for p in players if provider_id and _player_id(p,game_id=game_id) == str(provider_id)]
+    provider_id = first_player_id(provider_player.get("canonical_player_id"), provider_player.get("player_id"), provider_player.get("athlete_id"), provider_player.get("provider_player_id"))
+    stable = [p for p in players if provider_id and _player_id(p,game_id=game_id) == provider_id]
     # The Odds API uses ``name`` for the side (Over/Under) and ``description``
     # for the participant, so description intentionally precedes name.
     candidates = stable or [p for p in players if _name(p.get("player_name") or p.get("name") or p.get("player")) == _name(provider_player.get("player_name") or provider_player.get("description") or provider_player.get("name"))]
@@ -148,7 +157,7 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                 except (KeyError, TypeError, ValueError) as exc:
                     rejected.append({"reason":"malformed_price","market":market,"player":outcome.get("description"),"detail":str(exc)}); continue
                 row = PlayerPropQuote(
-                    league.lower(), int(season), int(week), str(game_id), rec.canonical_player_id or "",
+                    league.lower(), int(season), int(week), str(game_id), rec.canonical_player_id,
                     str((rec.player or {}).get("player_name") or (rec.player or {}).get("name")),
                     str((rec.player or {}).get("team")), market, str(outcome.get("name", "")).upper(),
                     line, american, decimal, 1 / decimal, str(book.get("key") or book.get("title")),
@@ -160,7 +169,7 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                     "side":row["selection"],"sportsbook":row["bookmaker"],"provider":"the-odds-api",
                     "requested_snapshot_timestamp":requested_snapshot_timestamp or snapshot_timestamp,
                     "provider_snapshot_timestamp":snapshot_timestamp,"captured_at":captured_at or snapshot_timestamp,
-                    "provider_player_id":outcome.get("player_id") or outcome.get("athlete_id"),
+                    "provider_player_id":first_player_id(outcome.get("player_id"), outcome.get("athlete_id"), outcome.get("provider_player_id")),
                     "reconciliation_method":rec.status,"reconciliation_status":rec.status,
                     "reconciliation_candidate_count":rec.candidate_count,"reconciliation_confidence":"exact"})
                 rows.append(row)
@@ -181,7 +190,7 @@ def canonical_quote_identity(row: dict[str, Any]) -> tuple[Any, ...]:
         if field == "selection": values.append(str(row.get("selection") or row.get("side") or "").upper())
         elif field == "provider_snapshot_timestamp": values.append(row.get(field) or row.get("snapshot_timestamp"))
         elif field == "canonical_player_id":
-            canonical=row.get(field) or row.get("player_id")
+            canonical=first_player_id(row.get(field), row.get("player_id"))
             # Diagnostic/rejected rows must not make unrelated players collide
             # merely because final canonical reconciliation is unavailable.
             values.append(canonical or "provider:"+_name(row.get("provider_player_id") or row.get("provider_player_name") or row.get("description") or row.get("player_name")))
@@ -225,13 +234,15 @@ def quote_key(row: dict[str, Any]) -> tuple[Any, ...]:
 def validate_player_prop_rows(rows: Iterable[dict[str, Any]], games: Iterable[dict[str, Any]],
                               players: Iterable[dict[str, Any]]) -> list[str]:
     """Validate the dedicated dataset independently and return every failure."""
-    games_by_id={str(g.get("game_id")):g for g in games}; player_keys={(str(p.get("game_id")),str(p.get("player_id") or p.get("canonical_player_id"))) for p in players}
+    games_by_id={str(g.get("game_id")):g for g in games}; player_keys={(str(p.get("game_id")),first_player_id(p.get("player_id"),p.get("canonical_player_id"),p.get("athlete_id"))) for p in players}
     errors=[]; seen=set()
     for index,row in enumerate(rows):
         prefix=f"row[{index}]"
         game=games_by_id.get(str(row.get("game_id")))
         if not game: errors.append(f"{prefix}: canonical_game_match")
-        if (str(row.get("game_id")),str(row.get("canonical_player_id") or row.get("player_id"))) not in player_keys: errors.append(f"{prefix}: canonical_player_match")
+        canonical_id=first_player_id(row.get("canonical_player_id"),row.get("player_id"))
+        if canonical_id is None: errors.append(f"{prefix}: canonical_player_id_required")
+        elif (str(row.get("game_id")),canonical_id) not in player_keys and not canonical_id.startswith("history:"): errors.append(f"{prefix}: canonical_player_match")
         if row.get("market") not in CANONICAL_PLAYER_PROP_MARKETS: errors.append(f"{prefix}: supported_market")
         for field in ("line","american_odds"):
             if isinstance(row.get(field),bool) or not isinstance(row.get(field),(int,float)): errors.append(f"{prefix}: numeric_{field}")

@@ -13,6 +13,7 @@ from .player_prop_acquisition import inspect_cache, plan_acquisition, request_pa
 from .player_prop_odds import (deduplicate_quotes, normalize_provider_outcomes, pair_quotes,
                                validate_player_prop_rows)
 from .snapshots import snapshot_week_dir
+from .player_identity import first_player_id
 
 
 class PaidBudgetExceeded(RuntimeError): pass
@@ -45,7 +46,7 @@ def _players(directory: Path, games: list[dict[str, Any]]) -> list[dict[str, Any
     rows=_load(directory/"player_stats.json",[]); expanded=[]
     for row in rows:
         copy=dict(row)
-        if not copy.get("player_id"): copy["player_id"]=copy.get("canonical_player_id") or copy.get("athlete_id")
+        copy["player_id"]=first_player_id(copy.get("player_id"),copy.get("canonical_player_id"),copy.get("athlete_id"))
         if not copy.get("player_name"): copy["player_name"]=copy.get("player") or copy.get("name")
         if copy.get("game_id"): expanded.append(copy)
         else:
@@ -115,6 +116,13 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
             # Leakage and pair integrity are hard persistence boundaries.
             from .player_prop_odds import filter_player_quotes
             eligible,diag=filter_player_quotes(game,normalized)
+            eligible_objects={id(q) for q in eligible}
+            for quote in normalized:
+                if id(quote) not in eligible_objects:
+                    from .team_history import market_quote_known_at
+                    known=market_quote_known_at(quote)
+                    reason="unknown_timestamp" if known is None else "timestamp_after_cutoff"
+                    rejected.append({"reason":reason,"market":quote["market"],"quote":quote})
             # The provider envelope is an archive-record identity, while the
             # requested timestamp is the as-of safety boundary.
             from .game_matching import parse_dt
@@ -157,8 +165,13 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
                 for provider_key,counts in reasons.items():
                     if normalize_player_prop_market(provider_key)==market or provider_key==market:
                         for reason,count in counts.items(): market_rejections[reason]=market_rejections.get(reason,0)+count
-                raw=canonical_raw.get(market,0); norm=canonical_normalized.get(market,0); persisted_count=canonical_persisted.get(market,0)
-                funnel[market]={"raw_rows":raw,"normalized_rows":norm,"identity_matched":norm,
+                raw=canonical_raw.get(market,0); persisted_count=canonical_persisted.get(market,0)
+                ambiguous=market_rejections.get("ambiguous_player",0); unknown=market_rejections.get("unknown_player",0)
+                # Every row in a recognized provider market is normalized at
+                # the market stage, before identity and value validation.
+                normalized_count=raw; identity_matched=raw-ambiguous-unknown
+                funnel[market]={"raw":raw,"normalized":normalized_count,"raw_rows":raw,"normalized_rows":normalized_count,"identity_matched":identity_matched,
+                    "identity_ambiguous":ambiguous,"identity_unknown":unknown,
                     "timestamp_eligible":sum(q.get("market")==market for q in safe),
                     "deduplicated":sum(q.get("market")==market for q in eligible),
                     "paired":persisted_count,"persisted":persisted_count,"rejected":raw-persisted_count,
