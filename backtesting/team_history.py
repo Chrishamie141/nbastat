@@ -23,6 +23,16 @@ def prediction_cutoff(game: dict[str, Any]):
                     or game.get("kickoff_time") or game.get("commence_time"))
 
 
+def prediction_cutoff_source(game: dict[str, Any]) -> str | None:
+    """Identify the authoritative cutoff field, in priority order."""
+    for field in ("prediction_cutoff", "prediction_timestamp"):
+        if game.get(field) not in (None, ""):
+            return field
+    if game.get("kickoff_time") or game.get("commence_time"):
+        return "kickoff_fallback"
+    return None
+
+
 def history_known_at(row: dict[str, Any]):
     """Return when a historical fact was provably available.
 
@@ -52,8 +62,9 @@ class HistoryFilterResult:
     rejected_rows: list[dict[str, Any]]
 
 
-def filter_game_history(game: dict[str, Any], rows: list[dict[str, Any]], *, dataset: str) -> HistoryFilterResult:
-    """Select a target game's leakage-safe team or player history."""
+def filter_game_history(game: dict[str, Any], rows: list[dict[str, Any]], *, dataset: str,
+                        target_teams_only: bool = True) -> HistoryFilterResult:
+    """Select leakage-safe history, optionally restricted to target participants."""
     cutoff = prediction_cutoff(game)
     if cutoff is None:
         raise ValueError("target game has no valid prediction cutoff")
@@ -71,7 +82,7 @@ def filter_game_history(game: dict[str, Any], rows: list[dict[str, Any]], *, dat
             reason = "future"; future += 1
         elif target_id and str(row.get("game_id") or "") == target_id:
             reason = "target_game"; other += 1
-        elif normalize_team(row.get("team")) not in teams:
+        elif target_teams_only and normalize_team(row.get("team")) not in teams:
             reason = "irrelevant_team"; other += 1
         elif dataset == "team" and row.get("record_role", PREGAME_AGGREGATE) not in VALID_TEAM_HISTORY_ROLES:
             reason = "invalid_record_role"; other += 1

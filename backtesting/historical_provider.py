@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from .snapshots import SnapshotError, snapshot_path
@@ -19,6 +20,19 @@ class PredictionDataProvider(Protocol):
     def get_injuries(self, league: str, season: str, week: int) -> list[dict[str, Any]]: ...
     def get_player_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]: ...
     def get_team_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]: ...
+
+
+@dataclass(frozen=True)
+class HistoryViews:
+    """Distinct history universes sharing one authoritative game cutoff.
+
+    V1 and the simulator consume target-team history. V2 consumes league-wide
+    history for chronological Elo and opponent adjustment; V3 builds on V2 and
+    therefore has the same league-wide contract. Player history is target-only.
+    """
+    league_team_history: Any
+    target_team_history: Any
+    player_history: Any
 
 
 class HistoricalSnapshotProvider:
@@ -59,6 +73,9 @@ class HistoricalSnapshotProvider:
 
     def get_player_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return player statistics available before kickoff."""
+        path = snapshot_path(self.data_dir, league, season, week, "player_stats")
+        if not path.exists():
+            return []
         return [r for r in self._snapshot(league, season, week, "player_stats") if self._is_usable_history(r, season, week)]
 
     def get_team_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
@@ -69,9 +86,13 @@ class HistoricalSnapshotProvider:
                            game: dict[str, Any]):
         """Return per-game histories and filtering diagnostics from one snapshot."""
         team_rows = [canonicalize_team_history(r) for r in self._snapshot(league, season, week, "team_stats")]
-        player_rows = self._snapshot(league, season, week, "player_stats")
-        return (filter_game_history(game, team_rows, dataset="team"),
-                filter_game_history(game, player_rows, dataset="player"))
+        player_path = snapshot_path(self.data_dir, league, season, week, "player_stats")
+        player_rows = self._snapshot(league, season, week, "player_stats") if player_path.exists() else []
+        return HistoryViews(
+            filter_game_history(game, team_rows, dataset="team", target_teams_only=False),
+            filter_game_history(game, team_rows, dataset="team"),
+            filter_game_history(game, player_rows, dataset="player"),
+        )
 
     @staticmethod
     def _is_usable_history(row: dict[str, Any], season: str, week: int) -> bool:
