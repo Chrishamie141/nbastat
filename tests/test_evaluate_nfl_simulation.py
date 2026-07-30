@@ -1,0 +1,84 @@
+from __future__ import annotations
+
+from backtesting.nfl_simulation import NFLGameSimulator
+from backtesting.team_history import filter_game_history, prediction_cutoff
+
+
+def game(game_id="target", kickoff="2025-09-08T20:20:00Z"):
+    return {"game_id": game_id, "season": 2025, "week": 2, "home_team": "BUF",
+            "away_team": "MIA", "kickoff_time": kickoff,
+            "prediction_cutoff": "2025-09-07T20:20:00Z",
+            "projected_home_points": 24, "projected_away_points": 21}
+
+
+def player(gid, stamp, *, season=2025, week=1, team="BUF"):
+    return {"game_id": gid, "season": season, "week": week, "team": team,
+            "player_id": "qb", "player_name": "Quarterback", "position": "QB",
+            "completed_at": stamp, "data_as_of": stamp, "passing_yards": 250}
+
+
+def team(gid, stamp, *, season=2025, week=1, name="BUF"):
+    return {"game_id": gid, "season": season, "week": week, "team": name,
+            "opponent": "NYJ", "completed_at": stamp, "data_as_of": stamp,
+            "record_role": "completed_game_history", "is_pregame": False,
+            "points_for": 24, "points_against": 20}
+
+
+def test_player_history_is_filtered_per_target_by_strict_timestamp_not_week():
+    rows = [
+        player("target", "2025-09-08T23:30:00Z", week=2),       # target postgame
+        player("week-3", "2025-09-15T23:30:00Z", week=3),      # future week
+        player("later", "2025-09-08T03:30:00Z", week=2),       # later than cutoff
+        player("early-sunday", "2025-09-07T23:30:00Z", week=2),# kicked earlier, known too late
+        player("monday-prior", "2025-09-07T19:00:00Z", week=2),# same week but known in time
+        player("prior-season", "2024-12-20T23:00:00Z", season=2024, week=16),
+    ]
+    result = filter_game_history(game(), rows, dataset="player")
+    assert [r["game_id"] for r in result.rows] == ["monday-prior", "prior-season"]
+    assert result.rejected_future == 4
+    assert result.loaded == 6
+    assert result.latest_timestamp == "2025-09-07T19:00:00Z"
+
+
+def test_team_history_has_equivalent_chronology_and_role_rules():
+    rows = [team("old", "2025-09-01T00:00:00Z"),
+            team("future", "2025-09-07T21:00:00Z", week=2),
+            team("target", "2025-09-08T23:00:00Z", week=2),
+            {**team("bad-role", "2025-09-01T00:00:00Z"), "record_role": "outcome"},
+            team("other", "2025-09-01T00:00:00Z", name="DAL")]
+    result = filter_game_history(game(), rows, dataset="team")
+    assert [r["game_id"] for r in result.rows] == ["old"]
+    assert result.rejected_future == 2
+    assert result.rejected_other == 2
+
+
+def test_unknown_or_malformed_timestamps_cannot_prove_eligibility():
+    rows = [player("missing", None), player("malformed", "not-a-time")]
+    # Remove the explicit None-valued fields to exercise a truly absent timestamp too.
+    rows[0].pop("completed_at"); rows[0].pop("data_as_of")
+    result = filter_game_history(game(), rows, dataset="player")
+    assert result.rows == []
+    assert result.rejected_unknown_timestamp == 2
+    assert {r["rejection_reason"] for r in result.rejected_rows} == {"unknown_timestamp"}
+
+
+def test_explicit_prediction_cutoff_is_authoritative_and_simulator_remains_defensive():
+    target = game()
+    assert prediction_cutoff(target).isoformat() == "2025-09-07T20:20:00+00:00"
+    future = player("other", "2025-09-07T21:00:00Z")
+    try:
+        NFLGameSimulator().simulate(target, [], [future], None, "v3", 5, 1)
+    except ValueError as exc:
+        assert "future history" in str(exc)
+    else:
+        raise AssertionError("simulator accepted a future row")
+
+
+def test_filtering_before_simulation_produces_diagnostics_and_team_result():
+    target = game()
+    filtered = filter_game_history(target, [player("old", "2025-09-01T00:00:00Z"),
+                                             player("future", "2025-09-08T00:00:00Z")],
+                                   dataset="player")
+    result = NFLGameSimulator().simulate(target, [], filtered.rows, None, "v3", 20, 141)
+    assert len(result.home_points) == 20
+    assert filtered.loaded == 2 and len(filtered.rows) == 1 and filtered.rejected_future == 1

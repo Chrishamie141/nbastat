@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .snapshots import SnapshotError, snapshot_path
-from .team_history import COMPLETED_GAME_HISTORY, PREGAME_AGGREGATE, canonicalize_team_history
+from .team_history import (COMPLETED_GAME_HISTORY, PREGAME_AGGREGATE,
+                           canonicalize_team_history, filter_game_history)
 
 
 class PredictionDataProvider(Protocol):
@@ -63,6 +64,14 @@ class HistoricalSnapshotProvider:
     def get_team_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
         """Return team statistics available before kickoff."""
         return [canonicalize_team_history(r) for r in self._snapshot(league, season, week, "team_stats") if self._is_usable_history(r, season, week)]
+
+    def get_game_histories(self, league: str, season: str, week: int,
+                           game: dict[str, Any]):
+        """Return per-game histories and filtering diagnostics from one snapshot."""
+        team_rows = [canonicalize_team_history(r) for r in self._snapshot(league, season, week, "team_stats")]
+        player_rows = self._snapshot(league, season, week, "player_stats")
+        return (filter_game_history(game, team_rows, dataset="team"),
+                filter_game_history(game, player_rows, dataset="player"))
 
     @staticmethod
     def _is_usable_history(row: dict[str, Any], season: str, week: int) -> bool:
