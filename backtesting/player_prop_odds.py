@@ -16,6 +16,7 @@ from .markets import CANONICAL_PLAYER_PROP_MARKETS, normalize_player_prop_market
 from .team_history import filter_market_quotes, prediction_cutoff
 from .game_matching import parse_dt
 from .player_identity import first_player_id, normalize_player_id
+from .player_history import STAT_ALIASES, STAT_FIELDS
 
 
 def decimal_from_american(price: int | float) -> float:
@@ -301,10 +302,115 @@ def execution_and_consensus(quotes: Iterable[dict[str, Any]]) -> list[dict[str, 
     return result
 
 
-def grade_quote(quote: dict[str, Any], outcomes: Iterable[dict[str, Any]]) -> dict[str, Any]:
+def _outcome_number(value: Any) -> int | float | None:
+    """Normalize provider numeric values without making missing values zero."""
+    if value is None or value == "" or isinstance(value, bool):
+        return None
+    try:
+        number = float(str(value).replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+    return int(number) if number.is_integer() else number
+
+
+def _outcome_stats(row: dict[str, Any]) -> dict[str, int | float]:
+    raw = dict(row.get("stats") or {})
+    raw.update({field: row[field] for field in STAT_FIELDS if field in row})
+    result: dict[str, int | float] = {}
+    for source_field, value in raw.items():
+        field = STAT_ALIASES.get(str(source_field).casefold())
+        if field == "context_attempts":
+            if any(key in raw for key in ("passing_yards", "passing_touchdowns", "completions")):
+                field = "passing_attempts"
+            elif any(key in raw for key in ("rushing_yards", "rushing_touchdowns")):
+                field = "rushing_attempts"
+        number = _outcome_number(value)
+        if field in STAT_FIELDS and number is not None:
+            result[field] = number
+    return result
+
+
+def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tuple[str, str], dict[str, Any]], dict[str, Any]]:
+    """Merge completed category rows into one auditable player/game outcome.
+
+    Identity is deliberately only the canonical game/player pair.  A team is
+    retained as provenance, but is never used to paper over an unresolved or
+    conflicting identity.
+    """
+    source_rows = list(rows)
+    groups: dict[tuple[str, str], list[tuple[int, dict[str, Any]]]] = {}
+    for index, row in enumerate(source_rows):
+        game_id = str(row.get("game_id") or "").strip()
+        player_id = first_player_id(row.get("canonical_player_id"), row.get("player_id"), row.get("athlete_id"))
+        if not game_id:
+            raise ValueError(f"canonical player outcome missing game_id: source_row={index}")
+        if player_id is None:
+            raise ValueError(f"unresolved canonical player ID in outcome: game_id={game_id}, source_row={index}")
+        groups.setdefault((game_id, player_id), []).append((index, row))
+
+    outcomes: dict[tuple[str, str], dict[str, Any]] = {}
+    duplicate_fields = 0
+    multi_category_players = 0
+    conflicts: list[dict[str, Any]] = []
+    for key in sorted(groups):
+        parts = groups[key]
+        if len(parts) > 1:
+            multi_category_players += 1
+        teams = sorted({normalize_team(row.get("team")) for _, row in parts if row.get("team")})
+        if len(teams) > 1:
+            conflicts.append({"game_id": key[0], "canonical_player_id": key[1],
+                "field": "team", "values": teams,
+                "sources": [{"source_row": i,
+                    "category": row.get("category") or row.get("stat_category") or row.get("type"),
+                    "value": normalize_team(row.get("team"))} for i, row in parts]})
+        field_values: dict[str, list[tuple[int | float, int, Any]]] = {}
+        for source_index, row in parts:
+            category = row.get("category") or row.get("stat_category") or row.get("type")
+            for field, value in _outcome_stats(row).items():
+                field_values.setdefault(field, []).append((value, source_index, category))
+        stats: dict[str, int | float] = {}
+        for field in sorted(field_values):
+            supplied = field_values[field]
+            distinct = sorted({item[0] for item in supplied})
+            if len(distinct) > 1:
+                conflicts.append({"game_id": key[0], "canonical_player_id": key[1],
+                    "field": field, "values": distinct,
+                    "sources": [{"source_row": i, "category": category, "value": value}
+                                for value, i, category in supplied]})
+                continue
+            stats[field] = distinct[0]
+            duplicate_fields += len(supplied) - 1
+        first = parts[0][1]
+        categories = sorted({str(row.get("category") or row.get("stat_category") or row.get("type"))
+                             for _, row in parts if row.get("category") or row.get("stat_category") or row.get("type")})
+        provider_ids = sorted({str(value) for _, row in parts
+            for value in (row.get("provider_player_id"), row.get("athlete_id"), row.get("source_id"), row.get("provider_event_id"))
+            if value not in (None, "")})
+        timestamps = sorted({str(row[field]) for _, row in parts
+            for field in ("captured_at", "data_as_of", "completed_at", "known_at") if row.get(field)})
+        outcomes[key] = {"game_id": key[0], "canonical_player_id": key[1],
+            "player_id": key[1], "player_name": first.get("player_name") or first.get("player"),
+            "team": first.get("team"), "season": first.get("season"), "week": first.get("week"),
+            "record_role": "game_outcome", "is_pregame": False, "stats": stats,
+            "source_row_count": len(parts), "source_categories": categories,
+            "source_provider_ids": provider_ids, "source_timestamps": timestamps}
+    diagnostics = {"raw_outcome_rows": len(source_rows), "canonical_player_outcomes": len(outcomes),
+        "duplicate_fields_merged": duplicate_fields, "conflicting_fields": len(conflicts),
+        "players_with_multiple_category_rows": multi_category_players, "conflicts": conflicts}
+    if conflicts:
+        raise ValueError("conflicting canonical player outcome fields: " + json.dumps(conflicts, sort_keys=True, separators=(",", ":")))
+    return outcomes, diagnostics
+
+
+def grade_quote(quote: dict[str, Any], outcomes: Iterable[dict[str, Any]] | dict[tuple[str, str], dict[str, Any]]) -> dict[str, Any]:
     """Grade only the canonical game/player/market triple."""
-    matches=[r for r in outcomes if str(r.get("game_id")) == str(quote.get("game_id")) and
-             str(r.get("canonical_player_id") or r.get("player_id")) == str(quote.get("canonical_player_id"))]
+    quote_player_id = first_player_id(quote.get("canonical_player_id"), quote.get("player_id"))
+    if isinstance(outcomes, dict):
+        match = outcomes.get((str(quote.get("game_id")), str(quote_player_id)))
+        matches = [match] if match is not None else []
+    else:
+        matches=[r for r in outcomes if str(r.get("game_id")) == str(quote.get("game_id")) and
+                 first_player_id(r.get("canonical_player_id"), r.get("player_id"), r.get("athlete_id")) == quote_player_id]
     if len(matches) != 1: raise ValueError("exactly one canonical player outcome is required")
     actual=(matches[0].get("stats") or {}).get(quote["market"], matches[0].get(quote["market"]))
     if actual is None: raise ValueError("outcome market is missing")

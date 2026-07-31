@@ -5,7 +5,8 @@ from backtesting.audit_nfl_player_prop_odds import audit_cache
 from backtesting.markets import normalize_player_prop_market
 from backtesting.player_prop_acquisition import plan_acquisition
 from backtesting.player_prop_odds import (availability, execution_and_consensus, filter_player_quotes,
-    grade_quote, normalize_provider_outcomes, pair_quotes, reconcile_player, simulation_fair_sgp_price)
+    aggregate_player_outcomes, grade_quote, normalize_provider_outcomes, pair_quotes, reconcile_player,
+    simulation_fair_sgp_price)
 from backtesting.player_identity import normalize_player_id
 
 PLAYERS=[{"game_id":"g1","player_id":"p1","player_name":"Pat Passer","team":"BUF"}]
@@ -86,6 +87,62 @@ def test_shared_cutoff_rejects_future_and_invalid():
 def test_grading_push_and_identity():
     q=dict(quotes()[0],line=250); result=grade_quote(q,[{"game_id":"g1","player_id":"p1","passing_yards":250}])
     assert result["result"] == "push" and result["under_result"] == "push"
+
+def test_category_split_outcomes_aggregate_and_grade_every_supported_market():
+    rows=[
+        {"game_id":"g1","canonical_player_id":"p1","player_name":"Utility Star","team":"BUF",
+         "season":2025,"week":1,"category":"passing","source_id":"pass-row",
+         "stats":{"passing_yards":275,"passing_touchdowns":2}},
+        {"game_id":"g1","canonical_player_id":"p1","player_name":"Utility Star","team":"BUF",
+         "season":2025,"week":1,"category":"rushing","source_id":"rush-row",
+         "stats":{"carries":7,"rushing_yards":41}},
+        {"game_id":"g1","canonical_player_id":"p1","player_name":"Utility Star","team":"BUF",
+         "season":2025,"week":1,"category":"receiving","source_id":"receive-row",
+         "stats":{"receptions":3,"receiving_yards":26}},
+    ]
+    outcomes, diagnostics=aggregate_player_outcomes(rows)
+    assert list(outcomes) == [("g1","p1")]
+    assert diagnostics == {"raw_outcome_rows":3,"canonical_player_outcomes":1,
+        "duplicate_fields_merged":0,"conflicting_fields":0,
+        "players_with_multiple_category_rows":1,"conflicts":[]}
+    outcome=outcomes[("g1","p1")]
+    assert outcome["source_row_count"] == 3
+    assert outcome["source_categories"] == ["passing","receiving","rushing"]
+    expected={"passing_yards":275,"passing_tds":2,"rushing_attempts":7,
+              "rushing_yards":41,"receptions":3,"receiving_yards":26}
+    for market, actual in expected.items():
+        quote={"game_id":"g1","canonical_player_id":"p1","market":market,
+               "line":actual-.5,"selection":"OVER"}
+        assert grade_quote(quote,outcomes)["actual_stat"] == actual
+
+def test_outcome_aggregation_duplicate_missing_conflict_and_scoping():
+    base={"game_id":"g1","canonical_player_id":"p1","team":"BUF","category":"passing"}
+    outcomes, diagnostics=aggregate_player_outcomes([
+        {**base,"stats":{"passing_yards":None,"passing_tds":0}},
+        {**base,"category":"summary","stats":{"passing_yards":10,"passing_tds":0}},
+        {**base,"game_id":"g2","stats":{"passing_yards":20}},
+        {**base,"canonical_player_id":"p2","stats":{"passing_yards":30}},
+    ])
+    assert outcomes[("g1","p1")]["stats"] == {"passing_tds":0,"passing_yards":10}
+    assert diagnostics["duplicate_fields_merged"] == 1
+    assert set(outcomes) == {("g1","p1"),("g2","p1"),("g1","p2")}
+    zero_quote={"game_id":"g1","canonical_player_id":"p1","market":"passing_tds",
+                "line":.5,"selection":"UNDER"}
+    assert grade_quote(zero_quote,outcomes)["result"] == "win"
+    missing_quote={**zero_quote,"market":"receiving_yards"}
+    with pytest.raises(ValueError,match="outcome market is missing"):
+        grade_quote(missing_quote,outcomes)
+    with pytest.raises(ValueError,match=r'canonical_player_id.*p1.*passing_yards.*game_id.*g1'):
+        aggregate_player_outcomes([base|{"stats":{"passing_yards":10}},
+                                   base|{"category":"summary","stats":{"passing_yards":11}}])
+
+@pytest.mark.parametrize("row", [
+    {"game_id":"g1","stats":{"passing_yards":1}},
+    {"game_id":"g1","canonical_player_id":"null","stats":{"passing_yards":1}},
+])
+def test_outcome_aggregation_rejects_unresolved_player_id(row):
+    with pytest.raises(ValueError,match="unresolved canonical player ID"):
+        aggregate_player_outcomes([row])
 def test_offline_audit_partial_and_plan(tmp_path):
     d=tmp_path/"nfl/2025/week_01"; d.mkdir(parents=True); (d/"odds_player_props.json").write_text(json.dumps(quotes()))
     report=audit_cache(tmp_path,season=2025,start_week=1,end_week=2)

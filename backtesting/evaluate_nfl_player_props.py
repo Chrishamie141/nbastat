@@ -20,7 +20,7 @@ from .config import SNAPSHOTS_DIR
 from .game_matching import parse_dt
 from .markets import CANONICAL_PLAYER_PROP_MARKETS
 from .player_identity import first_player_id
-from .player_prop_odds import decimal_from_american, grade_quote
+from .player_prop_odds import aggregate_player_outcomes, decimal_from_american, grade_quote
 from .snapshots import snapshot_week_dir
 from .team_history import prediction_cutoff
 
@@ -177,7 +177,8 @@ def _outcome_rows(directory: Path) -> list[dict[str,Any]]:
 
 
 def _validate_and_build(quote: dict[str,Any], game: dict[str,Any], probability: float,
-                        pair_probability: float | None, outcomes: list[dict[str,Any]]) -> dict[str,Any]:
+                        pair_probability: float | None,
+                        outcomes: dict[tuple[str, str], dict[str, Any]]) -> dict[str,Any]:
     side=str(quote.get("selection") or quote.get("side") or "").upper()
     player_id=first_player_id(quote.get("canonical_player_id"),quote.get("player_id"))
     if not player_id or str(player_id).upper()=="UNKNOWN": raise ValueError("unresolved canonical player identity")
@@ -216,11 +217,22 @@ def _validate_and_build(quote: dict[str,Any], game: dict[str,Any], probability: 
 def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
              market: str | None=None, bookmaker: str | None=None) -> dict[str,Any]:
     quotes=[]; accepted=0; incomplete=0; validation=[]
+    outcome_diagnostics={"raw_outcome_rows":0,"canonical_player_outcomes":0,
+        "duplicate_fields_merged":0,"conflicting_fields":0,
+        "missing_requested_stat_count":0,"players_with_multiple_category_rows":0}
     for week in range(start_week,end_week+1):
         directory=snapshot_week_dir(snapshot_root,"nfl",season,week)
         games={str(g["game_id"]):g for g in _load(directory/"games.json",[])}
         raw=_load(directory/"player_prop_odds.json",[]); accepted+=len(raw)
-        predictions=_prediction_index(_load(directory/"player_prop_predictions.json",[])); outcomes=_outcome_rows(directory)
+        predictions=_prediction_index(_load(directory/"player_prop_predictions.json",[]))
+        raw_outcomes=_outcome_rows(directory)
+        try:
+            outcomes, week_outcome_diagnostics=aggregate_player_outcomes(raw_outcomes)
+        except ValueError as exc:
+            raise ValueError(f"integrity validation failed: week={week}, {exc}") from exc
+        for field in outcome_diagnostics:
+            if field != "missing_requested_stat_count":
+                outcome_diagnostics[field] += int(week_outcome_diagnostics[field])
         eligible=[q for q in raw if (not market or q.get("market")==market) and (not bookmaker or str(q.get("bookmaker") or q.get("sportsbook"))==bookmaker)]
         pairs: dict[tuple[Any,...],dict[str,dict[str,Any]]]=defaultdict(dict)
         for q in eligible:
@@ -241,7 +253,10 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
             timestamp=q.get("provider_snapshot_timestamp") or q.get("snapshot_timestamp") or q.get("captured_at")
             pairkey=(str(q.get("game_id")),pid,q.get("market"),float(q.get("line")),str(q.get("bookmaker") or q.get("sportsbook")),str(timestamp))
             try: quotes.append(_validate_and_build(q,games[str(q.get("game_id"))],float(probability),novig.get((pairkey,side)),outcomes))
-            except (ValueError,KeyError) as exc: validation.append({"week":week,"game_id":q.get("game_id"),"error":str(exc)})
+            except (ValueError,KeyError) as exc:
+                if str(exc) == "outcome market is missing":
+                    outcome_diagnostics["missing_requested_stat_count"] += 1
+                validation.append({"week":week,"game_id":q.get("game_id"),"error":str(exc)})
     if validation: raise ValueError("integrity validation failed: "+_stable(validation[:20]))
     opportunities=select_best_prices(quotes); paired=[r for r in opportunities if r["edge"] is not None]
     model=probability_metrics(opportunities,"model_probability"); market_metrics=probability_metrics(paired,"no_vig_market_probability")
@@ -256,7 +271,8 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
              "incomplete_pair_quotes":incomplete,"pushes":sum(r["grade"]=="PUSH" for r in opportunities),
              "positive_edge_opportunities":len(positive),"positive_edge_profit":positive_metrics["units_profit"],
              "positive_edge_roi":positive_metrics["roi"],"clv_ready":False,"clv_reason":CLV_REASON,
-             "integrity_validation":"PASS","minimum_sample_threshold":MINIMUM_SAMPLE}
+             "integrity_validation":"PASS","minimum_sample_threshold":MINIMUM_SAMPLE,
+             "outcome_aggregation":outcome_diagnostics}
     return {"summary":summary,"quote_rows":quotes,"opportunity_rows":opportunities,
             "calibration":{"model":model,"market":market_metrics,"model_minus_market":differences},
             "edge_buckets":breakdowns["edge_bucket"],"breakdowns":breakdowns}
