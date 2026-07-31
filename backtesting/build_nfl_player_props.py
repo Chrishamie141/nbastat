@@ -1,13 +1,13 @@
 """Plan or execute quota-safe historical NFL player-prop ingestion."""
 from __future__ import annotations
 
-import argparse, hashlib, json, os
+import argparse, hashlib, json, os, time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
 from nfl_providers import (JsonRawCache, NFL_SPORT_KEY, ODDS_API_BASE, ProviderUnavailable,
-                           _fetch_json, _redact_url)
+                           StructuredHttpError, _fetch_json_structured, _redact_url)
 from .config import SNAPSHOTS_DIR
 from .player_prop_acquisition import inspect_cache, plan_acquisition, request_params
 from .player_prop_odds import (deduplicate_quotes, normalize_provider_outcomes, pair_quotes,
@@ -17,6 +17,10 @@ from .player_identity import first_player_id
 
 
 class PaidBudgetExceeded(RuntimeError): pass
+
+PLAYER_PROP_MAX_RETRIES = int(os.getenv("PLAYER_PROP_MAX_RETRIES", "2"))
+PLAYER_PROP_RETRY_BACKOFF_SECONDS = float(os.getenv("PLAYER_PROP_RETRY_BACKOFF_SECONDS", "1"))
+PLAYER_PROP_CREDITS_PER_REQUEST = 60
 
 
 def _load(path: Path, default: Any) -> Any:
@@ -79,17 +83,26 @@ def persist_week(directory: Path, rows: list[dict[str, Any]]) -> None:
 
 
 def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
-            allow_paid: bool, resume: bool, validate: bool) -> dict[str, Any]:
+            allow_paid: bool, resume: bool, validate: bool, fail_fast: bool = False,
+            sleeper=time.sleep) -> dict[str, Any]:
     budget=int(plan["total_paid_request_budget"]); paid=0; all_rejected=[]; weekly={}; event_coverage={}
+    report={"status":"SUCCESS","planned_events":len(plan["per_game_requests"]),
+        "validated_cache_hits":0,"paid_attempts":0,"paid_successes":0,"paid_failures":0,
+        "failed_events":[],"remaining_events":0,"estimated_credits_already_attempted":0,
+        "estimated_remaining_credit_exposure":int(plan.get("estimated_credits",budget*PLAYER_PROP_CREDITS_PER_REQUEST)),
+        "network_contacted":False,"raw_cache_files_written":[],"resume_safe":True,
+        "provider_diagnostics":[]}
     key=os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
     cache=JsonRawCache(cache_root)
     games_by_week={}
     for rec in plan["per_game_requests"]: games_by_week.setdefault(rec["week"],[]).append(rec)
     for week,records in sorted(games_by_week.items()):
         directory=snapshot_week_dir(root,"nfl",season,week); games=load_registry(root,season,week,week); players=_players(directory,games); rows=[]
+        stop_paid=False
         for rec in records:
             game=next(g for g in games if str(g.get("game_id"))==str(rec["game_id"])); params=request_params(rec["provider_event_id"],rec["requested_snapshot_timestamp"],rec["markets"])
             path=Path(rec["cache_path"]); state,payload,errors=inspect_cache(path,event_id=rec["provider_event_id"],requested_at=rec["requested_snapshot_timestamp"],keys=rec["markets"])
+            if state == "valid": report["validated_cache_hits"]+=1
             if state != "valid":
                 if not allow_paid: raise ProviderUnavailable("paid fetch required; review plan and pass --allow-paid-fetch")
                 if paid+1>budget: raise PaidBudgetExceeded(f"STOP: revised paid requests={paid+1}, reviewed budget={budget}; rerun and re-authorize")
@@ -97,8 +110,41 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
                 query={k:v for k,v in params.items() if k != "event_id"}; query["apiKey"]=key
                 url=f"{ODDS_API_BASE}/historical/sports/{NFL_SPORT_KEY}/events/{rec['provider_event_id']}/odds?"+urlencode(query)
                 print(f"Paid request {paid+1}/{budget}: {_redact_url(url)}")
-                payload=cache.get_or_fetch("odds-api","nfl",season,week,"event-player-props",params,lambda:_fetch_json(url),overwrite=state=="invalid",replacement_reason="validated player-prop cache replacement")
-                paid+=1
+                attempt=0
+                def fetch():
+                    nonlocal attempt, paid
+                    attempt+=1; paid+=1
+                    report["paid_attempts"]+=1; report["network_contacted"]=True
+                    try:
+                        response=_fetch_json_structured(url)
+                        report["provider_diagnostics"].append({"event_id":rec["provider_event_id"],
+                            "attempt":attempt,"http_status":response.status,"headers":response.headers})
+                        return response
+                    except StructuredHttpError as error:
+                        diagnostic={"event_id":rec["provider_event_id"],"game_id":rec["game_id"],
+                            "requested_snapshot_timestamp":rec["requested_snapshot_timestamp"],
+                            "markets":list(rec["markets"]),"attempt":attempt,"paid_request_count":paid,
+                            "http_status":error.status,"classification":error.classification,
+                            "provider_message":error.provider_message,"redacted_url":error.redacted_url,
+                            "headers":error.headers,"network_contacted":True}
+                        report["provider_diagnostics"].append(diagnostic)
+                        if error.classification not in {"RATE_LIMITED","TRANSIENT_PROVIDER_ERROR"} or attempt>PLAYER_PROP_MAX_RETRIES:
+                            error.diagnostic=diagnostic
+                            raise
+                        retry_after=error.headers.get("retry-after")
+                        try: delay=float(retry_after) if retry_after is not None else PLAYER_PROP_RETRY_BACKOFF_SECONDS*attempt
+                        except ValueError: delay=PLAYER_PROP_RETRY_BACKOFF_SECONDS*attempt
+                        sleeper(max(0,delay))
+                try:
+                    payload=cache.get_or_fetch("odds-api","nfl",season,week,"event-player-props",params,fetch,overwrite=state=="invalid",replacement_reason="validated player-prop cache replacement")
+                except StructuredHttpError as error:
+                    failure=dict(error.diagnostic); report["failed_events"].append(failure)
+                    report["paid_failures"]+=1; report["status"]="PARTIAL"
+                    stop_paid=error.classification=="AUTHENTICATION_OR_ENTITLEMENT"
+                    if fail_fast or stop_paid: break
+                    continue
+                report["paid_successes"]+=1
+                report["raw_cache_files_written"].append(str(path))
             data=payload.get("data",payload) if isinstance(payload,dict) else payload
             candidates=data if isinstance(data,list) else [data]
             matching=[e for e in candidates if isinstance(e,dict) and str(e.get("id") or e.get("event_id"))==str(rec["provider_event_id"])]
@@ -184,15 +230,22 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
         counters={}
         for item in all_rejected: counters[item["reason"]]=counters.get(item["reason"],0)+1
         persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"rejection_counters":counters,"validation_errors":errors}
-        _atomic_json(directory/"player_prop_rebuild_audit.json",{"network_contacted":False,"paid_requests_made":paid,
+        _atomic_json(directory/"player_prop_rebuild_audit.json",{"network_contacted":report["network_contacted"],"paid_requests_made":paid,
             "event_coverage":event_coverage,"rejection_counters":counters})
-    return {"network_contacted":bool(paid),"paid_requests_made":paid,"paid_request_budget":budget,
-            "weeks":weekly,"event_coverage":event_coverage,"rejected":all_rejected}
+        if stop_paid: break
+    report["remaining_events"]=max(0,report["planned_events"]-report["validated_cache_hits"]-report["paid_successes"])
+    report["estimated_credits_already_attempted"]=report["paid_attempts"]*PLAYER_PROP_CREDITS_PER_REQUEST
+    report["estimated_remaining_credit_exposure"]=report["remaining_events"]*PLAYER_PROP_CREDITS_PER_REQUEST
+    report.update({"paid_requests_made":paid,"paid_request_budget":budget,"requests_planned":report["planned_events"],
+        "requests_attempted":report["paid_attempts"],"requests_succeeded":report["paid_successes"],
+        "requests_failed":report["paid_failures"],"requests_served_from_cache":report["validated_cache_hits"],
+        "weeks":weekly,"event_coverage":event_coverage,"rejected":all_rejected})
+    return report
 
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--season",type=int,required=True); p.add_argument("--start-week",type=int,required=True); p.add_argument("--end-week",type=int,required=True)
-    p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--cache-root",type=Path); p.add_argument("--plan",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--rebuild-from-cache",action="store_true",help="require validated cache hits and prohibit every network request"); p.add_argument("--validate",action="store_true"); p.add_argument("--allow-paid-fetch",action="store_true")
+    p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--cache-root",type=Path); p.add_argument("--plan",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--rebuild-from-cache",action="store_true",help="require validated cache hits and prohibit every network request"); p.add_argument("--validate",action="store_true"); p.add_argument("--allow-paid-fetch",action="store_true"); p.add_argument("--fail-fast",action="store_true")
     a=p.parse_args(argv)
     if a.end_week<a.start_week: p.error("end-week must be >= start-week")
     if a.rebuild_from_cache and a.allow_paid_fetch: p.error("--rebuild-from-cache cannot be combined with --allow-paid-fetch")
@@ -200,6 +253,15 @@ def main(argv=None):
     cache_root=a.cache_root or a.snapshot_root.parent/"raw_cache"; games=load_registry(a.snapshot_root,a.season,a.start_week,a.end_week)
     plan=plan_acquisition(games,cache_root,season=a.season); print(json.dumps(plan,indent=2,sort_keys=True))
     if a.plan: return 0
-    result=execute(plan,a.snapshot_root,cache_root,season=a.season,allow_paid=a.allow_paid_fetch,resume=a.resume,validate=a.validate); print(json.dumps(result,indent=2,sort_keys=True)); return 0
+    try:
+        result=execute(plan,a.snapshot_root,cache_root,season=a.season,allow_paid=a.allow_paid_fetch,resume=a.resume,validate=a.validate,fail_fast=a.fail_fast)
+    except (ProviderUnavailable, PaidBudgetExceeded) as error:
+        print(json.dumps({"status":"FATAL_CONFIGURATION","message":str(error),"resume_safe":True},sort_keys=True)); return 3
+    except ValueError as error:
+        print(json.dumps({"status":"VALIDATION_FAILURE","message":str(error),"resume_safe":True},sort_keys=True)); return 4
+    print(json.dumps(result,indent=2,sort_keys=True))
+    if result["status"]=="SUCCESS": return 0
+    if any(f["classification"]=="AUTHENTICATION_OR_ENTITLEMENT" for f in result["failed_events"]): return 3
+    return 2
 
 if __name__ == "__main__": raise SystemExit(main())
