@@ -90,3 +90,27 @@ def test_post_cutoff_quote_fails_integrity_validation(tmp_path):
     _snapshot(tmp_path,post_cutoff=True)
     with pytest.raises(ValueError,match="integrity validation failed"):
         evaluate(tmp_path,2025,1,1)
+
+
+def test_evaluator_aggregates_production_shaped_player_stat_rows(tmp_path):
+    directory=_snapshot(tmp_path)
+    rows=[
+        {"game_id":"g","canonical_player_id":"p1","player_name":"Player","team":"KC",
+         "season":2025,"week":1,"record_role":"game_outcome","is_pregame":False,
+         "category":"passing","stats":{"passing_yards":101,"passing_tds":1}},
+        {"game_id":"g","canonical_player_id":"p1","player_name":"Player","team":"KC",
+         "season":2025,"week":1,"record_role":"game_outcome","is_pregame":False,
+         "category":"rushing","stats":{"rushing_attempts":2,"rushing_yards":8}},
+        {"game_id":"g","canonical_player_id":"p1","player_name":"Player","team":"KC",
+         "season":2025,"week":1,"record_role":"game_outcome","is_pregame":False,
+         "category":"receiving","stats":{"receptions":4,"receiving_yards":60}},
+    ]
+    (directory/"player_stats.json").write_text(json.dumps(rows))
+    one=evaluate(tmp_path,2025,1,1); two=evaluate(tmp_path,2025,1,1)
+    assert one == two
+    assert one["summary"]["gradeable_quotes"] == 2
+    assert one["summary"]["outcome_aggregation"] == {
+        "raw_outcome_rows":3,"canonical_player_outcomes":1,"duplicate_fields_merged":0,
+        "conflicting_fields":0,"missing_requested_stat_count":0,
+        "players_with_multiple_category_rows":1}
+    assert {row["outcome"] for row in one["quote_rows"]} == {60}
