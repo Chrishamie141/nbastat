@@ -182,3 +182,32 @@ def test_structured_response_diagnostics_are_allowlisted_in_cache(monkeypatch, t
     metadata = json.loads(next(tmp_path.rglob("*.metadata.json")).read_text())
     assert metadata["response_status"] == 200
     assert metadata["api_usage_headers"] == {"x-requests-used": "60", "x-requests-last": "60"}
+
+
+def test_structured_http_error_decodes_compressed_html_and_bounds_body(monkeypatch):
+    import gzip
+    import nfl_providers
+    from io import BytesIO
+    from urllib.error import HTTPError
+    html=("<html><title>Unavailable</title>" + "safe " * 1000 + "</html>").encode()
+    error=HTTPError("https://provider.test/path",503,"Unavailable",
+                    {"content-type":"text/html; charset=utf-8","content-encoding":"gzip"},
+                    BytesIO(gzip.compress(html)))
+    monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:(_ for _ in ()).throw(error))
+    with pytest.raises(nfl_providers.StructuredHttpError) as caught:
+        nfl_providers._fetch_json_structured("https://provider.test/path")
+    failure=caught.value
+    assert failure.status==503 and failure.classification=="TRANSIENT_PROVIDER_ERROR"
+    assert "Unavailable" in str(failure) and len(str(failure))<=nfl_providers.MAX_PROVIDER_ERROR_CHARS
+    assert failure.headers=={"content-type":"text/html; charset=utf-8","content-encoding":"gzip"}
+
+
+def test_structured_http_error_never_renders_binary(monkeypatch):
+    import nfl_providers
+    from io import BytesIO
+    from urllib.error import HTTPError
+    error=HTTPError("https://provider.test",500,"Bad",{"content-type":"application/octet-stream"},BytesIO(b"\x00\x01\xff"*100))
+    monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:(_ for _ in ()).throw(error))
+    with pytest.raises(nfl_providers.StructuredHttpError) as caught:
+        nfl_providers._fetch_json_structured("https://provider.test")
+    assert str(caught.value)=="[binary provider body omitted]"

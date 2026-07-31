@@ -71,3 +71,59 @@ def test_credentials_never_enter_roster_cache_identity_or_reports(tmp_path):
     path=_cached(tmp_path); plan=plan_roster_acquisition([GAME],tmp_path,season=2025)
     text=json.dumps(plan)+str(path)+path.with_suffix(".metadata.json").read_text()
     assert secret not in text and "api_key" not in path.name.casefold()
+
+
+def test_provider_declared_historical_scope_accepts_late_download_and_rejects_wrong_scope(tmp_path):
+    path=_cached(tmp_path,captured="2026-07-01T00:00:00Z")
+    request=plan_roster_acquisition([GAME],tmp_path,season=2025)["per_game_team_requests"][0]
+    payload=json.loads(path.read_text()); metadata=json.loads(path.with_suffix(".metadata.json").read_text())
+    metadata["provider_historical_scope"]={"season":2025,"week":1,"source_field":"archive.rosterWeek"}
+    rows,errors=normalize_cached_roster(payload,metadata,request)
+    assert rows and not errors and rows[0]["historical_scope"]["week"]==1
+    metadata["provider_historical_scope"]["week"]=2
+    assert "provider_week_scope_mismatch" in normalize_cached_roster(payload,metadata,request)[1]
+    metadata["provider_historical_scope"]={"season":2024,"effective_at":"2025-09-01T00:00:00Z","source_field":"archive.asOf"}
+    assert "provider_season_scope_mismatch" in normalize_cached_roster(payload,metadata,request)[1]
+
+
+def test_current_espn_roster_is_rejected_as_historical(tmp_path):
+    path=_cached(tmp_path,captured="2026-07-01T00:00:00Z")
+    request=plan_roster_acquisition([GAME],tmp_path,season=2025)["per_game_team_requests"][0]
+    payload=json.loads(path.read_text()); metadata=json.loads(path.with_suffix(".metadata.json").read_text())
+    payload["season"]={"year":2025}
+    assert "missing_provider_historical_scope" in normalize_cached_roster(payload,metadata,request)[1]
+
+
+def test_partial_acquisition_survives_failed_team_and_caches_success(tmp_path):
+    import nfl_providers
+    from nfl_providers import HttpJsonResponse, StructuredHttpError
+    plan=plan_roster_acquisition([GAME],tmp_path,season=2025)
+    # Exercise the retained provider/cache interface as if a defensible external
+    # historical adapter had enabled network acquisition.
+    plan["historical_acquisition_supported"]=True; calls=[]
+    def fetch(url):
+        calls.append(url)
+        if "/buf/" in url:
+            raise StructuredHttpError(status=503,message="down",classification="TRANSIENT_PROVIDER_ERROR",url=url)
+        return HttpJsonResponse({"athletes":[]},200,{"content-type":"application/json"})
+    rows,report=acquire_roster_identities(plan,allow_network=True,fetcher=fetch)
+    assert not rows and len(calls)==2
+    assert report["counts"]["failed"]==1 and report["counts"]["succeeded"]==1
+    assert len(report["raw_cache_files_written"])==1
+
+
+def test_unsupported_espn_historical_acquisition_does_not_fan_out(tmp_path):
+    plan=plan_roster_acquisition([GAME],tmp_path,season=2025); calls=[]
+    rows,report=acquire_roster_identities(plan,allow_network=True,fetcher=lambda url:calls.append(url))
+    assert not rows and calls==[] and report["network_contacted"] is False
+    assert report["counts"]["rejected"]==2
+    assert {item["reason"] for item in report["rejected"]}=={"provider_historical_acquisition_unsupported"}
+
+
+def test_verification_mode_performs_exactly_one_request(tmp_path):
+    from nfl_providers import HttpJsonResponse
+    from backtesting.historical_roster_acquisition import verify_single_request
+    request=plan_roster_acquisition([GAME],tmp_path,season=2025)["per_game_team_requests"][0]; calls=[]
+    result=verify_single_request(request,fetcher=lambda url:(calls.append(url) or HttpJsonResponse({"athletes":[]},200,{"content-type":"application/json"})))
+    assert len(calls)==1 and result["provider"]=="espn" and result["acceptable"] is False
+    assert result["http_status"]==200 and result["historical_scope"] is None
