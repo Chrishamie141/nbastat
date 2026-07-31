@@ -223,12 +223,13 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
                     "paired":persisted_count,"persisted":persisted_count,"rejected":raw-persisted_count,
                     "rejections":dict(sorted(market_rejections.items()))}
             unknown_details=sorted({(str(item.get("player") or (item.get("quote") or {}).get("provider_player_name") or ""),
+                                     str(item.get("team") or (item.get("quote") or {}).get("team") or ""),
                                      str(item.get("market") or (item.get("quote") or {}).get("provider_market") or "unknown"))
                                     for item in rejected if item.get("reason")=="unknown_player"})
             event_coverage[rec["provider_event_id"]]={"game_id":str(game["game_id"]),"raw_provider":dict(sorted(raw_counts.items())),
                 "normalized":dict(sorted(normalized_counts.items())),"persisted":dict(sorted(persisted_counts.items())),
                 "funnel":funnel,"rejections":reasons,
-                "unknown_players":[{"player_name":name,"market":market} for name,market in unknown_details]}
+                "unknown_players":[{"player_name":name,"team":team or None,"market":market} for name,team,market in unknown_details]}
         errors=validate_player_prop_rows(rows,games,players)
         if errors and validate: raise ValueError("player_prop_odds validation failed:\n"+"\n".join(errors))
         counters={}
@@ -236,10 +237,19 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
         persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"rejection_counters":counters,"validation_errors":errors}
         identity_diag=registry_diagnostics(players); identity_diag.update(extraction_diag)
         roster_ids={r["canonical_player_id"] for r in players if not r.get("has_stats")}
-        identity_diag.update({"prop_quotes_reconciled_via_roster_only_identity":sum(r.get("canonical_player_id") in roster_ids for r in rows),
+        historical_only_ids={r["canonical_player_id"] for r in players if r.get("identity_provenance")==["historical_roster"]}
+        roster_reconciled=sum(r.get("canonical_player_id") in roster_ids for r in rows)
+        historical_reconciled=sum(r.get("canonical_player_id") in historical_only_ids for r in rows)
+        identity_diag.update({"prop_quotes_reconciled_via_roster_only_identity":roster_reconciled,
+            "unknown_player_count_before_roster_evidence":counters.get("unknown_player",0)+historical_reconciled,
+            "unknown_player_count_after_roster_evidence":counters.get("unknown_player",0),
             "reconciliation_method_counts":dict(sorted(Counter(r.get("reconciliation_method","UNKNOWN") for r in rows).items())),
             "remaining_unknown_players":sorted({str(x.get("player")) for x in all_rejected if x.get("reason")=="unknown_player" and x.get("player")}),
-            "ambiguous_players":sorted({str(x.get("player")) for x in all_rejected if x.get("reason")=="ambiguous_player" and x.get("player")})})
+            "ambiguous_players":sorted({str(x.get("player")) for x in all_rejected if x.get("reason")=="ambiguous_player" and x.get("player")}),
+            "unresolved_sportsbook_players_by_game_team_market":sorted([
+                {"game_id":event["game_id"],"team":item.get("team"),"market":item["market"],"player_name":item["player_name"]}
+                for event in event_coverage.values() for item in event.get("unknown_players",[])
+            ],key=lambda x:(x["game_id"],str(x["team"]),x["market"],x["player_name"]))})
         _atomic_json(directory/"player_prop_rebuild_audit.json",{"network_contacted":report["network_contacted"],"paid_requests_made":paid,
             "event_coverage":event_coverage,"rejection_counters":counters,**identity_diag})
         if stop_paid: break

@@ -12,11 +12,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
-from .game_matching import normalize_team
+from .game_matching import normalize_team, parse_dt
 from .player_identity import first_player_id
 
 
-SOURCE_PRIORITY = {"provider_participant": 0, "provider_roster": 0,
+SOURCE_PRIORITY = {"provider_participant": 0, "historical_roster": 0, "provider_roster": 0,
                    "provider_box_score": 1, "player_stats": 2,
                    "injury_roster": 3, "game_player": 3}
 PLAYER_COLLECTIONS = ("athletes", "participants", "roster", "depthchart", "depth_chart",
@@ -194,6 +194,7 @@ def build_identity_registry(directory: Path, games: list[dict[str, Any]], *, sea
     audit={"records_inspected_by_source":Counter(),"identities_extracted_by_source":Counter(),
            "files_containing_athlete_identities":set(),"identities_rejected_missing_team":0,
            "identities_rejected_missing_name":0,"identities_rejected_ambiguous_game_context":0,
+           "identities_rejected_historical_scope":0,
            "duplicate_identities_merged":0,
            "production_case_evidence":{normalize_player_name(n):set() for n in PRODUCTION_CASES}}
     rows=[]; game_by_team={}
@@ -205,16 +206,24 @@ def build_identity_registry(directory: Path, games: list[dict[str, Any]], *, sea
             rec=_candidate(player,game_id=gid,season=season,week=week,source="game_player",audit=audit)
             if rec: rows.append(rec); audit["identities_extracted_by_source"]["game_player"]+=1
         rows.extend(_walk_provider(game,game_id=gid,season=season,week=week,context="game.participants",audit=audit))
-    for filename,source in (("player_stats.json","player_stats"),("injuries.json","injury_roster")):
+    for filename,source in (("roster_identities.json","historical_roster"),("player_stats.json","player_stats"),("injuries.json","injury_roster")):
         for value in _read(directory/filename,[]) or []:
             if not isinstance(value,dict): continue
             audit["records_inspected_by_source"][source]+=1
             gids=[str(value["game_id"])] if value.get("game_id") else game_by_team.get(_team(value.get("team")),[])
             if len(gids)!=1: audit["identities_rejected_ambiguous_game_context"]+=1; continue
+            if source == "historical_roster":
+                game=next((g for g in games if str(g.get("game_id"))==gids[0]),{})
+                cutoff=parse_dt(game.get("prediction_cutoff") or game.get("kickoff_time"))
+                known=parse_dt(value.get("known_at") or value.get("captured_at") or value.get("data_as_of"))
+                try: correctly_scoped=int(value.get("season"))==int(season) and int(value.get("week"))==int(week)
+                except (TypeError,ValueError): correctly_scoped=False
+                if not known or not cutoff or known > cutoff or not correctly_scoped:
+                    audit["identities_rejected_historical_scope"]+=1; continue
             rec=_candidate(value,game_id=gids[0],season=season,week=week,source=source,
                            timestamps={k:value.get(k) for k in ("known_at","captured_at","data_as_of")},audit=audit)
             if rec: rows.append(rec); audit["identities_extracted_by_source"][source]+=1
-    excluded={"player_stats.json","injuries.json","player_prop_odds.json","player_prop_rebuild_audit.json","player_identities.json"}
+    excluded={"roster_identities.json","player_stats.json","injuries.json","player_prop_odds.json","player_prop_rebuild_audit.json","player_identities.json"}
     paths=[p for p in directory.rglob("*.json") if p.name not in excluded]
     if cache_root and cache_root.exists():
         paths += [p for p in cache_root.rglob("*.json") if "espn" in str(p).casefold() and
@@ -239,7 +248,7 @@ def build_identity_registry(directory: Path, games: list[dict[str, Any]], *, sea
         for display_name in PRODUCTION_CASES:
             normalized=normalize_player_name(display_name); evidence=audit["production_case_evidence"][normalized]
             cases[display_name]={"raw_summary_participant_data":bool(evidence & {"provider_participant"}),
-                "roster_boxscore_identity_data":bool(evidence & {"provider_roster","provider_box_score","game_player"}),
+                "roster_boxscore_identity_data":bool(evidence & {"historical_roster","provider_roster","provider_box_score","game_player"}),
                 "injuries":bool(evidence & {"injury_roster"}),"player_stats":bool(evidence & {"player_stats"}),
                 "final_player_identities":normalized in final_names}
         diagnostics.update({**audit,
@@ -261,4 +270,5 @@ def registry_diagnostics(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "identities_without_stats":sum(not r.get("has_stats") for r in rows),"unique_identities_per_game_team":dict(sorted(coverage.items())),
             "provider_identities":sum(bool(r.get("provider_player_id")) for r in rows),
             "provider_id_coverage":sum(bool(r.get("provider_player_id")) for r in rows)/len(rows) if rows else 0.0,
+            "identities_added_beyond_existing_espn_evidence":sum(r.get("identity_provenance")==["historical_roster"] for r in rows),
             "identity_collision_count":len(collisions),"identity_collisions":collisions}
