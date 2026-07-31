@@ -1,0 +1,78 @@
+import json
+from argparse import Namespace
+from pathlib import Path
+
+from backtesting.build_nfl_feature_history import build_week, make_plan
+from backtesting.historical_provider import HistoricalSnapshotProvider
+from nfl_providers import EspnNflProvider, JsonRawCache
+
+
+def _scoreboard():
+    competitors=[
+        {"homeAway":"home","score":"24","team":{"abbreviation":"KC"}},
+        {"homeAway":"away","score":"17","team":{"abbreviation":"BAL"}},
+    ]
+    return {"events":[{"id":"401","date":"2024-09-06T00:20:00Z",
+        "status":{"type":{"completed":True,"name":"STATUS_FINAL"}},
+        "competitions":[{"competitors":competitors,"venue":{"fullName":"Arrowhead"}}]}]}
+
+
+def _summary():
+    athlete={"athlete":{"id":"15","displayName":"Patrick Mahomes","position":{"abbreviation":"QB"}},
+             "stats":["20/30","250","2","0"]}
+    return {"boxscore":{"players":[{"team":{"abbreviation":"KC"},"statistics":[
+        {"name":"passing","labels":["C/ATT","YDS","TD","INT"],"athletes":[athlete]}]}]}}
+
+
+def _args(tmp_path):
+    return Namespace(season=2024,start_week=1,end_week=1,snapshot_root=tmp_path/"snapshots",
+                     cache_root=tmp_path/"cache",resume=False,validate=True,plan=False,allow_network=True)
+
+
+def test_feature_build_is_cached_deterministic_and_has_no_paid_requests(tmp_path, monkeypatch):
+    args=_args(tmp_path); cache=JsonRawCache(args.cache_root); provider=EspnNflProvider(cache)
+    monkeypatch.setattr(provider,"_scoreboard",lambda season,week:_scoreboard())
+    monkeypatch.setattr(provider,"_summary",lambda season,week,event:_summary())
+    first=build_week(args,provider,1)
+    before={p.name:p.read_bytes() for p in (args.snapshot_root/"nfl/2024/week_01").glob("*.json") if p.name not in {"manifest.json","metadata.json"}}
+    second=build_week(args,provider,1)
+    after={p.name:p.read_bytes() for p in (args.snapshot_root/"nfl/2024/week_01").glob("*.json") if p.name not in {"manifest.json","metadata.json"}}
+    assert first["datasets"]["player_stats"] == 1
+    assert first["datasets"]["team_stats"] == 2
+    assert before == after
+    manifest=json.loads((args.snapshot_root/"nfl/2024/week_01/manifest.json").read_text())
+    assert manifest["paid_requests_required"] == manifest["estimated_paid_credits"] == 0
+    assert second["diagnostics"] == []
+
+
+def test_plan_is_offline_and_prior_season_rows_are_leakage_safe(tmp_path):
+    args=_args(tmp_path); provider=EspnNflProvider(JsonRawCache(args.cache_root))
+    plan=make_plan(args,provider)
+    assert plan["network_contacted"] is False
+    assert plan["paid_requests_required"] == plan["estimated_paid_credits"] == 0
+    monkey_game={"game_id":"espn-2025","league":"nfl","season":"2025","week":1,
+                 "kickoff_time":"2025-09-05T00:00:00Z","home_team":"KC","away_team":"BAL"}
+    week=args.snapshot_root/"nfl/2025/week_01"; week.mkdir(parents=True)
+    (week/"games.json").write_text(json.dumps([monkey_game]))
+    (week/"team_stats.json").write_text("[]")
+    old=args.snapshot_root/"nfl/2024/week_01"; old.mkdir(parents=True)
+    (old/"games.json").write_text(json.dumps([{"game_id":"old","season":"2024","week":1,"kickoff_time":"2024-09-01T00:00:00Z"}]))
+    (old/"player_stats.json").write_text(json.dumps([{"game_id":"old","player_id":"15","player":"Patrick Mahomes",
+        "team":"KC","season":2024,"week":1,"stats":{"passing_yards":250},"completed_at":"2024-09-01T06:00:00Z",
+        "record_role":"completed_game_history","is_pregame":False}]))
+    (old/"team_stats.json").write_text(json.dumps([{"game_id":"old","team":"KC","opponent":"BAL",
+        "season":2024,"week":1,"points_for":24,"points_against":17,"completed_at":"2024-09-01T06:00:00Z",
+        "record_role":"completed_game_history","is_pregame":False}]))
+    views=HistoricalSnapshotProvider(args.snapshot_root).get_game_histories("nfl","2025",1,monkey_game)
+    assert len(views.player_history.rows) == 1
+    assert len(views.target_team_history.rows) == 1
+
+
+def test_malformed_summary_is_diagnosed_without_losing_other_datasets(tmp_path, monkeypatch):
+    args=_args(tmp_path); provider=EspnNflProvider(JsonRawCache(args.cache_root))
+    monkeypatch.setattr(provider,"_scoreboard",lambda season,week:_scoreboard())
+    monkeypatch.setattr(provider,"_summary",lambda season,week,event:{"unexpected":[]})
+    report=build_week(args,provider,1)
+    assert report["datasets"]["outcomes"] == 1
+    assert report["datasets"]["player_stats"] == 0
+    assert report["diagnostics"][0]["classification"] == "MALFORMED_OR_UNAVAILABLE_ESPN_SUMMARY"

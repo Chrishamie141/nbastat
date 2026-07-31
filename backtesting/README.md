@@ -243,3 +243,20 @@ python -m backtesting.evaluate_nfl_bet_engine \
   --tickets backtesting/results/nfl_2025_weeks1_6_tickets.csv \
   --markdown backtesting/results/nfl_2025_weeks1_6_bet_engine.md
 ```
+### Free NFL feature history
+
+Completed historical NFL feature datasets can be planned and acquired from
+ESPN without constructing an odds provider or consuming paid credits:
+
+```bash
+python -m backtesting.build_nfl_feature_history \
+  --season 2024 --start-week 1 --end-week 18 --plan
+python -m backtesting.build_nfl_feature_history \
+  --season 2024 --start-week 1 --end-week 18 --resume --validate --allow-network
+```
+
+The first command is offline. The second persists each raw scoreboard and game
+summary response in `--cache-root` before producing `games.json`,
+`player_stats.json`, `team_stats.json`, grading-only `outcomes.json`, optional
+`injuries.json`, and manifests. This workflow never fetches sportsbook or
+player-prop odds.
