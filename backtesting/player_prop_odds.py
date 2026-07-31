@@ -171,7 +171,10 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                     "provider_snapshot_timestamp":snapshot_timestamp,"captured_at":captured_at or snapshot_timestamp,
                     "provider_player_id":first_player_id(outcome.get("player_id"), outcome.get("athlete_id"), outcome.get("provider_player_id")),
                     "reconciliation_method":rec.status,"reconciliation_status":rec.status,
-                    "reconciliation_candidate_count":rec.candidate_count,"reconciliation_confidence":"exact"})
+                    "reconciliation_candidate_count":rec.candidate_count,"reconciliation_confidence":"exact",
+                    "identity_source":(rec.player or {}).get("source"),
+                    "identity_provenance":(rec.player or {}).get("identity_provenance",[]),
+                    "identity_has_stats":bool((rec.player or {}).get("has_stats"))})
                 rows.append(row)
     return rows, rejected
 

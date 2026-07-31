@@ -14,7 +14,7 @@ def _json_files(root: Path):
 
 
 def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> dict[str, Any]:
-    rows=[]; events=set(); books=set(); inspected=[]; invalid=[]; raw_markets=Counter(); raw_by_event={}; funnel={}
+    rows=[]; events=set(); books=set(); inspected=[]; invalid=[]; raw_markets=Counter(); raw_by_event={}; funnel={}; identity_audits=[]
     roots=[root]
     raw_root=root.parent/"raw_cache"
     if raw_root.exists() and raw_root.resolve()!=root.resolve(): roots.append(raw_root)
@@ -25,6 +25,7 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
         try: payload=json.loads(path.read_text())
         except (OSError, json.JSONDecodeError): invalid.append(str(path)); continue
         if path.name == "player_prop_rebuild_audit.json" and isinstance(payload,dict):
+            identity_audits.append(payload)
             for event_report in (payload.get("event_coverage") or {}).values():
                 for market,stages in (event_report.get("funnel") or {}).items():
                     target=funnel.setdefault(market,{key:0 for key in ("raw","normalized","identity_matched","identity_ambiguous","identity_unknown","timestamp_eligible","deduplicated","paired","persisted","rejected")})
@@ -84,6 +85,15 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
     funnel_unknown=sum(int(stages.get("identity_unknown",0)) for stages in funnel.values())
     invariant_errors=[]
     if sum(markets.values()) != len(filtered): invariant_errors.append("coverage_by_market_sum_must_equal_quote_count")
+    identity_sources=Counter(); game_team=Counter(); unknown_by_event_market=Counter(); unknown_names=set()
+    for audit in identity_audits:
+        identity_sources.update(audit.get("identity_registry_players_by_source",{}))
+        game_team.update(audit.get("game_team_roster_coverage",{}))
+        for event,data in (audit.get("event_coverage") or {}).items():
+            for item in data.get("unknown_players",[]):
+                unknown_names.add(str(item.get("player_name")))
+            for market,reasons in (data.get("rejections") or {}).items():
+                unknown_by_event_market[f"{event}|{market}"] += int(reasons.get("unknown_player",0))
     return {"network_contacted":False,"files_inspected":len(inspected),"inspected_files":inspected,"invalid_files":invalid,
             "existing_prop_rows":len(filtered),"reconciled_rows":len(reconciled),"events":len(events),"bookmakers":sorted(books),
             "games":len({r.get("game_id") for r in filtered if r.get("game_id")}),"players":len(canonical_ids | {"fallback:"+n for n in fallback}),
@@ -93,6 +103,14 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
             "quotes_using_fallback_identity":sum(1 for r in filtered if normalize_player_id(r.get("canonical_player_id")) is None and r.get("provider_player_name")),
             "identity_collision_count":collisions,"identity_collisions":identity_collisions,
             "identity_match_method_counts":dict(sorted(match_methods.items())),
+            "identity_registry_players_by_source":dict(sorted(identity_sources.items())),
+            "game_team_roster_coverage":dict(sorted(game_team.items())),
+            "identities_with_stats":sum(int(a.get("identities_with_stats",0)) for a in identity_audits),
+            "identities_without_stats":sum(int(a.get("identities_without_stats",0)) for a in identity_audits),
+            "prop_quotes_reconciled_via_roster_only_identity":sum(int(a.get("prop_quotes_reconciled_via_roster_only_identity",0)) for a in identity_audits),
+            "remaining_unknown_player_names":sorted(unknown_names),
+            "unknown_player_counts_by_event_market":dict(sorted(unknown_by_event_market.items())),
+            "unique_identities_per_game_team":dict(sorted(game_team.items())),
             "fallback_ids_used":sum(1 for value in canonical_ids if value.startswith("history:")),
             "provider_id_matches":match_methods.get("EXACT_PROVIDER_ID",0),
             "name_team_game_matches":match_methods.get("EXACT_NAME_TEAM_GAME",0),
