@@ -47,9 +47,12 @@ def _snapshot(tmp_path, *, post_cutoff=False, incomplete=False):
     stamp="2025-09-05T00:01:00Z" if post_cutoff else "2025-09-04T22:00:00Z"
     common={"season":2025,"week":1,"game_id":"g","canonical_player_id":"p1","player_name":"Player",
             "team":"KC","market":"receiving_yards","line":50.5,"bookmaker":"book","snapshot_timestamp":stamp}
-    quotes=[{**common,"selection":"OVER","american_odds":110,"model_probability":.6}]
-    if not incomplete: quotes.append({**common,"selection":"UNDER","american_odds":-130,"model_probability":.4})
+    quotes=[{**common,"selection":"OVER","american_odds":110}]
+    if not incomplete: quotes.append({**common,"selection":"UNDER","american_odds":-130})
     (directory/"player_prop_odds.json").write_text(json.dumps(quotes))
+    predictions=[{**common,"side":"OVER","model_probability":.6,"readiness":"READY"}]
+    if not incomplete: predictions.append({**common,"side":"UNDER","model_probability":.4,"readiness":"READY"})
+    (directory/"player_prop_predictions.json").write_text(json.dumps(predictions))
     outcome={"game_id":"g","canonical_player_id":"p1","record_role":"game_outcome","is_pregame":False,
              "stats":{"receiving_yards":60}}
     (directory/"player_stats.json").write_text(json.dumps([outcome]))
@@ -76,7 +79,7 @@ def test_offline_evaluation_pairing_roi_and_determinism(tmp_path, monkeypatch):
 def test_incomplete_and_mismatched_lines_are_not_paired(tmp_path):
     directory=_snapshot(tmp_path,incomplete=True)
     quotes=json.loads((directory/"player_prop_odds.json").read_text())
-    quotes.append({**quotes[0],"selection":"UNDER","line":51.5,"american_odds":-130,"model_probability":.4})
+    quotes.append({**quotes[0],"selection":"UNDER","line":51.5,"american_odds":-130})
     (directory/"player_prop_odds.json").write_text(json.dumps(quotes))
     report=evaluate(tmp_path,2025,1,1)
     assert report["summary"]["incomplete_pair_quotes"] == 2
