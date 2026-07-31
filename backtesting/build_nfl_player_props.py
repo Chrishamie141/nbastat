@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse, hashlib, json, os, time
+from collections import Counter
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -13,7 +14,7 @@ from .player_prop_acquisition import inspect_cache, plan_acquisition, request_pa
 from .player_prop_odds import (deduplicate_quotes, normalize_provider_outcomes, pair_quotes,
                                validate_player_prop_rows)
 from .snapshots import snapshot_week_dir
-from .player_identity import first_player_id
+from .player_identity_registry import build_identity_registry, registry_diagnostics
 
 
 class PaidBudgetExceeded(RuntimeError): pass
@@ -46,19 +47,12 @@ def load_registry(root: Path, season: int, start: int, end: int) -> list[dict[st
     return sorted(result,key=lambda g:(int(g["week"]),str(g.get("kickoff_time")),str(g.get("game_id"))))
 
 
-def _players(directory: Path, games: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    rows=_load(directory/"player_stats.json",[]); expanded=[]
-    for row in rows:
-        copy=dict(row)
-        copy["player_id"]=first_player_id(copy.get("player_id"),copy.get("canonical_player_id"),copy.get("athlete_id"))
-        if not copy.get("player_name"): copy["player_name"]=copy.get("player") or copy.get("name")
-        if copy.get("game_id"): expanded.append(copy)
-        else:
-            for game in games:
-                if copy.get("team") in {game.get("home_team"),game.get("away_team")}: expanded.append({**copy,"game_id":game.get("game_id")})
-    for game in games:
-        for player in game.get("players",[]) or []: expanded.append({**player,"game_id":game.get("game_id")})
-    return expanded
+def _players(directory: Path, games: list[dict[str, Any]], *, season: int | None = None,
+             week: int | None = None, cache_root: Path | None = None) -> list[dict[str, Any]]:
+    """Compatibility wrapper for the independent, persisted identity registry."""
+    season=int(season or next((g.get("season") for g in games if g.get("season")),0))
+    week=int(week or next((g.get("week") for g in games if g.get("week")),0))
+    return build_identity_registry(directory,games,season=season,week=week,cache_root=cache_root)
 
 
 def _atomic_json(path: Path, value: Any) -> bool:
@@ -97,7 +91,9 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
     games_by_week={}
     for rec in plan["per_game_requests"]: games_by_week.setdefault(rec["week"],[]).append(rec)
     for week,records in sorted(games_by_week.items()):
-        directory=snapshot_week_dir(root,"nfl",season,week); games=load_registry(root,season,week,week); players=_players(directory,games); rows=[]
+        directory=snapshot_week_dir(root,"nfl",season,week); games=load_registry(root,season,week,week)
+        players=_players(directory,games,season=season,week=week,cache_root=cache_root); rows=[]
+        _atomic_json(directory/"player_identities.json",players)
         stop_paid=False
         for rec in records:
             game=next(g for g in games if str(g.get("game_id"))==str(rec["game_id"])); params=request_params(rec["provider_event_id"],rec["requested_snapshot_timestamp"],rec["markets"])
@@ -222,16 +218,26 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
                     "deduplicated":sum(q.get("market")==market for q in eligible),
                     "paired":persisted_count,"persisted":persisted_count,"rejected":raw-persisted_count,
                     "rejections":dict(sorted(market_rejections.items()))}
-            event_coverage[rec["provider_event_id"]]={"raw_provider":dict(sorted(raw_counts.items())),
+            unknown_details=sorted({(str(item.get("player") or (item.get("quote") or {}).get("provider_player_name") or ""),
+                                     str(item.get("market") or (item.get("quote") or {}).get("provider_market") or "unknown"))
+                                    for item in rejected if item.get("reason")=="unknown_player"})
+            event_coverage[rec["provider_event_id"]]={"game_id":str(game["game_id"]),"raw_provider":dict(sorted(raw_counts.items())),
                 "normalized":dict(sorted(normalized_counts.items())),"persisted":dict(sorted(persisted_counts.items())),
-                "funnel":funnel,"rejections":reasons}
+                "funnel":funnel,"rejections":reasons,
+                "unknown_players":[{"player_name":name,"market":market} for name,market in unknown_details]}
         errors=validate_player_prop_rows(rows,games,players)
         if errors and validate: raise ValueError("player_prop_odds validation failed:\n"+"\n".join(errors))
         counters={}
         for item in all_rejected: counters[item["reason"]]=counters.get(item["reason"],0)+1
         persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"rejection_counters":counters,"validation_errors":errors}
+        identity_diag=registry_diagnostics(players)
+        roster_ids={r["canonical_player_id"] for r in players if not r.get("has_stats")}
+        identity_diag.update({"prop_quotes_reconciled_via_roster_only_identity":sum(r.get("canonical_player_id") in roster_ids for r in rows),
+            "reconciliation_method_counts":dict(sorted(Counter(r.get("reconciliation_method","UNKNOWN") for r in rows).items())),
+            "remaining_unknown_players":sorted({str(x.get("player")) for x in all_rejected if x.get("reason")=="unknown_player" and x.get("player")}),
+            "ambiguous_players":sorted({str(x.get("player")) for x in all_rejected if x.get("reason")=="ambiguous_player" and x.get("player")})})
         _atomic_json(directory/"player_prop_rebuild_audit.json",{"network_contacted":report["network_contacted"],"paid_requests_made":paid,
-            "event_coverage":event_coverage,"rejection_counters":counters})
+            "event_coverage":event_coverage,"rejection_counters":counters,**identity_diag})
         if stop_paid: break
     report["remaining_events"]=max(0,report["planned_events"]-report["validated_cache_hits"]-report["paid_successes"])
     report["estimated_credits_already_attempted"]=report["paid_attempts"]*PLAYER_PROP_CREDITS_PER_REQUEST

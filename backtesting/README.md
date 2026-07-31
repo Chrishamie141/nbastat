@@ -29,6 +29,16 @@ are not counted as independent model predictions.
 - `weather.json`: existing OpenWeather integration.
 - `injuries.json`: optional verified NFL source or ESPN if usable injury data appears; otherwise an empty optional file is written with a warning unless `--strict` is supplied.
 - `player_stats.json`: ESPN summary/box-score data primarily.
+- `player_identities.json`: game/team-scoped identities assembled offline from
+  ESPN participants, rosters, box scores, injuries, embedded game players, and
+  player stats. Identity does not imply that a player was active, played, has a
+  zero outcome, or is statistically gradeable.
+
+Player identity precedence is deterministic: provider participant/roster ID,
+provider box-score identity, player-stat identity, injury/embedded roster
+identity, then `history:<game_id>:<team>:<normalized_name>`. Fallback IDs never
+join players across games or teams. Reconciliation remains exact-only and
+game-scoped; ambiguous identities are rejected rather than guessed.
 - `team_stats.json`: ESPN summary/box-score data primarily.
 - `outcomes.json`: ESPN final scores.
 - `local-json`: fills historical gaps from exported JSON without calling live APIs.
