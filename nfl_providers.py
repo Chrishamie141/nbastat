@@ -168,9 +168,16 @@ def _fetch_json_structured(url: str, headers: dict[str,str]|None=None,
     try:
         with urlopen(req, timeout=timeout) as response:
             body = _decode_http_body(response.read(), response.headers)
-            return HttpJsonResponse(json.loads(body),
-                                    int(getattr(response, "status", 200)),
-                                    _safe_response_headers(response.headers))
+            status=int(getattr(response, "status", 200))
+            safe_headers=_safe_response_headers(response.headers)
+            try:
+                payload=json.loads(body)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                preview=body if body else "[empty provider body]"
+                raise StructuredHttpError(status=status, message=preview,
+                    classification="INVALID_PROVIDER_RESPONSE", url=url,
+                    headers=safe_headers) from None
+            return HttpJsonResponse(payload,status,safe_headers)
     except HTTPError as error:
         raise StructuredHttpError(status=error.code, message=_read_http_error(error),
                                   classification=_classify_http_status(error.code), url=url,

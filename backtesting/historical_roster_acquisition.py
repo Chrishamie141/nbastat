@@ -4,6 +4,12 @@ ESPN's public team-roster route is retained for verification, but is not a
 historical-roster provider: its ``season`` query is not defensible effective-date
 or week scope.  Post-cutoff responses are rejected unless another provider/cache
 supplies explicit historical scope.
+
+Timestamp semantics are intentionally separate: ``captured_at`` records when
+our system downloaded an artifact, ``provider_effective_at``/``historical_scope``
+record the period represented by the provider, and ``known_at`` is the validated
+applicability timestamp consumed by leakage checks.  A late download can only use
+the latter when deterministic provider scope validation succeeds.
 """
 from __future__ import annotations
 
@@ -72,21 +78,23 @@ def _scope_errors(metadata: dict[str, Any], request: dict[str, Any]) -> tuple[li
     cutoff=parse_dt(request.get("historical_cutoff")); scope=discover_historical_scope(None, metadata)
     if not captured_dt: errors.append("missing_captured_at")
     if not cutoff: errors.append("missing_historical_cutoff")
-    if captured_dt and cutoff and captured_dt > cutoff:
-        if not scope:
-            errors.extend(["captured_after_historical_cutoff", "missing_provider_historical_scope"])
-        else:
-            try: scope_season=int(scope.get("season", -1))
-            except (TypeError, ValueError): scope_season=-1
-            if scope_season != int(request["season"]): errors.append("provider_season_scope_mismatch")
-            if scope.get("week") is not None:
-                try: week_matches=int(scope["week"]) == int(request["week"])
-                except (TypeError,ValueError): week_matches=False
-                if not week_matches: errors.append("provider_week_scope_mismatch")
-            effective=parse_dt(scope.get("effective_at") or scope.get("roster_date"))
-            if scope.get("week") is None and not effective:
-                errors.append("provider_scope_missing_week_or_effective_at")
-            if effective and cutoff and effective > cutoff: errors.append("provider_effective_at_after_cutoff")
+    late_capture=bool(captured_dt and cutoff and captured_dt > cutoff)
+    if late_capture and not scope:
+        errors.extend(["captured_after_historical_cutoff", "missing_provider_historical_scope"])
+    if scope:
+        try: scope_season=int(scope.get("season", -1))
+        except (TypeError, ValueError): scope_season=-1
+        if scope_season != int(request["season"]): errors.append("provider_season_scope_mismatch")
+        if scope.get("week") is not None:
+            try: week_matches=int(scope["week"]) == int(request["week"])
+            except (TypeError,ValueError): week_matches=False
+            if not week_matches: errors.append("provider_week_scope_mismatch")
+        effective_value=scope.get("effective_at") or scope.get("roster_date")
+        effective=parse_dt(effective_value)
+        if effective_value and not effective: errors.append("malformed_provider_effective_at")
+        if scope.get("week") is None and not effective:
+            errors.append("provider_scope_missing_week_or_effective_at")
+        if effective and cutoff and effective > cutoff: errors.append("provider_effective_at_after_cutoff")
     return list(dict.fromkeys(errors)),scope
 
 
@@ -100,7 +108,13 @@ def normalize_cached_roster(payload: Any, metadata: dict[str, Any], request: dic
     if normalize_team(identity.get("team")) != request["team"]: errors.append("team_scope_mismatch")
     if errors: return [],list(dict.fromkeys(errors))
     captured=metadata.get("request_timestamp")
-    effective=(scope or {}).get("effective_at") or (scope or {}).get("roster_date") or captured
+    provider_effective=(scope or {}).get("effective_at") or (scope or {}).get("roster_date")
+    effective=provider_effective or captured
+    # For an exact season/week archive without a provider timestamp, the game
+    # cutoff is the deterministic applicability boundary.  The later capture
+    # remains separately auditable and must never become the leakage timestamp.
+    known_at=(provider_effective or request.get("historical_cutoff")) if scope else captured
+    validation_method=("provider_effective_at" if provider_effective else "provider_season_week") if scope else "capture_timestamp"
     rows=[]
     for athlete in _athletes(payload):
         name=athlete.get("displayName") or athlete.get("fullName")
@@ -111,7 +125,9 @@ def normalize_cached_roster(payload: Any, metadata: dict[str, Any], request: dic
             "team":request["team"],"game_id":request["game_id"],"season":request["season"],"week":request["week"],
             "position":position,"source":"historical_roster","provider":metadata.get("provider",PROVIDER),
             "effective_context":"provider-scoped historical roster" if scope else "contemporaneously captured roster",
-            "historical_scope":scope,"captured_at":captured,"known_at":captured,"data_as_of":effective})
+            "historical_scope":scope,"provider_effective_at":provider_effective,
+            "scope_validation_method":validation_method,"captured_at":captured,
+            "known_at":known_at,"data_as_of":effective})
     return sorted(rows,key=lambda r:(r["team"],r["player_name"],str(r["provider_player_id"] or ""))),[]
 
 
@@ -143,7 +159,8 @@ def plan_roster_acquisition(games: Iterable[dict[str, Any]], cache_root: Path, *
 
 
 def _http_failure(error: StructuredHttpError, request: dict[str, Any]) -> dict[str, Any]:
-    return {**request,"reason":"http_error","http_status":error.status,
+    reason="invalid_provider_response" if error.classification=="INVALID_PROVIDER_RESPONSE" else "http_error"
+    return {**request,"reason":reason,"http_status":error.status,
             "classification":error.classification,"url":error.redacted_url,
             "provider_message":error.provider_message,"response_headers":error.headers}
 
@@ -201,14 +218,15 @@ def verify_single_request(request: dict[str,Any], *, fetcher: Callable[...,Any]=
         return {"provider":PROVIDER,"url":error.redacted_url,"http_status":error.status,
             "classification":error.classification,"content_type":error.headers.get("content-type"),
             "content_encoding":error.headers.get("content-encoding"),"historical_scope":None,
-            "athlete_count":0,"acceptable":False,"rejection_reason":error.provider_message}
+            "athlete_count":0,"acceptance":False,"acceptable":False,
+            "rejection_reason":error.provider_message}
     if not isinstance(response,HttpJsonResponse): response=HttpJsonResponse(response,200,{})
     metadata={"request_timestamp":None,"request_identity":{"params":roster_params(request["team"],request["season"])}}
     scope=discover_historical_scope(response.payload,metadata)
     return {"provider":PROVIDER,"url":_redact_url(url),"http_status":response.status,
         "classification":"SUCCESS","content_type":response.headers.get("content-type"),
         "content_encoding":response.headers.get("content-encoding"),"historical_scope":scope,
-        "athlete_count":len(_athletes(response.payload)),"acceptable":False,
+        "athlete_count":len(_athletes(response.payload)),"acceptance":False,"acceptable":False,
         "rejection_reason":UNSUPPORTED_REASON}
 
 

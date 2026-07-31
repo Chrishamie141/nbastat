@@ -69,6 +69,9 @@ def _candidate(value: dict[str, Any], *, game_id: str, season: int, week: int,
             "team": membership, "game_id": str(game_id), "season": int(season), "week": int(week),
             "position": position, "source": source, "known_at": times.get("known_at"),
             "captured_at": times.get("captured_at"), "data_as_of": times.get("data_as_of"),
+            "provider_effective_at": times.get("provider_effective_at"),
+            "historical_scope": times.get("historical_scope"),
+            "scope_validation_method": times.get("scope_validation_method"),
             "identity_provenance": [source], "has_stats": source == "player_stats"}
 
 
@@ -216,12 +219,30 @@ def build_identity_registry(directory: Path, games: list[dict[str, Any]], *, sea
                 game=next((g for g in games if str(g.get("game_id"))==gids[0]),{})
                 cutoff=parse_dt(game.get("prediction_cutoff") or game.get("kickoff_time"))
                 known=parse_dt(value.get("known_at") or value.get("captured_at") or value.get("data_as_of"))
+                captured=parse_dt(value.get("captured_at"))
                 try: correctly_scoped=int(value.get("season"))==int(season) and int(value.get("week"))==int(week)
                 except (TypeError,ValueError): correctly_scoped=False
-                if not known or not cutoff or known > cutoff or not correctly_scoped:
+                scope=value.get("historical_scope")
+                method=value.get("scope_validation_method")
+                provider_scoped=isinstance(scope,dict) and method in {"provider_season_week","provider_effective_at"}
+                if provider_scoped:
+                    try:
+                        provider_scoped=(int(scope.get("season"))==int(season) and
+                                         (scope.get("week") is None or int(scope["week"])==int(week)))
+                    except (TypeError,ValueError): provider_scoped=False
+                    effective_value=value.get("provider_effective_at") or scope.get("effective_at") or scope.get("roster_date")
+                    effective=parse_dt(effective_value)
+                    provider_scoped = provider_scoped and bool(scope.get("source_field")) and bool(
+                        scope.get("week") is not None or effective)
+                    if effective_value and not effective: provider_scoped=False
+                    if effective and cutoff and effective > cutoff: provider_scoped=False
+                safe_timestamp=bool(known and cutoff and known <= cutoff)
+                if not cutoff or not correctly_scoped or not safe_timestamp or (
+                        captured and captured > cutoff and not provider_scoped):
                     audit["identities_rejected_historical_scope"]+=1; continue
             rec=_candidate(value,game_id=gids[0],season=season,week=week,source=source,
-                           timestamps={k:value.get(k) for k in ("known_at","captured_at","data_as_of")},audit=audit)
+                           timestamps={k:value.get(k) for k in ("known_at","captured_at","data_as_of",
+                               "provider_effective_at","historical_scope","scope_validation_method")},audit=audit)
             if rec: rows.append(rec); audit["identities_extracted_by_source"][source]+=1
     excluded={"roster_identities.json","player_stats.json","injuries.json","player_prop_odds.json","player_prop_rebuild_audit.json","player_identities.json"}
     paths=[p for p in directory.rglob("*.json") if p.name not in excluded]
