@@ -1,7 +1,7 @@
 """Normalized NFL provider adapters for ESPN, The Odds API, optional NFL data, and composites."""
 from __future__ import annotations
 
-import hashlib, json, os, re, time
+import gzip, hashlib, json, os, re, time, zlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -44,6 +44,8 @@ class OddsApiRequestError(HistoricalOddsUnavailable):
 
 
 USAGE_HEADER_NAMES = ("x-requests-remaining", "x-requests-used", "x-requests-last", "retry-after")
+DIAGNOSTIC_HEADER_NAMES = USAGE_HEADER_NAMES + ("content-type", "content-encoding")
+MAX_PROVIDER_ERROR_CHARS = 2048
 
 
 @dataclass(frozen=True)
@@ -145,10 +147,10 @@ def _fetch_json(url: str, headers: dict[str,str]|None=None, timeout:int=REQUEST_
 
 
 def _safe_response_headers(headers: Any) -> dict[str, str]:
-    """Copy only documented usage diagnostics; authorization headers cannot escape."""
+    """Copy only non-secret diagnostics; authorization headers cannot escape."""
     if not headers:
         return {}
-    return {name: str(value) for name in USAGE_HEADER_NAMES
+    return {name: str(value) for name in DIAGNOSTIC_HEADER_NAMES
             if (value := headers.get(name)) is not None}
 
 
@@ -165,7 +167,8 @@ def _fetch_json_structured(url: str, headers: dict[str,str]|None=None,
     req = Request(url, headers={"User-Agent":USER_AGENT, **(headers or {})})
     try:
         with urlopen(req, timeout=timeout) as response:
-            return HttpJsonResponse(json.loads(response.read().decode()),
+            body = _decode_http_body(response.read(), response.headers)
+            return HttpJsonResponse(json.loads(body),
                                     int(getattr(response, "status", 200)),
                                     _safe_response_headers(response.headers))
     except HTTPError as error:
@@ -179,7 +182,7 @@ def _fetch_json_structured(url: str, headers: dict[str,str]|None=None,
 
 def _read_http_error(e: HTTPError) -> str:
     try:
-        body = e.read().decode("utf-8", "replace")
+        body = _decode_http_body(e.read(MAX_PROVIDER_ERROR_CHARS * 8 + 1), e.headers)
     except Exception:
         body = ""
     try:
@@ -187,20 +190,53 @@ def _read_http_error(e: HTTPError) -> str:
         detail = parsed.get("message") or parsed.get("error") or parsed.get("detail") or body
     except Exception:
         detail = body
-    return _sanitize_provider_text(str(detail or e.reason or f"HTTP {e.code}"))
+    return _sanitize_provider_text(str(detail or e.reason or f"HTTP {e.code}"))[:MAX_PROVIDER_ERROR_CHARS]
+
+
+def _decode_http_body(raw: bytes, headers: Any) -> str:
+    """Decode a bounded provider body without ever rendering arbitrary bytes."""
+    encoding = str(headers.get("content-encoding", "") if headers else "").lower().strip()
+    try:
+        if encoding == "gzip": raw = gzip.decompress(raw)
+        elif encoding == "deflate":
+            try: raw = zlib.decompress(raw)
+            except zlib.error: raw = zlib.decompress(raw, -zlib.MAX_WBITS)
+        elif encoding == "br":
+            try:
+                import brotli
+                raw = brotli.decompress(raw)
+            except Exception:
+                return "[compressed provider body omitted]"
+        elif encoding and encoding != "identity":
+            return "[encoded provider body omitted]"
+    except (OSError, EOFError, zlib.error):
+        return "[invalid compressed provider body omitted]"
+    content_type = str(headers.get("content-type", "") if headers else "")
+    charset_match = re.search(r"charset\s*=\s*[\"']?([^;\s\"']+)", content_type, re.I)
+    charset = charset_match.group(1) if charset_match else "utf-8"
+    try: text = raw.decode(charset, "replace")
+    except LookupError: text = raw.decode("utf-8", "replace")
+    # Replacement/control-heavy output is binary, not useful diagnostics.
+    controls = sum(ord(c) < 32 and c not in "\r\n\t" for c in text)
+    if "\ufffd" in text or controls > max(2, len(text) // 20):
+        return "[binary provider body omitted]"
+    return text[:MAX_PROVIDER_ERROR_CHARS]
 
 
 def _sanitize_provider_text(value: str, request_url: str = "") -> str:
     """Redact credential-shaped query fields and the request's credential value."""
     text = re.sub(r"((?:apiKey|api_key|apikey)\s*[=:]\s*)[^&\s\"']+", r"\1REDACTED",
                   str(value), flags=re.I)
+    text = re.sub(r"((?:authorization|bearer|token|access_token|client_secret)\s*[=:]\s*)[^&\s\"']+",
+                  r"\1REDACTED", text, flags=re.I)
     match = re.search(r"(?:apiKey|api_key|apikey)=([^&]+)", request_url, flags=re.I)
     if match and match.group(1):
         text = text.replace(match.group(1), "REDACTED")
     return text
 
 def _redact_url(url: str) -> str:
-    return re.sub(r"((?:apiKey|api_key|apikey)=)[^&]+", r"\1REDACTED", url, flags=re.I)
+    return re.sub(r"((?:apiKey|api_key|apikey|token|access_token|client_secret)=)[^&]+",
+                  r"\1REDACTED", url, flags=re.I)
 
 class EspnNflProvider:
     name="espn"; supported_datasets={"games","player_stats","team_stats","outcomes","injuries"}
