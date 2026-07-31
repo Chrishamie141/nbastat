@@ -6,6 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from .game_matching import parse_dt
 from .snapshots import SnapshotError, snapshot_path
 from .team_history import (COMPLETED_GAME_HISTORY, PREGAME_AGGREGATE,
                            canonicalize_team_history, filter_game_history)
@@ -45,10 +46,14 @@ class HistoricalSnapshotProvider:
         self._canonical_team_cache: dict[tuple[str, str], list[dict[str, Any]]] = {}
 
     def canonical_team_history(self, league: str, season: str) -> list[dict[str, Any]]:
-        """Index completed team-game rows across prior and target seasons."""
+        """Index team-game rows in deterministic, game-level chronology.
+
+        The cache owns its dictionaries: callers receive copies both when the
+        index is built and on cache hits.
+        """
         key=(league.lower(),str(season))
         if key in self._canonical_team_cache:
-            return self._canonical_team_cache[key]
+            return [dict(row) for row in self._canonical_team_cache[key]]
         rows=[]
         for directory in sorted((self.data_dir/league.lower()).glob("*/week_*")):
             try: directory_season=int(directory.parent.name)
@@ -58,11 +63,44 @@ class HistoricalSnapshotProvider:
             if path.exists():
                 value=__import__("json").loads(path.read_text())
                 if isinstance(value,list): rows.extend(canonicalize_team_history(row) for row in value)
+        # Identity and chronology are deliberately separate.  Selecting the
+        # lexicographically smallest serialization makes even conflicting
+        # duplicate snapshots independent of filesystem and file-row order.
         identity=lambda row:(str(row.get("game_id") or ""),str(row.get("team") or ""),
                              str(row.get("record_role") or ""))
-        result=sorted({identity(row):row for row in rows}.values(),key=identity)
+        import json
+        deduplicated: dict[tuple[str, str, str], dict[str, Any]] = {}
+        for row in rows:
+            row_identity = identity(row)
+            previous = deduplicated.get(row_identity)
+            if previous is None or json.dumps(row, sort_keys=True, default=str) < json.dumps(previous, sort_keys=True, default=str):
+                deduplicated[row_identity] = row
+
+        def integer(value: Any, default: int = -1) -> int:
+            try: return int(value)
+            except (TypeError, ValueError): return default
+
+        def row_chronology(row: dict[str, Any]):
+            timestamp = next((parsed for field in ("completed_at", "data_as_of", "captured_at", "kickoff_time")
+                              if (parsed := parse_dt(row.get(field))) is not None), None)
+            # Season leads so an undated prior-season row cannot be placed
+            # after a dated target-season row.  Week is the safe fallback for
+            # an absent/malformed timestamp.
+            return (integer(row.get("season")), timestamp is None,
+                    timestamp.isoformat() if timestamp else "", integer(row.get("week", row.get("through_week"))))
+
+        # Give both perspectives of one game a shared position, then use team
+        # and role only as stable ordering within that adjacent pair.
+        game_positions: dict[str, tuple[Any, ...]] = {}
+        for row in deduplicated.values():
+            game_id = str(row.get("game_id") or "")
+            position = row_chronology(row)
+            game_positions[game_id] = min(position, game_positions.get(game_id, position))
+        result=sorted(deduplicated.values(), key=lambda row: (
+            game_positions[str(row.get("game_id") or "")], str(row.get("game_id") or ""),
+            str(row.get("team") or ""), str(row.get("record_role") or "")))
         self._canonical_team_cache[key]=result
-        return result
+        return [dict(row) for row in result]
 
     def canonical_player_history(self, league: str, season: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """Build one indexed view across weekly snapshots, never per player/sim."""
