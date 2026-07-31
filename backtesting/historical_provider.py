@@ -42,6 +42,27 @@ class HistoricalSnapshotProvider:
     def __init__(self, data_dir: Path):
         self.data_dir = Path(data_dir)
         self._canonical_player_cache: dict[tuple[str, str], tuple[list[dict[str, Any]], dict[str, Any]]] = {}
+        self._canonical_team_cache: dict[tuple[str, str], list[dict[str, Any]]] = {}
+
+    def canonical_team_history(self, league: str, season: str) -> list[dict[str, Any]]:
+        """Index completed team-game rows across prior and target seasons."""
+        key=(league.lower(),str(season))
+        if key in self._canonical_team_cache:
+            return self._canonical_team_cache[key]
+        rows=[]
+        for directory in sorted((self.data_dir/league.lower()).glob("*/week_*")):
+            try: directory_season=int(directory.parent.name)
+            except ValueError: continue
+            if directory_season > int(season): continue
+            path=directory/"team_stats.json"
+            if path.exists():
+                value=__import__("json").loads(path.read_text())
+                if isinstance(value,list): rows.extend(canonicalize_team_history(row) for row in value)
+        identity=lambda row:(str(row.get("game_id") or ""),str(row.get("team") or ""),
+                             str(row.get("record_role") or ""))
+        result=sorted({identity(row):row for row in rows}.values(),key=identity)
+        self._canonical_team_cache[key]=result
+        return result
 
     def canonical_player_history(self, league: str, season: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """Build one indexed view across weekly snapshots, never per player/sim."""
@@ -113,7 +134,7 @@ class HistoricalSnapshotProvider:
     def get_game_histories(self, league: str, season: str, week: int,
                            game: dict[str, Any]):
         """Return per-game histories and filtering diagnostics from one snapshot."""
-        team_rows = [canonicalize_team_history(r) for r in self._snapshot(league, season, week, "team_stats")]
+        team_rows = self.canonical_team_history(league, season)
         player_rows, _audit = self.canonical_player_history(league, season)
         return HistoryViews(
             filter_game_history(game, team_rows, dataset="team", target_teams_only=False),
