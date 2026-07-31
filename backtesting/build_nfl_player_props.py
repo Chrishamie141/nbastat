@@ -92,7 +92,7 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
         "estimated_remaining_credit_exposure":int(plan.get("estimated_credits",budget*PLAYER_PROP_CREDITS_PER_REQUEST)),
         "network_contacted":False,"raw_cache_files_written":[],"resume_safe":True,
         "provider_diagnostics":[]}
-    key=os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
+    api_key=os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
     cache=JsonRawCache(cache_root)
     games_by_week={}
     for rec in plan["per_game_requests"]: games_by_week.setdefault(rec["week"],[]).append(rec)
@@ -106,8 +106,8 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
             if state != "valid":
                 if not allow_paid: raise ProviderUnavailable("paid fetch required; review plan and pass --allow-paid-fetch")
                 if paid+1>budget: raise PaidBudgetExceeded(f"STOP: revised paid requests={paid+1}, reviewed budget={budget}; rerun and re-authorize")
-                if not key: raise ProviderUnavailable("THE_ODDS_API_KEY/ODDS_API_KEY is not set")
-                query={k:v for k,v in params.items() if k != "event_id"}; query["apiKey"]=key
+                if not api_key: raise ProviderUnavailable("THE_ODDS_API_KEY/ODDS_API_KEY is not set")
+                query={k:v for k,v in params.items() if k != "event_id"}; query["apiKey"]=api_key
                 url=f"{ODDS_API_BASE}/historical/sports/{NFL_SPORT_KEY}/events/{rec['provider_event_id']}/odds?"+urlencode(query)
                 print(f"Paid request {paid+1}/{budget}: {_redact_url(url)}")
                 attempt=0
@@ -156,7 +156,7 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
             raw_counts={}
             for book in event.get("bookmakers",[]) or []:
                 for market in book.get("markets",[]) or []:
-                    key=str(market.get("key")); raw_counts[key]=raw_counts.get(key,0)+len(market.get("outcomes",[]) or [])
+                    market_key=str(market.get("key")); raw_counts[market_key]=raw_counts.get(market_key,0)+len(market.get("outcomes",[]) or [])
             normalized_counts={}
             for quote in normalized: normalized_counts[quote["provider_market"]]=normalized_counts.get(quote["provider_market"],0)+1
             # Leakage and pair integrity are hard persistence boundaries.
@@ -192,18 +192,18 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
             for quote in persisted: persisted_counts[quote["provider_market"]]=persisted_counts.get(quote["provider_market"],0)+1
             reasons={}
             for item in rejected:
-                key=str(item.get("market") or (item.get("quote") or {}).get("provider_market") or "unknown")
-                reasons.setdefault(key,{}); reasons[key][item["reason"]]=reasons[key].get(item["reason"],0)+1
+                market_key=str(item.get("market") or (item.get("quote") or {}).get("provider_market") or "unknown")
+                reasons.setdefault(market_key,{}); reasons[market_key][item["reason"]]=reasons[market_key].get(item["reason"],0)+1
             canonical_raw={}; canonical_normalized={}; canonical_persisted={}
             from .markets import normalize_player_prop_market
-            for key,count in raw_counts.items():
-                canonical=normalize_player_prop_market(key)
+            for market_key,count in raw_counts.items():
+                canonical=normalize_player_prop_market(market_key)
                 if canonical: canonical_raw[canonical]=canonical_raw.get(canonical,0)+count
-            for key,count in normalized_counts.items():
-                canonical=normalize_player_prop_market(key)
+            for market_key,count in normalized_counts.items():
+                canonical=normalize_player_prop_market(market_key)
                 if canonical: canonical_normalized[canonical]=canonical_normalized.get(canonical,0)+count
-            for key,count in persisted_counts.items():
-                canonical=normalize_player_prop_market(key)
+            for market_key,count in persisted_counts.items():
+                canonical=normalize_player_prop_market(market_key)
                 if canonical: canonical_persisted[canonical]=canonical_persisted.get(canonical,0)+count
             funnel={}
             for market in sorted(set(canonical_raw)|set(canonical_normalized)|set(canonical_persisted)):

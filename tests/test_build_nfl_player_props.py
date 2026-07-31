@@ -1,15 +1,98 @@
 import hashlib, json
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from backtesting.build_nfl_player_props import PaidBudgetExceeded, persist_week
+from backtesting import build_nfl_player_props
+from backtesting.build_nfl_player_props import PaidBudgetExceeded, execute, persist_week
 from backtesting.player_prop_acquisition import cache_path, plan_acquisition
 from backtesting.player_prop_odds import (deduplicate_quotes, evaluate_persisted_quotes,
                                           validate_player_prop_rows)
+from backtesting.snapshots import snapshot_week_dir
+from nfl_providers import HttpJsonResponse, JsonRawCache
 
 
 GAME={"game_id":"g1","provider_event_id":"e1","season":2025,"week":1,
       "kickoff_time":"2025-09-05T00:00:00Z","prediction_cutoff":"2025-09-04T00:20:00Z"}
+
+
+def _run_cache_paid_sequence(tmp_path, monkeypatch, capsys, states):
+    secret = "valid-production-api-key-1234567"
+    assert len(secret) == 32
+    games = [{**GAME, "game_id": f"g{index}", "provider_event_id": f"e{index}"}
+             for index in range(1, len(states) + 1)]
+    directory = snapshot_week_dir(tmp_path / "snapshots", "nfl", 2025, 1)
+    directory.mkdir(parents=True)
+    (directory / "games.json").write_text(json.dumps(games))
+    (directory / "odds.json").write_text("[]")
+    (directory / "player_stats.json").write_text("[]")
+
+    cache_root = tmp_path / "cache"
+    initial_plan = plan_acquisition(games, cache_root, season=2025)
+    cached_event_ids = []
+    for record, state in zip(initial_plan["per_game_requests"], states):
+        if state != "cached":
+            continue
+        cached_event_ids.append(record["provider_event_id"])
+        path = cache_path(cache_root, 2025, 1, record["provider_event_id"],
+                          record["requested_snapshot_timestamp"], record["markets"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Iterating this market used to overwrite the local credential variable.
+        payload = {"timestamp": "2025-09-04T00:15:00Z", "data": {
+            "id": record["provider_event_id"], "bookmakers": [{"key": "book",
+                "markets": [{"key": "player_pass_yds", "outcomes": []}]}]}}
+        path.write_text(json.dumps(payload))
+
+    plan = plan_acquisition(games, cache_root, season=2025)
+    requested_event_ids = []
+    outgoing_keys = []
+
+    def fake_fetch(url):
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        outgoing_keys.append(query["apiKey"][0])
+        event_id = parsed.path.split("/events/", 1)[1].split("/", 1)[0]
+        requested_event_ids.append(event_id)
+        return HttpJsonResponse({"timestamp": "2025-09-04T00:15:00Z",
+            "data": {"id": event_id, "bookmakers": []}}, 200,
+            {"x-requests-remaining": "100"})
+
+    monkeypatch.setenv("THE_ODDS_API_KEY", secret)
+    monkeypatch.delenv("ODDS_API_KEY", raising=False)
+    monkeypatch.setattr(build_nfl_player_props, "_fetch_json_structured", fake_fetch)
+    report = execute(plan, tmp_path / "snapshots", cache_root, season=2025,
+                     allow_paid=True, resume=True, validate=True, sleeper=lambda _: None)
+
+    paid_event_ids = [game["provider_event_id"] for game, state in zip(games, states)
+                      if state == "paid"]
+    assert requested_event_ids == paid_event_ids
+    assert not set(cached_event_ids) & set(requested_event_ids)
+    assert outgoing_keys == [secret] * len(paid_event_ids)
+    assert all(value != "player_pass_yds" for value in outgoing_keys)
+    assert report["validated_cache_hits"] == states.count("cached")
+    assert report["paid_attempts"] == report["paid_successes"] == states.count("paid")
+    assert report["paid_failures"] == 0
+    assert report["paid_requests_made"] == states.count("paid")
+
+    output = capsys.readouterr().out
+    assert secret not in output
+    assert secret not in json.dumps(report)
+    assert secret not in json.dumps(JsonRawCache.identity(
+        "odds-api", "nfl", 2025, 1, "event-player-props",
+        {"apiKey": secret, "markets": "player_pass_yds"}))
+    for path in tmp_path.rglob("*"):
+        if path.is_file():
+            assert secret not in path.name
+            assert secret.encode() not in path.read_bytes()
+
+
+def test_cached_event_cannot_shadow_api_key_for_next_paid_event(tmp_path, monkeypatch, capsys):
+    _run_cache_paid_sequence(tmp_path, monkeypatch, capsys, ["cached", "paid"])
+
+
+def test_api_key_is_stable_across_cached_paid_cached_paid_sequence(tmp_path, monkeypatch, capsys):
+    _run_cache_paid_sequence(tmp_path, monkeypatch, capsys,
+                             ["cached", "paid", "cached", "paid"])
 
 
 def test_plan_is_multimarket_exact_and_read_only(tmp_path,monkeypatch):
