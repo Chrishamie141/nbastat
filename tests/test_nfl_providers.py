@@ -211,3 +211,54 @@ def test_structured_http_error_never_renders_binary(monkeypatch):
     with pytest.raises(nfl_providers.StructuredHttpError) as caught:
         nfl_providers._fetch_json_structured("https://provider.test")
     assert str(caught.value)=="[binary provider body omitted]"
+
+
+@pytest.mark.parametrize(("body","headers"),[
+    (b"<html>provider unavailable</html>",{"content-type":"text/html; charset=utf-8"}),
+    (b'{"broken":',{"content-type":"application/json"}),
+    (b"",{"content-type":"application/json"}),
+    (b"\x00\x01\xff"*100,{"content-type":"application/octet-stream"}),
+])
+def test_successful_non_json_response_is_structured(monkeypatch,body,headers):
+    import nfl_providers
+    from io import BytesIO
+    class Response(BytesIO):
+        status=200
+        def __init__(self): super().__init__(body); self.headers=headers
+        def __enter__(self): return self
+        def __exit__(self,*_args): self.close()
+    monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:Response())
+    with pytest.raises(nfl_providers.StructuredHttpError) as caught:
+        nfl_providers._fetch_json_structured("https://provider.test?apiKey=secret-value")
+    failure=caught.value
+    assert failure.status==200 and failure.classification=="INVALID_PROVIDER_RESPONSE"
+    assert failure.headers==headers and "secret-value" not in str(failure)+failure.redacted_url
+
+
+def test_successful_compressed_malformed_json_is_structured(monkeypatch):
+    import gzip
+    import nfl_providers
+    from io import BytesIO
+    class Response(BytesIO):
+        status=200
+        headers={"content-type":"application/json","content-encoding":"gzip"}
+        def __enter__(self): return self
+        def __exit__(self,*_args): self.close()
+    monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:Response(gzip.compress(b'{"bad":')))
+    with pytest.raises(nfl_providers.StructuredHttpError) as caught:
+        nfl_providers._fetch_json_structured("https://provider.test")
+    assert caught.value.classification=="INVALID_PROVIDER_RESPONSE"
+    assert caught.value.headers["content-encoding"]=="gzip"
+
+
+def test_structured_fetch_valid_json_still_succeeds(monkeypatch):
+    import nfl_providers
+    from io import BytesIO
+    class Response(BytesIO):
+        status=200
+        headers={"content-type":"application/json"}
+        def __enter__(self): return self
+        def __exit__(self,*_args): self.close()
+    monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:Response(b'{"ok":true}'))
+    response=nfl_providers._fetch_json_structured("https://provider.test")
+    assert response==nfl_providers.HttpJsonResponse({"ok":True},200,{"content-type":"application/json"})

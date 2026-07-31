@@ -86,6 +86,40 @@ def test_provider_declared_historical_scope_accepts_late_download_and_rejects_wr
     assert "provider_season_scope_mismatch" in normalize_cached_roster(payload,metadata,request)[1]
 
 
+def test_late_provider_scoped_roster_survives_registry_end_to_end(tmp_path):
+    game={**GAME,"kickoff_time":"2025-09-07T20:00:00Z","prediction_cutoff":"2025-09-07T00:00:00Z"}
+    path=_cached(tmp_path,captured="2026-07-31T00:00:00Z")
+    metadata=json.loads(path.with_suffix(".metadata.json").read_text())
+    metadata["provider_historical_scope"]={"season":2025,"week":1,"source_field":"archive.rosterWeek"}
+    path.with_suffix(".metadata.json").write_text(json.dumps(metadata))
+    request=plan_roster_acquisition([game],tmp_path,season=2025)["per_game_team_requests"][0]
+    rows,errors=normalize_cached_roster(json.loads(path.read_text()),metadata,request)
+    assert not errors and rows[0]["captured_at"].startswith("2026-07-31")
+    assert rows[0]["historical_scope"]["week"]==1
+    assert rows[0]["known_at"]==request["historical_cutoff"]
+    directory=tmp_path/"snapshot"; directory.mkdir()
+    (directory/"roster_identities.json").write_text(json.dumps(rows))
+    identities=build_identity_registry(directory,[game],season=2025,week=1)
+    assert [row["player_name"] for row in identities]==["Roster Only"]
+    assert identities[0]["captured_at"].startswith("2026-07-31")
+    assert identities[0]["scope_validation_method"]=="provider_season_week"
+
+
+@pytest.mark.parametrize(("scope","expected"),[
+    ({"season":2025,"week":2,"source_field":"archive.week"},"provider_week_scope_mismatch"),
+    ({"season":2024,"week":1,"source_field":"archive.week"},"provider_season_scope_mismatch"),
+    ({"season":2025,"effective_at":"2025-09-08T00:00:00Z","source_field":"archive.asOf"},"provider_effective_at_after_cutoff"),
+    ({"season":2025,"effective_at":"not-a-date","source_field":"archive.asOf"},"malformed_provider_effective_at"),
+    ({"season":2025,"source_field":"archive.claim"},"provider_scope_missing_week_or_effective_at"),
+])
+def test_late_historical_scope_fails_closed(tmp_path,scope,expected):
+    path=_cached(tmp_path,captured="2026-07-31T00:00:00Z")
+    request=plan_roster_acquisition([GAME],tmp_path,season=2025)["per_game_team_requests"][0]
+    metadata=json.loads(path.with_suffix(".metadata.json").read_text())
+    metadata["provider_historical_scope"]=scope
+    assert expected in normalize_cached_roster(json.loads(path.read_text()),metadata,request)[1]
+
+
 def test_current_espn_roster_is_rejected_as_historical(tmp_path):
     path=_cached(tmp_path,captured="2026-07-01T00:00:00Z")
     request=plan_roster_acquisition([GAME],tmp_path,season=2025)["per_game_team_requests"][0]
@@ -110,6 +144,22 @@ def test_partial_acquisition_survives_failed_team_and_caches_success(tmp_path):
     assert not rows and len(calls)==2
     assert report["counts"]["failed"]==1 and report["counts"]["succeeded"]==1
     assert len(report["raw_cache_files_written"])==1
+
+
+def test_partial_acquisition_records_invalid_provider_response_and_continues(tmp_path):
+    from nfl_providers import HttpJsonResponse, StructuredHttpError
+    plan=plan_roster_acquisition([GAME],tmp_path,season=2025)
+    plan["historical_acquisition_supported"]=True
+    def fetch(url):
+        if "/buf/" in url:
+            raise StructuredHttpError(status=200,message="<html>bad</html>",
+                classification="INVALID_PROVIDER_RESPONSE",url=url,
+                headers={"content-type":"text/html"})
+        return HttpJsonResponse({"athletes":[]},200,{"content-type":"application/json"})
+    _,report=acquire_roster_identities(plan,allow_network=True,fetcher=fetch)
+    assert report["counts"]=={"succeeded":1,"failed":1,"rejected":1,"cached":0}
+    assert report["failed"][0]["classification"]=="INVALID_PROVIDER_RESPONSE"
+    assert report["failed"][0]["http_status"]==200
 
 
 def test_unsupported_espn_historical_acquisition_does_not_fan_out(tmp_path):
