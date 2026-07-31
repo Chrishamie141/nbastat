@@ -104,3 +104,28 @@ python -m backtesting.audit_nfl_player_prop_odds --season 2025 --start-week 1 --
 The requested timestamp is the authoritative prediction cutoff. Requested time, provider snapshot time, bookmaker update, capture time, and data-as-of remain separate. Post-cutoff snapshots and post-snapshot market updates are rejected. Weeks 2–6 require a separate reviewed plan; paid pilot execution is restricted to Week 1.
 
 Individual prices are not a historical parlay quote. Joint output remains model-derived (`MODEL_FAIR_SGP`), while `HISTORICAL_SGP_BOOK_PRICE_READY` remains `NOT_READY` until a genuine provider price exists. Conservative identity and leakage safety take priority over coverage; current or fabricated fallback prices are never used.
+
+# Acquisition failure and restart operations
+
+Historical player props are acquired one event at a time. A validated raw-cache
+entry is always reused and costs no paid attempt; every network contact is
+conservatively counted as an attempted request, including HTTP failures and
+retries. Successful responses are written immediately, so a later event failure
+does not discard completed work.
+
+The acquisition report distinguishes authentication or entitlement failures
+(401/403), rate limiting (429), transient provider errors (5xx), deterministic
+request errors (other 4xx), and network failures. Authentication failures stop
+further paid contacts by default. Rate limits and 5xx responses receive a
+bounded deterministic retry, configured by `PLAYER_PROP_MAX_RETRIES` and
+`PLAYER_PROP_RETRY_BACKOFF_SECONDS`; `Retry-After` takes precedence when the
+provider supplies it. Other 4xx responses are not retried.
+
+After a partial result, correct the reported cause and rerun with `--resume`.
+The new plan recomputes exposure from validated cache, never repurchasing a
+successful event. The JSON report and adjacent `*.metadata.json` cache files
+contain only redacted URLs and an allowlist of usage headers
+(`x-requests-remaining`, `x-requests-used`, `x-requests-last`, and
+`retry-after`). API credentials are excluded from cache identity, diagnostics,
+and metadata. Use the JSON report—not a credential-bearing request URL—when
+investigating a provider incident.

@@ -42,6 +42,28 @@ class OddsApiRequestError(HistoricalOddsUnavailable):
     """The Odds API rejected a historical odds request with a provider-supplied reason."""
 
 
+USAGE_HEADER_NAMES = ("x-requests-remaining", "x-requests-used", "x-requests-last", "retry-after")
+
+
+@dataclass(frozen=True)
+class HttpJsonResponse:
+    """A parsed HTTP response with a deliberately small, non-secret header set."""
+    payload: Any
+    status: int
+    headers: dict[str, str]
+
+
+class StructuredHttpError(RuntimeError):
+    """Sanitized provider failure suitable for reports (never contains a credential)."""
+    def __init__(self, *, status: int | None, message: str, classification: str,
+                 url: str, headers: dict[str, str] | None = None):
+        message = _sanitize_provider_text(message, url)
+        super().__init__(message)
+        self.status, self.provider_message = status, message
+        self.classification, self.redacted_url = classification, _redact_url(url)
+        self.headers = headers or {}
+
+
 def _iso(value: Any) -> str|None:
     if not value: return None
     return str(value).replace("+00:00", "Z")
@@ -90,7 +112,14 @@ class JsonRawCache:
             if old_meta.exists():
                 old_meta.rename(invalidated.with_suffix(".metadata.json"))
         self.misses += 1
-        data = fetcher(); path.parent.mkdir(parents=True, exist_ok=True)
+        fetched = fetcher()
+        diagnostics = {}
+        if isinstance(fetched, HttpJsonResponse):
+            data = fetched.payload
+            diagnostics = {"response_status": fetched.status, "api_usage_headers": fetched.headers}
+        else:
+            data = fetched
+        path.parent.mkdir(parents=True, exist_ok=True)
         payload = (json.dumps(data, indent=2, sort_keys=True)+"\n").encode()
         path.write_bytes(payload)
         events = data.get("data", []) if isinstance(data, dict) else data
@@ -100,7 +129,8 @@ class JsonRawCache:
             "request_identity": self.identity(provider, league, season, week, endpoint, params),
             "markets": str(params.get("markets", "")).split(",") if params.get("markets") else [],
             "event_count": len(events) if isinstance(events, list) else 0,
-            "response_sha256": hashlib.sha256(payload).hexdigest(), "api_usage_headers": {},
+            "response_sha256": hashlib.sha256(payload).hexdigest(), "api_usage_headers": diagnostics.get("api_usage_headers", {}),
+            "response_status": diagnostics.get("response_status"),
             "previous_cache_invalidated": bool(invalidated),
             "replacement_fetched": bool(invalidated),
             "replacement_reason": replacement_reason,
@@ -112,6 +142,40 @@ def _fetch_json(url: str, headers: dict[str,str]|None=None, timeout:int=REQUEST_
     req = Request(url, headers={"User-Agent":USER_AGENT, **(headers or {})})
     with urlopen(req, timeout=timeout) as r: return json.loads(r.read().decode())
 
+
+def _safe_response_headers(headers: Any) -> dict[str, str]:
+    """Copy only documented usage diagnostics; authorization headers cannot escape."""
+    if not headers:
+        return {}
+    return {name: str(value) for name in USAGE_HEADER_NAMES
+            if (value := headers.get(name)) is not None}
+
+
+def _classify_http_status(status: int) -> str:
+    if status in (401, 403): return "AUTHENTICATION_OR_ENTITLEMENT"
+    if status == 429: return "RATE_LIMITED"
+    if 500 <= status <= 599: return "TRANSIENT_PROVIDER_ERROR"
+    return "REQUEST_ERROR"
+
+
+def _fetch_json_structured(url: str, headers: dict[str,str]|None=None,
+                           timeout:int=REQUEST_TIMEOUT) -> HttpJsonResponse:
+    """Fetch JSON while retaining safe diagnostics and sanitizing all failures."""
+    req = Request(url, headers={"User-Agent":USER_AGENT, **(headers or {})})
+    try:
+        with urlopen(req, timeout=timeout) as response:
+            return HttpJsonResponse(json.loads(response.read().decode()),
+                                    int(getattr(response, "status", 200)),
+                                    _safe_response_headers(response.headers))
+    except HTTPError as error:
+        raise StructuredHttpError(status=error.code, message=_read_http_error(error),
+                                  classification=_classify_http_status(error.code), url=url,
+                                  headers=_safe_response_headers(error.headers)) from None
+    except (URLError, TimeoutError) as error:
+        reason = getattr(error, "reason", error)
+        raise StructuredHttpError(status=None, message=str(reason), classification="NETWORK_ERROR",
+                                  url=url) from None
+
 def _read_http_error(e: HTTPError) -> str:
     try:
         body = e.read().decode("utf-8", "replace")
@@ -122,10 +186,20 @@ def _read_http_error(e: HTTPError) -> str:
         detail = parsed.get("message") or parsed.get("error") or parsed.get("detail") or body
     except Exception:
         detail = body
-    return str(detail or e.reason or f"HTTP {e.code}")
+    return _sanitize_provider_text(str(detail or e.reason or f"HTTP {e.code}"))
+
+
+def _sanitize_provider_text(value: str, request_url: str = "") -> str:
+    """Redact credential-shaped query fields and the request's credential value."""
+    text = re.sub(r"((?:apiKey|api_key|apikey)\s*[=:]\s*)[^&\s\"']+", r"\1REDACTED",
+                  str(value), flags=re.I)
+    match = re.search(r"(?:apiKey|api_key|apikey)=([^&]+)", request_url, flags=re.I)
+    if match and match.group(1):
+        text = text.replace(match.group(1), "REDACTED")
+    return text
 
 def _redact_url(url: str) -> str:
-    return re.sub(r"(apiKey=)[^&]+", r"\1REDACTED", url)
+    return re.sub(r"((?:apiKey|api_key|apikey)=)[^&]+", r"\1REDACTED", url, flags=re.I)
 
 class EspnNflProvider:
     name="espn"; supported_datasets={"games","player_stats","team_stats","outcomes","injuries"}

@@ -152,3 +152,33 @@ def test_odds_api_422_includes_precise_body_and_redacts_key(monkeypatch, tmp_pat
 def test_normalize_odds_missing_bookmaker_or_market():
     rows = normalize_odds_events([{"id":"e1","bookmakers":[]},{"id":"e2","bookmakers":[{"key":"dk","markets":[]}]}], [])
     assert rows == []
+
+
+def test_structured_http_error_is_classified_and_secret_free(monkeypatch):
+    import nfl_providers
+    from io import BytesIO
+    from urllib.error import HTTPError
+
+    secret = "top-secret-key"
+    error = HTTPError(f"https://provider.test?apiKey={secret}", 401, "Unauthorized",
+                      {"x-requests-remaining": "42", "authorization": secret},
+                      BytesIO(f'{{"message":"bad apiKey={secret}"}}'.encode()))
+    monkeypatch.setattr(nfl_providers, "urlopen", lambda *args, **kwargs: (_ for _ in ()).throw(error))
+    with pytest.raises(nfl_providers.StructuredHttpError) as exc:
+        nfl_providers._fetch_json_structured(f"https://provider.test?apiKey={secret}")
+    failure = exc.value
+    assert failure.classification == "AUTHENTICATION_OR_ENTITLEMENT"
+    assert failure.headers == {"x-requests-remaining": "42"}
+    assert secret not in str(failure) + failure.redacted_url + repr(failure.headers)
+
+
+def test_structured_response_diagnostics_are_allowlisted_in_cache(monkeypatch, tmp_path):
+    import nfl_providers
+
+    response = nfl_providers.HttpJsonResponse({"data": []}, 200,
+                                               {"x-requests-used": "60", "x-requests-last": "60"})
+    cache = JsonRawCache(tmp_path)
+    cache.get_or_fetch("odds-api", "nfl", 2025, 1, "props", {}, lambda: response)
+    metadata = json.loads(next(tmp_path.rglob("*.metadata.json")).read_text())
+    assert metadata["response_status"] == 200
+    assert metadata["api_usage_headers"] == {"x-requests-used": "60", "x-requests-last": "60"}
