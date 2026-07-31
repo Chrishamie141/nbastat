@@ -172,5 +172,6 @@ def test_v2_provider_view_preserves_league_wide_features(tmp_path):
     assert (direct.home_points, direct.away_points, direct.expected_margin, direct.expected_total) == (
         through_evaluator.home_points, through_evaluator.away_points,
         through_evaluator.expected_margin, through_evaluator.expected_total)
-    for feature in ("home_elo", "away_elo", "home_offensive_strength", "away_defensive_strength"):
+    for feature in ("home_elo", "away_elo", "home_offensive_strength", "away_offensive_strength",
+                    "home_defensive_strength", "away_defensive_strength"):
         assert direct.features[feature] == through_evaluator.features[feature]
