@@ -3,7 +3,7 @@ import json
 import pytest
 
 from backtesting.build_nfl_player_props import execute
-from backtesting.player_identity_registry import build_identity_registry
+from backtesting.player_identity_registry import build_identity_registry, registry_diagnostics
 from backtesting.player_prop_acquisition import cache_path, plan_acquisition
 from backtesting.player_prop_odds import normalize_provider_outcomes, reconcile_player
 
@@ -71,3 +71,63 @@ def test_cache_only_rebuild_recovers_roster_only_without_network(tmp_path,monkey
         {"game_id":"g1","athlete_id":"stat-1","player_name":"Stat Player","team":"MIA","passing_yards":10}]
     audit=json.loads((directory/"player_prop_rebuild_audit.json").read_text())
     assert audit["prop_quotes_reconciled_via_roster_only_identity"]==2
+
+
+def test_realistic_espn_summary_mapping_fallback_and_diagnostics(tmp_path):
+    directory=_snapshot(tmp_path)
+    # ESPN summaries identify the ESPN event, which need not be the odds event ID.
+    game={**GAME,"source_event_id":"espn-401772510"}
+    summary={"header":{"id":"401772510","competitions":[{"competitors":[
+        {"homeAway":"home","team":{"abbreviation":"BUF"}},
+        {"homeAway":"away","team":{"abbreviation":"MIA"}}]}]},
+        "boxscore":{"players":[{"team":{"abbreviation":"BUF"},"statistics":[
+            {"name":"rushing","athletes":[
+                {"athlete":{"id":"4430807","displayName":"James Cook"}},
+                {"athlete":{"displayName":"Fallback Player"}}]}]}]}}
+    (directory/"summary-401772510.json").write_text(json.dumps(summary))
+    diagnostics={}
+    rows=build_identity_registry(directory,[game],season=2025,week=1,diagnostics=diagnostics)
+    cook=next(r for r in rows if r["player_name"]=="James Cook")
+    fallback=next(r for r in rows if r["player_name"]=="Fallback Player")
+    assert cook["provider_player_id"]=="4430807"
+    assert fallback["canonical_player_id"]=="history:g1:BUF:fallback player"
+    assert not cook["has_stats"] and not fallback["has_stats"]
+    assert diagnostics["identities_extracted_by_source"]["provider_box_score"] >= 2
+    assert diagnostics["provider_identities"] >= 2  # includes the stats fixture
+    assert diagnostics["production_case_evidence"]["James Cook"]["final_player_identities"] is True
+    assert diagnostics["files_containing_athlete_identities"]
+
+
+def test_duplicate_sources_merge_and_same_name_different_teams_do_not_collide(tmp_path):
+    directory=_snapshot(tmp_path)
+    (directory/"player_stats.json").write_text(json.dumps([
+        {"game_id":"g1","athlete_id":"shared-id","player_name":"Shared Player","team":"BUF"}]))
+    (directory/"summary.json").write_text(json.dumps({"id":"g1","boxscore":{"players":[
+        {"team":{"abbreviation":"BUF"},"statistics":[{"athletes":[
+            {"athlete":{"id":"shared-id","displayName":"Shared Player"}}]}]},
+        {"team":{"abbreviation":"MIA"},"statistics":[{"athletes":[
+            {"athlete":{"displayName":"Shared Player"}}]}]}]}}))
+    diagnostics={}
+    rows=build_identity_registry(directory,[GAME],season=2025,week=1,diagnostics=diagnostics)
+    shared=[r for r in rows if r["normalized_player_name"]=="shared player"]
+    assert len(shared)==2 and len({r["canonical_player_id"] for r in shared})==2
+    buf=next(r for r in shared if r["team"]=="BUF")
+    assert buf["has_stats"] and buf["identity_provenance"]==["provider_box_score","player_stats"]
+    assert diagnostics["duplicate_identities_merged"] >= 1
+    assert registry_diagnostics(rows)["identity_collision_count"]==0
+
+
+def test_missing_team_and_ambiguous_game_are_rejected_not_guessed(tmp_path):
+    games=[GAME,{**GAME,"game_id":"g2","provider_event_id":"e2","home_team":"NYJ","away_team":"NE"}]
+    directory=_snapshot(tmp_path,games)
+    (directory/"summary-no-context.json").write_text(json.dumps({"boxscore":{"players":[
+        {"statistics":[{"athletes":[{"athlete":{"id":"orphan","displayName":"Orphan Player"}}]}]}
+    ]}}))
+    (directory/"summary-g1.json").write_text(json.dumps({"id":"g1","boxscore":{"players":[
+        {"statistics":[{"athletes":[{"athlete":{"id":"no-team","displayName":"No Team"}}]}]}
+    ]}}))
+    diagnostics={}
+    rows=build_identity_registry(directory,games,season=2025,week=1,diagnostics=diagnostics)
+    assert not any(r.get("provider_player_id") in {"orphan","no-team"} for r in rows)
+    assert diagnostics["identities_rejected_ambiguous_game_context"] >= 1
+    assert diagnostics["identities_rejected_missing_team"] >= 1

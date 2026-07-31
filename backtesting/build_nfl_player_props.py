@@ -48,11 +48,13 @@ def load_registry(root: Path, season: int, start: int, end: int) -> list[dict[st
 
 
 def _players(directory: Path, games: list[dict[str, Any]], *, season: int | None = None,
-             week: int | None = None, cache_root: Path | None = None) -> list[dict[str, Any]]:
+             week: int | None = None, cache_root: Path | None = None,
+             diagnostics: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Compatibility wrapper for the independent, persisted identity registry."""
     season=int(season or next((g.get("season") for g in games if g.get("season")),0))
     week=int(week or next((g.get("week") for g in games if g.get("week")),0))
-    return build_identity_registry(directory,games,season=season,week=week,cache_root=cache_root)
+    return build_identity_registry(directory,games,season=season,week=week,cache_root=cache_root,
+                                   diagnostics=diagnostics)
 
 
 def _atomic_json(path: Path, value: Any) -> bool:
@@ -92,7 +94,9 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
     for rec in plan["per_game_requests"]: games_by_week.setdefault(rec["week"],[]).append(rec)
     for week,records in sorted(games_by_week.items()):
         directory=snapshot_week_dir(root,"nfl",season,week); games=load_registry(root,season,week,week)
-        players=_players(directory,games,season=season,week=week,cache_root=cache_root); rows=[]
+        extraction_diag={}
+        players=_players(directory,games,season=season,week=week,cache_root=cache_root,
+                         diagnostics=extraction_diag); rows=[]
         _atomic_json(directory/"player_identities.json",players)
         stop_paid=False
         for rec in records:
@@ -230,7 +234,7 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
         counters={}
         for item in all_rejected: counters[item["reason"]]=counters.get(item["reason"],0)+1
         persist_week(directory,rows); weekly[week]={"quotes":len(rows),"rejected":len(all_rejected),"rejection_counters":counters,"validation_errors":errors}
-        identity_diag=registry_diagnostics(players)
+        identity_diag=registry_diagnostics(players); identity_diag.update(extraction_diag)
         roster_ids={r["canonical_player_id"] for r in players if not r.get("has_stats")}
         identity_diag.update({"prop_quotes_reconciled_via_roster_only_identity":sum(r.get("canonical_player_id") in roster_ids for r in rows),
             "reconciliation_method_counts":dict(sorted(Counter(r.get("reconciliation_method","UNKNOWN") for r in rows).items())),
