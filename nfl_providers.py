@@ -17,6 +17,7 @@ NFL_SPORT_KEY = "americanfootball_nfl"
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
 ESPN_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary"
+ESPN_ROSTER = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams"
 REQUEST_TIMEOUT = 10
 USER_AGENT = "SmartBetSports NFL provider/1.0"
 PROP_MARKETS = ["player_pass_yds","player_rush_yds","player_reception_yds","player_receptions","player_anytime_td","player_pass_tds","player_pass_interceptions"]

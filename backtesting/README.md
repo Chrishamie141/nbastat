@@ -29,6 +29,8 @@ are not counted as independent model predictions.
 - `weather.json`: existing OpenWeather integration.
 - `injuries.json`: optional verified NFL source or ESPN if usable injury data appears; otherwise an empty optional file is written with a warning unless `--strict` is supplied.
 - `player_stats.json`: ESPN summary/box-score data primarily.
+- `roster_identities.json`: normalized, historically scoped roster identity
+  evidence acquired separately from statistics.
 - `player_identities.json`: game/team-scoped identities assembled offline from
   ESPN participants, rosters, box scores, injuries, embedded game players, and
   player stats. Identity does not imply that a player was active, played, has a
@@ -39,6 +41,26 @@ provider box-score identity, player-stat identity, injury/embedded roster
 identity, then `history:<game_id>:<team>:<normalized_name>`. Fallback IDs never
 join players across games or teams. Reconciliation remains exact-only and
 game-scoped; ambiguous identities are rejected rather than guessed.
+
+### Identity, membership, participation, and outcomes
+
+A **player identity** says who a person is, preferably with ESPN's stable
+athlete ID. **Roster membership** says that identity appeared on a team roster
+in the captured season/week context. **Game participation** requires separate
+participant or box-score evidence. **Statistical outcome evidence** exists only
+in `player_stats.json`; roster acquisition never creates attempts, receptions,
+yards, touchdowns, or grading eligibility. A roster-only reconciliation
+therefore has `identity_has_stats: false`.
+
+Plan acquisition without writes or network via `python -m
+backtesting.historical_roster_acquisition --season 2025 --week 1 --plan`.
+Network access to ESPN's free endpoint requires explicit `--allow-network`.
+Raw payloads use the immutable `JsonRawCache` layout and secret-free identities.
+The metadata `request_timestamp` becomes `captured_at`, `known_at`, and
+`data_as_of`; it must be no later than the game prediction cutoff, and the team,
+season, and week scope must match. A current fetch for an old season is rejected
+instead of being used as historical evidence. See
+`docs/nfl-historical-roster-identities.md` for operations and limitations.
 - `team_stats.json`: ESPN summary/box-score data primarily.
 - `outcomes.json`: ESPN final scores.
 - `local-json`: fills historical gaps from exported JSON without calling live APIs.

@@ -147,7 +147,8 @@ def normalize_provider_outcomes(event: dict[str, Any], *, league: str, season: i
                 rec = reconcile_player(outcome, player_index, game_id=game_id, team=outcome.get("team"))
                 if rec.status not in {EXACT_PROVIDER_ID,EXACT_NAME_TEAM_GAME,EXACT_NAME_TEAM}:
                     reason="ambiguous_player" if rec.status == AMBIGUOUS else "unknown_player"
-                    rejected.append({"reason":reason,"market":market,"player":outcome.get("description"),"candidate_count":rec.candidate_count}); continue
+                    rejected.append({"reason":reason,"market":market,"player":outcome.get("description"),
+                                     "team":outcome.get("team"),"candidate_count":rec.candidate_count}); continue
                 try:
                     line = float(outcome["point"])
                 except (KeyError, TypeError, ValueError) as exc:
