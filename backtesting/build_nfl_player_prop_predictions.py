@@ -93,9 +93,9 @@ def _game_seed(seed: int, season: int, week: int, game_id: str) -> int:
 
 
 def _identity_index(directory: Path) -> dict[str, dict[str, Any]]:
-    return {str(row.get("canonical_player_id")): row
+    return {player_id: row
             for row in _load(directory / "player_identities.json", [])
-            if row.get("canonical_player_id")}
+            if (player_id := normalize_player_id(row.get("canonical_player_id"))) is not None}
 
 
 def _not_ready(row: dict[str, Any], game: dict[str, Any], reason: str, *, model_version: str,

@@ -19,7 +19,7 @@ from typing import Any, Iterable
 from .config import SNAPSHOTS_DIR
 from .game_matching import parse_dt
 from .markets import CANONICAL_PLAYER_PROP_MARKETS
-from .player_identity import first_player_id
+from .player_identity import canonical_player_key, first_player_id, normalize_player_id
 from .player_prop_odds import aggregate_player_outcomes, decimal_from_american, grade_quote
 from .snapshots import snapshot_week_dir
 from .team_history import prediction_cutoff
@@ -67,8 +67,10 @@ def edge_bucket(edge: float) -> str:
 
 def opportunity_key(row: dict[str, Any]) -> tuple[Any, ...]:
     """Independent decision identity; bookmaker and price are intentionally absent."""
+    player_id = normalize_player_id(row.get("canonical_player_id"))
+    if player_id is None: raise ValueError("unresolved canonical player identity")
     return (int(row["season"]), int(row["week"]), str(row["game_id"]),
-            str(row["canonical_player_id"]), str(row["market"]),
+            player_id, str(row["market"]),
             str(row["side"]).upper(), float(row["line"]))
 
 
@@ -162,8 +164,12 @@ def _load(path: Path, default: Any) -> Any:
 def _prediction_index(rows: list[dict[str,Any]]) -> dict[tuple[Any,...],float]:
     result={}
     for row in rows:
-        key=(str(row.get("game_id")),str(first_player_id(row.get("canonical_player_id"),row.get("player_id"))),
-             str(row.get("market")),float(row.get("line")),str(row.get("side") or row.get("selection")).upper())
+        identity = canonical_player_key(row.get("game_id"), first_player_id(
+            row.get("canonical_player_id"), row.get("player_id")))
+        if identity is None:
+            continue
+        key=(*identity, str(row.get("market")),float(row.get("line")),
+             str(row.get("side") or row.get("selection")).upper())
         probability=row.get("model_probability",row.get("simulation_probability"))
         if probability is not None: result[key]=float(probability)
     return result
@@ -237,7 +243,8 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
         pairs: dict[tuple[Any,...],dict[str,dict[str,Any]]]=defaultdict(dict)
         for q in eligible:
             timestamp=q.get("provider_snapshot_timestamp") or q.get("snapshot_timestamp") or q.get("captured_at")
-            key=(str(q.get("game_id")),str(first_player_id(q.get("canonical_player_id"),q.get("player_id"))),q.get("market"),float(q.get("line")),str(q.get("bookmaker") or q.get("sportsbook")),str(timestamp))
+            identity=canonical_player_key(q.get("game_id"), first_player_id(q.get("canonical_player_id"),q.get("player_id")))
+            key=(*(identity or ("", "")),q.get("market"),float(q.get("line")),str(q.get("bookmaker") or q.get("sportsbook")),str(timestamp))
             pairs[key][str(q.get("selection") or q.get("side")).upper()]=q
         novig={}
         for key,sides in pairs.items():
@@ -246,7 +253,7 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
                 novig[(key,"OVER")]=over; novig[(key,"UNDER")]=under
             else: incomplete+=len(sides)
         for q in eligible:
-            side=str(q.get("selection") or q.get("side")).upper(); pid=str(first_player_id(q.get("canonical_player_id"),q.get("player_id")))
+            side=str(q.get("selection") or q.get("side")).upper(); pid=normalize_player_id(first_player_id(q.get("canonical_player_id"),q.get("player_id"))) or ""
             pkey=(str(q.get("game_id")),pid,str(q.get("market")),float(q.get("line")),side)
             probability=q.get("model_probability",q.get("simulation_probability",predictions.get(pkey)))
             if probability is None: continue

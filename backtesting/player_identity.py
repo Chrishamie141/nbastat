@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 
-_MISSING_PLAYER_IDS = {"", "none", "null"}
+_MISSING_PLAYER_IDS = {"", "none", "null", "unknown"}
 
 
 def normalize_player_id(value: Any) -> str | None:
@@ -27,3 +27,10 @@ def first_player_id(*values: Any) -> str | None:
         if normalized is not None:
             return normalized
     return None
+
+
+def canonical_player_key(game_id: Any, player_id: Any) -> tuple[str, str] | None:
+    """Return the shared, exact game/player identity used by keyed joins."""
+    game = str(game_id or "").strip()
+    player = normalize_player_id(player_id)
+    return (game, player) if game and player is not None else None
