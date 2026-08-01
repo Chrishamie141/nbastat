@@ -48,15 +48,24 @@ def test_persistence_is_deterministic_and_manifest_checksum(tmp_path):
            "generated_at": "2025-09-01T00:00:00Z", "seed": 7, "simulations": 4,
            "readiness": "READY", "provenance": {"outcome_inputs": [], "network_contacted": False}}
     diagnostics = {"readiness_counts": {"READY": 1}}
+    feature_rows = [{"season": 2025, "week": 1, "game_id": "g", "canonical_player_id": "p1",
+                     "player_name": "Player", "team": "KC", "market": "receptions",
+                     "model_features": {"recent_form_delta": 1.5}}]
     persist_week(tmp_path, 2025, 1, [row], diagnostics,
-                 model_version="nfl_game_baseline_v1", seed=7, simulations=4, overwrite=False)
+                 model_version="nfl_game_baseline_v1", seed=7, simulations=4, overwrite=False,
+                 feature_rows=feature_rows)
     artifact = directory / "player_prop_predictions.json"
     before = artifact.read_bytes()
     persist_week(tmp_path, 2025, 1, [row], diagnostics,
-                 model_version="nfl_game_baseline_v1", seed=7, simulations=4, overwrite=True)
+                 model_version="nfl_game_baseline_v1", seed=7, simulations=4, overwrite=True,
+                 feature_rows=feature_rows)
     assert artifact.read_bytes() == before
     manifest = json.loads((directory / "manifest.json").read_text())
     entry = manifest["datasets"]["player_prop_predictions"]
     assert entry["sha256"] == hashlib.sha256(before).hexdigest()
     assert manifest["datasets"]["games"] == {"records": 1}
     assert manifest["source_lineage"]["player_prop_predictions"]["network_contacted"] is False
+    feature_artifact = directory / "player_prop_model_features.json"
+    feature_entry = manifest["datasets"]["player_prop_model_features"]
+    assert feature_entry["records"] == 1
+    assert feature_entry["sha256"] == hashlib.sha256(feature_artifact.read_bytes()).hexdigest()

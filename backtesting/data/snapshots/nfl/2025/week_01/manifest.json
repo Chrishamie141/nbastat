@@ -13,6 +13,18 @@
       "records": 16,
       "sha256": "d9f9d0e402955c0caf469befcbf55e5b82d73b57249a78fc910872911ecbb03b"
     },
+    "player_prop_model_features": {
+      "generation_timestamp": "2025-09-09T00:15:00Z",
+      "model_version": "nfl_game_baseline_v3",
+      "present": true,
+      "records": 367,
+      "row_count": 367,
+      "seed": 1729,
+      "sha256": "220fd2b56e3a3fc45f2e68e09c4ff1eb0649f6d88bf1f66fbb525b4044fec847",
+      "simulations": 10000,
+      "source": "offline-frozen-nfl-simulation",
+      "status": "complete"
+    },
     "player_prop_predictions": {
       "generation_timestamp": "2025-09-09T00:15:00Z",
       "model_version": "nfl_game_baseline_v3",
@@ -1196,6 +1208,17 @@
   "schema_version": 1,
   "season": 2025,
   "source_lineage": {
+    "player_prop_model_features": {
+      "inputs": [
+        "games",
+        "team_stats",
+        "player_stats",
+        "player_prop_predictions"
+      ],
+      "network_contacted": false,
+      "provider": "offline",
+      "records": 367
+    },
     "player_prop_predictions": {
       "inputs": [
         "games",
@@ -1209,6 +1232,7 @@
     }
   },
   "source_versions": {
+    "player_prop_model_features": "nfl_game_baseline_v3",
     "player_prop_predictions": "nfl_game_baseline_v3"
   },
   "week": 1

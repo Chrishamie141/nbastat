@@ -1,0 +1,106 @@
+[
+  {
+    "available_rows": 1826,
+    "coverage": 0.9945533769063181,
+    "feature": "historical_game_to_game_volatility",
+    "purpose": "variance_model",
+    "rows": 1836,
+    "status": "PARTIAL"
+  },
+  {
+    "available_rows": 1792,
+    "coverage": 0.9760348583877996,
+    "feature": "usage_share_volatility",
+    "purpose": "variance_model",
+    "rows": 1836,
+    "status": "PARTIAL"
+  },
+  {
+    "available_rows": 0,
+    "coverage": 0.0,
+    "feature": "opponent_history_mean",
+    "purpose": "variance_model",
+    "rows": 1836,
+    "status": "NOT_PERSISTED"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "recent_form_delta",
+    "purpose": "variance_model",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "opponent",
+    "purpose": "variance_model_and_error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "team",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "archetype",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "bookmaker",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "line_size",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "favorite_status",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "home_away",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 1836,
+    "coverage": 1.0,
+    "feature": "implied_team_total",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "AVAILABLE"
+  },
+  {
+    "available_rows": 0,
+    "coverage": 0.0,
+    "feature": "projected_pace",
+    "purpose": "error_cluster",
+    "rows": 1836,
+    "status": "NOT_PERSISTED"
+  }
+]

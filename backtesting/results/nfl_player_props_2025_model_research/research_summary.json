@@ -1,0 +1,624 @@
+{
+  "calibration_status": "INSUFFICIENT_HISTORY",
+  "distribution_recommendations": [
+    {
+      "average_negative_log_likelihood": 1.2425510472583534,
+      "brier": 0.18100336676810813,
+      "composite_rank": 2,
+      "evidence_status": "SINGLE_WEEK_PRELIMINARY",
+      "evidence_weeks": [
+        1
+      ],
+      "market": "passing_tds",
+      "recommended_family": "lognormal",
+      "selection_policy": "lowest NLL+Brier rank sum; ties use Brier then NLL"
+    },
+    {
+      "average_negative_log_likelihood": 9.718194592294754,
+      "brier": 0.4176517306215814,
+      "composite_rank": 4,
+      "evidence_status": "SINGLE_WEEK_PRELIMINARY",
+      "evidence_weeks": [
+        1
+      ],
+      "market": "passing_yards",
+      "recommended_family": "negative_binomial",
+      "selection_policy": "lowest NLL+Brier rank sum; ties use Brier then NLL"
+    },
+    {
+      "average_negative_log_likelihood": 11.222752225435785,
+      "brier": 0.3861123505462691,
+      "composite_rank": 3,
+      "evidence_status": "SINGLE_WEEK_PRELIMINARY",
+      "evidence_weeks": [
+        1
+      ],
+      "market": "receiving_yards",
+      "recommended_family": "negative_binomial",
+      "selection_policy": "lowest NLL+Brier rank sum; ties use Brier then NLL"
+    },
+    {
+      "average_negative_log_likelihood": 2.455736522012364,
+      "brier": 0.3101624817969128,
+      "composite_rank": 5,
+      "evidence_status": "SINGLE_WEEK_PRELIMINARY",
+      "evidence_weeks": [
+        1
+      ],
+      "market": "receptions",
+      "recommended_family": "zero_inflated_poisson",
+      "selection_policy": "lowest NLL+Brier rank sum; ties use Brier then NLL"
+    },
+    {
+      "average_negative_log_likelihood": 3.428859571678169,
+      "brier": 0.40068675712411195,
+      "composite_rank": 5,
+      "evidence_status": "SINGLE_WEEK_PRELIMINARY",
+      "evidence_weeks": [
+        1
+      ],
+      "market": "rushing_attempts",
+      "recommended_family": "zero_inflated_negative_binomial",
+      "selection_policy": "lowest NLL+Brier rank sum; ties use Brier then NLL"
+    },
+    {
+      "average_negative_log_likelihood": 7.568867008990993,
+      "brier": 0.45535130362121845,
+      "composite_rank": 6,
+      "evidence_status": "SINGLE_WEEK_PRELIMINARY",
+      "evidence_weeks": [
+        1
+      ],
+      "market": "rushing_yards",
+      "recommended_family": "normal",
+      "selection_policy": "lowest NLL+Brier rank sum; ties use Brier then NLL"
+    }
+  ],
+  "evaluated_weeks": [
+    1
+  ],
+  "excluded_rows": 0,
+  "exclusions_by_reason": {},
+  "guardrails": [
+    "Distribution comparisons reuse frozen pregame means and variances; no outcome is used to generate a forecast.",
+    "Variance and calibration models train only on earlier weeks and never fit with fewer than two prior weeks.",
+    "Recommendations are research evidence and do not mutate production probabilities."
+  ],
+  "joined_rows": 1836,
+  "network_contacted": false,
+  "permutation_importance_status": "INSUFFICIENT_HISTORY",
+  "schema_version": 1,
+  "season": 2025,
+  "top_residual_error_clusters": [
+    {
+      "count": 32,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24318163756911568,
+      "market_ece": 0.010278347150638857,
+      "market_log_loss": 0.679461005816277,
+      "mean_absolute_residual": 33.9776455036681,
+      "mean_residual": 33.5490955036681,
+      "model_brier": 0.69312632125,
+      "model_ece": 0.746425,
+      "model_log_loss": 2.642499780067211,
+      "model_minus_market_brier": 0.44994468368088425,
+      "model_minus_market_log_loss": 1.963038774250934,
+      "roi": -0.06231252529470261,
+      "units_profit": -1.9940008094304835,
+      "value": "LV",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 36,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24677901812637926,
+      "market_ece": 0.006280965114300465,
+      "market_log_loss": 0.6867008195965512,
+      "mean_absolute_residual": 28.971803470388547,
+      "mean_residual": 28.88377013705522,
+      "model_brier": 0.6760463105555555,
+      "model_ece": 0.7185388888888888,
+      "model_log_loss": 3.588661760627,
+      "model_minus_market_brier": 0.4292672924291763,
+      "model_minus_market_log_loss": 2.901960941030449,
+      "roi": -0.053426529250254755,
+      "units_profit": -1.9233550530091712,
+      "value": "NYJ",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 54,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24681983580416456,
+      "market_ece": 0.0371350616006316,
+      "market_log_loss": 0.686741052649208,
+      "mean_absolute_residual": 76.82665444795333,
+      "mean_residual": 76.46652498812529,
+      "model_brier": 0.6469015503705926,
+      "model_ece": 0.6698368148148148,
+      "model_log_loss": 4.697985023164766,
+      "model_minus_market_brier": 0.40008171456642805,
+      "model_minus_market_log_loss": 4.011243970515558,
+      "roi": -0.05636861687514721,
+      "units_profit": -3.0439053112579493,
+      "value": "ATL",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 74,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.2459965322759272,
+      "market_ece": 0.12154014881343084,
+      "market_log_loss": 0.6854334421510444,
+      "mean_absolute_residual": 38.20647846502628,
+      "mean_residual": 35.84148487700583,
+      "model_brier": 0.6358703332435406,
+      "model_ece": 0.6601267297297297,
+      "model_log_loss": 5.098177355086337,
+      "model_minus_market_brier": 0.38987380096761337,
+      "model_minus_market_log_loss": 4.412743912935293,
+      "roi": -0.04924008560172402,
+      "units_profit": -3.6437663345275775,
+      "value": "NO",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 54,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.25176356989479676,
+      "market_ece": 0.10064401312279264,
+      "market_log_loss": 0.6966619925194216,
+      "mean_absolute_residual": 26.22741399015651,
+      "mean_residual": -8.668765180372832,
+      "model_brier": 0.528468261852,
+      "model_ece": 0.5351146666666666,
+      "model_log_loss": 1.905476787982541,
+      "model_minus_market_brier": 0.27670469195720326,
+      "model_minus_market_log_loss": 1.2088147954631192,
+      "roi": -0.04338531947601088,
+      "units_profit": -2.3428072517045875,
+      "value": "DEN",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 68,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24831872935038982,
+      "market_ece": 0.10970869801761297,
+      "market_log_loss": 0.689850121762629,
+      "mean_absolute_residual": 40.19693405089568,
+      "mean_residual": 40.19693405089568,
+      "model_brier": 0.5008133094117647,
+      "model_ece": 0.46847058823529414,
+      "model_log_loss": 1.8019203141675018,
+      "model_minus_market_brier": 0.25249458006137493,
+      "model_minus_market_log_loss": 1.1120701924048726,
+      "roi": -0.053267188622451285,
+      "units_profit": -3.6221688263266874,
+      "value": "BUF",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 54,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24586211604552966,
+      "market_ece": 0.02695935913188791,
+      "market_log_loss": 0.6848269666916978,
+      "mean_absolute_residual": 18.84097677400352,
+      "mean_residual": 9.407016252854286,
+      "model_brier": 0.4687338081483333,
+      "model_ece": 0.4864072222222222,
+      "model_log_loss": 3.6339082085343644,
+      "model_minus_market_brier": 0.22287169210280366,
+      "model_minus_market_log_loss": 2.9490812418426664,
+      "roi": -0.05346899179076532,
+      "units_profit": -2.8873255567013274,
+      "value": "PIT",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 86,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.245678615925776,
+      "market_ece": 0.029849718939281657,
+      "market_log_loss": 0.6844773568462595,
+      "mean_absolute_residual": 26.513290042709592,
+      "mean_residual": -3.1949782279080403,
+      "model_brier": 0.45659587186053485,
+      "model_ece": 0.45086272093023255,
+      "model_log_loss": 1.3106661604537813,
+      "model_minus_market_brier": 0.21091725593475885,
+      "model_minus_market_log_loss": 0.6261888036075217,
+      "roi": -0.059327359919542126,
+      "units_profit": -5.102152953080623,
+      "value": "ARI",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 46,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.2338239506622608,
+      "market_ece": 0.19699598515774763,
+      "market_log_loss": 0.6606174339352332,
+      "mean_absolute_residual": 19.448695827135754,
+      "mean_residual": 3.0385530662893556,
+      "model_brier": 0.4240337882610869,
+      "model_ece": 0.3267345652173913,
+      "model_log_loss": 3.5753924722968105,
+      "model_minus_market_brier": 0.1902098375988261,
+      "model_minus_market_log_loss": 2.914775038361577,
+      "roi": -0.08053840803276541,
+      "units_profit": -3.704766769507209,
+      "value": "WAS",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 868,
+      "dimension": "home_away",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24807344738182224,
+      "market_ece": 0.006039642659814567,
+      "market_log_loss": 0.6892842357013453,
+      "mean_absolute_residual": 29.34359713834618,
+      "mean_residual": 18.04241009971191,
+      "model_brier": 0.4379702958756797,
+      "model_ece": 0.3916042741935484,
+      "model_log_loss": 2.156036166134044,
+      "model_minus_market_brier": 0.18989684849385746,
+      "model_minus_market_log_loss": 1.4667519304326988,
+      "roi": -0.049773497375302164,
+      "units_profit": -43.20339572176228,
+      "value": "HOME",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 264,
+      "dimension": "implied_team_total_bucket",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24816066649448928,
+      "market_ece": 0.055766658188726635,
+      "market_log_loss": 0.6895849916625763,
+      "mean_absolute_residual": 24.57248633424291,
+      "mean_residual": 19.754908448717316,
+      "model_brier": 0.4374509077274091,
+      "model_ece": 0.4109119848484849,
+      "model_log_loss": 2.5513278029774114,
+      "model_minus_market_brier": 0.1892902412329198,
+      "model_minus_market_log_loss": 1.861742811314835,
+      "roi": -0.04572919391655577,
+      "units_profit": -12.072507193970724,
+      "value": "<20",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 60,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24250618050501904,
+      "market_ece": 0.07909967934431911,
+      "market_log_loss": 0.6781062197942597,
+      "mean_absolute_residual": 31.07229552302906,
+      "mean_residual": 19.914998816895636,
+      "model_brier": 0.4289330386667334,
+      "model_ece": 0.5053866,
+      "model_log_loss": 2.7774462843625747,
+      "model_minus_market_brier": 0.18642685816171434,
+      "model_minus_market_log_loss": 2.099340064568315,
+      "roi": -0.059077558609471954,
+      "units_profit": -3.5446535165683173,
+      "value": "SF",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 586,
+      "dimension": "line_size",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24958189555982702,
+      "market_ece": 0.020276725383068156,
+      "market_log_loss": 0.6923263181211118,
+      "mean_absolute_residual": 30.678252815348056,
+      "mean_residual": 14.363131994458751,
+      "model_brier": 0.4345006772014642,
+      "model_ece": 0.4101343720136519,
+      "model_log_loss": 2.0127675929763935,
+      "model_minus_market_brier": 0.18491878164163716,
+      "model_minus_market_log_loss": 1.3204412748552818,
+      "roi": -0.04799735227134236,
+      "units_profit": -28.126448431006622,
+      "value": "MEDIUM",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 58,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.2523975783322001,
+      "market_ece": 0.021077482598116325,
+      "market_log_loss": 0.6980472385805037,
+      "mean_absolute_residual": 22.95354615968096,
+      "mean_residual": 1.0362143029503839,
+      "model_brier": 0.4269367606896552,
+      "model_ece": 0.42753103448275864,
+      "model_log_loss": 1.326047407204719,
+      "model_minus_market_brier": 0.17453918235745508,
+      "model_minus_market_log_loss": 0.6280001686242154,
+      "roi": -0.04094074083987083,
+      "units_profit": -2.374562968712508,
+      "value": "CHI",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 498,
+      "dimension": "archetype",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24885039591402922,
+      "market_ece": 0.03960929074954234,
+      "market_log_loss": 0.6909132957935245,
+      "mean_absolute_residual": 40.9047342689886,
+      "mean_residual": 3.8451361060859375,
+      "model_brier": 0.41899414393583534,
+      "model_ece": 0.37903042971887546,
+      "model_log_loss": 1.9507525175916984,
+      "model_minus_market_brier": 0.17014374802180612,
+      "model_minus_market_log_loss": 1.259839221798174,
+      "roi": -0.04977874116745424,
+      "units_profit": -24.789813101392213,
+      "value": "DUAL_THREAT_PASSER",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 50,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.25837886503456675,
+      "market_ece": 0.029467986607985268,
+      "market_log_loss": 0.7101434385811332,
+      "mean_absolute_residual": 11.603477990382512,
+      "mean_residual": 11.00608405987516,
+      "model_brier": 0.42518780720012006,
+      "model_ece": 0.43571188,
+      "model_log_loss": 1.5982918153855235,
+      "model_minus_market_brier": 0.1668089421655533,
+      "model_minus_market_log_loss": 0.8881483768043903,
+      "roi": -0.023178431936369988,
+      "units_profit": -1.1589215968184994,
+      "value": "IND",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 814,
+      "dimension": "implied_team_total_bucket",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24830035156931088,
+      "market_ece": 0.007201849692880986,
+      "market_log_loss": 0.6897381889473935,
+      "mean_absolute_residual": 28.149638670063478,
+      "mean_residual": 10.560588895725344,
+      "model_brier": 0.4057136580836094,
+      "model_ece": 0.3523861695331695,
+      "model_log_loss": 1.6975151399510577,
+      "model_minus_market_brier": 0.1574133065142985,
+      "model_minus_market_log_loss": 1.0077769510036643,
+      "roi": -0.049412916369834095,
+      "units_profit": -40.22211392504495,
+      "value": "23-26",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 202,
+      "dimension": "bookmaker",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24485757599703806,
+      "market_ece": 0.014548097677922539,
+      "market_log_loss": 0.6828010518113349,
+      "mean_absolute_residual": 26.393345086715186,
+      "mean_residual": 13.801847857746916,
+      "model_brier": 0.40168033524763364,
+      "model_ece": 0.3646880099009901,
+      "model_log_loss": 1.9200914016227113,
+      "model_minus_market_brier": 0.15682275925059558,
+      "model_minus_market_log_loss": 1.2372903498113765,
+      "roi": -0.07012678127314233,
+      "units_profit": -14.16560981717475,
+      "value": "betonlineag",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 296,
+      "dimension": "bookmaker",
+      "eligible_for_ranking": true,
+      "market_brier": 0.25237538023649214,
+      "market_ece": 0.04794372905246145,
+      "market_log_loss": 0.6981473302590332,
+      "mean_absolute_residual": 24.063706758758904,
+      "mean_residual": 12.557794099377409,
+      "model_brier": 0.4046892857433209,
+      "model_ece": 0.3415039763513514,
+      "model_log_loss": 1.789341433679832,
+      "model_minus_market_brier": 0.15231390550682877,
+      "model_minus_market_log_loss": 1.0911941034207988,
+      "roi": 0.0023270953690921704,
+      "units_profit": 0.6888202292512824,
+      "value": "betmgm",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 166,
+      "dimension": "bookmaker",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24782402582131638,
+      "market_ece": 0.048635147242549435,
+      "market_log_loss": 0.6888057795015664,
+      "mean_absolute_residual": 23.947242566976318,
+      "mean_residual": 6.790310582378734,
+      "model_brier": 0.3941164705422169,
+      "model_ece": 0.36196199999999995,
+      "model_log_loss": 1.6651323340560258,
+      "model_minus_market_brier": 0.1462924447209005,
+      "model_minus_market_log_loss": 0.9763265545544594,
+      "roi": -0.11364692919466561,
+      "units_profit": -18.86539024631449,
+      "value": "bovada",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 862,
+      "dimension": "favorite_status",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24864762722638128,
+      "market_ece": 0.02201232366021467,
+      "market_log_loss": 0.6904725229405232,
+      "mean_absolute_residual": 26.595322153866537,
+      "mean_residual": 17.04192419269962,
+      "model_brier": 0.39316146686784914,
+      "model_ece": 0.3342769303944315,
+      "model_log_loss": 1.9329089388731575,
+      "model_minus_market_brier": 0.14451383964146786,
+      "model_minus_market_log_loss": 1.2424364159326342,
+      "roi": -0.04847129869607171,
+      "units_profit": -41.78225947601381,
+      "value": "UNDERDOG",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 30,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24335068536840054,
+      "market_ece": 0.1125344368098715,
+      "market_log_loss": 0.6797971900942639,
+      "mean_absolute_residual": 32.886822736446554,
+      "mean_residual": 27.67780270323951,
+      "model_brier": 0.3837677040001333,
+      "model_ece": 0.4407332,
+      "model_log_loss": 1.4166661924835575,
+      "model_minus_market_brier": 0.14041701863173278,
+      "model_minus_market_log_loss": 0.7368690023892936,
+      "roi": -0.05794620867928959,
+      "units_profit": -1.7383862603786877,
+      "value": "SEA",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 311,
+      "dimension": "bookmaker",
+      "eligible_for_ranking": true,
+      "market_brier": 0.246258378011987,
+      "market_ece": 0.051299832569577875,
+      "market_log_loss": 0.6855995141175887,
+      "mean_absolute_residual": 24.50786514509931,
+      "mean_residual": 9.299669095454195,
+      "model_brier": 0.3831748105466978,
+      "model_ece": 0.33339799678456594,
+      "model_log_loss": 1.7377678282803926,
+      "model_minus_market_brier": 0.13691643253471078,
+      "model_minus_market_log_loss": 1.0521683141628038,
+      "roi": -0.07455399190437102,
+      "units_profit": -23.18629148225939,
+      "value": "draftkings",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 72,
+      "dimension": "team",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24588356446818294,
+      "market_ece": 0.0704829455726465,
+      "market_log_loss": 0.6848089494975163,
+      "mean_absolute_residual": 26.032788292722152,
+      "mean_residual": -0.33252479223643117,
+      "model_brier": 0.3800217341666667,
+      "model_ece": 0.36967500000000003,
+      "model_log_loss": 1.2754941276876461,
+      "model_minus_market_brier": 0.13413816969848374,
+      "model_minus_market_log_loss": 0.5906851781901299,
+      "roi": -0.052308870080982305,
+      "units_profit": -3.7662386458307258,
+      "value": "PHI",
+      "weeks": [
+        1
+      ]
+    },
+    {
+      "count": 1836,
+      "dimension": "projected_pace_bucket",
+      "eligible_for_ranking": true,
+      "market_brier": 0.24819389590362778,
+      "market_ece": 0.014424605143330355,
+      "market_log_loss": 0.6895316661351145,
+      "mean_absolute_residual": 24.881876659705174,
+      "mean_residual": 8.969316583013368,
+      "model_brier": 0.37995833139441937,
+      "model_ece": 0.32409120152505444,
+      "model_log_loss": 1.73166207701468,
+      "model_minus_market_brier": 0.1317644354907916,
+      "model_minus_market_log_loss": 1.0421304108795655,
+      "roi": -0.04898786293732117,
+      "units_profit": -89.94171635292167,
+      "value": "UNAVAILABLE",
+      "weeks": [
+        1
+      ]
+    }
+  ],
+  "variance_model_status": "INSUFFICIENT_HISTORY",
+  "weeks": [
+    1,
+    18
+  ]
+}

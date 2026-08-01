@@ -234,6 +234,32 @@ def _join(opportunities: list[dict[str, Any]], predictions: dict[tuple[Any, ...]
     return sorted(joined, key=_side_key), sorted(exclusions, key=lambda row: json.dumps(row, sort_keys=True))
 
 
+def load_joined_analysis_rows(*, season: int, start_week: int, end_week: int,
+                              snapshot_root: Path, season_results_dir: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[Path]]:
+    """Load canonical forecast rows plus persisted simulation features without network access."""
+    opportunity_path=season_results_dir/"opportunity_rows.csv"
+    if not opportunity_path.exists(): raise FileNotFoundError(f"missing season opportunity artifact: {opportunity_path}")
+    opportunities=_load_opportunities(opportunity_path,season,start_week,end_week)
+    predictions,prediction_paths=_predictions(snapshot_root,season,start_week,end_week)
+    persisted_features: dict[tuple[str,str,str],dict[str,Any]]={}
+    feature_paths: list[Path]=[]
+    for week in range(start_week,end_week+1):
+        path=snapshot_week_dir(snapshot_root,"nfl",season,week)/"player_prop_model_features.json"
+        if not path.exists(): continue
+        feature_paths.append(path)
+        for item in json.loads(path.read_text(encoding="utf-8")):
+            key=(str(item.get("game_id") or ""),_player_id(item),str(item.get("market") or ""))
+            persisted_features[key]=item.get("model_features") or {}
+    positions,identity_paths=_position_index(snapshot_root,season,start_week,end_week)
+    archetypes=_infer_archetypes(list(predictions.values()),positions)
+    joined,exclusions=_join(opportunities,predictions,archetypes)
+    for row in joined:
+        prediction=predictions[_prediction_key(row)]
+        feature_key=(str(row.get("game_id") or ""),_player_id(row),str(row.get("market") or ""))
+        row["persisted_model_features"]=persisted_features.get(feature_key,prediction.get("model_features") or {})
+    return joined,exclusions,[opportunity_path,*prediction_paths,*feature_paths,*identity_paths]
+
+
 def _mean(values: Iterable[float | None]) -> float | None:
     present = [float(value) for value in values if value is not None]
     return sum(present)/len(present) if present else None
@@ -386,13 +412,9 @@ def analyze(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
             season_results_dir: Path, output_dir: Path, top_n: int = 50,
             min_segment_size: int = 20) -> dict[str, Any]:
     if start_week>end_week: raise ValueError("start week must not exceed end week")
-    opportunity_path=season_results_dir/"opportunity_rows.csv"
-    if not opportunity_path.exists(): raise FileNotFoundError(f"missing season opportunity artifact: {opportunity_path}")
-    opportunities=_load_opportunities(opportunity_path,season,start_week,end_week)
-    predictions,prediction_paths=_predictions(snapshot_root,season,start_week,end_week)
-    positions,identity_paths=_position_index(snapshot_root,season,start_week,end_week)
-    archetypes=_infer_archetypes(list(predictions.values()),positions)
-    joined,exclusions=_join(opportunities,predictions,archetypes)
+    joined,exclusions,input_paths=load_joined_analysis_rows(season=season,start_week=start_week,end_week=end_week,
+        snapshot_root=snapshot_root,season_results_dir=season_results_dir)
+    opportunities=_load_opportunities(season_results_dir/"opportunity_rows.csv",season,start_week,end_week)
     base_rows=_one_per_base(joined)
     attribution=_attribution(base_rows,"probability_extremeness")+_attribution(base_rows,"brier_error")
     market_attribution=[]
@@ -447,7 +469,6 @@ def analyze(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
     _write_csv(output_dir/"feature_attribution.csv",attribution+market_attribution)
     _write_csv(output_dir/"segment_metrics.csv",segments)
     _write_csv(output_dir/"roi_loss_contributors.csv",roi["top_losing_wagers"])
-    input_paths=[opportunity_path,*prediction_paths,*identity_paths]
     manifest={"schema_version":1,"network_contacted":False,
               "config":{"season":season,"start_week":start_week,"end_week":end_week,"top_n":top_n,"min_segment_size":min_segment_size},
               "inputs":{str(path.relative_to(snapshot_root.parent.parent) if path.is_relative_to(snapshot_root.parent.parent) else path.name):_semantic_hash(path) for path in sorted(input_paths)},

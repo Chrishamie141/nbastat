@@ -105,3 +105,11 @@ python -m backtesting.analyze_nfl_player_prop_errors --season 2025 --start-week 
 The command attributes extreme probabilities to persisted distribution geometry and history-depth fields, measures market overconfidence, ranks team and market-role archetype errors, separates mean-bias from variance-underestimation signals, and identifies positive-edge opportunities contributing most to realized ROI loss. It never contacts a provider or changes predictions. Attribution is observational because raw simulator feature vectors and causal coefficients are not persisted.
 
 Primary outputs are `error_analysis_summary.json`, `feature_attribution.json`, `market_overconfidence.json`, `segment_metrics.json`, `mean_variance_diagnostics.json`, `roi_loss_contributors.json`, their CSV counterparts, and `analysis_manifest.json`.
+
+For market-family comparison and leakage-safe modeling research, run:
+
+```bash
+python -m backtesting.research_nfl_player_prop_models --season 2025 --start-week 1 --end-week 18 --snapshot-root backtesting/data/snapshots --season-results-dir backtesting/results/nfl_player_props_2025_history --output-dir backtesting/results/nfl_player_props_2025_model_research --seed 1729 --min-train-rows 100 --min-test-rows 20 --min-segment-size 20
+```
+
+This compares Normal, Lognormal, Gamma, Poisson, Negative Binomial, zero-inflated Poisson, and zero-inflated Negative Binomial forecasts by market. It also supports expanding walk-forward variance models, isotonic and beta calibration, permutation importance, and residual clusters for team, player archetype, sportsbook, line size, favorite/underdog, home/away, implied team total, and projected pace. Learned stages fail closed as `INSUFFICIENT_HISTORY` until each test fold has at least two prior evaluated weeks. Research outputs never mutate production predictions.

@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 
 from .config import SNAPSHOTS_DIR
-from .game_matching import parse_dt
+from .game_matching import normalize_team, parse_dt
 from .historical_provider import HistoricalSnapshotProvider
 from .markets import CANONICAL_PLAYER_PROP_MARKETS
 from .nfl_game_predictor import (NFLGameMarketPredictor, V1_MODEL_VERSION,
@@ -103,6 +103,57 @@ def distribution_summary(values: Any) -> dict[str, Any]:
     }
 
 
+def _history_stat(row: dict[str, Any], market: str) -> float | None:
+    value=row.get(market)
+    if value is None and isinstance(row.get("stats"),dict): value=row["stats"].get(market)
+    try: return float(value) if value is not None else None
+    except (TypeError,ValueError): return None
+
+
+def _persisted_model_features(game: dict[str, Any], projection: Any, result: Any,
+                              player_history: list[dict[str, Any]], history: list[dict[str, Any]],
+                              player_name: str, team: str, market: str) -> dict[str, Any]:
+    """Freeze leakage-safe variance and usage inputs for later attribution."""
+    ordered=sorted(history,key=lambda row:str(row.get("data_as_of") or row.get("completed_at") or ""))
+    values=[value for row in ordered if (value:=_history_stat(row,market)) is not None]
+    recent=values[-3:]
+    team_key=normalize_team(team); home=normalize_team(game.get("home_team")); away=normalize_team(game.get("away_team"))
+    opponent=away if team_key==home else home if team_key==away else None
+    shares=[]
+    for row in ordered:
+        value=_history_stat(row,market); game_id=str(row.get("game_id") or row.get("week") or row.get("data_as_of") or "")
+        if value is None or not game_id: continue
+        total=sum(candidate for other in player_history
+                  if normalize_team(other.get("team"))==team_key
+                  and str(other.get("game_id") or other.get("week") or other.get("data_as_of") or "")==game_id
+                  and (candidate:=_history_stat(other,market)) is not None)
+        if total>0: shares.append(value/total)
+    opponent_values=[value for row in ordered if normalize_team(row.get("opponent"))==opponent
+                     and (value:=_history_stat(row,market)) is not None]
+    usage=next((item for item in (result.assumptions.get("player_usage") or [])
+                if str(item.get("player_name"))==player_name and normalize_team(item.get("team"))==team_key),{})
+    home_points=float(getattr(projection,"home_points",0)); away_points=float(getattr(projection,"away_points",0))
+    team_points=home_points if team_key==home else away_points; opponent_points=away_points if team_key==home else home_points
+    return {"historical_market_mean":float(np.mean(values)) if values else None,
+            "historical_game_to_game_volatility":float(np.std(values)) if len(values)>1 else None,
+            "recent_form_mean":float(np.mean(recent)) if recent else None,
+            "recent_form_delta":float(np.mean(recent)-np.mean(values)) if recent and values else None,
+            "usage_share_mean":float(np.mean(shares)) if shares else None,
+            "usage_share_volatility":float(np.std(shares)) if len(shares)>1 else None,
+            "opponent_history_mean":float(np.mean(opponent_values)) if opponent_values else None,
+            "opponent_history_games":len(opponent_values),
+            "home_away":"HOME" if team_key==home else "AWAY" if team_key==away else "UNKNOWN",
+            "opponent":opponent,"projected_team_points":team_points,"projected_opponent_points":opponent_points,
+            "projected_game_total":home_points+away_points,"projected_margin":team_points-opponent_points,
+            "recent_participation_rate":usage.get("recent_participation_rate"),
+            "passing_attempt_share_proxy":usage.get("passing_attempt_share_proxy"),
+            "rush_attempt_share_proxy":usage.get("rush_attempt_share_proxy"),
+            "reception_share_proxy":usage.get("reception_share_proxy"),
+            "receiving_yard_share_proxy":usage.get("receiving_yard_share_proxy"),
+            "target_share_proxy":usage.get("target_share_proxy"),
+            "rushing_yard_share_proxy":usage.get("rushing_yard_share_proxy")}
+
+
 def _logical_timestamp(game: dict[str, Any]) -> str:
     cutoff = prediction_cutoff(game)
     if cutoff is None:
@@ -136,7 +187,7 @@ def _not_ready(row: dict[str, Any], game: dict[str, Any], reason: str, *, model_
 
 
 def build_week(provider: HistoricalSnapshotProvider, root: Path, season: int, week: int,
-               model_version: str, simulations: int, seed: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+               model_version: str, simulations: int, seed: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     directory = snapshot_week_dir(root, "nfl", season, week)
     quotes = provider.get_player_prop_odds("nfl", str(season), week)
     opportunities = collapse_opportunities(quotes)
@@ -146,6 +197,7 @@ def build_week(provider: HistoricalSnapshotProvider, root: Path, season: int, we
         by_game[str(row.get("game_id"))].append(row)
     identities = _identity_index(directory)
     output: list[dict[str, Any]] = []
+    feature_rows: dict[tuple[str, str, str], dict[str, Any]] = {}
     distributions = 0
     players_considered: set[tuple[str, str]] = set()
 
@@ -213,6 +265,13 @@ def build_week(provider: HistoricalSnapshotProvider, root: Path, season: int, we
                 counted.add((pid, market)); distributions += 1
             probs = probabilities(values, key[5])
             summary = distribution_summary(values)
+            feature_key=(game_id,pid,market)
+            if feature_key not in feature_rows:
+                feature_rows[feature_key]={"season":season,"week":week,"game_id":game_id,
+                    "canonical_player_id":pid,"player_name":row.get("player_name") or player_name,
+                    "team":row.get("team") or history[-1].get("team"),"market":market,
+                    "model_features":_persisted_model_features(game,projection,result,player_history,history,player_name,
+                        row.get("team") or history[-1].get("team"),market)}
             output.append({"season": season, "week": week, "game_id": game_id,
                 "canonical_player_id": pid, "player_name": row.get("player_name") or player_name,
                 "team": row.get("team") or history[-1].get("team"), "market": market,
@@ -242,12 +301,14 @@ def build_week(provider: HistoricalSnapshotProvider, root: Path, season: int, we
         "readiness_by_player": readiness_by("canonical_player_id"),
         "readiness_by_week": readiness_by("week"),
         "predictions_by_market": dict(sorted(Counter(row["market"] for row in output).items()))}
-    return output, diagnostics
+    features=sorted(feature_rows.values(),key=lambda row:(row["game_id"],row["canonical_player_id"],row["market"]))
+    return output, features, diagnostics
 
 
 def persist_week(root: Path, season: int, week: int, rows: list[dict[str, Any]],
                  diagnostics: dict[str, Any], *, model_version: str, seed: int,
-                 simulations: int, overwrite: bool) -> None:
+                 simulations: int, overwrite: bool,
+                 feature_rows: list[dict[str, Any]] | None = None) -> None:
     directory = snapshot_week_dir(root, "nfl", season, week)
     target = directory / "player_prop_predictions.json"
     if target.exists() and not overwrite:
@@ -271,6 +332,21 @@ def persist_week(root: Path, season: int, week: int, rows: list[dict[str, Any]],
     manifest.setdefault("source_lineage", {})["player_prop_predictions"] = {
         "provider": "offline", "records": len(rows), "network_contacted": False,
         "inputs": ["games", "team_stats", "player_stats", "player_prop_odds"]}
+    if feature_rows is not None:
+        feature_target=directory/"player_prop_model_features.json"
+        if feature_target.exists() and not overwrite:
+            raise FileExistsError(f"{feature_target} exists; pass --overwrite to replace it")
+        _atomic_json(feature_target,feature_rows)
+        feature_entry={"present":True,"status":"complete" if feature_rows else "optional_empty",
+            "records":len(feature_rows),"row_count":len(feature_rows),
+            "sha256":hashlib.sha256(feature_target.read_bytes()).hexdigest(),
+            "source":"offline-frozen-nfl-simulation","model_version":model_version,
+            "seed":seed,"simulations":simulations,"generation_timestamp":timestamp}
+        manifest["datasets"]["player_prop_model_features"]=feature_entry
+        manifest["source_versions"]["player_prop_model_features"]=model_version
+        manifest["source_lineage"]["player_prop_model_features"]={
+            "provider":"offline","records":len(feature_rows),"network_contacted":False,
+            "inputs":["games","team_stats","player_stats","player_prop_predictions"]}
     _atomic_json(manifest_path, manifest)
 
 
@@ -283,7 +359,7 @@ def build(root: Path, season: int, start_week: int, end_week: int, model_version
     provider = HistoricalSnapshotProvider(root)
     totals = Counter(); weekly = {}; started = perf_counter()
     for week in range(start_week, end_week + 1):
-        rows, diagnostics = build_week(provider, root, season, week, model_version, simulations, seed)
+        rows, feature_rows, diagnostics = build_week(provider, root, season, week, model_version, simulations, seed)
         if validate:
             for row in rows:
                 if row["readiness"] == "READY":
@@ -293,7 +369,8 @@ def build(root: Path, season: int, start_week: int, end_week: int, model_version
                 if parse_dt(row["generated_at"]) != parse_dt(row["prediction_cutoff"]):
                     raise ValueError("frozen generation timestamp differs from prediction cutoff")
         persist_week(root, season, week, rows, diagnostics, model_version=model_version,
-                     seed=seed, simulations=simulations, overwrite=overwrite)
+                     seed=seed, simulations=simulations, overwrite=overwrite,
+                     feature_rows=feature_rows)
         weekly[week] = diagnostics
         for key, value in diagnostics.items():
             if isinstance(value, int): totals[key] += value
