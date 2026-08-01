@@ -18,6 +18,40 @@ V3_MODEL_VERSION = "nfl_game_baseline_v3"
 MODEL_VERSION = V1_MODEL_VERSION
 
 
+def canonical_history_key(row: dict[str, Any]) -> tuple[Any, ...]:
+    """Return a total, chronological ordering for an NFL history record.
+
+    Empty or malformed timestamps sort deterministically before timestamped rows;
+    eligibility checks still decide whether such records may be used.
+    """
+    timestamp = next((value for value in (
+        parse_dt(row.get("completed_at")), parse_dt(row.get("data_as_of")),
+        parse_dt(row.get("captured_at")), parse_dt(row.get("kickoff_time")),
+    ) if value is not None), None)
+
+    def integer(name: str, default: int = -1) -> int:
+        try:
+            return int(row.get(name, default))
+        except (TypeError, ValueError):
+            return default
+
+    # Scores are final tie breakers for malformed duplicate identities. They do
+    # not affect chronology, but make representative selection a total order.
+    return (
+        timestamp is not None, timestamp or datetime.min.replace(tzinfo=timezone.utc),
+        integer("season"), integer("week"), str(row.get("game_id") or ""),
+        normalize_team(row.get("team")), normalize_team(row.get("opponent")),
+        str(row.get("home_away") or "").casefold(),
+        str(row.get("record_role") or "").casefold(),
+        str(row.get("points_for") or ""), str(row.get("points_against") or ""),
+    )
+
+
+def canonical_history_rows(histories: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Copy caller-owned records and remove caller/hash insertion ordering."""
+    return sorted((dict(row) for row in histories), key=canonical_history_key)
+
+
 def _number(mapping: dict[str, Any], *names: str) -> float | None:
     for name in names:
         value = mapping.get(name)
@@ -334,7 +368,7 @@ class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
                     and row.get("game_id") != game.get("game_id")
                     and row.get("points_for") is not None and row.get("points_against") is not None):
                 result.append(row)
-        return sorted(result, key=lambda r: (parse_dt(r["completed_at"]), str(r.get("game_id"))))
+        return sorted(result, key=canonical_history_key)
 
     def _team_features(self, rows: list[dict[str, Any]], all_rows: list[dict[str, Any]], venue: str) -> dict[str, float]:
         points_for = [float(r["points_for"]) for r in rows]; points_against = [float(r["points_against"]) for r in rows]
@@ -365,6 +399,7 @@ class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
                 "scoring_sd": pstdev(points_for) if len(points_for) > 1 else 0.0}
 
     def project(self, game: dict[str, Any], histories: list[dict[str, Any]]) -> GameProjection | None:
+        histories = canonical_history_rows(histories)
         kickoff = game.get("kickoff_time") or game.get("commence_time")
         home_team, away_team = normalize_team(game.get("home_team")), normalize_team(game.get("away_team"))
         home_rows, away_rows = self._safe_rows(game, histories, home_team), self._safe_rows(game, histories, away_team)
@@ -391,8 +426,10 @@ class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
         if min(len(home_rows), len(away_rows)) < self.MIN_GAME_HISTORY:
             return None
         safe_all = []
-        for team in {normalize_team(r.get("team")) for r in histories}:
+        unique_teams = {normalize_team(r.get("team")) for r in histories}
+        for team in sorted(unique_teams):
             safe_all.extend(self._safe_rows(game, histories, team))
+        safe_all.sort(key=canonical_history_key)
         hf = self._team_features(home_rows, safe_all, "home"); af = self._team_features(away_rows, safe_all, "away")
         recent = self.config.recent_weight
         home_off = (1-recent)*hf["venue_points_for"] + recent*hf["recent_points_for"] + hf["offensive_strength"]*.25
@@ -401,14 +438,24 @@ class NFLGameMarketPredictorV2(NFLGameMarketPredictorV1):
         away_def = (1-recent)*af["venue_points_against"] + recent*af["recent_points_against"] - af["defensive_strength"]*.25
         home_points = (home_off + away_def)/2 + self.HOME_FIELD_POINTS/2
         away_points = (away_off + home_def)/2 - self.HOME_FIELD_POINTS/2
-        ratings = {team: self.config.elo_mean for team in {normalize_team(r.get("team")) for r in safe_all}}
+        ratings = {team: self.config.elo_mean for team in sorted(
+            {normalize_team(r.get("team")) for r in safe_all})}
         prior_season = None
-        games: dict[str, dict[str, Any]] = {}
-        for row in safe_all: games.setdefault(str(row.get("game_id")), row)
-        for row in sorted(games.values(), key=lambda r: parse_dt(r["completed_at"])):
+        games: dict[tuple[int, str], list[dict[str, Any]]] = {}
+        for row in safe_all:
+            identity = (int(row.get("season", 0) or 0), str(row.get("game_id") or ""))
+            games.setdefault(identity, []).append(row)
+        # A home perspective is a canonical game observation. When only an away
+        # perspective exists it is inverted below, producing the identical Elo
+        # update a paired home record would have produced.
+        representatives = [min(group, key=lambda row: (
+            str(row.get("home_away", "")).casefold() != "home",
+            canonical_history_key(row),
+        )) for _, group in sorted(games.items())]
+        for row in sorted(representatives, key=canonical_history_key):
             season = int(row.get("season", 0))
             if prior_season is not None and season != prior_season:
-                ratings = {team: self.regress_elo(rating) for team, rating in ratings.items()}
+                ratings = {team: self.regress_elo(ratings[team]) for team in sorted(ratings)}
             prior_season = season
             team, opponent = normalize_team(row.get("team")), normalize_team(row.get("opponent"))
             if opponent:

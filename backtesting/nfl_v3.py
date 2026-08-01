@@ -15,7 +15,7 @@ from statistics import pstdev
 from typing import Any, Iterable
 
 from .game_matching import normalize_team, parse_dt
-from .nfl_game_predictor import GameProjection
+from .nfl_game_predictor import GameProjection, canonical_history_key, canonical_history_rows
 
 V3_MODEL_VERSION = "nfl_game_baseline_v3"
 FEATURE_SCHEMA_VERSION = "nfl-v3-features-1"
@@ -115,9 +115,10 @@ class NFLV3FeatureBuilder:
             if (normalize_team(row.get("team")) == team and known and completed and cutoff and known < cutoff
                     and completed < cutoff and known >= completed and row.get("game_id") != game.get("game_id")
                     and row.get("points_for") is not None and row.get("points_against") is not None): rows.append(row)
-        return sorted(rows, key=lambda r: (parse_dt(r["completed_at"]), str(r.get("game_id"))))
+        return sorted(rows, key=canonical_history_key)
 
     def build(self, game: dict[str, Any], history: list[dict[str, Any]], market: dict[str, Any] | None = None) -> FeatureSnapshot:
+        history = canonical_history_rows(history)
         cutoff = str(game.get("kickoff_time") or game.get("commence_time")); snap = FeatureSnapshot(cutoff)
         teams = {"home": normalize_team(game.get("home_team")), "away": normalize_team(game.get("away_team"))}
         for side, team in teams.items():
