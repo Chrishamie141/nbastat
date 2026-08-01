@@ -13,6 +13,8 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
+import numpy as np
+
 from .config import SNAPSHOTS_DIR
 from .game_matching import parse_dt
 from .historical_provider import HistoricalSnapshotProvider
@@ -78,6 +80,27 @@ def probabilities(values: Any, line: float) -> dict[str, float]:
     """Reuse simulation draws to preserve discrete pushes exactly."""
     return {"OVER": float((values > line).mean()), "UNDER": float((values < line).mean()),
             "PUSH": float((values == line).mean())}
+
+
+def distribution_summary(values: Any) -> dict[str, Any]:
+    """Return a compact deterministic description of simulation draws.
+
+    Raw draws are intentionally not persisted.  Quantiles use NumPy's default
+    linear definition, and all values are converted to ordinary JSON numbers.
+    """
+    size = int(values.size)
+    if not size:
+        raise ValueError("simulation distribution must not be empty")
+    selected = np.quantile(values, (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99))
+    return {
+        "count": size, "minimum": float(np.min(values)), "maximum": float(np.max(values)),
+        "mean": float(np.mean(values)), "median": float(np.median(values)),
+        "standard_deviation": float(np.std(values)),
+        "quantiles": {name: float(value) for name, value in zip(
+            ("p01", "p05", "p25", "p50", "p75", "p95", "p99"), selected)},
+        "unique_values": int(np.unique(values).size),
+        "zero_mass": float(np.mean(values == 0)),
+    }
 
 
 def _logical_timestamp(game: dict[str, Any]) -> str:
@@ -189,6 +212,7 @@ def build_week(provider: HistoricalSnapshotProvider, root: Path, season: int, we
             if (pid, market) not in counted:
                 counted.add((pid, market)); distributions += 1
             probs = probabilities(values, key[5])
+            summary = distribution_summary(values)
             output.append({"season": season, "week": week, "game_id": game_id,
                 "canonical_player_id": pid, "player_name": row.get("player_name") or player_name,
                 "team": row.get("team") or history[-1].get("team"), "market": market,
@@ -197,7 +221,7 @@ def build_week(provider: HistoricalSnapshotProvider, root: Path, season: int, we
                 "push_probability": probs["PUSH"], "model_version": model_version,
                 "prediction_cutoff": cutoff, "generated_at": cutoff, "seed": seed,
                 "simulation_seed": game_seed, "simulations": simulations, "readiness": "READY",
-                "provenance": provenance})
+                "distribution_summary": summary, "provenance": provenance})
 
     output.sort(key=lambda row: (row["season"], row["week"], row["game_id"],
                                  row["canonical_player_id"], row["market"], row["line"], row["side"]))
