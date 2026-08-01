@@ -247,13 +247,19 @@ def _redact_url(url: str) -> str:
 
 class EspnNflProvider:
     name="espn"; supported_datasets={"games","player_stats","team_stats","outcomes","injuries"}
-    def __init__(self, cache: JsonRawCache|None=None): self.cache=cache or JsonRawCache()
+    def __init__(self, cache: JsonRawCache|None=None, *, allow_network: bool=True):
+        self.cache=cache or JsonRawCache(); self.allow_network=allow_network
+    def _cached_json(self, season, week, endpoint, params, fetcher):
+        path=self.cache.path(self.name,"nfl",season,week,endpoint,params)
+        if not self.allow_network and not path.exists():
+            raise ProviderUnavailable(f"cache-only ESPN {endpoint} missing: {path}")
+        return self.cache.get_or_fetch(self.name,"nfl",season,week,endpoint,params,fetcher)
     def _scoreboard(self, season, week):
         params={"seasontype":2,"week":int(week),"dates":str(season)}; url=f"{ESPN_SCOREBOARD}?{urlencode(params)}"
-        return self.cache.get_or_fetch(self.name,"nfl",season,week,"scoreboard",params,lambda:_fetch_json(url))
+        return self._cached_json(season,week,"scoreboard",params,lambda:_fetch_json(url))
     def _summary(self, season, week, event_id):
         params={"event":event_id}; url=f"{ESPN_SUMMARY}?{urlencode(params)}"
-        return self.cache.get_or_fetch(self.name,"nfl",season,week,"summary",params,lambda:_fetch_json(url))
+        return self._cached_json(season,week,"summary",params,lambda:_fetch_json(url))
     def fetch_games(self, season, week): return [self.normalize_game(e, season, week) for e in self._scoreboard(season,week).get("events",[]) if self.normalize_game(e,season,week).get("game_id")]
     def normalize_game(self,e,season,week):
         comps=((e or {}).get("competitions") or [{}])[0]; competitors=comps.get("competitors") or []
@@ -357,27 +363,53 @@ class EspnNflProvider:
         return sorted({identity(r):r for r in rows}.values(), key=identity)
     def fetch_injuries(self, season, week, games): return []
 
-def normalize_espn_player_boxscore(data, season, through_week):
+def normalize_espn_player_boxscore(data, season, through_week, diagnostics=None):
+    """Normalize ESPN ``boxscore.players[].statistics[].athletes[]`` rows.
+
+    Rows intentionally remain category-split.  An absent value stays absent,
+    while a provider-supplied ``"0"`` is retained as numeric zero.
+    """
     out=[]
+    inspected=offensive=missing_ids=rejected=0
+    emitted={"passing":0,"rushing":0,"receiving":0}; reasons={}
     for team in (data.get("boxscore",{}).get("players") or []):
         abbr=normalize_team((team.get("team") or {}).get("abbreviation"));
         for group in team.get("statistics",[]) or []:
-            labels=[str(x).lower() for x in group.get("labels",[])]; name=str(group.get("name","")).lower()
+            labels=[str(x).strip().lower() for x in group.get("labels",[])]; name=str(group.get("name") or group.get("displayName") or "").strip().lower()
+            category=next((kind for kind in emitted if kind in name),None)
             for ath in group.get("athletes",[]) or []:
+                inspected += 1
                 a=ath.get("athlete") or {}; vals=ath.get("stats") or []; stats={}
                 for label,val in zip(labels, vals):
-                    if label in {"cmp/att","c/att"} and "/" in str(val): stats.update({"completions": int(str(val).split('/')[0]), "attempts": int(str(val).split('/')[1])})
-                    elif label in {"yds","yards"}: stats[("passing_yards" if "passing" in name else "rushing_yards" if "rushing" in name else "receiving_yards")]=_num(val)
-                    elif label in {"td","tds"}: stats[("passing_touchdowns" if "passing" in name else "rushing_touchdowns" if "rushing" in name else "receiving_touchdowns")]=_num(val)
+                    if label in {"cmp/att","c/att"} and "/" in str(val):
+                        cmp_,att=str(val).split('/',1); stats.update({"completions":_num(cmp_),"passing_attempts":_num(att)})
+                    elif label in {"yds","yards"} and category: stats[f"{category}_yards"]=_num(val)
+                    elif label in {"td","tds"} and category: stats[f"{category}_tds"]=_num(val)
                     elif label in {"int"}: stats["interceptions"]=_num(val)
                     elif label in {"sacks"}: stats["sacks"]=_num(val)
-                    elif label in {"car"}: stats["attempts"]=_num(val)
+                    elif label in {"car","carries","att"} and category == "rushing": stats["rushing_attempts"]=_num(val)
                     elif label in {"rec"}: stats["receptions"]=_num(val)
                     elif label in {"tgts","targets"}: stats["targets"]=_num(val)
-                if stats: out.append({"player_id":a.get("id") or a.get("uid"),
+                stats={key:value for key,value in stats.items() if value is not None}
+                if category and stats: offensive += 1
+                athlete_id=a.get("id") or a.get("uid")
+                if not athlete_id: missing_ids += 1
+                if stats and category:
+                    emitted[category] += 1
+                    out.append({"canonical_player_id":athlete_id,"player_id":athlete_id,
+                    "athlete_id":athlete_id,"provider_player_id":athlete_id,
                     "player":a.get("displayName"),"player_name":a.get("displayName"),
                     "position":((a.get("position") or {}).get("abbreviation") if isinstance(a.get("position"),dict) else a.get("position")),
-                    "team":abbr,"season":season,"through_week":through_week,"stats":stats})
+                    "team":abbr,"season":season,"through_week":through_week,"category":category,"stat_category":category,
+                    "stats":stats})
+                else:
+                    rejected += 1; reason="unsupported_category" if not category else "no_supported_stats"
+                    reasons[reason]=reasons.get(reason,0)+1
+    if diagnostics is not None:
+        diagnostics.update({"raw_player_stat_records_inspected":inspected,"offensive_players_discovered":offensive,
+            "passing_rows_emitted":emitted["passing"],"rushing_rows_emitted":emitted["rushing"],
+            "receiving_rows_emitted":emitted["receiving"],"rows_rejected":rejected,
+            "rejection_reasons":reasons,"provider_ids_present":inspected-missing_ids,"provider_ids_missing":missing_ids})
     return out
 
 def normalize_espn_team_boxscore(data, season, through_week):

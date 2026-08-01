@@ -27,13 +27,19 @@ def parse_args(argv=None):
     parser.add_argument("--season", type=int, required=True)
     parser.add_argument("--start-week", type=int, default=1)
     parser.add_argument("--end-week", type=int, default=18)
+    parser.add_argument("--week", type=int, help="Rebuild one week (shorthand for equal start/end weeks).")
+    parser.add_argument("--game-id", help="Only rebuild one ESPN game in the selected week.")
     parser.add_argument("--snapshot-root", type=Path, default=SNAPSHOTS_DIR)
     parser.add_argument("--cache-root", type=Path)
     parser.add_argument("--plan", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--allow-network", action="store_true")
-    return parser.parse_args(argv)
+    parser.add_argument("--rebuild-from-cache", action="store_true",
+                        help="Re-normalize cached scoreboard/summary responses without network access.")
+    args=parser.parse_args(argv)
+    if args.week is not None: args.start_week=args.end_week=args.week
+    return args
 
 
 def _read_list(path: Path) -> list[dict[str, Any]]:
@@ -115,6 +121,11 @@ def build_week(args, provider: EspnNflProvider, week: int) -> dict[str, Any]:
     if args.resume and all((wdir/f"{d}.json").exists() for d in FEATURE_DATASETS):
         return {"week":week,"status":"skipped","diagnostics":[]}
     games=provider.fetch_games(args.season,week)
+    requested_game=getattr(args,"game_id",None)
+    if requested_game:
+        requested_game=str(requested_game)
+        games=[game for game in games if requested_game in {str(game.get("game_id")),str(game.get("espn_event_id"))}]
+        if not games: raise ValueError(f"requested game not found in cached scoreboard: {requested_game}")
     outcomes=normalize_outcomes(provider.fetch_outcomes(args.season,week,games),games,"nfl",args.season,week)
     diagnostics=[]; players=[]
     completed_ids={row.get("game_id") for row in outcomes}
@@ -126,7 +137,20 @@ def build_week(args, provider: EspnNflProvider, week: int) -> dict[str, Any]:
             if not isinstance(payload,dict) or not isinstance(payload.get("boxscore"),dict):
                 raise ValueError("missing object field: boxscore")
             completed=_completed_at(game)
-            for row in normalize_espn_player_boxscore(payload,str(args.season),week):
+            extraction={}
+            normalized=normalize_espn_player_boxscore(payload,str(args.season),week,extraction)
+            raw_ids={str(((ath.get("athlete") or {}).get("id"))) for team in payload["boxscore"].get("players",[])
+                     for group in team.get("statistics",[]) for ath in group.get("athletes",[])
+                     if (ath.get("athlete") or {}).get("id") is not None}
+            emitted_ids={str(row.get("athlete_id")) for row in normalized if row.get("athlete_id") is not None}
+            extraction.update({"week":week,"game_id":game["game_id"],"event_id":event,
+                "classification":"ESPN_PLAYER_STATS_EXTRACTION",
+                "emitted_ids_match_raw_athlete_ids":emitted_ids <= raw_ids,
+                "evidence":[{"player_name":row.get("player_name"),"provider_player_id":row.get("provider_player_id"),
+                    "category":row.get("category"),"stats":row.get("stats")} for row in normalized
+                    if row.get("player_name") == "Dak Prescott" or str(row.get("provider_player_id")) == "2577417"]})
+            diagnostics.append(extraction)
+            for row in normalized:
                 row.update({"league":"nfl","season":args.season,"week":week,"through_week":week,
                     "game_id":game["game_id"],"completed_at":completed,"captured_at":completed,
                     "data_as_of":completed,"record_role":"completed_game_history","is_pregame":False,"source":"espn"})
@@ -149,9 +173,9 @@ def main(argv=None):
     args=parse_args(argv)
     if args.start_week > args.end_week: raise SystemExit("--start-week must not exceed --end-week")
     cache=JsonRawCache(args.cache_root or args.snapshot_root.parent/"raw_cache")
-    provider=EspnNflProvider(cache=cache)
+    provider=EspnNflProvider(cache=cache,allow_network=args.allow_network and not args.rebuild_from_cache)
     plan=make_plan(args,provider)
-    if args.plan or not args.allow_network:
+    if args.plan or (not args.allow_network and not args.rebuild_from_cache):
         print(json.dumps(plan,indent=2,sort_keys=True))
         if not args.plan: print("Network disabled; rerun with --allow-network to build.")
         return 0
@@ -163,7 +187,12 @@ def main(argv=None):
             "network_contacted":cache.misses>0,"paid_requests_required":0,"estimated_paid_credits":0}
     print(json.dumps(report,indent=2,sort_keys=True))
     if args.validate:
-        invalid=[r for r in reports if r["status"]=="failed" or (r.get("status")=="complete" and not r["datasets"].get("player_stats"))]
+        invalid=[r for r in reports if r["status"]=="failed" or (r.get("status")=="complete" and not r["datasets"].get("player_stats"))
+                 or any(d.get("classification")=="ESPN_PLAYER_STATS_EXTRACTION" and
+                        (not d.get("emitted_ids_match_raw_athlete_ids") or
+                         (d.get("raw_player_stat_records_inspected",0)>0 and not
+                          sum(d.get(f"{c}_rows_emitted",0) for c in ("passing","rushing","receiving"))))
+                        for d in r.get("diagnostics",[]))]
         if invalid: return 1
     return int(any(r["status"]=="failed" for r in reports))
 
