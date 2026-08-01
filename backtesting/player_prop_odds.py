@@ -398,7 +398,18 @@ def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tupl
             "team": first.get("team"), "season": first.get("season"), "week": first.get("week"),
             "record_role": "game_outcome", "is_pregame": False, "stats": stats,
             "source_row_count": len(parts), "source_categories": categories,
-            "source_provider_ids": provider_ids, "source_timestamps": timestamps}
+            "source_provider_ids": provider_ids, "source_timestamps": timestamps,
+            "source_identity_reconciliations": [{"source_row": source_index,
+                "original_player_id": row.get("original_player_id"),
+                "original_athlete_id": row.get("original_athlete_id"),
+                "original_provider_player_id": row.get("original_provider_player_id"),
+                "resolved_canonical_player_id": row.get("resolved_canonical_player_id", key[1]),
+                "reconciliation_method": row.get("reconciliation_method"),
+                "reconciliation_status": row.get("reconciliation_status"),
+                "reconciliation_confidence": row.get("reconciliation_confidence"),
+                "identity_source": row.get("identity_source"),
+                "identity_provenance": row.get("identity_provenance", [])}
+                for source_index, row in parts]}
     diagnostics = {"raw_outcome_rows": len(source_rows), "canonical_player_outcomes": len(outcomes),
         "duplicate_fields_merged": duplicate_fields, "conflicting_fields": len(conflicts),
         "players_with_multiple_category_rows": multi_category_players, "conflicts": conflicts}

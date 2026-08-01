@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .game_matching import normalize_team, parse_dt
-from .player_identity import first_player_id
+from .player_identity import first_player_id, normalize_player_id
 
 
 SOURCE_PRIORITY = {"provider_participant": 0, "historical_roster": 0, "provider_roster": 0,
@@ -23,6 +23,124 @@ PLAYER_COLLECTIONS = ("athletes", "participants", "roster", "depthchart", "depth
                       "players", "statistics", "leaders", "injuries")
 NAME_PLAYER_COLLECTIONS = tuple(x for x in PLAYER_COLLECTIONS if x != "statistics")
 PRODUCTION_CASES = ("James Cook", "Aaron Jones", "Tyler Higbee", "Chigoziem Okonkwo")
+
+
+def reconcile_outcome_identities(
+    rows: Iterable[dict[str, Any]], identities: Iterable[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Bring completed stat rows into the registry's game-scoped ID domain.
+
+    All indices retain sets until lookup time: a duplicated alias is ambiguity,
+    never an arbitrary first match.  Exact name matching uses the registry's
+    existing normalization and requires both team membership and game context.
+    """
+    registry = list(identities)
+    canonical: dict[tuple[str, str], set[str]] = {}
+    provider: dict[tuple[str, str], set[str]] = {}
+    aliases: dict[tuple[str, str], set[str]] = {}
+    names: dict[tuple[str, str, str], set[str]] = {}
+    provenance: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    registry_games: set[str] = set()
+
+    def add(index: dict[Any, set[str]], key: Any, value: str) -> None:
+        index.setdefault(key, set()).add(value)
+
+    for identity in registry:
+        game = str(identity.get("game_id") or "").strip()
+        cid = normalize_player_id(identity.get("canonical_player_id"))
+        if not game or cid is None:
+            continue
+        registry_games.add(game)
+        add(canonical, (game, cid), cid)
+        for field in ("provider_player_id", "athlete_id"):
+            value = normalize_player_id(identity.get(field))
+            if value is not None:
+                add(provider, (game, value), cid)
+        for field in ("player_id", "source_player_id", "historical_player_id"):
+            value = normalize_player_id(identity.get(field))
+            if value is not None:
+                add(aliases, (game, value), cid)
+        for value in identity.get("player_id_aliases", []) or []:
+            alias = normalize_player_id(value)
+            if alias is not None:
+                add(aliases, (game, alias), cid)
+        name = normalize_player_name(identity.get("normalized_player_name") or
+                                     identity.get("player_name") or identity.get("name"))
+        team = _team(identity.get("team"))
+        if name and team:
+            add(names, (game, name, team), cid)
+        provenance.setdefault((game, cid), []).append(identity)
+
+    counters = {"raw_outcome_rows": 0, "already_canonical": 0,
+                "reconciled_by_provider_id": 0, "reconciled_by_alias": 0,
+                "reconciled_by_exact_name_team_game": 0, "unresolved": 0,
+                "ambiguous": 0, "ambiguities": [], "unresolved_rows": []}
+    reconciled = []
+    for source_row, raw in enumerate(rows):
+        counters["raw_outcome_rows"] += 1
+        row = dict(raw)
+        game = str(row.get("game_id") or "").strip()
+        raw_ids = {field: row.get(field) for field in
+                   ("canonical_player_id", "player_id", "athlete_id", "provider_player_id")}
+        attempts: list[tuple[str, set[str]]] = []
+        explicit = normalize_player_id(row.get("canonical_player_id"))
+        # Explicit canonical IDs remain valid when old snapshots have no registry;
+        # when a registry exists for the game, require that it recognizes the ID.
+        game_has_registry = game in registry_games
+        if explicit is not None and (not game_has_registry or (game, explicit) in canonical):
+            attempts.append(("already_canonical", {explicit}))
+        for field in ("provider_player_id", "athlete_id"):
+            value = normalize_player_id(row.get(field))
+            if value is not None and (game, value) in provider:
+                attempts.append(("reconciled_by_provider_id", provider[(game, value)]))
+            elif value is not None and not game_has_registry:
+                # Backward compatibility for pre-registry snapshots, where the
+                # provider athlete ID was itself the established canonical ID.
+                attempts.append(("reconciled_by_provider_id", {value}))
+        value = normalize_player_id(row.get("player_id"))
+        if value is not None and (game, value) in aliases:
+            attempts.append(("reconciled_by_alias", aliases[(game, value)]))
+        elif value is not None and not game_has_registry:
+            attempts.append(("reconciled_by_alias", {value}))
+        name = normalize_player_name(row.get("player_name") or row.get("player") or row.get("name"))
+        team = _team(row.get("team"))
+        if name and team and (game, name, team) in names:
+            attempts.append(("reconciled_by_exact_name_team_game", names[(game, name, team)]))
+
+        method = candidates = None
+        for label, found in attempts:  # precedence is encoded by insertion order
+            if len(found) == 1:
+                method, candidates = label, found
+                break
+            if len(found) > 1:
+                method, candidates = label, found
+                break
+        if not candidates:
+            counters["unresolved"] += 1
+            counters["unresolved_rows"].append({"source_row": source_row, "game_id": game,
+                "player_name": row.get("player_name") or row.get("player"), "team": row.get("team"),
+                "raw_ids": raw_ids})
+            continue
+        if len(candidates) != 1:
+            counters["ambiguous"] += 1
+            counters["ambiguities"].append({"source_row": source_row, "game_id": game,
+                "player_name": row.get("player_name") or row.get("player"), "team": row.get("team"),
+                "raw_ids": raw_ids, "candidate_canonical_ids": sorted(candidates),
+                "reconciliation_method": method})
+            continue
+        cid = next(iter(candidates)); counters[method] += 1
+        records = provenance.get((game, cid), [])
+        row.update({"original_player_id": row.get("player_id"),
+                    "original_athlete_id": row.get("athlete_id"),
+                    "original_provider_player_id": row.get("provider_player_id"),
+                    "resolved_canonical_player_id": cid, "canonical_player_id": cid,
+                    "reconciliation_method": method, "reconciliation_status": "RESOLVED",
+                    "reconciliation_confidence": "exact",
+                    "identity_source": records[0].get("source") if records else row.get("identity_source"),
+                    "identity_provenance": sorted({p for record in records
+                        for p in record.get("identity_provenance", [])})})
+        reconciled.append(row)
+    return reconciled, counters
 
 
 def normalize_player_name(value: Any) -> str:

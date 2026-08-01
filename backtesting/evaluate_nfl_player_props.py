@@ -20,6 +20,7 @@ from .config import SNAPSHOTS_DIR
 from .game_matching import parse_dt
 from .markets import CANONICAL_PLAYER_PROP_MARKETS
 from .player_identity import canonical_player_key, first_player_id, normalize_player_id
+from .player_identity_registry import reconcile_outcome_identities
 from .player_prop_odds import aggregate_player_outcomes, decimal_from_american, grade_quote
 from .snapshots import snapshot_week_dir
 from .team_history import prediction_cutoff
@@ -223,8 +224,12 @@ def _validate_and_build(quote: dict[str,Any], game: dict[str,Any], probability: 
 def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
              market: str | None=None, bookmaker: str | None=None) -> dict[str,Any]:
     quotes=[]; accepted=0; incomplete=0; validation=[]
-    outcome_diagnostics={"raw_outcome_rows":0,"canonical_player_outcomes":0,
+    outcome_diagnostics={"raw_outcome_rows":0,"already_canonical":0,
+        "reconciled_by_provider_id":0,"reconciled_by_alias":0,
+        "reconciled_by_exact_name_team_game":0,"unresolved":0,"ambiguous":0,
+        "canonical_player_outcomes":0,
         "duplicate_fields_merged":0,"conflicting_fields":0,
+        "quotes_missing_outcomes_after_reconciliation":0,
         "missing_requested_stat_count":0,"players_with_multiple_category_rows":0}
     for week in range(start_week,end_week+1):
         directory=snapshot_week_dir(snapshot_root,"nfl",season,week)
@@ -232,12 +237,23 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
         raw=_load(directory/"player_prop_odds.json",[]); accepted+=len(raw)
         predictions=_prediction_index(_load(directory/"player_prop_predictions.json",[]))
         raw_outcomes=_outcome_rows(directory)
+        identities=_load(directory/"player_identities.json",[])
+        reconciled_outcomes, identity_diagnostics = reconcile_outcome_identities(raw_outcomes, identities)
+        for field in ("raw_outcome_rows", "already_canonical", "reconciled_by_provider_id",
+                      "reconciled_by_alias", "reconciled_by_exact_name_team_game", "unresolved", "ambiguous"):
+            outcome_diagnostics[field] += int(identity_diagnostics[field])
+        if identity_diagnostics["ambiguous"]:
+            raise ValueError("integrity validation failed: ambiguous outcome identity: " +
+                             _stable(identity_diagnostics["ambiguities"][:20]))
         try:
-            outcomes, week_outcome_diagnostics=aggregate_player_outcomes(raw_outcomes)
+            outcomes, week_outcome_diagnostics=aggregate_player_outcomes(reconciled_outcomes)
         except ValueError as exc:
             raise ValueError(f"integrity validation failed: week={week}, {exc}") from exc
         for field in outcome_diagnostics:
-            if field != "missing_requested_stat_count":
+            if field not in {"missing_requested_stat_count", "quotes_missing_outcomes_after_reconciliation",
+                             "raw_outcome_rows", "already_canonical",
+                             "reconciled_by_provider_id", "reconciled_by_alias",
+                             "reconciled_by_exact_name_team_game", "unresolved", "ambiguous"}:
                 outcome_diagnostics[field] += int(week_outcome_diagnostics[field])
         eligible=[q for q in raw if (not market or q.get("market")==market) and (not bookmaker or str(q.get("bookmaker") or q.get("sportsbook"))==bookmaker)]
         pairs: dict[tuple[Any,...],dict[str,dict[str,Any]]]=defaultdict(dict)
@@ -263,6 +279,8 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
             except (ValueError,KeyError) as exc:
                 if str(exc) == "outcome market is missing":
                     outcome_diagnostics["missing_requested_stat_count"] += 1
+                elif str(exc).startswith("canonical player outcome not found:"):
+                    outcome_diagnostics["quotes_missing_outcomes_after_reconciliation"] += 1
                 validation.append({"week":week,"game_id":q.get("game_id"),"error":str(exc)})
     if validation: raise ValueError("integrity validation failed: "+_stable(validation[:20]))
     opportunities=select_best_prices(quotes); paired=[r for r in opportunities if r["edge"] is not None]
