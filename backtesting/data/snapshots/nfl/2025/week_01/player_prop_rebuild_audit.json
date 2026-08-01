@@ -1,0 +1,2387 @@
+{
+  "ambiguous_players": [],
+  "duplicate_identities_merged": 1531,
+  "event_coverage": {
+    "0b2455795dfcd692dd607503e4f20d04": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 28,
+          "identity_ambiguous": 0,
+          "identity_matched": 28,
+          "identity_unknown": 0,
+          "normalized": 28,
+          "normalized_rows": 28,
+          "paired": 28,
+          "persisted": 28,
+          "raw": 28,
+          "raw_rows": 28,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 28
+        },
+        "passing_yards": {
+          "deduplicated": 28,
+          "identity_ambiguous": 0,
+          "identity_matched": 28,
+          "identity_unknown": 0,
+          "normalized": 28,
+          "normalized_rows": 28,
+          "paired": 28,
+          "persisted": 28,
+          "raw": 28,
+          "raw_rows": 28,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 28
+        },
+        "receiving_yards": {
+          "deduplicated": 148,
+          "identity_ambiguous": 0,
+          "identity_matched": 148,
+          "identity_unknown": 0,
+          "normalized": 148,
+          "normalized_rows": 148,
+          "paired": 148,
+          "persisted": 148,
+          "raw": 148,
+          "raw_rows": 148,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 148
+        },
+        "receptions": {
+          "deduplicated": 148,
+          "identity_ambiguous": 0,
+          "identity_matched": 148,
+          "identity_unknown": 0,
+          "normalized": 148,
+          "normalized_rows": 148,
+          "paired": 148,
+          "persisted": 148,
+          "raw": 148,
+          "raw_rows": 148,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 148
+        },
+        "rushing_attempts": {
+          "deduplicated": 54,
+          "identity_ambiguous": 0,
+          "identity_matched": 54,
+          "identity_unknown": 0,
+          "normalized": 54,
+          "normalized_rows": 54,
+          "paired": 54,
+          "persisted": 54,
+          "raw": 54,
+          "raw_rows": 54,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 54
+        },
+        "rushing_yards": {
+          "deduplicated": 68,
+          "identity_ambiguous": 0,
+          "identity_matched": 68,
+          "identity_unknown": 0,
+          "normalized": 68,
+          "normalized_rows": 68,
+          "paired": 68,
+          "persisted": 68,
+          "raw": 68,
+          "raw_rows": 68,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 68
+        }
+      },
+      "game_id": "espn-401772720",
+      "normalized": {
+        "player_pass_tds": 28,
+        "player_pass_yds": 28,
+        "player_reception_yds": 148,
+        "player_receptions": 148,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 68
+      },
+      "persisted": {
+        "player_pass_tds": 28,
+        "player_pass_yds": 28,
+        "player_reception_yds": 148,
+        "player_receptions": 148,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 68
+      },
+      "raw_provider": {
+        "player_pass_tds": 28,
+        "player_pass_yds": 28,
+        "player_reception_yds": 148,
+        "player_receptions": 148,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 68
+      },
+      "rejections": {},
+      "unknown_players": []
+    },
+    "1e09eb3fe1385796c1a32000de48ac64": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 30,
+          "identity_ambiguous": 0,
+          "identity_matched": 30,
+          "identity_unknown": 0,
+          "normalized": 30,
+          "normalized_rows": 30,
+          "paired": 30,
+          "persisted": 30,
+          "raw": 30,
+          "raw_rows": 30,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 30
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 124,
+          "identity_ambiguous": 0,
+          "identity_matched": 124,
+          "identity_unknown": 16,
+          "normalized": 140,
+          "normalized_rows": 140,
+          "paired": 124,
+          "persisted": 124,
+          "raw": 140,
+          "raw_rows": 140,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 124
+        },
+        "receptions": {
+          "deduplicated": 116,
+          "identity_ambiguous": 0,
+          "identity_matched": 116,
+          "identity_unknown": 16,
+          "normalized": 132,
+          "normalized_rows": 132,
+          "paired": 116,
+          "persisted": 116,
+          "raw": 132,
+          "raw_rows": 132,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 116
+        },
+        "rushing_attempts": {
+          "deduplicated": 62,
+          "identity_ambiguous": 0,
+          "identity_matched": 62,
+          "identity_unknown": 0,
+          "normalized": 62,
+          "normalized_rows": 62,
+          "paired": 62,
+          "persisted": 62,
+          "raw": 62,
+          "raw_rows": 62,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 62
+        },
+        "rushing_yards": {
+          "deduplicated": 84,
+          "identity_ambiguous": 0,
+          "identity_matched": 84,
+          "identity_unknown": 0,
+          "normalized": 84,
+          "normalized_rows": 84,
+          "paired": 84,
+          "persisted": 84,
+          "raw": 84,
+          "raw_rows": 84,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 84
+        }
+      },
+      "game_id": "espn-401772830",
+      "normalized": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 32,
+        "player_reception_yds": 124,
+        "player_receptions": 116,
+        "player_rush_attempts": 62,
+        "player_rush_yds": 84
+      },
+      "persisted": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 32,
+        "player_reception_yds": 124,
+        "player_receptions": 116,
+        "player_rush_attempts": 62,
+        "player_rush_yds": 84
+      },
+      "raw_provider": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 32,
+        "player_reception_yds": 140,
+        "player_receptions": 132,
+        "player_rush_attempts": 62,
+        "player_rush_yds": 84
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 16
+        },
+        "receptions": {
+          "unknown_player": 16
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Kyle Pitts"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Kyle Pitts"
+        }
+      ]
+    },
+    "394256a6c3d0f5ecd1208fffaae6a72f": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 176,
+          "identity_ambiguous": 0,
+          "identity_matched": 176,
+          "identity_unknown": 0,
+          "normalized": 176,
+          "normalized_rows": 176,
+          "paired": 176,
+          "persisted": 176,
+          "raw": 176,
+          "raw_rows": 176,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 176
+        },
+        "receptions": {
+          "deduplicated": 172,
+          "identity_ambiguous": 0,
+          "identity_matched": 174,
+          "identity_unknown": 0,
+          "normalized": 174,
+          "normalized_rows": 174,
+          "paired": 172,
+          "persisted": 172,
+          "raw": 174,
+          "raw_rows": 174,
+          "rejected": 2,
+          "rejections": {},
+          "timestamp_eligible": 174
+        },
+        "rushing_attempts": {
+          "deduplicated": 58,
+          "identity_ambiguous": 0,
+          "identity_matched": 58,
+          "identity_unknown": 0,
+          "normalized": 58,
+          "normalized_rows": 58,
+          "paired": 58,
+          "persisted": 58,
+          "raw": 58,
+          "raw_rows": 58,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 58
+        },
+        "rushing_yards": {
+          "deduplicated": 92,
+          "identity_ambiguous": 0,
+          "identity_matched": 92,
+          "identity_unknown": 0,
+          "normalized": 92,
+          "normalized_rows": 92,
+          "paired": 92,
+          "persisted": 92,
+          "raw": 92,
+          "raw_rows": 92,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 92
+        }
+      },
+      "game_id": "espn-401772828",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 176,
+        "player_receptions": 174,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 92
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 176,
+        "player_receptions": 172,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 92
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 176,
+        "player_receptions": 174,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 92
+      },
+      "rejections": {
+        "unknown": {
+          "duplicate_conflict": 2
+        }
+      },
+      "unknown_players": []
+    },
+    "4cce00ca468c67eca17a9a061f778fb2": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 110,
+          "identity_ambiguous": 0,
+          "identity_matched": 110,
+          "identity_unknown": 30,
+          "normalized": 140,
+          "normalized_rows": 140,
+          "paired": 110,
+          "persisted": 110,
+          "raw": 140,
+          "raw_rows": 140,
+          "rejected": 30,
+          "rejections": {
+            "unknown_player": 30
+          },
+          "timestamp_eligible": 110
+        },
+        "receptions": {
+          "deduplicated": 106,
+          "identity_ambiguous": 0,
+          "identity_matched": 106,
+          "identity_unknown": 30,
+          "normalized": 136,
+          "normalized_rows": 136,
+          "paired": 106,
+          "persisted": 106,
+          "raw": 136,
+          "raw_rows": 136,
+          "rejected": 30,
+          "rejections": {
+            "unknown_player": 30
+          },
+          "timestamp_eligible": 106
+        },
+        "rushing_attempts": {
+          "deduplicated": 44,
+          "identity_ambiguous": 0,
+          "identity_matched": 44,
+          "identity_unknown": 0,
+          "normalized": 44,
+          "normalized_rows": 44,
+          "paired": 44,
+          "persisted": 44,
+          "raw": 44,
+          "raw_rows": 44,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 44
+        },
+        "rushing_yards": {
+          "deduplicated": 64,
+          "identity_ambiguous": 0,
+          "identity_matched": 64,
+          "identity_unknown": 0,
+          "normalized": 64,
+          "normalized_rows": 64,
+          "paired": 64,
+          "persisted": 64,
+          "raw": 64,
+          "raw_rows": 64,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 64
+        }
+      },
+      "game_id": "espn-401772827",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 110,
+        "player_receptions": 106,
+        "player_rush_attempts": 44,
+        "player_rush_yds": 64
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 110,
+        "player_receptions": 106,
+        "player_rush_attempts": 44,
+        "player_rush_yds": 64
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 140,
+        "player_receptions": 136,
+        "player_rush_attempts": 44,
+        "player_rush_yds": 64
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 30
+        },
+        "receptions": {
+          "unknown_player": 30
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Deebo Samuel Sr."
+        },
+        {
+          "market": "receptions",
+          "player_name": "Deebo Samuel Sr."
+        },
+        {
+          "market": "receiving_yards",
+          "player_name": "Zach Ertz"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Zach Ertz"
+        }
+      ]
+    },
+    "557d13ef8f4c1d21044f3a478cda6d0b": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 30,
+          "identity_ambiguous": 0,
+          "identity_matched": 30,
+          "identity_unknown": 0,
+          "normalized": 30,
+          "normalized_rows": 30,
+          "paired": 30,
+          "persisted": 30,
+          "raw": 30,
+          "raw_rows": 30,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 30
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 154,
+          "identity_ambiguous": 0,
+          "identity_matched": 154,
+          "identity_unknown": 0,
+          "normalized": 154,
+          "normalized_rows": 154,
+          "paired": 154,
+          "persisted": 154,
+          "raw": 154,
+          "raw_rows": 154,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 154
+        },
+        "receptions": {
+          "deduplicated": 140,
+          "identity_ambiguous": 0,
+          "identity_matched": 140,
+          "identity_unknown": 0,
+          "normalized": 140,
+          "normalized_rows": 140,
+          "paired": 140,
+          "persisted": 140,
+          "raw": 140,
+          "raw_rows": 140,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 140
+        },
+        "rushing_attempts": {
+          "deduplicated": 54,
+          "identity_ambiguous": 0,
+          "identity_matched": 54,
+          "identity_unknown": 0,
+          "normalized": 54,
+          "normalized_rows": 54,
+          "paired": 54,
+          "persisted": 54,
+          "raw": 54,
+          "raw_rows": 54,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 54
+        },
+        "rushing_yards": {
+          "deduplicated": 72,
+          "identity_ambiguous": 0,
+          "identity_matched": 72,
+          "identity_unknown": 0,
+          "normalized": 72,
+          "normalized_rows": 72,
+          "paired": 72,
+          "persisted": 72,
+          "raw": 72,
+          "raw_rows": 72,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 72
+        }
+      },
+      "game_id": "espn-401772718",
+      "normalized": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 32,
+        "player_reception_yds": 154,
+        "player_receptions": 140,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 72
+      },
+      "persisted": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 32,
+        "player_reception_yds": 154,
+        "player_receptions": 140,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 72
+      },
+      "raw_provider": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 32,
+        "player_reception_yds": 154,
+        "player_receptions": 140,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 72
+      },
+      "rejections": {},
+      "unknown_players": []
+    },
+    "5ed483bb614b18955f8b43f177746371": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 142,
+          "identity_ambiguous": 0,
+          "identity_matched": 142,
+          "identity_unknown": 0,
+          "normalized": 142,
+          "normalized_rows": 142,
+          "paired": 142,
+          "persisted": 142,
+          "raw": 142,
+          "raw_rows": 142,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 142
+        },
+        "receptions": {
+          "deduplicated": 138,
+          "identity_ambiguous": 0,
+          "identity_matched": 138,
+          "identity_unknown": 0,
+          "normalized": 138,
+          "normalized_rows": 138,
+          "paired": 138,
+          "persisted": 138,
+          "raw": 138,
+          "raw_rows": 138,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 138
+        },
+        "rushing_attempts": {
+          "deduplicated": 58,
+          "identity_ambiguous": 0,
+          "identity_matched": 58,
+          "identity_unknown": 0,
+          "normalized": 58,
+          "normalized_rows": 58,
+          "paired": 58,
+          "persisted": 58,
+          "raw": 58,
+          "raw_rows": 58,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 58
+        },
+        "rushing_yards": {
+          "deduplicated": 80,
+          "identity_ambiguous": 0,
+          "identity_matched": 80,
+          "identity_unknown": 0,
+          "normalized": 80,
+          "normalized_rows": 80,
+          "paired": 80,
+          "persisted": 80,
+          "raw": 80,
+          "raw_rows": 80,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 80
+        }
+      },
+      "game_id": "espn-401772721",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 142,
+        "player_receptions": 138,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 80
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 142,
+        "player_receptions": 138,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 80
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 142,
+        "player_receptions": 138,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 80
+      },
+      "rejections": {},
+      "unknown_players": []
+    },
+    "68397f3aa9eb847a421a49f990a11928": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 26,
+          "identity_ambiguous": 0,
+          "identity_matched": 26,
+          "identity_unknown": 6,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 26,
+          "persisted": 26,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 6,
+          "rejections": {
+            "unknown_player": 6
+          },
+          "timestamp_eligible": 26
+        },
+        "passing_yards": {
+          "deduplicated": 26,
+          "identity_ambiguous": 0,
+          "identity_matched": 26,
+          "identity_unknown": 6,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 26,
+          "persisted": 26,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 6,
+          "rejections": {
+            "unknown_player": 6
+          },
+          "timestamp_eligible": 26
+        },
+        "receiving_yards": {
+          "deduplicated": 152,
+          "identity_ambiguous": 0,
+          "identity_matched": 152,
+          "identity_unknown": 16,
+          "normalized": 168,
+          "normalized_rows": 168,
+          "paired": 152,
+          "persisted": 152,
+          "raw": 168,
+          "raw_rows": 168,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 152
+        },
+        "receptions": {
+          "deduplicated": 150,
+          "identity_ambiguous": 0,
+          "identity_matched": 150,
+          "identity_unknown": 14,
+          "normalized": 164,
+          "normalized_rows": 164,
+          "paired": 150,
+          "persisted": 150,
+          "raw": 164,
+          "raw_rows": 164,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 150
+        },
+        "rushing_attempts": {
+          "deduplicated": 56,
+          "identity_ambiguous": 0,
+          "identity_matched": 58,
+          "identity_unknown": 4,
+          "normalized": 62,
+          "normalized_rows": 62,
+          "paired": 56,
+          "persisted": 56,
+          "raw": 62,
+          "raw_rows": 62,
+          "rejected": 6,
+          "rejections": {
+            "unknown_player": 4
+          },
+          "timestamp_eligible": 58
+        },
+        "rushing_yards": {
+          "deduplicated": 72,
+          "identity_ambiguous": 0,
+          "identity_matched": 72,
+          "identity_unknown": 8,
+          "normalized": 80,
+          "normalized_rows": 80,
+          "paired": 72,
+          "persisted": 72,
+          "raw": 80,
+          "raw_rows": 80,
+          "rejected": 8,
+          "rejections": {
+            "unknown_player": 8
+          },
+          "timestamp_eligible": 72
+        }
+      },
+      "game_id": "espn-401772832",
+      "normalized": {
+        "player_pass_tds": 26,
+        "player_pass_yds": 26,
+        "player_reception_yds": 152,
+        "player_receptions": 150,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 72
+      },
+      "persisted": {
+        "player_pass_tds": 26,
+        "player_pass_yds": 26,
+        "player_reception_yds": 152,
+        "player_receptions": 150,
+        "player_rush_attempts": 56,
+        "player_rush_yds": 72
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 168,
+        "player_receptions": 164,
+        "player_rush_attempts": 62,
+        "player_rush_yds": 80
+      },
+      "rejections": {
+        "passing_tds": {
+          "unknown_player": 6
+        },
+        "passing_yards": {
+          "unknown_player": 6
+        },
+        "receiving_yards": {
+          "unknown_player": 16
+        },
+        "receptions": {
+          "unknown_player": 14
+        },
+        "rushing_attempts": {
+          "unknown_player": 4
+        },
+        "rushing_yards": {
+          "unknown_player": 8
+        },
+        "unknown": {
+          "duplicate_conflict": 2
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "passing_tds",
+          "player_name": "Cameron Ward"
+        },
+        {
+          "market": "passing_yards",
+          "player_name": "Cameron Ward"
+        },
+        {
+          "market": "rushing_attempts",
+          "player_name": "Cameron Ward"
+        },
+        {
+          "market": "rushing_yards",
+          "player_name": "Cameron Ward"
+        },
+        {
+          "market": "receiving_yards",
+          "player_name": "Chigoziem Okonkwo"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Chigoziem Okonkwo"
+        },
+        {
+          "market": "rushing_yards",
+          "player_name": "Chigoziem Okonkwo"
+        },
+        {
+          "market": "receiving_yards",
+          "player_name": "Pat Bryant"
+        }
+      ]
+    },
+    "8e0e2d9237098222f9ca7554b11b12bb": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 28,
+          "identity_ambiguous": 0,
+          "identity_matched": 28,
+          "identity_unknown": 0,
+          "normalized": 28,
+          "normalized_rows": 28,
+          "paired": 28,
+          "persisted": 28,
+          "raw": 28,
+          "raw_rows": 28,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 28
+        },
+        "passing_yards": {
+          "deduplicated": 28,
+          "identity_ambiguous": 0,
+          "identity_matched": 28,
+          "identity_unknown": 0,
+          "normalized": 28,
+          "normalized_rows": 28,
+          "paired": 28,
+          "persisted": 28,
+          "raw": 28,
+          "raw_rows": 28,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 28
+        },
+        "receiving_yards": {
+          "deduplicated": 148,
+          "identity_ambiguous": 0,
+          "identity_matched": 148,
+          "identity_unknown": 0,
+          "normalized": 148,
+          "normalized_rows": 148,
+          "paired": 148,
+          "persisted": 148,
+          "raw": 148,
+          "raw_rows": 148,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 148
+        },
+        "receptions": {
+          "deduplicated": 134,
+          "identity_ambiguous": 0,
+          "identity_matched": 134,
+          "identity_unknown": 0,
+          "normalized": 134,
+          "normalized_rows": 134,
+          "paired": 134,
+          "persisted": 134,
+          "raw": 134,
+          "raw_rows": 134,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 134
+        },
+        "rushing_attempts": {
+          "deduplicated": 46,
+          "identity_ambiguous": 0,
+          "identity_matched": 46,
+          "identity_unknown": 0,
+          "normalized": 46,
+          "normalized_rows": 46,
+          "paired": 46,
+          "persisted": 46,
+          "raw": 46,
+          "raw_rows": 46,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 46
+        },
+        "rushing_yards": {
+          "deduplicated": 70,
+          "identity_ambiguous": 0,
+          "identity_matched": 70,
+          "identity_unknown": 0,
+          "normalized": 70,
+          "normalized_rows": 70,
+          "paired": 70,
+          "persisted": 70,
+          "raw": 70,
+          "raw_rows": 70,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 70
+        }
+      },
+      "game_id": "espn-401772722",
+      "normalized": {
+        "player_pass_tds": 28,
+        "player_pass_yds": 28,
+        "player_reception_yds": 148,
+        "player_receptions": 134,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 70
+      },
+      "persisted": {
+        "player_pass_tds": 28,
+        "player_pass_yds": 28,
+        "player_reception_yds": 148,
+        "player_receptions": 134,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 70
+      },
+      "raw_provider": {
+        "player_pass_tds": 28,
+        "player_pass_yds": 28,
+        "player_reception_yds": 148,
+        "player_receptions": 134,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 70
+      },
+      "rejections": {},
+      "unknown_players": []
+    },
+    "9535d3e3ee9d9fc83ea2b500ad0b587c": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 180,
+          "identity_ambiguous": 0,
+          "identity_matched": 180,
+          "identity_unknown": 14,
+          "normalized": 194,
+          "normalized_rows": 194,
+          "paired": 180,
+          "persisted": 180,
+          "raw": 194,
+          "raw_rows": 194,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 180
+        },
+        "receptions": {
+          "deduplicated": 168,
+          "identity_ambiguous": 0,
+          "identity_matched": 168,
+          "identity_unknown": 14,
+          "normalized": 182,
+          "normalized_rows": 182,
+          "paired": 168,
+          "persisted": 168,
+          "raw": 182,
+          "raw_rows": 182,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 168
+        },
+        "rushing_attempts": {
+          "deduplicated": 74,
+          "identity_ambiguous": 0,
+          "identity_matched": 74,
+          "identity_unknown": 0,
+          "normalized": 74,
+          "normalized_rows": 74,
+          "paired": 74,
+          "persisted": 74,
+          "raw": 74,
+          "raw_rows": 74,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 74
+        },
+        "rushing_yards": {
+          "deduplicated": 108,
+          "identity_ambiguous": 0,
+          "identity_matched": 108,
+          "identity_unknown": 0,
+          "normalized": 108,
+          "normalized_rows": 108,
+          "paired": 108,
+          "persisted": 108,
+          "raw": 108,
+          "raw_rows": 108,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 108
+        }
+      },
+      "game_id": "espn-401772714",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 180,
+        "player_receptions": 168,
+        "player_rush_attempts": 74,
+        "player_rush_yds": 108
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 180,
+        "player_receptions": 168,
+        "player_rush_attempts": 74,
+        "player_rush_yds": 108
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 194,
+        "player_receptions": 182,
+        "player_rush_attempts": 74,
+        "player_rush_yds": 108
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 14
+        },
+        "receptions": {
+          "unknown_player": 14
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Marquise Brown"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Marquise Brown"
+        }
+      ]
+    },
+    "9f1ad249959aacae89e5e74e43429a4a": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 152,
+          "identity_ambiguous": 0,
+          "identity_matched": 152,
+          "identity_unknown": 0,
+          "normalized": 152,
+          "normalized_rows": 152,
+          "paired": 152,
+          "persisted": 152,
+          "raw": 152,
+          "raw_rows": 152,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 152
+        },
+        "receptions": {
+          "deduplicated": 144,
+          "identity_ambiguous": 0,
+          "identity_matched": 144,
+          "identity_unknown": 0,
+          "normalized": 144,
+          "normalized_rows": 144,
+          "paired": 144,
+          "persisted": 144,
+          "raw": 144,
+          "raw_rows": 144,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 144
+        },
+        "rushing_attempts": {
+          "deduplicated": 60,
+          "identity_ambiguous": 0,
+          "identity_matched": 60,
+          "identity_unknown": 0,
+          "normalized": 60,
+          "normalized_rows": 60,
+          "paired": 60,
+          "persisted": 60,
+          "raw": 60,
+          "raw_rows": 60,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 60
+        },
+        "rushing_yards": {
+          "deduplicated": 76,
+          "identity_ambiguous": 0,
+          "identity_matched": 76,
+          "identity_unknown": 0,
+          "normalized": 76,
+          "normalized_rows": 76,
+          "paired": 76,
+          "persisted": 76,
+          "raw": 76,
+          "raw_rows": 76,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 76
+        }
+      },
+      "game_id": "espn-401772831",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 152,
+        "player_receptions": 144,
+        "player_rush_attempts": 60,
+        "player_rush_yds": 76
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 152,
+        "player_receptions": 144,
+        "player_rush_attempts": 60,
+        "player_rush_yds": 76
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 152,
+        "player_receptions": 144,
+        "player_rush_attempts": 60,
+        "player_rush_yds": 76
+      },
+      "rejections": {},
+      "unknown_players": []
+    },
+    "b02a72c768a6c6dee87aa74f78e84176": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 144,
+          "identity_ambiguous": 0,
+          "identity_matched": 144,
+          "identity_unknown": 12,
+          "normalized": 156,
+          "normalized_rows": 156,
+          "paired": 144,
+          "persisted": 144,
+          "raw": 156,
+          "raw_rows": 156,
+          "rejected": 12,
+          "rejections": {
+            "unknown_player": 12
+          },
+          "timestamp_eligible": 144
+        },
+        "receptions": {
+          "deduplicated": 144,
+          "identity_ambiguous": 0,
+          "identity_matched": 144,
+          "identity_unknown": 10,
+          "normalized": 154,
+          "normalized_rows": 154,
+          "paired": 144,
+          "persisted": 144,
+          "raw": 154,
+          "raw_rows": 154,
+          "rejected": 10,
+          "rejections": {
+            "unknown_player": 10
+          },
+          "timestamp_eligible": 144
+        },
+        "rushing_attempts": {
+          "deduplicated": 46,
+          "identity_ambiguous": 0,
+          "identity_matched": 46,
+          "identity_unknown": 0,
+          "normalized": 46,
+          "normalized_rows": 46,
+          "paired": 46,
+          "persisted": 46,
+          "raw": 46,
+          "raw_rows": 46,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 46
+        },
+        "rushing_yards": {
+          "deduplicated": 68,
+          "identity_ambiguous": 0,
+          "identity_matched": 68,
+          "identity_unknown": 0,
+          "normalized": 68,
+          "normalized_rows": 68,
+          "paired": 68,
+          "persisted": 68,
+          "raw": 68,
+          "raw_rows": 68,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 68
+        }
+      },
+      "game_id": "espn-401772719",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 144,
+        "player_receptions": 144,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 68
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 144,
+        "player_receptions": 144,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 68
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 156,
+        "player_receptions": 154,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 68
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 12
+        },
+        "receptions": {
+          "unknown_player": 10
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Julian Hill"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Julian Hill"
+        }
+      ]
+    },
+    "c6d7807cee33d5e81c671527b9c8b3f1": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 30,
+          "identity_ambiguous": 0,
+          "identity_matched": 30,
+          "identity_unknown": 0,
+          "normalized": 30,
+          "normalized_rows": 30,
+          "paired": 30,
+          "persisted": 30,
+          "raw": 30,
+          "raw_rows": 30,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 30
+        },
+        "passing_yards": {
+          "deduplicated": 30,
+          "identity_ambiguous": 0,
+          "identity_matched": 30,
+          "identity_unknown": 0,
+          "normalized": 30,
+          "normalized_rows": 30,
+          "paired": 30,
+          "persisted": 30,
+          "raw": 30,
+          "raw_rows": 30,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 30
+        },
+        "receiving_yards": {
+          "deduplicated": 152,
+          "identity_ambiguous": 0,
+          "identity_matched": 152,
+          "identity_unknown": 14,
+          "normalized": 166,
+          "normalized_rows": 166,
+          "paired": 152,
+          "persisted": 152,
+          "raw": 166,
+          "raw_rows": 166,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 152
+        },
+        "receptions": {
+          "deduplicated": 140,
+          "identity_ambiguous": 0,
+          "identity_matched": 140,
+          "identity_unknown": 14,
+          "normalized": 154,
+          "normalized_rows": 154,
+          "paired": 140,
+          "persisted": 140,
+          "raw": 154,
+          "raw_rows": 154,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 140
+        },
+        "rushing_attempts": {
+          "deduplicated": 46,
+          "identity_ambiguous": 0,
+          "identity_matched": 46,
+          "identity_unknown": 14,
+          "normalized": 60,
+          "normalized_rows": 60,
+          "paired": 46,
+          "persisted": 46,
+          "raw": 60,
+          "raw_rows": 60,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 46
+        },
+        "rushing_yards": {
+          "deduplicated": 72,
+          "identity_ambiguous": 0,
+          "identity_matched": 72,
+          "identity_unknown": 16,
+          "normalized": 88,
+          "normalized_rows": 88,
+          "paired": 72,
+          "persisted": 72,
+          "raw": 88,
+          "raw_rows": 88,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 72
+        }
+      },
+      "game_id": "espn-401772810",
+      "normalized": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 30,
+        "player_reception_yds": 152,
+        "player_receptions": 140,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 72
+      },
+      "persisted": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 30,
+        "player_reception_yds": 152,
+        "player_receptions": 140,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 72
+      },
+      "raw_provider": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 30,
+        "player_reception_yds": 166,
+        "player_receptions": 154,
+        "player_rush_attempts": 60,
+        "player_rush_yds": 88
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 14
+        },
+        "receptions": {
+          "unknown_player": 14
+        },
+        "rushing_attempts": {
+          "unknown_player": 14
+        },
+        "rushing_yards": {
+          "unknown_player": 16
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Aaron Jones"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Aaron Jones"
+        },
+        {
+          "market": "rushing_attempts",
+          "player_name": "Aaron Jones"
+        },
+        {
+          "market": "rushing_yards",
+          "player_name": "Aaron Jones"
+        }
+      ]
+    },
+    "dc0e3db61983a138098f28226788d2d3": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 30,
+          "identity_ambiguous": 0,
+          "identity_matched": 30,
+          "identity_unknown": 0,
+          "normalized": 30,
+          "normalized_rows": 30,
+          "paired": 30,
+          "persisted": 30,
+          "raw": 30,
+          "raw_rows": 30,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 30
+        },
+        "passing_yards": {
+          "deduplicated": 30,
+          "identity_ambiguous": 0,
+          "identity_matched": 30,
+          "identity_unknown": 0,
+          "normalized": 30,
+          "normalized_rows": 30,
+          "paired": 30,
+          "persisted": 30,
+          "raw": 30,
+          "raw_rows": 30,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 30
+        },
+        "receiving_yards": {
+          "deduplicated": 132,
+          "identity_ambiguous": 0,
+          "identity_matched": 132,
+          "identity_unknown": 16,
+          "normalized": 148,
+          "normalized_rows": 148,
+          "paired": 132,
+          "persisted": 132,
+          "raw": 148,
+          "raw_rows": 148,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 132
+        },
+        "receptions": {
+          "deduplicated": 121,
+          "identity_ambiguous": 0,
+          "identity_matched": 121,
+          "identity_unknown": 16,
+          "normalized": 137,
+          "normalized_rows": 137,
+          "paired": 120,
+          "persisted": 120,
+          "raw": 137,
+          "raw_rows": 137,
+          "rejected": 17,
+          "rejections": {
+            "incomplete_over_under_pair": 1,
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 121
+        },
+        "rushing_attempts": {
+          "deduplicated": 34,
+          "identity_ambiguous": 0,
+          "identity_matched": 34,
+          "identity_unknown": 0,
+          "normalized": 34,
+          "normalized_rows": 34,
+          "paired": 34,
+          "persisted": 34,
+          "raw": 34,
+          "raw_rows": 34,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 34
+        },
+        "rushing_yards": {
+          "deduplicated": 46,
+          "identity_ambiguous": 0,
+          "identity_matched": 46,
+          "identity_unknown": 0,
+          "normalized": 46,
+          "normalized_rows": 46,
+          "paired": 46,
+          "persisted": 46,
+          "raw": 46,
+          "raw_rows": 46,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 46
+        }
+      },
+      "game_id": "espn-401772723",
+      "normalized": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 30,
+        "player_reception_yds": 132,
+        "player_receptions": 121,
+        "player_rush_attempts": 34,
+        "player_rush_yds": 46
+      },
+      "persisted": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 30,
+        "player_reception_yds": 132,
+        "player_receptions": 120,
+        "player_rush_attempts": 34,
+        "player_rush_yds": 46
+      },
+      "raw_provider": {
+        "player_pass_tds": 30,
+        "player_pass_yds": 30,
+        "player_reception_yds": 148,
+        "player_receptions": 137,
+        "player_rush_attempts": 34,
+        "player_rush_yds": 46
+      },
+      "rejections": {
+        "player_receptions": {
+          "incomplete_over_under_pair": 1
+        },
+        "receiving_yards": {
+          "unknown_player": 16
+        },
+        "receptions": {
+          "unknown_player": 16
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Tyler Higbee"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Tyler Higbee"
+        }
+      ]
+    },
+    "dee0a41ed5e8201a96d457899adbe918": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 174,
+          "identity_ambiguous": 0,
+          "identity_matched": 174,
+          "identity_unknown": 16,
+          "normalized": 190,
+          "normalized_rows": 190,
+          "paired": 174,
+          "persisted": 174,
+          "raw": 190,
+          "raw_rows": 190,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 174
+        },
+        "receptions": {
+          "deduplicated": 156,
+          "identity_ambiguous": 0,
+          "identity_matched": 156,
+          "identity_unknown": 14,
+          "normalized": 170,
+          "normalized_rows": 170,
+          "paired": 156,
+          "persisted": 156,
+          "raw": 170,
+          "raw_rows": 170,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 156
+        },
+        "rushing_attempts": {
+          "deduplicated": 40,
+          "identity_ambiguous": 0,
+          "identity_matched": 40,
+          "identity_unknown": 14,
+          "normalized": 54,
+          "normalized_rows": 54,
+          "paired": 40,
+          "persisted": 40,
+          "raw": 54,
+          "raw_rows": 54,
+          "rejected": 14,
+          "rejections": {
+            "unknown_player": 14
+          },
+          "timestamp_eligible": 40
+        },
+        "rushing_yards": {
+          "deduplicated": 80,
+          "identity_ambiguous": 0,
+          "identity_matched": 80,
+          "identity_unknown": 16,
+          "normalized": 96,
+          "normalized_rows": 96,
+          "paired": 80,
+          "persisted": 80,
+          "raw": 96,
+          "raw_rows": 96,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 80
+        }
+      },
+      "game_id": "espn-401772918",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 174,
+        "player_receptions": 156,
+        "player_rush_attempts": 40,
+        "player_rush_yds": 80
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 174,
+        "player_receptions": 156,
+        "player_rush_attempts": 40,
+        "player_rush_yds": 80
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 190,
+        "player_receptions": 170,
+        "player_rush_attempts": 54,
+        "player_rush_yds": 96
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 16
+        },
+        "receptions": {
+          "unknown_player": 14
+        },
+        "rushing_attempts": {
+          "unknown_player": 14
+        },
+        "rushing_yards": {
+          "unknown_player": 16
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "James Cook"
+        },
+        {
+          "market": "receptions",
+          "player_name": "James Cook"
+        },
+        {
+          "market": "rushing_attempts",
+          "player_name": "James Cook"
+        },
+        {
+          "market": "rushing_yards",
+          "player_name": "James Cook"
+        }
+      ]
+    },
+    "e2d3b0596efcebc1c19dab92009f5e26": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 140,
+          "identity_ambiguous": 0,
+          "identity_matched": 140,
+          "identity_unknown": 16,
+          "normalized": 156,
+          "normalized_rows": 156,
+          "paired": 140,
+          "persisted": 140,
+          "raw": 156,
+          "raw_rows": 156,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 140
+        },
+        "receptions": {
+          "deduplicated": 136,
+          "identity_ambiguous": 0,
+          "identity_matched": 136,
+          "identity_unknown": 16,
+          "normalized": 152,
+          "normalized_rows": 152,
+          "paired": 136,
+          "persisted": 136,
+          "raw": 152,
+          "raw_rows": 152,
+          "rejected": 16,
+          "rejections": {
+            "unknown_player": 16
+          },
+          "timestamp_eligible": 136
+        },
+        "rushing_attempts": {
+          "deduplicated": 46,
+          "identity_ambiguous": 0,
+          "identity_matched": 46,
+          "identity_unknown": 0,
+          "normalized": 46,
+          "normalized_rows": 46,
+          "paired": 46,
+          "persisted": 46,
+          "raw": 46,
+          "raw_rows": 46,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 46
+        },
+        "rushing_yards": {
+          "deduplicated": 56,
+          "identity_ambiguous": 0,
+          "identity_matched": 56,
+          "identity_unknown": 0,
+          "normalized": 56,
+          "normalized_rows": 56,
+          "paired": 56,
+          "persisted": 56,
+          "raw": 56,
+          "raw_rows": 56,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 56
+        }
+      },
+      "game_id": "espn-401772829",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 140,
+        "player_receptions": 136,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 56
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 140,
+        "player_receptions": 136,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 56
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 156,
+        "player_receptions": 152,
+        "player_rush_attempts": 46,
+        "player_rush_yds": 56
+      },
+      "rejections": {
+        "receiving_yards": {
+          "unknown_player": 16
+        },
+        "receptions": {
+          "unknown_player": 16
+        }
+      },
+      "unknown_players": [
+        {
+          "market": "receiving_yards",
+          "player_name": "Andrei Iosivas"
+        },
+        {
+          "market": "receptions",
+          "player_name": "Andrei Iosivas"
+        }
+      ]
+    },
+    "f1bc532dff946d15cb85654b5c4b246e": {
+      "funnel": {
+        "passing_tds": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "passing_yards": {
+          "deduplicated": 32,
+          "identity_ambiguous": 0,
+          "identity_matched": 32,
+          "identity_unknown": 0,
+          "normalized": 32,
+          "normalized_rows": 32,
+          "paired": 32,
+          "persisted": 32,
+          "raw": 32,
+          "raw_rows": 32,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 32
+        },
+        "receiving_yards": {
+          "deduplicated": 168,
+          "identity_ambiguous": 0,
+          "identity_matched": 168,
+          "identity_unknown": 0,
+          "normalized": 168,
+          "normalized_rows": 168,
+          "paired": 168,
+          "persisted": 168,
+          "raw": 168,
+          "raw_rows": 168,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 168
+        },
+        "receptions": {
+          "deduplicated": 142,
+          "identity_ambiguous": 0,
+          "identity_matched": 142,
+          "identity_unknown": 0,
+          "normalized": 142,
+          "normalized_rows": 142,
+          "paired": 142,
+          "persisted": 142,
+          "raw": 142,
+          "raw_rows": 142,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 142
+        },
+        "rushing_attempts": {
+          "deduplicated": 58,
+          "identity_ambiguous": 0,
+          "identity_matched": 58,
+          "identity_unknown": 0,
+          "normalized": 58,
+          "normalized_rows": 58,
+          "paired": 58,
+          "persisted": 58,
+          "raw": 58,
+          "raw_rows": 58,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 58
+        },
+        "rushing_yards": {
+          "deduplicated": 78,
+          "identity_ambiguous": 0,
+          "identity_matched": 78,
+          "identity_unknown": 0,
+          "normalized": 78,
+          "normalized_rows": 78,
+          "paired": 78,
+          "persisted": 78,
+          "raw": 78,
+          "raw_rows": 78,
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 78
+        }
+      },
+      "game_id": "espn-401772510",
+      "normalized": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 168,
+        "player_receptions": 142,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 78
+      },
+      "persisted": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 168,
+        "player_receptions": 142,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 78
+      },
+      "raw_provider": {
+        "player_pass_tds": 32,
+        "player_pass_yds": 32,
+        "player_reception_yds": 168,
+        "player_receptions": 142,
+        "player_rush_attempts": 58,
+        "player_rush_yds": 78
+      },
+      "rejections": {},
+      "unknown_players": []
+    }
+  },
+  "files_containing_athlete_identities": [
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-0afa90ee913f3196.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-0dc670d274f57181.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-30c5491c77a3f29a.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-32268da823d46d7f.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-36d7933a05cf5cef.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-4c61ae39143210e3.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-4dcb44e8c1a8d931.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-6d71032452170f2c.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-76b354e92c8cec4e.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-7e5589b397dcec63.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-91a1d4098ef1c81b.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-b972e682bb81ac80.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-d316dee2d9ea62bd.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-d4daba48429cc0e7.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-efefcd125c788d24.json",
+    "C:\\Users\\chris\\Desktop\\nbastats\\nbastat\\backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_01\\summary-f7923a5a2dfec757.json"
+  ],
+  "game_team_roster_coverage": {
+    "espn-401772510|DAL": 39,
+    "espn-401772510|PHI": 35,
+    "espn-401772714|KC": 43,
+    "espn-401772714|LAC": 41,
+    "espn-401772718|ARI": 36,
+    "espn-401772718|NO": 38,
+    "espn-401772719|IND": 41,
+    "espn-401772719|MIA": 38,
+    "espn-401772720|LV": 39,
+    "espn-401772720|NE": 45,
+    "espn-401772721|NYJ": 42,
+    "espn-401772721|PIT": 37,
+    "espn-401772722|DET": 38,
+    "espn-401772722|GB": 41,
+    "espn-401772723|HOU": 41,
+    "espn-401772723|LAR": 40,
+    "espn-401772810|CHI": 39,
+    "espn-401772810|MIN": 42,
+    "espn-401772827|NYG": 36,
+    "espn-401772827|WAS": 39,
+    "espn-401772828|CAR": 40,
+    "espn-401772828|JAX": 42,
+    "espn-401772829|CIN": 40,
+    "espn-401772829|CLE": 38,
+    "espn-401772830|ATL": 34,
+    "espn-401772830|TB": 40,
+    "espn-401772831|SEA": 39,
+    "espn-401772831|SF": 40,
+    "espn-401772832|DEN": 45,
+    "espn-401772832|TEN": 39,
+    "espn-401772918|BAL": 42,
+    "espn-401772918|BUF": 39
+  },
+  "identities_extracted_by_source": {
+    "injury_roster": 148,
+    "player_stats": 1230,
+    "provider_box_score": 1421
+  },
+  "identities_rejected_ambiguous_game_context": 174,
+  "identities_rejected_missing_name": 0,
+  "identities_rejected_missing_team": 530,
+  "identities_with_stats": 978,
+  "identities_without_stats": 290,
+  "identity_collision_count": 0,
+  "identity_collisions": {},
+  "identity_registry_players": 1268,
+  "identity_registry_players_by_source": {
+    "injury_roster": 148,
+    "player_stats": 978,
+    "provider_box_score": 1165
+  },
+  "network_contacted": false,
+  "paid_requests_made": 0,
+  "production_case_evidence": {
+    "Aaron Jones": {
+      "final_player_identities": false,
+      "injuries": false,
+      "player_stats": false,
+      "raw_summary_participant_data": false,
+      "roster_boxscore_identity_data": false
+    },
+    "Chigoziem Okonkwo": {
+      "final_player_identities": false,
+      "injuries": false,
+      "player_stats": false,
+      "raw_summary_participant_data": false,
+      "roster_boxscore_identity_data": false
+    },
+    "James Cook": {
+      "final_player_identities": false,
+      "injuries": false,
+      "player_stats": false,
+      "raw_summary_participant_data": false,
+      "roster_boxscore_identity_data": false
+    },
+    "Tyler Higbee": {
+      "final_player_identities": false,
+      "injuries": false,
+      "player_stats": false,
+      "raw_summary_participant_data": false,
+      "roster_boxscore_identity_data": false
+    }
+  },
+  "prop_quotes_reconciled_via_roster_only_identity": 44,
+  "provider_id_coverage": 0.8738170347003155,
+  "provider_identities": 1108,
+  "reconciliation_method_counts": {
+    "EXACT_NAME_TEAM": 7656
+  },
+  "records_inspected_by_source": {
+    "injury_roster": 148,
+    "player_stats": 1230,
+    "provider_box_score": 1951
+  },
+  "rejection_counters": {
+    "duplicate_conflict": 4,
+    "incomplete_over_under_pair": 1,
+    "unknown_player": 378
+  },
+  "remaining_unknown_players": [
+    "Aaron Jones",
+    "Andrei Iosivas",
+    "Cameron Ward",
+    "Chigoziem Okonkwo",
+    "Deebo Samuel Sr.",
+    "James Cook",
+    "Julian Hill",
+    "Kyle Pitts",
+    "Marquise Brown",
+    "Pat Bryant",
+    "Tyler Higbee",
+    "Zach Ertz"
+  ],
+  "unique_identities_per_game_team": {
+    "espn-401772510|DAL": 39,
+    "espn-401772510|PHI": 35,
+    "espn-401772714|KC": 43,
+    "espn-401772714|LAC": 41,
+    "espn-401772718|ARI": 36,
+    "espn-401772718|NO": 38,
+    "espn-401772719|IND": 41,
+    "espn-401772719|MIA": 38,
+    "espn-401772720|LV": 39,
+    "espn-401772720|NE": 45,
+    "espn-401772721|NYJ": 42,
+    "espn-401772721|PIT": 37,
+    "espn-401772722|DET": 38,
+    "espn-401772722|GB": 41,
+    "espn-401772723|HOU": 41,
+    "espn-401772723|LAR": 40,
+    "espn-401772810|CHI": 39,
+    "espn-401772810|MIN": 42,
+    "espn-401772827|NYG": 36,
+    "espn-401772827|WAS": 39,
+    "espn-401772828|CAR": 40,
+    "espn-401772828|JAX": 42,
+    "espn-401772829|CIN": 40,
+    "espn-401772829|CLE": 38,
+    "espn-401772830|ATL": 34,
+    "espn-401772830|TB": 40,
+    "espn-401772831|SEA": 39,
+    "espn-401772831|SF": 40,
+    "espn-401772832|DEN": 45,
+    "espn-401772832|TEN": 39,
+    "espn-401772918|BAL": 42,
+    "espn-401772918|BUF": 39
+  }
+}

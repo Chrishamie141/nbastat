@@ -31,7 +31,8 @@ ARTIFACTS = ("season_summary.json", "weekly_metrics.json", "market_metrics.json"
              "calibration_by_market.json", "roi_by_week.json", "roi_by_market.json",
              "coverage_by_week.json", "exclusions_summary.json", "readiness_summary.json",
              "probability_direction_audit.json", "distribution_diagnostics.json",
-             "systemic_findings.json", "failed_weeks.json")
+             "systemic_findings.json", "failed_weeks.json",
+             "audit_validation_findings.json", "edge_bucket_metrics.json")
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -71,6 +72,25 @@ def _direction(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _base_opportunity(row: dict[str, Any]) -> tuple[Any, ...]:
+    return (row.get("season"), row.get("week"), row.get("game_id"),
+            row.get("canonical_player_id"), row.get("market"), row.get("line"))
+
+
+def _one_per_base(rows: list[dict[str, Any]], field: str | None = None) -> list[dict[str, Any]]:
+    groups: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[_base_opportunity(row)].append(row)
+    selected = []
+    for key in sorted(groups, key=lambda item: tuple(str(part) for part in item)):
+        choices = groups[key]
+        if field is None:
+            selected.append(sorted(choices, key=lambda row: str(row.get("side")))[0])
+        else:
+            selected.append(sorted(choices, key=lambda row: (-float(row.get(field) or 0), str(row.get("side"))))[0])
+    return selected
+
+
 def _mean(values: Iterable[Any]) -> float | None:
     values = [float(v) for v in values if v is not None]
     return sum(values) / len(values) if values else None
@@ -83,6 +103,24 @@ def _csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writeheader()
         for row in rows:
             writer.writerow({k: json.dumps(v, sort_keys=True, separators=(",", ":")) if isinstance(v, (dict, list)) else v for k, v in row.items()})
+
+
+def _diagnostic_grouped(rows: list[dict[str, Any]], *fields: str) -> list[dict[str, Any]]:
+    groups: dict[tuple[str, ...], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[tuple(str(row.get(field, "UNKNOWN")) for field in fields)].append(row)
+    result = []
+    for key in sorted(groups):
+        values = groups[key]
+        model = probability_metrics(values, "model_probability")
+        market = probability_metrics(values, "no_vig_market_probability")
+        result.append({**{field:key[index] for index,field in enumerate(fields)}, **aggregate(values),
+                       "model_brier":model["brier_score"],"model_log_loss":model["log_loss"],"model_ece":model["ece"],
+                       "market_brier":market["brier_score"],"market_log_loss":market["log_loss"],"market_ece":market["ece"],
+                       "model_minus_market_brier":None if model["brier_score"] is None or market["brier_score"] is None else model["brier_score"]-market["brier_score"],
+                       "model_minus_market_log_loss":None if model["log_loss"] is None or market["log_loss"] is None else model["log_loss"]-market["log_loss"],
+                       "model_minus_market_ece":None if model["ece"] is None or market["ece"] is None else model["ece"]-market["ece"]})
+    return result
 
 
 def _finding(code: str, severity: str, scope: str, metric: Any, threshold: str,
@@ -100,8 +138,16 @@ def systemic_findings(direction: dict[str, Any], opportunities: list[dict[str, A
     cur = direction["global"]["current"]; comp = direction["global"]["one_minus_current"]
     if cur["count"] < 30:
         findings.append(_finding("SAMPLE_TOO_SMALL", "WARNING", "SEASON", cur["count"], "count < 30", opportunities, "Collect more completed, gradeable weeks."))
+    swap_improvement = direction["global"]["brier_improvement_from_swap"]
+    complement_improvement = direction["global"]["brier_improvement_from_complement"]
     if cur["brier_score"] is not None and comp["brier_score"] < cur["brier_score"] * .75:
-        findings.append(_finding("PROBABILITY_INVERSION_LIKELY", "CRITICAL", "SEASON", cur["brier_score"]-comp["brier_score"], "complemented Brier improves by >25%", opportunities, "Audit probability lookup and direction without changing forecasts."))
+        findings.append(_finding("PROBABILITY_SIDE_BUG", "CRITICAL", "SEASON", cur["brier_score"]-comp["brier_score"], "swapped or complemented Brier improves by >25%", opportunities, "Audit probability lookup and direction without changing forecasts."))
+    elif cur["count"] >= 30 and max(swap_improvement or 0, complement_improvement or 0) <= max(.01, cur["brier_score"] * .05):
+        findings.append(_finding("NO_EVIDENCE_OF_DIRECTION_BUG", "INFO", "SEASON",
+                                 {"swap_brier_improvement": swap_improvement,
+                                  "complement_brier_improvement": complement_improvement},
+                                 "neither transform improves Brier by more than 5% or 0.01",
+                                 opportunities, "Treat calibration weakness as a model issue, not a side-lookup defect."))
     extreme = [r for r in opportunities if float(r["model_probability"]) < .05 or float(r["model_probability"]) > .95]
     if len(extreme) >= 30 and cur["ece"] is not None and cur["ece"] > .15:
         findings.append(_finding("GLOBAL_OVERCONFIDENCE", "HIGH", "SEASON", cur["ece"], "ECE > 0.15 with >=30 extreme forecasts", extreme, "Inspect simulation dispersion and feature-history depth."))
@@ -109,10 +155,27 @@ def systemic_findings(direction: dict[str, Any], opportunities: list[dict[str, A
     if low: findings.append(_finding("LOW_READY_COVERAGE", "WARNING", "WEEK", _mean(r["ready_coverage"] for r in low), "ready coverage < 50%", low, "Inspect readiness reasons and local feature history."))
     gaps = [r for r in coverage if r.get("outcome_not_found", 0) or r.get("outcome_market_missing", 0)]
     if gaps: findings.append(_finding("OUTCOME_COVERAGE_GAP", "WARNING", "WEEK", sum(r.get("outcome_not_found",0)+r.get("outcome_market_missing",0) for r in gaps), "> 0 outcome exclusions", gaps, "Repair outcome snapshot coverage; do not attribute this to the model."))
+    missing_quotes = [r for r in coverage if not r.get("historical_quote_rows")]
+    if missing_quotes: findings.append(_finding("MISSING_QUOTE_COVERAGE", "WARNING", "WEEK", len(missing_quotes), "> 0 weeks without local historical quotes", missing_quotes, "Acquire historical quote snapshots without changing model behavior."))
     failed = [r for r in coverage if r["status"] not in {"COMPLETE", "PARTIAL"}]
-    if failed: findings.append(_finding("WEEK_SPECIFIC_DATA_FAILURE", "WARNING", "WEEK", len(failed), "> 0 unavailable weeks", failed, "Acquire or rebuild the named local snapshot artifacts."))
+    if failed: findings.append(_finding("WEEK_SPECIFIC_DATA_GAP", "WARNING", "WEEK", len(failed), "> 0 unavailable weeks", failed, "Acquire or rebuild the named local snapshot artifacts."))
+    evaluated_weeks = [r for r in coverage if r.get("gradeable_opportunities", 0)]
+    if len(evaluated_weeks) < 2:
+        findings.append(_finding("INSUFFICIENT_MULTIWEEK_COVERAGE", "WARNING", "SEASON", len(evaluated_weeks), "fewer than 2 gradeable weeks", evaluated_weeks, "Do not generalize Week 1 model behavior until additional local quote and feature snapshots are available."))
     outside = [r for r in distributions if r.get("line_outside_support")]
-    if outside: findings.append(_finding("LINE_OUTSIDE_SIMULATION_SUPPORT", "HIGH", "MARKET", len(outside)/max(1,len(distributions)), "> 0 lines outside support", outside, "Inspect feature history and simulated support; do not tune in this audit."))
+    if outside: findings.append(_finding("LINE_OUTSIDE_SUPPORT", "HIGH", "MARKET", len(outside)/max(1,len(distributions)), "> 0 lines outside support", outside, "Inspect feature history and simulated support; do not tune in this audit."))
+    if len(distributions) >= 30 and len(outside) / len(distributions) > .02:
+        findings.append(_finding("SIMULATION_VARIANCE_TOO_LOW", "HIGH", "MODEL", len(outside)/len(distributions), "> 2% of evaluated lines outside simulation support", outside, "Increase dispersion only in a separate modeling task after validating history-depth effects."))
+    market_overconfidence = []
+    for market, variants in direction.get("by_market", {}).items():
+        metric = variants["current"]
+        if metric["count"] >= 30 and metric["ece"] is not None and metric["ece"] > .15:
+            market_overconfidence.append({"market": market, "ece": metric["ece"], "count": metric["count"]})
+    if market_overconfidence:
+        findings.append(_finding("MARKET_SPECIFIC_OVERCONFIDENCE", "HIGH", "MARKET", market_overconfidence, "market ECE > 0.15 with at least 30 forecasts", market_overconfidence, "Prioritize the worst market in a separate calibration task."))
+    base_count = len({(r.get("season"), r.get("week"), r.get("game_id"), r.get("canonical_player_id"), r.get("market"), r.get("line")) for r in opportunities})
+    if base_count and len(opportunities) >= 2 * base_count:
+        findings.append(_finding("EVALUATION_UNIT_ARTIFACT", "WARNING", "SEASON", {"side_forecasts": len(opportunities), "base_opportunities": base_count}, "side forecasts are at least twice base opportunities", opportunities, "Use one deterministic or policy-selected side per base opportunity for decision ROI; retain side-specific rows for probability auditing."))
     return sorted(findings, key=lambda x: (x["code"], x["scope"]))
 
 
@@ -135,7 +198,7 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
         if resume and cache.exists():
             saved=_json(cache,{}); expected=saved.get("resume_manifest")
             if expected == inputs and saved.get("status") in {"COMPLETE","PARTIAL"}:
-                reports.append(saved); reused.append(week); continue
+                reports.append({**saved,"run_action":"REUSED"}); reused.append(week); continue
         recomputed.append(week); missing=[n for n in INSPECTED_FILES if not (directory/n).exists()]
         quotes=_json(directory/"player_prop_odds.json",[]); outcomes=_json(directory/"player_stats.json",[])
         reasons=[]; status="COMPLETE"; evaluation=None; audited=None
@@ -179,6 +242,7 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
         # Prediction building may have changed a local input after the initial
         # resume check; persist the post-run fingerprint.
         record={"week":week,"status":status,"reasons":reasons,"missing_files":missing,
+                "run_action":"RECOMPUTED",
                 "evaluation_complete": evaluation is not None,
                 "audit_complete": audited is not None,
                 "fatal_integrity": status == "INTEGRITY_FAILURE",
@@ -196,6 +260,10 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
     exclusions=[r for w in reports if w.get("evaluation") for r in w["evaluation"]["exclusions"]]
     audit_rows=[r for w in reports if w.get("audit") for r in w["audit"]["rows"]]
     distribution_rows=[r for w in reports if w.get("audit") for r in w["audit"]["distributions"]]
+    audit_validation_findings=sorted(
+        ({**item,"week":w["week"]} for w in reports if w.get("audit")
+         for item in w["audit"].get("validation_findings",[])),
+        key=lambda item:(item["week"],item.get("code",""),json.dumps(item,sort_keys=True,separators=(",",":"))))
     predictions=[]
     for week in range(start_week,end_week+1): predictions += _json(snapshot_week_dir(snapshot_root,"nfl",season,week)/"player_prop_predictions.json",[])
     weekly=[]; coverage=[]
@@ -203,29 +271,57 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
         ev=w.get("evaluation"); rows=ev["opportunity_rows"] if ev else []; summary=ev["summary"] if ev else {}
         predictions_w=[r for r in predictions if int(r.get("week",-1))==w["week"]]
         ready=sum(r.get("readiness")=="READY" for r in predictions_w); not_ready=len(predictions_w)-ready
-        metrics={"week":w["week"],"status":w["status"],"reasons":w["reasons"],
+        model_week=probability_metrics(rows,"model_probability"); market_week=probability_metrics(rows,"no_vig_market_probability")
+        metrics={"week":w["week"],"status":w["status"],"reasons":w["reasons"],"run_action":w.get("run_action","RECOMPUTED"),
                  "evaluation_complete":w.get("evaluation_complete",ev is not None),
                  "audit_complete":w.get("audit_complete",w.get("audit") is not None),
                  "fatal_integrity":w.get("fatal_integrity",False),**aggregate(rows),
-                 "model_brier":probability_metrics(rows,"model_probability")["brier_score"],
-                 "model_log_loss":probability_metrics(rows,"model_probability")["log_loss"],
-                 "model_ece":probability_metrics(rows,"model_probability")["ece"],**{k:summary.get(k,0) for k in ("accepted_quotes","quotes_with_predictions","gradeable_quotes","unique_opportunities","gradeable_unique_opportunities","excluded_unique_opportunities","pushes","positive_edge_opportunities","positive_edge_profit","positive_edge_roi")}}
+                 "model_brier":model_week["brier_score"],"model_log_loss":model_week["log_loss"],"model_ece":model_week["ece"],
+                 "market_brier":market_week["brier_score"],"market_log_loss":market_week["log_loss"],"market_ece":market_week["ece"],
+                 "model_minus_market_brier":None if model_week["brier_score"] is None or market_week["brier_score"] is None else model_week["brier_score"]-market_week["brier_score"],
+                 "model_minus_market_log_loss":None if model_week["log_loss"] is None or market_week["log_loss"] is None else model_week["log_loss"]-market_week["log_loss"],
+                 "model_minus_market_ece":None if model_week["ece"] is None or market_week["ece"] is None else model_week["ece"]-market_week["ece"],
+                 **{k:summary.get(k,0) for k in ("accepted_quotes","quotes_with_predictions","gradeable_quotes","unique_opportunities","gradeable_unique_opportunities","excluded_unique_opportunities","pushes","positive_edge_opportunities","positive_edge_profit","positive_edge_roi")}}
         weekly.append(metrics)
-        quote_count=len(_json(snapshot_week_dir(snapshot_root,"nfl",season,w["week"])/"player_prop_odds.json",[]))
+        week_dir=snapshot_week_dir(snapshot_root,"nfl",season,w["week"])
+        game_count=len(_json(week_dir/"games.json",[]))
+        quote_count=len(_json(week_dir/"player_prop_odds.json",[]))
+        outcome_count=len(_json(week_dir/"player_stats.json",[]))
+        finding_summary=[{"code":code,"count":count,"recoverable":recoverable}
+                         for (code,recoverable),count in sorted(Counter(
+                             (item["code"],bool(item["recoverable"]))
+                             for item in (w.get("audit") or {}).get("validation_findings",[])).items())]
         coverage.append({"week":w["week"],"status":w["status"],"reasons":w["reasons"],"historical_quote_rows":quote_count,
+                         "run_action":w.get("run_action","RECOMPUTED"),"games_present":game_count,
+                         "prediction_rows":len(predictions_w),"outcome_rows_present":outcome_count,
                          "ready_predictions":ready,"not_ready_predictions":not_ready,"ready_coverage":ready/len(predictions_w) if predictions_w else 0,
                          "readiness_reasons":dict(sorted(Counter(r.get("readiness","UNKNOWN") for r in predictions_w).items())),
+                         "gradeable_opportunities":summary.get("gradeable_unique_opportunities",0),
+                         "exclusions":len(ev["exclusions"]) if ev else 0,"audit_findings":finding_summary,
                          "outcome_identity_reconciliations":summary.get("outcome_aggregation",{}),"outcome_not_found":summary.get("outcome_not_found",0),
                          "outcome_market_missing":summary.get("outcome_market_missing",0),"prediction_missing":summary.get("exclusions_by_reason",{}).get("PREDICTION_MISSING",0),
-                         "incomplete_price_pair":summary.get("incomplete_pair_quotes",0),"canonical_outcome_count":summary.get("outcome_aggregation",{}).get("canonical_outcomes",0),
+                         "incomplete_price_pair":summary.get("incomplete_pair_quotes",0),"canonical_outcome_count":summary.get("outcome_aggregation",{}).get("canonical_player_outcomes",0),
                          "gradeable_opportunity_coverage_percentage":(summary.get("gradeable_unique_opportunities",0)/summary["unique_opportunities"] if summary.get("unique_opportunities") else 0)})
-    market_metrics=grouped(opportunities,"market"); side_metrics=grouped(opportunities,"side"); bookmaker_metrics=grouped(opportunities,"bookmaker")
+    market_metrics=_diagnostic_grouped(opportunities,"market"); side_metrics=_diagnostic_grouped(opportunities,"side"); bookmaker_metrics=_diagnostic_grouped(opportunities,"bookmaker")
     by_week={str(w):_direction([r for r in audit_rows if int(r["week"])==w]) for w in range(start_week,end_week+1)}
     by_market={m:_direction([r for r in audit_rows if r["market"]==m]) for m in sorted({r["market"] for r in audit_rows})}
     by_side={s:_direction([r for r in audit_rows if r["side"]==s]) for s in ("OVER","UNDER")}
+    evaluation_units={
+        "all_side_specific_forecasts":_metric(audit_rows),
+        "over_only":_metric([r for r in audit_rows if r["side"]=="OVER"]),
+        "under_only":_metric([r for r in audit_rows if r["side"]=="UNDER"]),
+        "model_favored_side":_metric(_one_per_base(audit_rows,"model_probability")),
+        "market_favored_side":_metric(_one_per_base(audit_rows,"no_vig_market_probability")),
+        "one_deterministic_forecast_per_base_opportunity":_metric(_one_per_base(audit_rows))}
+    fatal_audit_findings=[item for item in audit_validation_findings if not item.get("recoverable",False)]
     direction={"global":_direction(audit_rows),"by_week":by_week,"by_market":by_market,"by_side":by_side,
-               "probability_coherence_failures":sum(not x["coherent"] for w in reports if w.get("audit") for x in w["audit"]["key_diagnostics"]["coherence"]),
-               "prediction_key_collisions":sum(w["audit"]["summary"]["duplicate_prediction_keys"] for w in reports if w.get("audit"))}
+               "evaluation_units":evaluation_units,
+               "probability_coherence_failures":sum(item.get("code")=="PROBABILITY_SUM_INCOHERENT" for item in audit_validation_findings),
+               "prediction_key_collisions":sum(w["audit"]["summary"]["duplicate_prediction_keys"] for w in reports if w.get("audit")),
+               "probability_lifecycle":{"fatal_integrity_findings":len(fatal_audit_findings),
+                   "side_probability_mismatches":sum(item.get("code")=="SIDE_PROBABILITY_MISMATCH" for item in audit_validation_findings),
+                   "canonical_key_conflicts":sum(item.get("code") in {"DUPLICATE_PREDICTION_KEY","CONFLICTING_PREDICTION_PROBABILITY"} for item in audit_validation_findings),
+                   "passed":not fatal_audit_findings}}
     distributions=[]
     for r in distribution_rows:
         summary={k:r.get(k) for k in ("minimum","maximum","mean","median","standard_deviation","unique_values","zero_mass")}
@@ -254,7 +350,9 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
                "coverage_by_week.json":coverage,"exclusions_summary.json":{"count":len(exclusions),"by_reason":dict(sorted(Counter(r["reason"] for r in exclusions).items()))},
                "readiness_summary.json":{"ready":sum(r.get("readiness")=="READY" for r in predictions),"not_ready":sum(r.get("readiness")!="READY" for r in predictions),"by_reason":dict(sorted(Counter(r.get("readiness","UNKNOWN") for r in predictions).items()))},
                "probability_direction_audit.json":direction,"distribution_diagnostics.json":{"rows":distributions},
-               "systemic_findings.json":systemic_findings(direction,opportunities,coverage,distributions),"failed_weeks.json":failed}
+               "systemic_findings.json":systemic_findings(direction,opportunities,coverage,distributions),"failed_weeks.json":failed,
+               "audit_validation_findings.json":audit_validation_findings,
+               "edge_bucket_metrics.json":_diagnostic_grouped(opportunities,"edge_bucket")}
     for name,value in artifacts.items(): _write(output_dir/name,value)
     _csv(output_dir/"weekly_metrics.csv",weekly); _csv(output_dir/"market_metrics.csv",market_metrics); _csv(output_dir/"opportunity_rows.csv",opportunities); _csv(output_dir/"exclusions.csv",exclusions)
     names=[*ARTIFACTS,"weekly_metrics.csv","market_metrics.csv","opportunity_rows.csv","exclusions.csv"]

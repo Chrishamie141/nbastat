@@ -1,0 +1,152 @@
+[
+  {
+    "average_american_odds": -55.05555555555556,
+    "average_edge": 0.009452207144486222,
+    "average_market_probability": 0.49183668174440265,
+    "average_model_probability": 0.5012888888888889,
+    "edge_bucket": "0-2%",
+    "hit_rate_ci_95": [
+      0.31986041515179053,
+      0.629940619770124
+    ],
+    "hit_rate_excluding_pushes": 0.4722222222222222,
+    "losses": 19,
+    "opportunities": 36,
+    "pushes": 0,
+    "roi": -0.10584300951059832,
+    "roi_uncertainty": {
+      "clusters": 13,
+      "confidence_interval_95": [
+        -0.34759435378440107,
+        0.15178126672587183
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.12799602895246706
+    },
+    "sample_status": "OK",
+    "units_profit": -3.8103483423815394,
+    "units_returned": 32.18965165761846,
+    "units_wagered": 36,
+    "wins": 17
+  },
+  {
+    "average_american_odds": -32.81132075471698,
+    "average_edge": 0.03733086629007348,
+    "average_market_probability": 0.4849200771061529,
+    "average_model_probability": 0.5222509433962265,
+    "edge_bucket": "2-5%",
+    "hit_rate_ci_95": [
+      0.3612424984784323,
+      0.6211647088532004
+    ],
+    "hit_rate_excluding_pushes": 0.49056603773584906,
+    "losses": 27,
+    "opportunities": 53,
+    "pushes": 0,
+    "roi": -0.05545323763014733,
+    "roi_uncertainty": {
+      "clusters": 15,
+      "confidence_interval_95": [
+        -0.2823475485202092,
+        0.1755925284969824
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.11539940259139182
+    },
+    "sample_status": "OK",
+    "units_profit": -2.9390215943978086,
+    "units_returned": 50.06097840560219,
+    "units_wagered": 53,
+    "wins": 26
+  },
+  {
+    "average_american_odds": -54.63513513513514,
+    "average_edge": 0.07295690437113066,
+    "average_market_probability": 0.49569444698022075,
+    "average_model_probability": 0.5686513513513514,
+    "edge_bucket": "5-10%",
+    "hit_rate_ci_95": [
+      0.36338706920848024,
+      0.5852264323805136
+    ],
+    "hit_rate_excluding_pushes": 0.47297297297297297,
+    "losses": 39,
+    "opportunities": 74,
+    "pushes": 0,
+    "roi": -0.0932776441477375,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.33953386673909713,
+        0.11515114224531126
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.11439961025453911
+    },
+    "sample_status": "OK",
+    "units_profit": -6.902545666932575,
+    "units_returned": 67.09745433306742,
+    "units_wagered": 74,
+    "wins": 35
+  },
+  {
+    "average_american_odds": -78.10349288486417,
+    "average_edge": 0.3706932048821646,
+    "average_market_probability": 0.4931575066314188,
+    "average_model_probability": 0.8638507115135835,
+    "edge_bucket": ">=10%",
+    "hit_rate_ci_95": [
+      0.45262131729823146,
+      0.5229206677692965
+    ],
+    "hit_rate_excluding_pushes": 0.48771021992238034,
+    "losses": 396,
+    "opportunities": 773,
+    "pushes": 0,
+    "roi": -0.07363893894402526,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.2008976791603301,
+        0.0672528524163028
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.06917190772180502
+    },
+    "sample_status": "OK",
+    "units_profit": -56.922899803731525,
+    "units_returned": 716.0771001962685,
+    "units_wagered": 773,
+    "wins": 377
+  },
+  {
+    "average_american_odds": -80.48777777777778,
+    "average_edge": -0.31402136834744365,
+    "average_market_probability": 0.4945074794585548,
+    "average_model_probability": 0.18048611111111112,
+    "edge_bucket": "edge <= 0",
+    "hit_rate_ci_95": [
+      0.4818000257628016,
+      0.5469660811094412
+    ],
+    "hit_rate_excluding_pushes": 0.5144444444444445,
+    "losses": 437,
+    "opportunities": 900,
+    "pushes": 0,
+    "roi": -0.021518778828309142,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.13446570327221585,
+        0.08573980392510243
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.057836028995017004
+    },
+    "sample_status": "OK",
+    "units_profit": -19.36690094547823,
+    "units_returned": 880.6330990545217,
+    "units_wagered": 900,
+    "wins": 463
+  }
+]

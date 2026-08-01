@@ -1,0 +1,35 @@
+{
+  "builder": "nfl-feature-history-v1",
+  "datasets": {
+    "games": {
+      "records": 14,
+      "sha256": "4c282710ab177130361dbc7ad1e283efc3598e8109eb632e436d51eb81c53f05"
+    },
+    "injuries": {
+      "records": 0,
+      "sha256": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+    },
+    "outcomes": {
+      "records": 14,
+      "sha256": "46e1149b9c0631cd9c320b411251b21004735a69b1bb7f1c0c9501cc5923a696"
+    },
+    "player_stats": {
+      "records": 1056,
+      "sha256": "1a0d85c143cc08e60fbd2eb4ccb0f1fa50cd91c26735fb3df6904695d94f2085"
+    },
+    "team_stats": {
+      "records": 28,
+      "sha256": "58c2acbcfbb084ac9d40935d9082d14017bb71e78106e85e85fac523936c1bdb"
+    }
+  },
+  "diagnostics": [],
+  "estimated_paid_credits": 0,
+  "feature_only": true,
+  "leakage_policy": "Only completed games strictly before a prediction cutoff are eligible.",
+  "outcomes_role": "grading_only",
+  "paid_requests_required": 0,
+  "provider": "espn",
+  "schema_version": 1,
+  "season": 2024,
+  "week": 11
+}

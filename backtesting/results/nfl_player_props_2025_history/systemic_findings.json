@@ -1,0 +1,227 @@
+[
+  {
+    "affected_markets": [
+      "passing_tds",
+      "passing_yards",
+      "receiving_yards",
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
+    ],
+    "affected_weeks": [
+      1
+    ],
+    "code": "EVALUATION_UNIT_ARTIFACT",
+    "evidence_count": 1836,
+    "recommended_next_diagnostic_step": "Use one deterministic or policy-selected side per base opportunity for decision ROI; retain side-specific rows for probability auditing.",
+    "scope": "SEASON",
+    "severity": "WARNING",
+    "supporting_metric": {
+      "base_opportunities": 918,
+      "side_forecasts": 1836
+    },
+    "threshold": "side forecasts are at least twice base opportunities"
+  },
+  {
+    "affected_markets": [
+      "passing_tds",
+      "passing_yards",
+      "receiving_yards",
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
+    ],
+    "affected_weeks": [
+      1
+    ],
+    "code": "GLOBAL_OVERCONFIDENCE",
+    "evidence_count": 578,
+    "recommended_next_diagnostic_step": "Inspect simulation dispersion and feature-history depth.",
+    "scope": "SEASON",
+    "severity": "HIGH",
+    "supporting_metric": 0.32409120152505444,
+    "threshold": "ECE > 0.15 with >=30 extreme forecasts"
+  },
+  {
+    "affected_markets": [],
+    "affected_weeks": [
+      1
+    ],
+    "code": "INSUFFICIENT_MULTIWEEK_COVERAGE",
+    "evidence_count": 1,
+    "recommended_next_diagnostic_step": "Do not generalize Week 1 model behavior until additional local quote and feature snapshots are available.",
+    "scope": "SEASON",
+    "severity": "WARNING",
+    "supporting_metric": 1,
+    "threshold": "fewer than 2 gradeable weeks"
+  },
+  {
+    "affected_markets": [
+      "passing_yards",
+      "receiving_yards"
+    ],
+    "affected_weeks": [
+      1
+    ],
+    "code": "LINE_OUTSIDE_SUPPORT",
+    "evidence_count": 23,
+    "recommended_next_diagnostic_step": "Inspect feature history and simulated support; do not tune in this audit.",
+    "scope": "MARKET",
+    "severity": "HIGH",
+    "supporting_metric": 0.040280210157618214,
+    "threshold": "> 0 lines outside support"
+  },
+  {
+    "affected_markets": [
+      "passing_yards",
+      "receiving_yards",
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
+    ],
+    "affected_weeks": [],
+    "code": "MARKET_SPECIFIC_OVERCONFIDENCE",
+    "evidence_count": 5,
+    "recommended_next_diagnostic_step": "Prioritize the worst market in a separate calibration task.",
+    "scope": "MARKET",
+    "severity": "HIGH",
+    "supporting_metric": [
+      {
+        "count": 230,
+        "ece": 0.3825224086956522,
+        "market": "passing_yards"
+      },
+      {
+        "count": 938,
+        "ece": 0.34273336034115137,
+        "market": "receiving_yards"
+      },
+      {
+        "count": 338,
+        "ece": 0.22411242603550297,
+        "market": "receptions"
+      },
+      {
+        "count": 84,
+        "ece": 0.34443571428571423,
+        "market": "rushing_attempts"
+      },
+      {
+        "count": 196,
+        "ece": 0.4135295918367347,
+        "market": "rushing_yards"
+      }
+    ],
+    "threshold": "market ECE > 0.15 with at least 30 forecasts"
+  },
+  {
+    "affected_markets": [],
+    "affected_weeks": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+    ],
+    "code": "MISSING_QUOTE_COVERAGE",
+    "evidence_count": 17,
+    "recommended_next_diagnostic_step": "Acquire historical quote snapshots without changing model behavior.",
+    "scope": "WEEK",
+    "severity": "WARNING",
+    "supporting_metric": 17,
+    "threshold": "> 0 weeks without local historical quotes"
+  },
+  {
+    "affected_markets": [
+      "passing_tds",
+      "passing_yards",
+      "receiving_yards",
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
+    ],
+    "affected_weeks": [
+      1
+    ],
+    "code": "NO_EVIDENCE_OF_DIRECTION_BUG",
+    "evidence_count": 1836,
+    "recommended_next_diagnostic_step": "Treat calibration weakness as a model issue, not a side-lookup defect.",
+    "scope": "SEASON",
+    "severity": "INFO",
+    "supporting_metric": {
+      "complement_brier_improvement": 0.005939897603485844,
+      "swap_brier_improvement": 0.005939897603485844
+    },
+    "threshold": "neither transform improves Brier by more than 5% or 0.01"
+  },
+  {
+    "affected_markets": [],
+    "affected_weeks": [
+      1
+    ],
+    "code": "OUTCOME_COVERAGE_GAP",
+    "evidence_count": 1,
+    "recommended_next_diagnostic_step": "Repair outcome snapshot coverage; do not attribute this to the model.",
+    "scope": "WEEK",
+    "severity": "WARNING",
+    "supporting_metric": 68,
+    "threshold": "> 0 outcome exclusions"
+  },
+  {
+    "affected_markets": [
+      "passing_yards",
+      "receiving_yards"
+    ],
+    "affected_weeks": [
+      1
+    ],
+    "code": "SIMULATION_VARIANCE_TOO_LOW",
+    "evidence_count": 23,
+    "recommended_next_diagnostic_step": "Increase dispersion only in a separate modeling task after validating history-depth effects.",
+    "scope": "MODEL",
+    "severity": "HIGH",
+    "supporting_metric": 0.040280210157618214,
+    "threshold": "> 2% of evaluated lines outside simulation support"
+  },
+  {
+    "affected_markets": [],
+    "affected_weeks": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+    ],
+    "code": "WEEK_SPECIFIC_DATA_GAP",
+    "evidence_count": 17,
+    "recommended_next_diagnostic_step": "Acquire or rebuild the named local snapshot artifacts.",
+    "scope": "WEEK",
+    "severity": "WARNING",
+    "supporting_metric": 17,
+    "threshold": "> 0 unavailable weeks"
+  }
+]

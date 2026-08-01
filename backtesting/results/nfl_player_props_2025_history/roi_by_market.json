@@ -1,0 +1,80 @@
+[
+  {
+    "market": "passing_tds",
+    "roi": -0.032042141336240754,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.08668550143870317,
+        0.02749383305247856
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.02960734754171722
+    }
+  },
+  {
+    "market": "passing_yards",
+    "roi": -0.05649919966318364,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.061499809767204996,
+        -0.051059198425555244
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0026334947869071828
+    }
+  },
+  {
+    "market": "receiving_yards",
+    "roi": -0.05460940448049286,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05676904553761309,
+        -0.05261824772728219
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0010478745150628455
+    }
+  },
+  {
+    "market": "receptions",
+    "roi": -0.03217133584441984,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.045041858844521915,
+        -0.017866167425864655
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.006929108538460326
+    }
+  },
+  {
+    "market": "rushing_attempts",
+    "roi": -0.024012618576468532,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.03827730681213607,
+        -0.009766018048985196
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.007294159232906131
+    }
+  },
+  {
+    "market": "rushing_yards",
+    "roi": -0.05729694125019304,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.06499580367985129,
+        -0.04748146094152219
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0043248310937753
+    }
+  }
+]

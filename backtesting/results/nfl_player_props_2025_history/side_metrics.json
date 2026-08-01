@@ -1,0 +1,80 @@
+[
+  {
+    "average_american_odds": -76.9880174291939,
+    "average_edge": -0.21201151400233262,
+    "average_market_probability": 0.49340236367553525,
+    "average_model_probability": 0.2813908496732026,
+    "hit_rate_ci_95": [
+      0.4601334781141642,
+      0.5246795286495908
+    ],
+    "hit_rate_excluding_pushes": 0.4923747276688453,
+    "losses": 466,
+    "market_brier": 0.24809997057667177,
+    "market_ece": 0.019513276223074496,
+    "market_log_loss": 0.6893360469536564,
+    "model_brier": 0.37995833139441937,
+    "model_ece": 0.3240912015250545,
+    "model_log_loss": 1.7316620770151805,
+    "model_minus_market_brier": 0.1318583608177476,
+    "model_minus_market_ece": 0.30457792530198,
+    "model_minus_market_log_loss": 1.042326030061524,
+    "opportunities": 918,
+    "pushes": 0,
+    "roi": -0.0631191024537678,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.19406086130801545,
+        0.07001862730464896
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.06800757557116037
+    },
+    "sample_status": "OK",
+    "side": "OVER",
+    "units_profit": -57.94333605255884,
+    "units_returned": 860.0566639474412,
+    "units_wagered": 918,
+    "wins": 452
+  },
+  {
+    "average_american_odds": -76.14596949891067,
+    "average_edge": 0.22469587364857777,
+    "average_market_probability": 0.49391327667821966,
+    "average_model_probability": 0.7186091503267974,
+    "hit_rate_ci_95": [
+      0.47532047135040917,
+      0.5398665218858357
+    ],
+    "hit_rate_excluding_pushes": 0.5076252723311547,
+    "losses": 452,
+    "market_brier": 0.24828782123058382,
+    "market_ece": 0.013711995652935065,
+    "market_log_loss": 0.6897272853165727,
+    "model_brier": 0.37995833139441937,
+    "model_ece": 0.3240912015250544,
+    "model_log_loss": 1.7316620770141795,
+    "model_minus_market_brier": 0.13167051016383555,
+    "model_minus_market_ece": 0.3103792058721193,
+    "model_minus_market_log_loss": 1.041934791697607,
+    "opportunities": 918,
+    "pushes": 0,
+    "roi": -0.03485662342087455,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.17109092843837082,
+        0.09740970626202233
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.06884559327769535
+    },
+    "sample_status": "OK",
+    "side": "UNDER",
+    "units_profit": -31.998380300362836,
+    "units_returned": 886.0016196996372,
+    "units_wagered": 918,
+    "wins": 466
+  }
+]

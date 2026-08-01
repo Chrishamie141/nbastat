@@ -226,9 +226,11 @@ def audit(snapshot_root: Path, season: int, start_week: int, end_week: int, *,
                  "brier_improvement_from_swap": None if current["brier_score"] is None else current["brier_score"] - swapped["brier_score"],
                  "log_loss_improvement_from_swap": None if current["log_loss"] is None else current["log_loss"] - swapped["log_loss"]}
     both = [r for key, sides in by_base.items() if set(sides) == {"OVER", "UNDER"} for r in sides.values()]
+    deterministic_one_per_base = [sides[sorted(sides)[0]] for key, sides in sorted(by_base.items()) if sides]
     breakdowns = {"all_side_forecasts": current,
         "over_only": probability_metrics([r for r in audit_rows if r["side"] == "OVER"], "model_probability"),
         "under_only": probability_metrics([r for r in audit_rows if r["side"] == "UNDER"], "model_probability"),
+        "one_deterministic_forecast_per_base_opportunity": probability_metrics(deterministic_one_per_base, "model_probability"),
         "base_opportunities_with_both_sides": probability_metrics(both, "model_probability"),
         "model_favored_side": probability_metrics(_choose(audit_rows, "model_probability"), "model_probability"),
         "market_favored_side": probability_metrics(_choose(audit_rows, "no_vig_market_probability"), "model_probability"),

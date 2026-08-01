@@ -1,0 +1,688 @@
+[
+  {
+    "audit_findings": [
+      {
+        "code": "MISSING_DISTRIBUTION_SUMMARY",
+        "count": 1082,
+        "recoverable": true
+      },
+      {
+        "code": "MISSING_PUSH_PROBABILITY",
+        "count": 1082,
+        "recoverable": true
+      },
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 1082,
+        "recoverable": true
+      }
+    ],
+    "canonical_outcome_count": 311,
+    "exclusions": 2674,
+    "games_present": 16,
+    "gradeable_opportunities": 1836,
+    "gradeable_opportunity_coverage_percentage": 0.623641304347826,
+    "historical_quote_rows": 7656,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 1082,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 422,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 311,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 36,
+      "players_with_multiple_category_rows": 110,
+      "quotes_missing_outcomes_after_reconciliation": 32,
+      "raw_outcome_rows": 422,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 0,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 36,
+    "outcome_not_found": 32,
+    "outcome_rows_present": 422,
+    "prediction_missing": 2606,
+    "prediction_rows": 2944,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 398,
+      "NOT_READY_NO_PLAYER_DATA": 684,
+      "READY": 1862
+    },
+    "ready_coverage": 0.6324728260869565,
+    "ready_predictions": 1862,
+    "reasons": [
+      {
+        "code": "MISSING_DISTRIBUTION_SUMMARY",
+        "count": 1082,
+        "recoverable": true
+      },
+      {
+        "code": "MISSING_PUSH_PROBABILITY",
+        "count": 1082,
+        "recoverable": true
+      },
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 1082,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 2674,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
+    "week": 1
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 16,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 2
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 16,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 3
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 16,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 4
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 14,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 5
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 15,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 6
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 7
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 8
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 9
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 10
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 11
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 12
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 13
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 14
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 15
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 16
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 17
+  },
+  {
+    "audit_findings": [],
+    "canonical_outcome_count": 0,
+    "exclusions": 0,
+    "games_present": 0,
+    "gradeable_opportunities": 0,
+    "gradeable_opportunity_coverage_percentage": 0,
+    "historical_quote_rows": 0,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 0,
+    "outcome_identity_reconciliations": {},
+    "outcome_market_missing": 0,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 0,
+    "prediction_missing": 0,
+    "prediction_rows": 0,
+    "readiness_reasons": {},
+    "ready_coverage": 0,
+    "ready_predictions": 0,
+    "reasons": [
+      {
+        "code": "MISSING_REQUIRED_SNAPSHOT",
+        "files": [
+          "games.json",
+          "player_prop_odds.json",
+          "player_prop_predictions.json",
+          "player_stats.json",
+          "player_identities.json",
+          "manifest.json"
+        ]
+      }
+    ],
+    "run_action": "RECOMPUTED",
+    "status": "MISSING_SNAPSHOTS",
+    "week": 18
+  }
+]

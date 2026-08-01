@@ -1,0 +1,236 @@
+[
+  {
+    "average_american_odds": -19.02,
+    "average_edge": 0.02029742005670418,
+    "average_market_probability": 0.4797025799432958,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.3664451431682858,
+      0.6335548568317142
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 25,
+    "market": "passing_tds",
+    "market_brier": 0.2393599586584769,
+    "market_ece": 0.07204678454009213,
+    "market_log_loss": 0.6721686666464879,
+    "model_brier": 0.18598850760000002,
+    "model_ece": 0.14154,
+    "model_log_loss": 0.5466083731912994,
+    "model_minus_market_brier": -0.053371451058476876,
+    "model_minus_market_ece": 0.06949321545990787,
+    "model_minus_market_log_loss": -0.1255602934551885,
+    "opportunities": 50,
+    "pushes": 0,
+    "roi": -0.032042141336240754,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.08668550143870317,
+        0.02749383305247856
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.02960734754171722
+    },
+    "sample_status": "OK",
+    "units_profit": -1.6021070668120378,
+    "units_returned": 48.39789293318796,
+    "units_wagered": 50,
+    "wins": 25
+  },
+  {
+    "average_american_odds": -101.72173913043478,
+    "average_edge": 0.002231486252235128,
+    "average_market_probability": 0.4977685137477649,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.4359148596910899,
+      0.5640851403089101
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 115,
+    "market": "passing_yards",
+    "market_brier": 0.2502826925369508,
+    "market_ece": 0.009875656716099579,
+    "market_log_loss": 0.6937143948281642,
+    "model_brier": 0.4183524390436782,
+    "model_ece": 0.3825224086956522,
+    "model_log_loss": 2.474977355934361,
+    "model_minus_market_brier": 0.1680697465067274,
+    "model_minus_market_ece": 0.3726467519795526,
+    "model_minus_market_log_loss": 1.7812629611061968,
+    "opportunities": 230,
+    "pushes": 0,
+    "roi": -0.05649919966318364,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.061499809767204996,
+        -0.051059198425555244
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0026334947869071828
+    },
+    "sample_status": "OK",
+    "units_profit": -12.994815922532236,
+    "units_returned": 217.00518407746776,
+    "units_wagered": 230,
+    "wins": 115
+  },
+  {
+    "average_american_odds": -98.84008528784648,
+    "average_edge": 0.0032750246615630605,
+    "average_market_probability": 0.49672497533843696,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.46806777405984196,
+      0.5319322259401581
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 469,
+    "market": "receiving_yards",
+    "market_brier": 0.24973672852646456,
+    "market_ece": 0.00327502466156303,
+    "market_log_loss": 0.6926172448231247,
+    "model_brier": 0.3866201588487292,
+    "model_ece": 0.34273336034115137,
+    "model_log_loss": 1.95989492610476,
+    "model_minus_market_brier": 0.13688343032226463,
+    "model_minus_market_ece": 0.33945833567958833,
+    "model_minus_market_log_loss": 1.2672776812816353,
+    "opportunities": 938,
+    "pushes": 0,
+    "roi": -0.05460940448049286,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05676904553761309,
+        -0.05261824772728219
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0010478745150628455
+    },
+    "sample_status": "OK",
+    "units_profit": -51.22362140270231,
+    "units_returned": 886.7763785972977,
+    "units_wagered": 938,
+    "wins": 469
+  },
+  {
+    "average_american_odds": -11.278106508875739,
+    "average_edge": 0.015402439632290533,
+    "average_market_probability": 0.48459756036770946,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.44699635595149445,
+      0.5530036440485055
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 169,
+    "market": "receptions",
+    "market_brier": 0.24261375075781916,
+    "market_ece": 0.044277443431862795,
+    "market_log_loss": 0.6782706157108146,
+    "model_brier": 0.31150962615384614,
+    "model_ece": 0.22411242603550297,
+    "model_log_loss": 0.8948684053159147,
+    "model_minus_market_brier": 0.06889587539602698,
+    "model_minus_market_ece": 0.17983498260364017,
+    "model_minus_market_log_loss": 0.21659778960510012,
+    "opportunities": 338,
+    "pushes": 0,
+    "roi": -0.03217133584441984,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.045041858844521915,
+        -0.017866167425864655
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.006929108538460326
+    },
+    "sample_status": "OK",
+    "units_profit": -10.873911515413907,
+    "units_returned": 327.1260884845861,
+    "units_wagered": 338,
+    "wins": 169
+  },
+  {
+    "average_american_odds": -19.61904761904762,
+    "average_edge": 0.01294424337709584,
+    "average_market_probability": 0.4870557566229041,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.3954393376854136,
+      0.6045606623145864
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 42,
+    "market": "rushing_attempts",
+    "market_brier": 0.2541520906474393,
+    "market_ece": 0.041652246875322575,
+    "market_log_loss": 0.7016274413724063,
+    "model_brier": 0.40273067452380956,
+    "model_ece": 0.34443571428571423,
+    "model_log_loss": 1.3880594954254835,
+    "model_minus_market_brier": 0.14857858387637024,
+    "model_minus_market_ece": 0.30278346741039164,
+    "model_minus_market_log_loss": 0.6864320540530772,
+    "opportunities": 84,
+    "pushes": 0,
+    "roi": -0.024012618576468532,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.03827730681213607,
+        -0.009766018048985196
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.007294159232906131
+    },
+    "sample_status": "OK",
+    "units_profit": -2.0170599604233566,
+    "units_returned": 81.98294003957665,
+    "units_wagered": 84,
+    "wins": 42
+  },
+  {
+    "average_american_odds": -92.13265306122449,
+    "average_edge": 0.003830689502384467,
+    "average_market_probability": 0.49616931049761553,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.43067732708942164,
+      0.5693226729105784
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 98,
+    "market": "rushing_yards",
+    "market_brier": 0.24768214762391116,
+    "market_ece": 0.05355302438313636,
+    "market_log_loss": 0.6885216635287738,
+    "model_brier": 0.4607840345918367,
+    "model_ece": 0.4135295918367347,
+    "model_log_loss": 1.6597571611005095,
+    "model_minus_market_brier": 0.21310188696792554,
+    "model_minus_market_ece": 0.35997656745359835,
+    "model_minus_market_log_loss": 0.9712354975717358,
+    "opportunities": 196,
+    "pushes": 0,
+    "roi": -0.05729694125019304,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.06499580367985129,
+        -0.04748146094152219
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0043248310937753
+    },
+    "sample_status": "OK",
+    "units_profit": -11.230200485037836,
+    "units_returned": 184.76979951496216,
+    "units_wagered": 196,
+    "wins": 98
+  }
+]

@@ -1,0 +1,62 @@
+{
+  "accepted_quotes": 7656,
+  "ambiguous_identity": 0,
+  "clv_ready": false,
+  "clv_reason": "No verified later pregame closing snapshot is part of the canonical player-prop schema.",
+  "excluded_unique_opportunities": 1108,
+  "exclusions_by_market": {
+    "passing_tds": 118,
+    "passing_yards": 118,
+    "receiving_yards": 584,
+    "receptions": 540,
+    "rushing_attempts": 532,
+    "rushing_yards": 782
+  },
+  "exclusions_by_reason": {
+    "INCOMPLETE_PRICE_PAIR": 0,
+    "OUTCOME_IDENTITY_AMBIGUOUS": 0,
+    "OUTCOME_IDENTITY_UNRESOLVED": 0,
+    "OUTCOME_MARKET_MISSING": 36,
+    "OUTCOME_NOT_FOUND": 32,
+    "OUTCOME_STAT_CONFLICT": 0,
+    "PREDICTION_MISSING": 2606
+  },
+  "gradeable_quotes": 4982,
+  "gradeable_unique_opportunities": 1836,
+  "incomplete_pair_quotes": 0,
+  "integrity_validation": "PASS",
+  "minimum_sample_threshold": 30,
+  "outcome_aggregation": {
+    "already_canonical": 422,
+    "ambiguous": 0,
+    "canonical_player_outcomes": 311,
+    "conflicting_fields": 0,
+    "duplicate_fields_merged": 0,
+    "missing_requested_stat_count": 36,
+    "players_with_multiple_category_rows": 110,
+    "quotes_missing_outcomes_after_reconciliation": 32,
+    "raw_outcome_rows": 422,
+    "reconciled_by_alias": 0,
+    "reconciled_by_exact_name_team_game": 0,
+    "reconciled_by_provider_id": 0,
+    "unresolved": 0
+  },
+  "outcome_conflicts": 0,
+  "outcome_market_missing": 36,
+  "outcome_not_found": 32,
+  "paired_opportunities": 1836,
+  "positive_edge_opportunities": 936,
+  "positive_edge_profit": -70.57481540744345,
+  "positive_edge_roi": -0.0754004438113712,
+  "pushes": 0,
+  "quotes_with_predictions": 5050,
+  "schema_version": 1,
+  "season": 2025,
+  "ungradeable_quote_count": 2674,
+  "unique_opportunities": 2944,
+  "unresolved_identity": 0,
+  "weeks": [
+    1,
+    1
+  ]
+}

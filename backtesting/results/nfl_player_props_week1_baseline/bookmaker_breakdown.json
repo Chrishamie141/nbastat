@@ -1,0 +1,242 @@
+[
+  {
+    "average_american_odds": -73.0945945945946,
+    "average_edge": 0.022309864918723422,
+    "average_market_probability": 0.49335499994614146,
+    "average_model_probability": 0.5156648648648648,
+    "bookmaker": "betmgm",
+    "hit_rate_ci_95": [
+      0.46681395313089935,
+      0.5798773885370053
+    ],
+    "hit_rate_excluding_pushes": 0.5236486486486487,
+    "losses": 141,
+    "opportunities": 296,
+    "pushes": 0,
+    "roi": 0.0023270953690921704,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.06162152507029964,
+        0.05770391842768715
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.031160277447346063
+    },
+    "sample_status": "OK",
+    "units_profit": 0.6888202292512824,
+    "units_returned": 296.6888202292513,
+    "units_wagered": 296,
+    "wins": 155
+  },
+  {
+    "average_american_odds": -87.88118811881188,
+    "average_edge": 0.051677832385901186,
+    "average_market_probability": 0.49597563296063346,
+    "average_model_probability": 0.5476534653465347,
+    "bookmaker": "betonlineag",
+    "hit_rate_ci_95": [
+      0.42684030762316477,
+      0.563443476744385
+    ],
+    "hit_rate_excluding_pushes": 0.49504950495049505,
+    "losses": 102,
+    "opportunities": 202,
+    "pushes": 0,
+    "roi": -0.07012678127314233,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.1322927797437381,
+        0.004108820439700659
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.034359066686175374
+    },
+    "sample_status": "OK",
+    "units_profit": -14.16560981717475,
+    "units_returned": 187.83439018282525,
+    "units_wagered": 202,
+    "wins": 100
+  },
+  {
+    "average_american_odds": -91.95391705069125,
+    "average_edge": 0.009376649007402356,
+    "average_market_probability": 0.4960044569833811,
+    "average_model_probability": 0.5053811059907833,
+    "bookmaker": "betrivers",
+    "hit_rate_ci_95": [
+      0.46360487873342526,
+      0.5952608798493189
+    ],
+    "hit_rate_excluding_pushes": 0.5299539170506913,
+    "losses": 102,
+    "opportunities": 217,
+    "pushes": 0,
+    "roi": -0.004298885232079075,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.08415527284383256,
+        0.07949292860304047
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.04132484015823958
+    },
+    "sample_status": "OK",
+    "units_profit": -0.9328580953611593,
+    "units_returned": 216.06714190463885,
+    "units_wagered": 217,
+    "wins": 115
+  },
+  {
+    "average_american_odds": -31.325301204819276,
+    "average_edge": 0.029652368002239655,
+    "average_market_probability": 0.48504221031101336,
+    "average_model_probability": 0.514694578313253,
+    "bookmaker": "bovada",
+    "hit_rate_ci_95": [
+      0.38385066754815306,
+      0.5337195176280106
+    ],
+    "hit_rate_excluding_pushes": 0.4578313253012048,
+    "losses": 90,
+    "opportunities": 166,
+    "pushes": 0,
+    "roi": -0.11364692919466561,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.17771054272539555,
+        -0.04844271279857857
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.032749813516350444
+    },
+    "sample_status": "OK",
+    "units_profit": -18.86539024631449,
+    "units_returned": 147.1346097536855,
+    "units_wagered": 166,
+    "wins": 76
+  },
+  {
+    "average_american_odds": -86.27009646302251,
+    "average_edge": 0.004850161849149889,
+    "average_market_probability": 0.4966636645174096,
+    "average_model_probability": 0.5015138263665595,
+    "bookmaker": "draftkings",
+    "hit_rate_ci_95": [
+      0.43366748436203384,
+      0.5440991032207453
+    ],
+    "hit_rate_excluding_pushes": 0.4887459807073955,
+    "losses": 159,
+    "opportunities": 311,
+    "pushes": 0,
+    "roi": -0.07455399190437102,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.15553994494921428,
+        0.01220572101907472
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.04225689579979678
+    },
+    "sample_status": "OK",
+    "units_profit": -23.18629148225939,
+    "units_returned": 287.8137085177406,
+    "units_wagered": 311,
+    "wins": 152
+  },
+  {
+    "average_american_odds": -77.33944954128441,
+    "average_edge": -0.04494176639863999,
+    "average_market_probability": 0.49339268382983265,
+    "average_model_probability": 0.44845091743119264,
+    "bookmaker": "fanatics",
+    "hit_rate_ci_95": [
+      0.4117338586306767,
+      0.5431889044400322
+    ],
+    "hit_rate_excluding_pushes": 0.47706422018348627,
+    "losses": 114,
+    "opportunities": 218,
+    "pushes": 0,
+    "roi": -0.09417297124304724,
+    "roi_uncertainty": {
+      "clusters": 15,
+      "confidence_interval_95": [
+        -0.16756187941368547,
+        -0.03187588341217061
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.033825324825407975
+    },
+    "sample_status": "OK",
+    "units_profit": -20.5297077309843,
+    "units_returned": 197.47029226901572,
+    "units_wagered": 218,
+    "wins": 104
+  },
+  {
+    "average_american_odds": -88.3596837944664,
+    "average_edge": -0.05875717520585953,
+    "average_market_probability": 0.49629591038372517,
+    "average_model_probability": 0.4375387351778656,
+    "bookmaker": "fanduel",
+    "hit_rate_ci_95": [
+      0.41749450900874663,
+      0.539677514345632
+    ],
+    "hit_rate_excluding_pushes": 0.4782608695652174,
+    "losses": 132,
+    "opportunities": 253,
+    "pushes": 0,
+    "roi": -0.09140996751481678,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.18092463510395895,
+        -0.004030194094641489
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.046068203071123005
+    },
+    "sample_status": "OK",
+    "units_profit": -23.126721781248644,
+    "units_returned": 229.87327821875135,
+    "units_wagered": 253,
+    "wins": 121
+  },
+  {
+    "average_american_odds": -57.74566473988439,
+    "average_edge": 0.0624222204698332,
+    "average_market_probability": 0.4878656408018431,
+    "average_model_probability": 0.5502878612716763,
+    "bookmaker": "williamhill_us",
+    "hit_rate_ci_95": [
+      0.4747215770194779,
+      0.6214097267673615
+    ],
+    "hit_rate_excluding_pushes": 0.5491329479768786,
+    "losses": 78,
+    "opportunities": 173,
+    "pushes": 0,
+    "roi": 0.05882105532468077,
+    "roi_uncertainty": {
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.04798447357914197,
+        0.169959541097489
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.05660698231135288
+    },
+    "sample_status": "OK",
+    "units_profit": 10.176042571169774,
+    "units_returned": 183.17604257116977,
+    "units_wagered": 173,
+    "wins": 95
+  }
+]
