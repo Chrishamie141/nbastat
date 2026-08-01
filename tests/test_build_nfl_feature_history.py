@@ -2,7 +2,7 @@ import json
 from argparse import Namespace
 from pathlib import Path
 
-from backtesting.build_nfl_feature_history import build_week, make_plan
+from backtesting.build_nfl_feature_history import _read_list, build_week, make_plan
 from backtesting.historical_provider import HistoricalSnapshotProvider
 from nfl_providers import EspnNflProvider, JsonRawCache, normalize_espn_player_boxscore
 from backtesting.player_prop_odds import aggregate_player_outcomes, grade_quote
@@ -89,7 +89,7 @@ def test_realistic_dal_philadelphia_fixture_preserves_ids_and_grades_all_markets
     assert all(row["canonical_player_id"] == row["athlete_id"] == row["player_id"] == "2577417" for row in dak)
     assert next(row for row in dak if row["category"] == "passing")["stats"] == {
         "completions":21,"passing_attempts":34,"passing_yards":188,"passing_tds":0,"interceptions":0}
-    assert next(row for row in dak if row["category"] == "rushing")["stats"]["rushing_attempts"] == 4
+    assert next(row for row in dak if row["category"] == "rushing")["stats"]["rushing_attempts"] == 1
     assert diagnostics["passing_rows_emitted"] == 1
     normalized=[]
     for row in rows:
@@ -103,6 +103,41 @@ def test_realistic_dal_philadelphia_fixture_preserves_ids_and_grades_all_markets
         result=grade_quote({"game_id":"espn-401772510","canonical_player_id":players[market],
                             "market":market,"line":line,"selection":"OVER"},outcomes)
         assert result["actual_stat"] is not None
+
+
+def test_feature_build_preserves_offensive_values_through_json_and_grading(tmp_path, monkeypatch):
+    """Exercise raw summary -> parser -> canonical row -> JSON -> evaluator."""
+    payload=json.loads(Path("tests/fixtures/espn_summary_401772510.json").read_text())
+    scoreboard=_scoreboard()
+    event=scoreboard["events"][0]
+    event["id"]="401772510"
+    event["competitions"][0]["competitors"]=[
+        {"homeAway":"home","score":"20","team":{"abbreviation":"PHI"}},
+        {"homeAway":"away","score":"17","team":{"abbreviation":"DAL"}},
+    ]
+    args=_args(tmp_path)
+    provider=EspnNflProvider(JsonRawCache(args.cache_root))
+    monkeypatch.setattr(provider,"_scoreboard",lambda season,week:scoreboard)
+    monkeypatch.setattr(provider,"_summary",lambda season,week,event_id:payload)
+
+    report=build_week(args,provider,1)
+    path=args.snapshot_root/"nfl/2024/week_01/player_stats.json"
+    restored=_read_list(path)
+    dak=[row for row in restored if row["provider_player_id"] == "2577417"]
+
+    assert report["datasets"]["player_stats"] == 3
+    assert {row["category"] for row in dak} == {"passing","rushing"}
+    passing=next(row for row in dak if row["category"] == "passing")
+    rushing=next(row for row in dak if row["category"] == "rushing")
+    assert (passing["passing_yards"],passing["passing_tds"]) == (188,0)
+    assert (rushing["rushing_attempts"],rushing["rushing_yards"]) == (1,3)
+    assert "receiving_yards" not in passing and "receiving_yards" not in rushing
+
+    outcomes,_=aggregate_player_outcomes(restored)
+    grade=grade_quote({"game_id":"espn-401772510","canonical_player_id":"2577417",
+                       "market":"passing_tds","line":0.5,"selection":"UNDER"},outcomes)
+    assert grade["actual_stat"] == 0
+    assert grade["result"] == "win"
 
 
 def test_cache_only_provider_never_fetches_missing_payload(tmp_path):
