@@ -20,6 +20,8 @@ from .outcomes import normalize_outcomes
 from .snapshots import snapshot_week_dir
 
 FEATURE_DATASETS = ("games", "player_stats", "team_stats", "outcomes", "injuries")
+OFFENSIVE_STAT_FIELDS = ("passing_yards", "passing_tds", "rushing_attempts",
+                         "rushing_yards", "receptions", "receiving_yards")
 
 
 def parse_args(argv=None):
@@ -116,6 +118,25 @@ def _write(path: Path, value: Any):
     temporary.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n"); temporary.replace(path)
 
 
+def _canonical_player_stat_row(row: dict[str, Any]) -> dict[str, Any]:
+    """Promote extracted offensive values onto the persisted row schema.
+
+    ESPN extraction keeps category values in ``stats``.  Snapshot consumers
+    also use the canonical top-level fields, so leaving the values only in the
+    provider-shaped mapping makes a successful extraction look missing after
+    persistence.  Test membership rather than truthiness so an explicit zero
+    survives, while fields absent from this category remain absent.
+    """
+    canonical=dict(row)
+    stats=row.get("stats")
+    if not isinstance(stats,dict):
+        return canonical
+    for field in OFFENSIVE_STAT_FIELDS:
+        if field in stats and stats[field] is not None:
+            canonical[field]=stats[field]
+    return canonical
+
+
 def build_week(args, provider: EspnNflProvider, week: int) -> dict[str, Any]:
     wdir=snapshot_week_dir(args.snapshot_root,"nfl",args.season,week)
     if args.resume and all((wdir/f"{d}.json").exists() for d in FEATURE_DATASETS):
@@ -150,7 +171,8 @@ def build_week(args, provider: EspnNflProvider, week: int) -> dict[str, Any]:
                     "category":row.get("category"),"stats":row.get("stats")} for row in normalized
                     if row.get("player_name") == "Dak Prescott" or str(row.get("provider_player_id")) == "2577417"]})
             diagnostics.append(extraction)
-            for row in normalized:
+            for extracted_row in normalized:
+                row=_canonical_player_stat_row(extracted_row)
                 row.update({"league":"nfl","season":args.season,"week":week,"through_week":week,
                     "game_id":game["game_id"],"completed_at":completed,"captured_at":completed,
                     "data_as_of":completed,"record_role":"completed_game_history","is_pregame":False,"source":"espn"})
