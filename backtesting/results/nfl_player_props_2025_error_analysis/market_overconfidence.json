@@ -1,0 +1,182 @@
+[
+  {
+    "consistency_status": "INSUFFICIENT_MULTIWEEK_EVIDENCE",
+    "count": 196,
+    "market": "rushing_yards",
+    "market_brier": 0.24768214762391116,
+    "market_ece": 0.05355302438313636,
+    "market_log_loss": 0.6885216635287738,
+    "model_brier": 0.4607840345918367,
+    "model_ece": 0.4135295918367347,
+    "model_log_loss": 1.6597571611005095,
+    "model_minus_market_brier": 0.21310188696792554,
+    "model_minus_market_log_loss": 0.9712354975717358,
+    "overconfident_week_rate": 1.0,
+    "overconfident_weeks": 1,
+    "roi": -0.05729694125019304,
+    "units_profit": -11.230200485037836,
+    "weekly": [
+      {
+        "count": 196,
+        "extreme_confidence_accuracy_gap": 0.7821,
+        "extreme_count": 40,
+        "model_ece": 0.4135295918367347,
+        "overconfident": true,
+        "week": 1
+      }
+    ],
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "consistency_status": "INSUFFICIENT_MULTIWEEK_EVIDENCE",
+    "count": 230,
+    "market": "passing_yards",
+    "market_brier": 0.2502826925369508,
+    "market_ece": 0.009875656716099579,
+    "market_log_loss": 0.6937143948281642,
+    "model_brier": 0.4183524390436782,
+    "model_ece": 0.3825224086956522,
+    "model_log_loss": 2.474977355934361,
+    "model_minus_market_brier": 0.1680697465067274,
+    "model_minus_market_log_loss": 1.7812629611061968,
+    "overconfident_week_rate": 1.0,
+    "overconfident_weeks": 1,
+    "roi": -0.05649919966318364,
+    "units_profit": -12.994815922532236,
+    "weekly": [
+      {
+        "count": 230,
+        "extreme_confidence_accuracy_gap": 0.4387552631578947,
+        "extreme_count": 76,
+        "model_ece": 0.3825224086956522,
+        "overconfident": true,
+        "week": 1
+      }
+    ],
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "consistency_status": "INSUFFICIENT_MULTIWEEK_EVIDENCE",
+    "count": 84,
+    "market": "rushing_attempts",
+    "market_brier": 0.2541520906474393,
+    "market_ece": 0.041652246875322575,
+    "market_log_loss": 0.7016274413724063,
+    "model_brier": 0.40273067452380956,
+    "model_ece": 0.34443571428571423,
+    "model_log_loss": 1.3880594954254835,
+    "model_minus_market_brier": 0.14857858387637024,
+    "model_minus_market_log_loss": 0.6864320540530772,
+    "overconfident_week_rate": 1.0,
+    "overconfident_weeks": 1,
+    "roi": -0.024012618576468532,
+    "units_profit": -2.0170599604233566,
+    "weekly": [
+      {
+        "count": 84,
+        "extreme_confidence_accuracy_gap": 0.5618857142857143,
+        "extreme_count": 14,
+        "model_ece": 0.34443571428571423,
+        "overconfident": true,
+        "week": 1
+      }
+    ],
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "consistency_status": "INSUFFICIENT_MULTIWEEK_EVIDENCE",
+    "count": 938,
+    "market": "receiving_yards",
+    "market_brier": 0.24973672852646456,
+    "market_ece": 0.00327502466156303,
+    "market_log_loss": 0.6926172448231247,
+    "model_brier": 0.3866201588487292,
+    "model_ece": 0.34273336034115137,
+    "model_log_loss": 1.95989492610476,
+    "model_minus_market_brier": 0.13688343032226463,
+    "model_minus_market_log_loss": 1.2672776812816353,
+    "overconfident_week_rate": 1.0,
+    "overconfident_weeks": 1,
+    "roi": -0.05460940448049286,
+    "units_profit": -51.22362140270231,
+    "weekly": [
+      {
+        "count": 938,
+        "extreme_confidence_accuracy_gap": 0.4492680365296804,
+        "extreme_count": 438,
+        "model_ece": 0.34273336034115137,
+        "overconfident": true,
+        "week": 1
+      }
+    ],
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "consistency_status": "INSUFFICIENT_MULTIWEEK_EVIDENCE",
+    "count": 338,
+    "market": "receptions",
+    "market_brier": 0.24261375075781916,
+    "market_ece": 0.044277443431862795,
+    "market_log_loss": 0.6782706157108146,
+    "model_brier": 0.31150962615384614,
+    "model_ece": 0.22411242603550297,
+    "model_log_loss": 0.8948684053159147,
+    "model_minus_market_brier": 0.06889587539602698,
+    "model_minus_market_log_loss": 0.21659778960510012,
+    "overconfident_week_rate": 1.0,
+    "overconfident_weeks": 1,
+    "roi": -0.03217133584441984,
+    "units_profit": -10.873911515413907,
+    "weekly": [
+      {
+        "count": 338,
+        "extreme_confidence_accuracy_gap": 0.73915,
+        "extreme_count": 8,
+        "model_ece": 0.22411242603550297,
+        "overconfident": true,
+        "week": 1
+      }
+    ],
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "consistency_status": "INSUFFICIENT_MULTIWEEK_EVIDENCE",
+    "count": 50,
+    "market": "passing_tds",
+    "market_brier": 0.2393599586584769,
+    "market_ece": 0.07204678454009213,
+    "market_log_loss": 0.6721686666464879,
+    "model_brier": 0.18598850760000002,
+    "model_ece": 0.14154,
+    "model_log_loss": 0.5466083731912994,
+    "model_minus_market_brier": -0.053371451058476876,
+    "model_minus_market_log_loss": -0.1255602934551885,
+    "overconfident_week_rate": 0.0,
+    "overconfident_weeks": 0,
+    "roi": -0.032042141336240754,
+    "units_profit": -1.6021070668120378,
+    "weekly": [
+      {
+        "count": 50,
+        "extreme_confidence_accuracy_gap": -0.042300000000000004,
+        "extreme_count": 2,
+        "model_ece": 0.14154,
+        "overconfident": false,
+        "week": 1
+      }
+    ],
+    "weeks": [
+      1
+    ]
+  }
+]

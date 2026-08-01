@@ -1,0 +1,27 @@
+{
+  "artifacts": {
+    "error_analysis_summary.json": "e53f5e2fefea2e1eb033c3dad20fed607184943b2b263a61a78df86f3f6a7ce4",
+    "feature_attribution.csv": "6a131bcb1679d3e5a175343a8eea8e3c5875038bd00260a55b69913663b17f4c",
+    "feature_attribution.json": "f183fc82bf83ee44a76e1af0003ff12b9bf68d16d1d693b2425eeb8130383a0b",
+    "market_overconfidence.json": "b9dc1d809c19c553febe61ba202cad7e3c5abc6887dbaf588bc574bcfddd1bb7",
+    "mean_variance_diagnostics.json": "7fb4670171dda50b000f1e2e2a3a42ffa893974461ec9d06b0ea99127757fc9a",
+    "roi_loss_contributors.csv": "9369aeb2555c65b644c71f36052469df75082e79e3a80b56536fa23e769a2f40",
+    "roi_loss_contributors.json": "da5028b4469d61802dd5f78a5a209e9f619b07407991c4266f18b373ca016f3e",
+    "segment_metrics.csv": "3113f2754ac059108604648b68210ffda68c3cc85eb939dedf6887640bec45aa",
+    "segment_metrics.json": "16c7ca0896c1853b2cdbdd2da8c63fd22bc8b84cdc392d770737413d3e9b3b39"
+  },
+  "config": {
+    "end_week": 18,
+    "min_segment_size": 20,
+    "season": 2025,
+    "start_week": 1,
+    "top_n": 50
+  },
+  "inputs": {
+    "data\\snapshots\\nfl\\2025\\week_01\\player_identities.json": "cbe6b15290567a32743ee3b1e80f467ad2e18b279cd02661b44dbeafc85dc294",
+    "data\\snapshots\\nfl\\2025\\week_01\\player_prop_predictions.json": "4ebde6400776f00c556d9876e1fe5270b23d54dac650c678f1c024ffde1c2e96",
+    "results\\nfl_player_props_2025_history\\opportunity_rows.csv": "bf99e199c6b2289e49b1cdf1ab998a8f6371aa99aeb6b420a45c2ad246f10444"
+  },
+  "network_contacted": false,
+  "schema_version": 1
+}

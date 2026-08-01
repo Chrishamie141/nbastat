@@ -1,0 +1,74 @@
+[
+  {
+    "actual_outside_simulation_support_rate": 0.35607675906183367,
+    "average_predicted_stddev": 7.42208615289005,
+    "base_opportunities": 469,
+    "diagnosis": "MEAN_AND_VARIANCE",
+    "market": "receiving_yards",
+    "mean_absolute_error": 25.46939121752171,
+    "mean_bias_actual_minus_simulated": 15.380579347349801,
+    "p05_p95_empirical_coverage": 0.2857142857142857,
+    "rmse_to_predicted_stddev_ratio": 4.672062775784234,
+    "root_mean_squared_error": 34.67645243358121
+  },
+  {
+    "actual_outside_simulation_support_rate": 0.20869565217391303,
+    "average_predicted_stddev": 28.333132508260306,
+    "base_opportunities": 115,
+    "diagnosis": "VARIANCE_TOO_LOW",
+    "market": "passing_yards",
+    "mean_absolute_error": 74.15187253120442,
+    "mean_bias_actual_minus_simulated": -4.950763843946929,
+    "p05_p95_empirical_coverage": 0.26956521739130435,
+    "rmse_to_predicted_stddev_ratio": 3.2534422093421593,
+    "root_mean_squared_error": 92.18020922525857
+  },
+  {
+    "actual_outside_simulation_support_rate": 0.061224489795918366,
+    "average_predicted_stddev": 9.456676077949894,
+    "base_opportunities": 98,
+    "diagnosis": "MEAN_AND_VARIANCE",
+    "market": "rushing_yards",
+    "mean_absolute_error": 19.44362909697102,
+    "mean_bias_actual_minus_simulated": 14.900347462786852,
+    "p05_p95_empirical_coverage": 0.4387755102040816,
+    "rmse_to_predicted_stddev_ratio": 2.606681396854206,
+    "root_mean_squared_error": 24.65054160846818
+  },
+  {
+    "actual_outside_simulation_support_rate": 0.047619047619047616,
+    "average_predicted_stddev": 1.920688990572745,
+    "base_opportunities": 42,
+    "diagnosis": "MEAN_AND_VARIANCE",
+    "market": "rushing_attempts",
+    "mean_absolute_error": 3.0252142857142856,
+    "mean_bias_actual_minus_simulated": 2.1185047619047617,
+    "p05_p95_empirical_coverage": 0.7619047619047619,
+    "rmse_to_predicted_stddev_ratio": 2.0572742924463454,
+    "root_mean_squared_error": 3.951384084090029
+  },
+  {
+    "actual_outside_simulation_support_rate": 0.011834319526627219,
+    "average_predicted_stddev": 1.7085731382720748,
+    "base_opportunities": 169,
+    "diagnosis": "VARIANCE_TOO_LOW",
+    "market": "receptions",
+    "mean_absolute_error": 1.8869207100591714,
+    "mean_bias_actual_minus_simulated": 0.25537278106508876,
+    "p05_p95_empirical_coverage": 0.8757396449704142,
+    "rmse_to_predicted_stddev_ratio": 1.431645319111938,
+    "root_mean_squared_error": 2.44607073576761
+  },
+  {
+    "actual_outside_simulation_support_rate": 0.0,
+    "average_predicted_stddev": 1.102648013059854,
+    "base_opportunities": 25,
+    "diagnosis": "NO_CLEAR_SIGNAL",
+    "market": "passing_tds",
+    "mean_absolute_error": 0.701148,
+    "mean_bias_actual_minus_simulated": -0.10761999999999997,
+    "p05_p95_empirical_coverage": 0.96,
+    "rmse_to_predicted_stddev_ratio": 0.8290176184650763,
+    "root_mean_squared_error": 0.9141146297921284
+  }
+]

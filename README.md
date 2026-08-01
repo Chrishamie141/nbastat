@@ -93,3 +93,15 @@ The web dashboard uses remote team logo URLs from ESPN's stable team-logo CDN (`
 ## NFL data providers
 
 SmartBetSports NFL uses The Odds API, ESPN, optional verified NFL data, OpenWeather, and local JSON exports. The Odds API (`THE_ODDS_API_KEY`) supplies NFL moneyline, spread, total, player-prop, bookmaker, and historical odds data where the configured subscription supports it. ESPN endpoints supply NFL schedules, event IDs, start times, teams, final scores, rosters/box scores, and available player/team statistics. The optional NFL official adapter is disabled unless a dependable NFL-hosted JSON endpoint is verified; it is supplemental only. OpenWeather (`OPENWEATHER_API_KEY`) remains the weather source. Local JSON exports can fill historical gaps; current odds must not be relabeled as historical point-in-time odds.
+
+## NFL player-prop error analysis
+
+After generating the season player-prop evaluation artifacts, run the deterministic offline error analysis:
+
+```bash
+python -m backtesting.analyze_nfl_player_prop_errors --season 2025 --start-week 1 --end-week 18 --snapshot-root backtesting/data/snapshots --season-results-dir backtesting/results/nfl_player_props_2025_history --output-dir backtesting/results/nfl_player_props_2025_error_analysis --top-n 50 --min-segment-size 20
+```
+
+The command attributes extreme probabilities to persisted distribution geometry and history-depth fields, measures market overconfidence, ranks team and market-role archetype errors, separates mean-bias from variance-underestimation signals, and identifies positive-edge opportunities contributing most to realized ROI loss. It never contacts a provider or changes predictions. Attribution is observational because raw simulator feature vectors and causal coefficients are not persisted.
+
+Primary outputs are `error_analysis_summary.json`, `feature_attribution.json`, `market_overconfidence.json`, `segment_metrics.json`, `mean_variance_diagnostics.json`, `roi_loss_contributors.json`, their CSV counterparts, and `analysis_manifest.json`.
