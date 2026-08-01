@@ -15,7 +15,7 @@ from .game_matching import normalize_team
 from .markets import CANONICAL_PLAYER_PROP_MARKETS, normalize_player_prop_market
 from .team_history import filter_market_quotes, prediction_cutoff
 from .game_matching import parse_dt
-from .player_identity import first_player_id, normalize_player_id
+from .player_identity import canonical_player_key, first_player_id, normalize_player_id
 from .player_history import STAT_ALIASES, STAT_FIELDS
 
 
@@ -341,12 +341,16 @@ def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tupl
     groups: dict[tuple[str, str], list[tuple[int, dict[str, Any]]]] = {}
     for index, row in enumerate(source_rows):
         game_id = str(row.get("game_id") or "").strip()
-        player_id = first_player_id(row.get("canonical_player_id"), row.get("player_id"), row.get("athlete_id"))
+        player_id = normalize_player_id(first_player_id(
+            row.get("canonical_player_id"), row.get("player_id"), row.get("athlete_id")))
         if not game_id:
             raise ValueError(f"canonical player outcome missing game_id: source_row={index}")
         if player_id is None:
             raise ValueError(f"unresolved canonical player ID in outcome: game_id={game_id}, source_row={index}")
-        groups.setdefault((game_id, player_id), []).append((index, row))
+        key = canonical_player_key(game_id, player_id)
+        if key is None:  # Kept explicit so invalid identities always fail closed.
+            raise ValueError(f"unresolved canonical player ID in outcome: game_id={game_id}, source_row={index}")
+        groups.setdefault(key, []).append((index, row))
 
     outcomes: dict[tuple[str, str], dict[str, Any]] = {}
     duplicate_fields = 0
@@ -384,7 +388,8 @@ def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tupl
         categories = sorted({str(row.get("category") or row.get("stat_category") or row.get("type"))
                              for _, row in parts if row.get("category") or row.get("stat_category") or row.get("type")})
         provider_ids = sorted({str(value) for _, row in parts
-            for value in (row.get("provider_player_id"), row.get("athlete_id"), row.get("source_id"), row.get("provider_event_id"))
+            for value in (row.get("provider_player_id"), row.get("athlete_id"), row.get("player_id"),
+                          row.get("source_id"), row.get("provider_event_id"))
             if value not in (None, "")})
         timestamps = sorted({str(row[field]) for _, row in parts
             for field in ("captured_at", "data_as_of", "completed_at", "known_at") if row.get(field)})
@@ -405,13 +410,20 @@ def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tupl
 def grade_quote(quote: dict[str, Any], outcomes: Iterable[dict[str, Any]] | dict[tuple[str, str], dict[str, Any]]) -> dict[str, Any]:
     """Grade only the canonical game/player/market triple."""
     quote_player_id = first_player_id(quote.get("canonical_player_id"), quote.get("player_id"))
+    key = canonical_player_key(quote.get("game_id"), quote_player_id)
+    diagnostic = (f"game_id={str(quote.get('game_id') or '').strip()[:100]}, "
+                  f"canonical_player_id={normalize_player_id(quote_player_id) or 'UNKNOWN'}, "
+                  f"market={str(quote.get('market') or '').strip()[:100]}")
     if isinstance(outcomes, dict):
-        match = outcomes.get((str(quote.get("game_id")), str(quote_player_id)))
-        matches = [match] if match is not None else []
+        match = outcomes.get(key) if key is not None else None
+        if match is None:
+            raise ValueError(f"canonical player outcome not found: {diagnostic}")
+        matches = [match]
     else:
-        matches=[r for r in outcomes if str(r.get("game_id")) == str(quote.get("game_id")) and
-                 first_player_id(r.get("canonical_player_id"), r.get("player_id"), r.get("athlete_id")) == quote_player_id]
-    if len(matches) != 1: raise ValueError("exactly one canonical player outcome is required")
+        matches=[r for r in outcomes if canonical_player_key(
+            r.get("game_id"), first_player_id(r.get("canonical_player_id"), r.get("player_id"), r.get("athlete_id"))) == key]
+    if not matches: raise ValueError(f"canonical player outcome not found: {diagnostic}")
+    if len(matches) > 1: raise ValueError(f"multiple canonical player outcomes: {diagnostic}")
     actual=(matches[0].get("stats") or {}).get(quote["market"], matches[0].get(quote["market"]))
     if actual is None: raise ValueError("outcome market is missing")
     line=float(quote["line"]); actual=float(actual)

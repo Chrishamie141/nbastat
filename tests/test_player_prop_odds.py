@@ -143,6 +143,44 @@ def test_outcome_aggregation_duplicate_missing_conflict_and_scoping():
 def test_outcome_aggregation_rejects_unresolved_player_id(row):
     with pytest.raises(ValueError,match="unresolved canonical player ID"):
         aggregate_player_outcomes([row])
+
+@pytest.mark.parametrize(("outcome", "quote_id"), [
+    ({"canonical_player_id": 123456}, "123456"),
+    ({"athlete_id": 123456}, "123456"),
+    ({"canonical_player_id": "123456"}, 123456),
+    ({"canonical_player_id": " 123456 "}, "  123456  "),
+])
+def test_outcome_keys_normalize_mixed_player_id_representations(outcome, quote_id):
+    rows = [{"game_id": " g1 ", **outcome, "stats": {"receptions": 4}}]
+    outcomes, _ = aggregate_player_outcomes(rows)
+    assert list(outcomes) == [("g1", "123456")]
+    assert outcomes[("g1", "123456")]["canonical_player_id"] == "123456"
+    quote = {"game_id": "g1", "canonical_player_id": quote_id, "market": "receptions",
+             "line": 3.5, "selection": "OVER"}
+    assert grade_quote(quote, outcomes)["result"] == "win"
+
+def test_outcome_ids_remain_distinct_and_provider_id_is_provenance():
+    outcomes, _ = aggregate_player_outcomes([
+        {"game_id": "g1", "athlete_id": 123, "stats": {"receptions": 1}},
+        {"game_id": "g1", "athlete_id": "124", "stats": {"receptions": 2}},
+    ])
+    assert set(outcomes) == {("g1", "123"), ("g1", "124")}
+    assert outcomes[("g1", "123")]["source_provider_ids"] == ["123"]
+
+@pytest.mark.parametrize("value", [None, "", "   ", "UNKNOWN", " unknown "])
+def test_outcome_invalid_ids_fail_closed(value):
+    with pytest.raises(ValueError, match="unresolved canonical player ID"):
+        aggregate_player_outcomes([{"game_id": "g1", "canonical_player_id": value,
+                                    "stats": {"receptions": 1}}])
+
+def test_grade_quote_distinguishes_missing_and_multiple_outcomes():
+    quote = {"game_id": "g1", "canonical_player_id": " p1 ", "market": "receptions",
+             "line": 1.5, "selection": "OVER"}
+    with pytest.raises(ValueError, match=r"canonical player outcome not found: game_id=g1, canonical_player_id=p1, market=receptions"):
+        grade_quote(quote, {})
+    duplicate = [{"game_id": "g1", "player_id": "p1", "receptions": 2}] * 2
+    with pytest.raises(ValueError, match=r"multiple canonical player outcomes: game_id=g1, canonical_player_id=p1, market=receptions"):
+        grade_quote(quote, duplicate)
 def test_offline_audit_partial_and_plan(tmp_path):
     d=tmp_path/"nfl/2025/week_01"; d.mkdir(parents=True); (d/"odds_player_props.json").write_text(json.dumps(quotes()))
     report=audit_cache(tmp_path,season=2025,start_week=1,end_week=2)

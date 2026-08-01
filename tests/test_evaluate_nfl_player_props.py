@@ -114,3 +114,27 @@ def test_evaluator_aggregates_production_shaped_player_stat_rows(tmp_path):
         "conflicting_fields":0,"missing_requested_stat_count":0,
         "players_with_multiple_category_rows":1}
     assert {row["outcome"] for row in one["quote_rows"]} == {60}
+
+
+def test_evaluator_joins_numeric_espn_athlete_to_string_quote_and_prediction(tmp_path):
+    directory = _snapshot(tmp_path)
+    player_id = "123456"
+    for filename in ("player_prop_odds.json", "player_prop_predictions.json"):
+        rows = json.loads((directory / filename).read_text())
+        for row in rows:
+            row["canonical_player_id"] = player_id
+        (directory / filename).write_text(json.dumps(rows))
+    outcomes = [
+        {"game_id": "g", "athlete_id": 123456, "category": "receiving",
+         "record_role": "game_outcome", "is_pregame": False,
+         "stats": {"receptions": 4}},
+        {"game_id": "g", "athlete_id": 123456, "category": "receiving_yards",
+         "record_role": "game_outcome", "is_pregame": False,
+         "stats": {"receiving_yards": 60}},
+    ]
+    (directory / "player_stats.json").write_text(json.dumps(outcomes))
+    report = evaluate(tmp_path, 2025, 1, 1)
+    assert report["summary"]["outcome_aggregation"]["canonical_player_outcomes"] == 1
+    assert report["summary"]["gradeable_quotes"] == 2
+    assert report["summary"]["unique_opportunities"] == 2
+    assert {row["canonical_player_id"] for row in report["quote_rows"]} == {player_id}
