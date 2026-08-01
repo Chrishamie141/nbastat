@@ -6,6 +6,8 @@ from backtesting.evaluate_nfl_player_props import (
     american_implied_probability, edge_bucket, evaluate, flat_profit,
     no_vig_probabilities, probability_metrics, select_best_prices, write_outputs,
 )
+from backtesting.player_identity_registry import reconcile_outcome_identities
+from backtesting.player_prop_odds import aggregate_player_outcomes, grade_quote
 
 
 def test_pricing_returns_and_edge_boundaries():
@@ -109,10 +111,11 @@ def test_evaluator_aggregates_production_shaped_player_stat_rows(tmp_path):
     one=evaluate(tmp_path,2025,1,1); two=evaluate(tmp_path,2025,1,1)
     assert one == two
     assert one["summary"]["gradeable_quotes"] == 2
-    assert one["summary"]["outcome_aggregation"] == {
-        "raw_outcome_rows":3,"canonical_player_outcomes":1,"duplicate_fields_merged":0,
-        "conflicting_fields":0,"missing_requested_stat_count":0,
-        "players_with_multiple_category_rows":1}
+    diagnostics=one["summary"]["outcome_aggregation"]
+    assert diagnostics["raw_outcome_rows"] == 3
+    assert diagnostics["already_canonical"] == 3
+    assert diagnostics["canonical_player_outcomes"] == 1
+    assert diagnostics["players_with_multiple_category_rows"] == 1
     assert {row["outcome"] for row in one["quote_rows"]} == {60}
 
 
@@ -138,3 +141,81 @@ def test_evaluator_joins_numeric_espn_athlete_to_string_quote_and_prediction(tmp
     assert report["summary"]["gradeable_quotes"] == 2
     assert report["summary"]["unique_opportunities"] == 2
     assert {row["canonical_player_id"] for row in report["quote_rows"]} == {player_id}
+
+
+def test_outcome_registry_reconciliation_precedence_provenance_and_aggregation():
+    identities=[
+        {"game_id":"espn-401772510","canonical_player_id":"2577417",
+         "provider_player_id":"2577417","player_id":"history-alias",
+         "player_name":"Exact Player","normalized_player_name":"exact player","team":"KC",
+         "source":"provider_box_score","identity_provenance":["provider_box_score"]},
+        {"game_id":"other-game","canonical_player_id":"other","provider_player_id":"2577417",
+         "player_id":"other","player_name":"Exact Player","team":"KC"},
+    ]
+    rows=[
+        {"game_id":"espn-401772510","athlete_id":2577417,"player_name":"Exact Player",
+         "team":"KC","category":"passing","stats":{"passing_yards":301,"passing_tds":3}},
+        {"game_id":"espn-401772510","player_id":"history-alias","player_name":"Exact Player",
+         "team":"KC","category":"rushing","stats":{"rushing_yards":12}},
+    ]
+    reconciled, diagnostics=reconcile_outcome_identities(rows,identities)
+    assert diagnostics["reconciled_by_provider_id"] == 1
+    assert diagnostics["reconciled_by_alias"] == 1
+    assert all(row["canonical_player_id"] == "2577417" for row in reconciled)
+    assert reconciled[0]["original_athlete_id"] == 2577417
+    assert reconciled[0]["identity_provenance"] == ["provider_box_score"]
+    outcomes, aggregation=aggregate_player_outcomes(reconciled)
+    assert aggregation["canonical_player_outcomes"] == 1
+    assert outcomes[("espn-401772510","2577417")]["stats"] == {
+        "passing_tds":3,"passing_yards":301,"rushing_yards":12}
+    for market,line in (("passing_tds",2.5),("passing_yards",299.5)):
+        graded=grade_quote({"game_id":"espn-401772510","canonical_player_id":"2577417",
+                            "market":market,"line":line,"selection":"OVER"},outcomes)
+        assert graded["result"] == "win"
+
+
+def test_fallback_canonical_maps_from_provider_without_name_fallback():
+    identities=[{"game_id":"g","canonical_player_id":"history:g:KC:player",
+                 "provider_player_id":"espn-7","player_id":"history:g:KC:player",
+                 "player_name":"Player","team":"KC","source":"historical_roster"}]
+    rows, diagnostics=reconcile_outcome_identities(
+        [{"game_id":"g","provider_player_id":"espn-7","stats":{"passing_tds":1}}],identities)
+    assert rows[0]["canonical_player_id"] == "history:g:KC:player"
+    assert rows[0]["reconciliation_method"] == "reconciled_by_provider_id"
+    assert diagnostics["reconciled_by_exact_name_team_game"] == 0
+
+
+def test_exact_name_team_is_conservative_and_ambiguity_fails_closed():
+    identities=[
+        {"game_id":"g","canonical_player_id":"a","player_name":"Same Name","team":"KC"},
+        {"game_id":"g","canonical_player_id":"b","player_name":"Same Name","team":"KC"},
+        {"game_id":"g","canonical_player_id":"c","player_name":"Unique Name","team":"PHI"},
+    ]
+    rows, diagnostics=reconcile_outcome_identities([
+        {"game_id":"g","player_name":"Unique Name","team":"PHI","stats":{"receptions":2}},
+        {"game_id":"g","player_name":"Same Name","team":"KC","stats":{"receptions":3}},
+        {"game_id":"g","player_name":"Unique","team":"PHI","stats":{"receptions":4}},
+        {"game_id":"g","player_name":"Unique Name","team":"KC","stats":{"receptions":5}},
+    ],identities)
+    assert [row["canonical_player_id"] for row in rows] == ["c"]
+    assert diagnostics["reconciled_by_exact_name_team_game"] == 1
+    assert diagnostics["ambiguous"] == 1 and diagnostics["unresolved"] == 2
+    assert diagnostics["ambiguities"][0]["candidate_canonical_ids"] == ["a","b"]
+
+
+def test_evaluator_reconciles_week_registry_provider_id(tmp_path):
+    directory=_snapshot(tmp_path)
+    for filename in ("player_prop_odds.json","player_prop_predictions.json"):
+        rows=json.loads((directory/filename).read_text())
+        for row in rows: row["canonical_player_id"]="history:g:KC:player"
+        (directory/filename).write_text(json.dumps(rows))
+    (directory/"player_identities.json").write_text(json.dumps([{
+        "game_id":"g","canonical_player_id":"history:g:KC:player",
+        "provider_player_id":"2577417","player_id":"history:g:KC:player",
+        "player_name":"Player","team":"KC","identity_provenance":["provider_box_score"]}]))
+    (directory/"player_stats.json").write_text(json.dumps([{
+        "game_id":"g","athlete_id":2577417,"record_role":"game_outcome","is_pregame":False,
+        "stats":{"receiving_yards":60}}]))
+    report=evaluate(tmp_path,2025,1,1)
+    assert report["summary"]["gradeable_quotes"] == 2
+    assert report["summary"]["outcome_aggregation"]["reconciled_by_provider_id"] == 1
