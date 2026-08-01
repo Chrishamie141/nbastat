@@ -330,6 +330,22 @@ def _outcome_stats(row: dict[str, Any]) -> dict[str, int | float]:
     return result
 
 
+class OutcomeGradingError(ValueError):
+    """Base class for machine-classifiable outcome coverage failures."""
+
+
+class OutcomeNotFoundError(OutcomeGradingError):
+    """No completed canonical player outcome is available."""
+
+
+class OutcomeMarketMissingError(OutcomeGradingError):
+    """The player outcome exists, but does not contain the requested statistic."""
+
+
+class OutcomeConflictError(ValueError):
+    """Completed outcome sources contain contradictory non-null values."""
+
+
 def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tuple[str, str], dict[str, Any]], dict[str, Any]]:
     """Merge completed category rows into one auditable player/game outcome.
 
@@ -414,7 +430,7 @@ def aggregate_player_outcomes(rows: Iterable[dict[str, Any]]) -> tuple[dict[tupl
         "duplicate_fields_merged": duplicate_fields, "conflicting_fields": len(conflicts),
         "players_with_multiple_category_rows": multi_category_players, "conflicts": conflicts}
     if conflicts:
-        raise ValueError("conflicting canonical player outcome fields: " + json.dumps(conflicts, sort_keys=True, separators=(",", ":")))
+        raise OutcomeConflictError("conflicting canonical player outcome fields: " + json.dumps(conflicts, sort_keys=True, separators=(",", ":")))
     return outcomes, diagnostics
 
 
@@ -428,15 +444,16 @@ def grade_quote(quote: dict[str, Any], outcomes: Iterable[dict[str, Any]] | dict
     if isinstance(outcomes, dict):
         match = outcomes.get(key) if key is not None else None
         if match is None:
-            raise ValueError(f"canonical player outcome not found: {diagnostic}")
+            raise OutcomeNotFoundError(f"canonical player outcome not found: {diagnostic}")
         matches = [match]
     else:
         matches=[r for r in outcomes if canonical_player_key(
             r.get("game_id"), first_player_id(r.get("canonical_player_id"), r.get("player_id"), r.get("athlete_id"))) == key]
-    if not matches: raise ValueError(f"canonical player outcome not found: {diagnostic}")
+    if not matches: raise OutcomeNotFoundError(f"canonical player outcome not found: {diagnostic}")
     if len(matches) > 1: raise ValueError(f"multiple canonical player outcomes: {diagnostic}")
     actual=(matches[0].get("stats") or {}).get(quote["market"], matches[0].get(quote["market"]))
-    if actual is None: raise ValueError("outcome market is missing")
+    if actual is None: raise OutcomeMarketMissingError(
+        f"outcome market is missing: {diagnostic}")
     line=float(quote["line"]); actual=float(actual)
     result="push" if actual == line else ("win" if (actual > line) == (quote["selection"] == "OVER") else "loss")
     return {**quote, "actual_stat": actual, "result": result,

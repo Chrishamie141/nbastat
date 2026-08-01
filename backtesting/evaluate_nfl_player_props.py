@@ -21,7 +21,8 @@ from .game_matching import parse_dt
 from .markets import CANONICAL_PLAYER_PROP_MARKETS
 from .player_identity import canonical_player_key, first_player_id, normalize_player_id
 from .player_identity_registry import reconcile_outcome_identities
-from .player_prop_odds import aggregate_player_outcomes, decimal_from_american, grade_quote
+from .player_prop_odds import (OutcomeMarketMissingError, OutcomeNotFoundError,
+                               aggregate_player_outcomes, decimal_from_american, grade_quote)
 from .snapshots import snapshot_week_dir
 from .team_history import prediction_cutoff
 
@@ -221,9 +222,27 @@ def _validate_and_build(quote: dict[str,Any], game: dict[str,Any], probability: 
             "profit_units":flat_profit(odds,grade),"clv":None}
 
 
+def _exclusion(quote: dict[str, Any], game: dict[str, Any] | None, reason: str,
+               detail: str) -> dict[str, Any]:
+    """Return the stable, deliberately non-sensitive exclusion schema."""
+    return {"season":int(quote.get("season", (game or {}).get("season"))),
+            "week":int(quote.get("week", (game or {}).get("week"))),
+            "game_id":str(quote.get("game_id") or ""),
+            "canonical_player_id":normalize_player_id(first_player_id(
+                quote.get("canonical_player_id"), quote.get("player_id"))),
+            "player_name":quote.get("player_name") or quote.get("canonical_player_name"),
+            "team":quote.get("team"), "market":quote.get("market"),
+            "side":str(quote.get("selection") or quote.get("side") or "").upper(),
+            "line":quote.get("line"),
+            "bookmaker":quote.get("bookmaker") or quote.get("sportsbook"),
+            "reason":reason, "detail":str(detail)[:500],
+            "readiness":quote.get("readiness"), "model_version":quote.get("model_version")}
+
+
 def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
-             market: str | None=None, bookmaker: str | None=None) -> dict[str,Any]:
-    quotes=[]; accepted=0; incomplete=0; validation=[]
+             market: str | None=None, bookmaker: str | None=None,
+             strict_outcomes: bool=False) -> dict[str,Any]:
+    quotes=[]; exclusions=[]; accepted=0; incomplete=0; quotes_with_predictions=0
     outcome_diagnostics={"raw_outcome_rows":0,"already_canonical":0,
         "reconciled_by_provider_id":0,"reconciled_by_alias":0,
         "reconciled_by_exact_name_team_game":0,"unresolved":0,"ambiguous":0,
@@ -272,17 +291,37 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
             side=str(q.get("selection") or q.get("side")).upper(); pid=normalize_player_id(first_player_id(q.get("canonical_player_id"),q.get("player_id"))) or ""
             pkey=(str(q.get("game_id")),pid,str(q.get("market")),float(q.get("line")),side)
             probability=q.get("model_probability",q.get("simulation_probability",predictions.get(pkey)))
-            if probability is None: continue
+            if probability is None:
+                exclusions.append(_exclusion(q,games.get(str(q.get("game_id"))),"PREDICTION_MISSING",
+                                             "prediction probability unavailable"))
+                continue
+            quotes_with_predictions += 1
             timestamp=q.get("provider_snapshot_timestamp") or q.get("snapshot_timestamp") or q.get("captured_at")
             pairkey=(str(q.get("game_id")),pid,q.get("market"),float(q.get("line")),str(q.get("bookmaker") or q.get("sportsbook")),str(timestamp))
-            try: quotes.append(_validate_and_build(q,games[str(q.get("game_id"))],float(probability),novig.get((pairkey,side)),outcomes))
+            if (pairkey,side) not in novig:
+                exclusions.append(_exclusion(q,games.get(str(q.get("game_id"))),"INCOMPLETE_PRICE_PAIR",
+                                             "complete OVER/UNDER price pair unavailable"))
+                continue
+            try:
+                quotes.append(_validate_and_build(q,games[str(q.get("game_id"))],float(probability),novig.get((pairkey,side)),outcomes))
+            except OutcomeNotFoundError as exc:
+                if strict_outcomes: raise ValueError(f"integrity validation failed: {exc}") from exc
+                outcome_diagnostics["quotes_missing_outcomes_after_reconciliation"] += 1
+                exclusions.append(_exclusion(q,games.get(str(q.get("game_id"))),"OUTCOME_NOT_FOUND",str(exc)))
+            except OutcomeMarketMissingError as exc:
+                if strict_outcomes: raise ValueError(f"integrity validation failed: {exc}") from exc
+                outcome_diagnostics["missing_requested_stat_count"] += 1
+                exclusions.append(_exclusion(q,games.get(str(q.get("game_id"))),"OUTCOME_MARKET_MISSING",str(exc)))
             except (ValueError,KeyError) as exc:
-                if str(exc) == "outcome market is missing":
-                    outcome_diagnostics["missing_requested_stat_count"] += 1
-                elif str(exc).startswith("canonical player outcome not found:"):
-                    outcome_diagnostics["quotes_missing_outcomes_after_reconciliation"] += 1
-                validation.append({"week":week,"game_id":q.get("game_id"),"error":str(exc)})
-    if validation: raise ValueError("integrity validation failed: "+_stable(validation[:20]))
+                raise ValueError("integrity validation failed: "+_stable(
+                    [{"week":week,"game_id":q.get("game_id"),"error":str(exc)}])) from exc
+    exclusions.sort(key=lambda r:(opportunity_key(r),str(r.get("bookmaker") or ""),r["reason"],r["detail"]))
+    excluded_keys={opportunity_key(row) for row in exclusions}
+    reasons={reason:sum(row["reason"]==reason for row in exclusions) for reason in
+             ("OUTCOME_NOT_FOUND","OUTCOME_MARKET_MISSING","OUTCOME_IDENTITY_UNRESOLVED",
+              "OUTCOME_IDENTITY_AMBIGUOUS","OUTCOME_STAT_CONFLICT","PREDICTION_MISSING","INCOMPLETE_PRICE_PAIR")}
+    markets={name:sum(row.get("market")==name for row in exclusions)
+             for name in sorted({str(row.get("market")) for row in exclusions})}
     opportunities=select_best_prices(quotes); paired=[r for r in opportunities if r["edge"] is not None]
     model=probability_metrics(opportunities,"model_probability"); market_metrics=probability_metrics(paired,"no_vig_market_probability")
     differences={k:(model[k]-market_metrics[k] if model[k] is not None and market_metrics[k] is not None else None) for k in ("brier_score","log_loss","ece")}
@@ -291,21 +330,31 @@ def evaluate(snapshot_root: Path, season: int, start_week: int, end_week: int,
                 "side":grouped(paired,"side"),"edge_bucket":grouped(paired,"edge_bucket"),
                 "market_edge_bucket":grouped(paired,"market","edge_bucket"),"bookmaker_market":grouped(paired,"bookmaker","market"),
                 "probability_bucket":grouped(paired,"probability_bucket")}
+    all_opportunity_keys={opportunity_key(row) for row in quotes}|excluded_keys
     summary={"schema_version":1,"season":season,"weeks":[start_week,end_week],"accepted_quotes":accepted,
-             "gradeable_quotes":len(quotes),"unique_opportunities":len(opportunities),"paired_opportunities":len(paired),
+             "quotes_with_predictions":quotes_with_predictions,"gradeable_quotes":len(quotes),
+             "ungradeable_quote_count":len(exclusions),"unique_opportunities":len(all_opportunity_keys),
+             "gradeable_unique_opportunities":len(opportunities),"excluded_unique_opportunities":len(excluded_keys),
+             "exclusions_by_reason":reasons,"exclusions_by_market":markets,
+             "outcome_not_found":reasons["OUTCOME_NOT_FOUND"],
+             "outcome_market_missing":reasons["OUTCOME_MARKET_MISSING"],
+             "unresolved_identity":outcome_diagnostics["unresolved"],
+             "ambiguous_identity":outcome_diagnostics["ambiguous"],
+             "outcome_conflicts":outcome_diagnostics["conflicting_fields"],
+             "paired_opportunities":len(paired),
              "incomplete_pair_quotes":incomplete,"pushes":sum(r["grade"]=="PUSH" for r in opportunities),
              "positive_edge_opportunities":len(positive),"positive_edge_profit":positive_metrics["units_profit"],
              "positive_edge_roi":positive_metrics["roi"],"clv_ready":False,"clv_reason":CLV_REASON,
              "integrity_validation":"PASS","minimum_sample_threshold":MINIMUM_SAMPLE,
              "outcome_aggregation":outcome_diagnostics}
-    return {"summary":summary,"quote_rows":quotes,"opportunity_rows":opportunities,
+    return {"summary":summary,"quote_rows":quotes,"opportunity_rows":opportunities,"exclusions":exclusions,
             "calibration":{"model":model,"market":market_metrics,"model_minus_market":differences},
             "edge_buckets":breakdowns["edge_bucket"],"breakdowns":breakdowns}
 
 
 def write_outputs(report: dict[str,Any], output_dir: Path) -> None:
     output_dir.mkdir(parents=True,exist_ok=True)
-    artifacts={"evaluation_summary.json":report["summary"],"evaluation_rows.json":{"quote_level":report["quote_rows"],"opportunity_level":report["opportunity_rows"]},
+    artifacts={"evaluation_summary.json":report["summary"],"evaluation_exclusions.json":report["exclusions"],"evaluation_rows.json":{"quote_level":report["quote_rows"],"opportunity_level":report["opportunity_rows"]},
                "calibration.json":report["calibration"],"edge_buckets.json":report["edge_buckets"],
                "market_breakdown.json":report["breakdowns"]["market"],"bookmaker_breakdown.json":report["breakdowns"]["bookmaker"],
                "evaluation_breakdowns.json":report["breakdowns"]}
@@ -326,7 +375,8 @@ def main(argv: list[str] | None=None) -> int:
     parser.add_argument("--start-week",type=int,default=1); parser.add_argument("--end-week",type=int,default=1)
     parser.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); parser.add_argument("--output-dir",type=Path,required=True)
     parser.add_argument("--market",choices=CANONICAL_PLAYER_PROP_MARKETS); parser.add_argument("--bookmaker")
-    args=parser.parse_args(argv); report=evaluate(args.snapshot_root,args.season,args.start_week,args.end_week,args.market,args.bookmaker); write_outputs(report,args.output_dir)
+    parser.add_argument("--strict-outcomes",action="store_true")
+    args=parser.parse_args(argv); report=evaluate(args.snapshot_root,args.season,args.start_week,args.end_week,args.market,args.bookmaker,args.strict_outcomes); write_outputs(report,args.output_dir)
     s=report["summary"]; c=report["calibration"]
     lines=[f"NFL player props: {s['season']} weeks {s['weeks'][0]}-{s['weeks'][1]}",f"Accepted quotes: {s['accepted_quotes']}; gradeable: {s['gradeable_quotes']}; unique opportunities: {s['unique_opportunities']}; pushes: {s['pushes']}",
            f"Model Brier/log loss: {_fmt(c['model']['brier_score'])} / {_fmt(c['model']['log_loss'])}",f"Market Brier/log loss: {_fmt(c['market']['brier_score'])} / {_fmt(c['market']['log_loss'])}",

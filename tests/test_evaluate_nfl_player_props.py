@@ -94,6 +94,47 @@ def test_post_cutoff_quote_fails_integrity_validation(tmp_path):
         evaluate(tmp_path,2025,1,1)
 
 
+@pytest.mark.parametrize("outcome,reason", [
+    (None, "OUTCOME_NOT_FOUND"),
+    ({"game_id":"g","canonical_player_id":"p1","record_role":"game_outcome",
+      "is_pregame":False,"stats":{"receptions":3}}, "OUTCOME_MARKET_MISSING"),
+])
+def test_outcome_coverage_is_excluded_without_aborting(tmp_path, outcome, reason):
+    directory = _snapshot(tmp_path)
+    (directory / "player_stats.json").write_text(json.dumps([] if outcome is None else [outcome]))
+    report = evaluate(tmp_path, 2025, 1, 1)
+    assert report["summary"]["gradeable_quotes"] == 0
+    assert report["summary"]["ungradeable_quote_count"] == 2
+    assert report["summary"]["excluded_unique_opportunities"] == 2
+    assert {row["reason"] for row in report["exclusions"]} == {reason}
+
+
+def test_missing_outcome_exclusions_deduplicate_across_books_and_strict_mode_fails(tmp_path):
+    directory = _snapshot(tmp_path)
+    quotes = json.loads((directory / "player_prop_odds.json").read_text())
+    quotes += [{**row, "bookmaker":"other"} for row in quotes]
+    (directory / "player_prop_odds.json").write_text(json.dumps(quotes))
+    (directory / "player_stats.json").write_text("[]")
+    report = evaluate(tmp_path, 2025, 1, 1)
+    assert report["summary"]["ungradeable_quote_count"] == 4
+    assert report["summary"]["excluded_unique_opportunities"] == 2
+    with pytest.raises(ValueError, match="integrity validation failed"):
+        evaluate(tmp_path, 2025, 1, 1, strict_outcomes=True)
+
+
+def test_explicit_zero_outcome_is_gradeable_and_exclusions_artifact_is_written(tmp_path):
+    directory = _snapshot(tmp_path)
+    outcomes = json.loads((directory / "player_stats.json").read_text())
+    outcomes[0]["stats"]["receiving_yards"] = 0
+    (directory / "player_stats.json").write_text(json.dumps(outcomes))
+    report = evaluate(tmp_path, 2025, 1, 1)
+    assert report["summary"]["gradeable_quotes"] == 2
+    assert {row["outcome"] for row in report["quote_rows"]} == {0}
+    output = tmp_path / "results"
+    write_outputs(report, output)
+    assert json.loads((output / "evaluation_exclusions.json").read_text()) == []
+
+
 def test_evaluator_aggregates_production_shaped_player_stat_rows(tmp_path):
     directory=_snapshot(tmp_path)
     rows=[
