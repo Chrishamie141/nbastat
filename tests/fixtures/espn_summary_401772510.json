@@ -1,0 +1,36 @@
+{
+  "boxscore": {
+    "players": [
+      {
+        "team": {"abbreviation": "DAL"},
+        "statistics": [
+          {
+            "name": "passing",
+            "labels": ["C/ATT", "YDS", "TD", "INT"],
+            "athletes": [{
+              "athlete": {"id": "2577417", "displayName": "Dak Prescott", "position": {"abbreviation": "QB"}},
+              "stats": ["21/34", "188", "0", "0"]
+            }]
+          },
+          {
+            "name": "rushing",
+            "labels": ["CAR", "YDS", "TD"],
+            "athletes": [{
+              "athlete": {"id": "2577417", "displayName": "Dak Prescott", "position": {"abbreviation": "QB"}},
+              "stats": ["4", "19", "0"]
+            }]
+          },
+          {
+            "name": "receiving",
+            "labels": ["REC", "YDS", "TD", "TGTS"],
+            "athletes": [{
+              "athlete": {"id": "15818", "displayName": "CeeDee Lamb", "position": {"abbreviation": "WR"}},
+              "stats": ["7", "110", "0", "13"]
+            }]
+          }
+        ]
+      },
+      {"team": {"abbreviation": "PHI"}, "statistics": []}
+    ]
+  }
+}

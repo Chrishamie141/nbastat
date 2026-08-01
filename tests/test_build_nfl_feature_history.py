@@ -4,7 +4,8 @@ from pathlib import Path
 
 from backtesting.build_nfl_feature_history import build_week, make_plan
 from backtesting.historical_provider import HistoricalSnapshotProvider
-from nfl_providers import EspnNflProvider, JsonRawCache
+from nfl_providers import EspnNflProvider, JsonRawCache, normalize_espn_player_boxscore
+from backtesting.player_prop_odds import aggregate_player_outcomes, grade_quote
 
 
 def _scoreboard():
@@ -26,7 +27,8 @@ def _summary():
 
 def _args(tmp_path):
     return Namespace(season=2024,start_week=1,end_week=1,snapshot_root=tmp_path/"snapshots",
-                     cache_root=tmp_path/"cache",resume=False,validate=True,plan=False,allow_network=True)
+                     cache_root=tmp_path/"cache",resume=False,validate=True,plan=False,allow_network=True,
+                     game_id=None,rebuild_from_cache=False)
 
 
 def test_feature_build_is_cached_deterministic_and_has_no_paid_requests(tmp_path, monkeypatch):
@@ -42,7 +44,7 @@ def test_feature_build_is_cached_deterministic_and_has_no_paid_requests(tmp_path
     assert before == after
     manifest=json.loads((args.snapshot_root/"nfl/2024/week_01/manifest.json").read_text())
     assert manifest["paid_requests_required"] == manifest["estimated_paid_credits"] == 0
-    assert second["diagnostics"] == []
+    assert second["diagnostics"][0]["passing_rows_emitted"] == 1
 
 
 def test_plan_is_offline_and_prior_season_rows_are_leakage_safe(tmp_path):
@@ -76,3 +78,38 @@ def test_malformed_summary_is_diagnosed_without_losing_other_datasets(tmp_path, 
     assert report["datasets"]["outcomes"] == 1
     assert report["datasets"]["player_stats"] == 0
     assert report["diagnostics"][0]["classification"] == "MALFORMED_OR_UNAVAILABLE_ESPN_SUMMARY"
+
+
+def test_realistic_dal_philadelphia_fixture_preserves_ids_and_grades_all_markets():
+    fixture=Path("tests/fixtures/espn_summary_401772510.json")
+    payload=json.loads(fixture.read_text()); diagnostics={}
+    rows=normalize_espn_player_boxscore(payload,"2025",1,diagnostics)
+    dak=[row for row in rows if row["provider_player_id"] == "2577417"]
+    assert {row["category"] for row in dak} == {"passing","rushing"}
+    assert all(row["canonical_player_id"] == row["athlete_id"] == row["player_id"] == "2577417" for row in dak)
+    assert next(row for row in dak if row["category"] == "passing")["stats"] == {
+        "completions":21,"passing_attempts":34,"passing_yards":188,"passing_tds":0,"interceptions":0}
+    assert next(row for row in dak if row["category"] == "rushing")["stats"]["rushing_attempts"] == 4
+    assert diagnostics["passing_rows_emitted"] == 1
+    normalized=[]
+    for row in rows:
+        normalized.append({**row,"game_id":"espn-401772510","record_role":"completed_game_history",
+                           "is_pregame":False,"week":1})
+    outcomes,_=aggregate_player_outcomes(normalized)
+    markets={"passing_yards":180.5,"passing_tds":0.5,"rushing_attempts":3.5,
+             "rushing_yards":18.5,"receptions":6.5,"receiving_yards":100.5}
+    players={market:("2577417" if market.startswith(("passing","rushing")) else "15818") for market in markets}
+    for market,line in markets.items():
+        result=grade_quote({"game_id":"espn-401772510","canonical_player_id":players[market],
+                            "market":market,"line":line,"selection":"OVER"},outcomes)
+        assert result["actual_stat"] is not None
+
+
+def test_cache_only_provider_never_fetches_missing_payload(tmp_path):
+    provider=EspnNflProvider(JsonRawCache(tmp_path),allow_network=False)
+    try:
+        provider._summary(2025,1,"401772510")
+    except Exception as exc:
+        assert "cache-only ESPN summary missing" in str(exc)
+    else:
+        raise AssertionError("cache-only mode unexpectedly fetched a response")
