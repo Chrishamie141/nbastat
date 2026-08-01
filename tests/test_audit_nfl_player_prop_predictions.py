@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from backtesting.audit_nfl_player_prop_predictions import (
-    _choose, _metric_variant, audit, prediction_key, write_outputs,
+    PredictionAuditIntegrityError, _choose, _metric_variant, audit, prediction_key, write_outputs,
 )
 from backtesting.build_nfl_player_prop_predictions import distribution_summary
 
@@ -81,4 +81,36 @@ def test_audit_is_offline_and_artifacts_repeat_identically(tmp_path, monkeypatch
     assert {path.name: path.read_bytes() for path in output.iterdir()} == before
     assert set(before) == {"probability_audit_summary.json", "probability_audit_rows.json",
         "extreme_predictions.json", "side_swap_comparison.json", "distribution_diagnostics.json",
-        "market_side_breakdowns.json", "audit_manifest.json"}
+        "market_side_breakdowns.json", "audit_validation_findings.json", "audit_manifest.json"}
+
+
+def test_recoverable_validation_finding_is_artifact_first_and_does_not_raise(tmp_path):
+    _snapshot(tmp_path)
+    path = tmp_path / "nfl/2025/week_01/player_prop_predictions.json"
+    predictions = json.loads(path.read_text())
+    predictions[0].pop("distribution_summary")
+    path.write_text(json.dumps(predictions))
+
+    output = tmp_path / "audit"
+    report = audit(tmp_path, 2025, 1, 1, validate=True, output_dir=output)
+
+    assert report["summary"]["validation"]["fatal_count"] == 0
+    assert any(item["code"] == "MISSING_DISTRIBUTION_SUMMARY" for item in report["validation_findings"])
+    assert (output / "audit_manifest.json").exists()
+
+
+def test_fatal_validation_finding_writes_artifacts_then_raises_structured_error(tmp_path):
+    _snapshot(tmp_path)
+    path = tmp_path / "nfl/2025/week_01/player_prop_predictions.json"
+    predictions = json.loads(path.read_text())
+    predictions.append({**predictions[0], "model_probability": .75})
+    path.write_text(json.dumps(predictions))
+    output = tmp_path / "audit"
+
+    with pytest.raises(PredictionAuditIntegrityError) as caught:
+        audit(tmp_path, 2025, 1, 1, validate=True, output_dir=output)
+
+    assert caught.value.fatal_count > 0
+    assert caught.value.artifact_directory == output
+    assert (output / "audit_validation_findings.json").exists()
+    assert (output / "audit_manifest.json").exists()

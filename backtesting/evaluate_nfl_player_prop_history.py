@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
-from .audit_nfl_player_prop_predictions import audit
+from .audit_nfl_player_prop_predictions import audit, write_outputs as write_audit_outputs
 from .build_nfl_player_prop_predictions import MODEL_VERSIONS, build
 from .config import SNAPSHOTS_DIR
 from .evaluate_nfl_player_props import aggregate, evaluate, grouped, probability_metrics
@@ -128,7 +128,7 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
               "build_missing_predictions":build_missing_predictions,
               "overwrite_predictions":overwrite_predictions,"strict_outcomes":strict_outcomes,
               "market":market,"bookmaker":bookmaker,"validate":validate}
-    reports=[]; failed=[]; reused=[]; recomputed=[]
+    reports=[]; failed=[]; reused=[]; recomputed=[]; stopped_error: RuntimeError | None = None
     for week in range(start_week, end_week + 1):
         directory=snapshot_week_dir(snapshot_root,"nfl",season,week); cache=output_dir/"weeks"/f"week_{week:02d}.json"
         inputs=_input_manifest(directory, config)
@@ -156,24 +156,41 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
                 try:
                     evaluation=evaluate(snapshot_root,season,week,week,market,bookmaker,strict_outcomes)
                     audited=audit(snapshot_root,season,week,week,market=market,validate=validate)
+                    write_audit_outputs(audited, output_dir/"weeks"/f"week_{week:02d}_audit")
+                    audit_findings=audited.get("validation_findings", [])
+                    fatal_findings=[item for item in audit_findings if not item["recoverable"]]
+                    recoverable_findings=[item for item in audit_findings if item["recoverable"]]
+                    if fatal_findings:
+                        status="INTEGRITY_FAILURE"
+                        counts=Counter(item["code"] for item in fatal_findings)
+                        reasons=[{"code":code,"count":count,"recoverable":False} for code,count in sorted(counts.items())]
+                    elif recoverable_findings:
+                        status="PARTIAL"
+                        counts=Counter(item["code"] for item in recoverable_findings)
+                        reasons=[{"code":code,"count":count,"recoverable":True} for code,count in sorted(counts.items())]
                     if not evaluation["opportunity_rows"]:
-                        status="PARTIAL"; reasons=[{"code":"NO_GRADEABLE_OPPORTUNITIES"}]
-                    elif evaluation["exclusions"]:
-                        status="PARTIAL"; reasons=[{"code":"RECOVERABLE_EXCLUSIONS","count":len(evaluation["exclusions"])}]
+                        status="PARTIAL"; reasons.append({"code":"NO_GRADEABLE_OPPORTUNITIES","recoverable":True})
+                    elif evaluation["exclusions"] and status != "INTEGRITY_FAILURE":
+                        status="PARTIAL"; reasons.append({"code":"RECOVERABLE_EXCLUSIONS","count":len(evaluation["exclusions"]),"recoverable":True})
                 except (ValueError, KeyError, TypeError) as exc:
-                    integrity="integrity" in str(exc).lower() or "ambiguous" in str(exc).lower() or validate
+                    integrity="integrity" in str(exc).lower() or "ambiguous" in str(exc).lower()
                     status="INTEGRITY_FAILURE" if integrity else "RECOVERABLE_EVALUATION_ERROR"
                     reasons=[{"code":status,"detail":str(exc)[:500]}]
         # Prediction building may have changed a local input after the initial
         # resume check; persist the post-run fingerprint.
         record={"week":week,"status":status,"reasons":reasons,"missing_files":missing,
+                "evaluation_complete": evaluation is not None,
+                "audit_complete": audited is not None,
+                "fatal_integrity": status == "INTEGRITY_FAILURE",
                 "evaluation":evaluation,"audit":audited,
                 "resume_manifest":_input_manifest(directory, config)}
         reports.append(record)
         if status not in {"COMPLETE","PARTIAL"}: failed.append({"week":week,"status":status,"reasons":reasons})
-        if status in {"COMPLETE","PARTIAL"}: _write(cache,record)
-        if status == "INTEGRITY_FAILURE" or (status != "COMPLETE" and not continue_on_error):
-            raise RuntimeError(f"week {week}: {status}: {reasons}")
+        # Partial records are deliberately resumable; fatal records are retained for diagnosis.
+        if status in {"COMPLETE","PARTIAL","INTEGRITY_FAILURE"}: _write(cache,record)
+        if status != "COMPLETE" and not continue_on_error:
+            stopped_error=RuntimeError(f"week {week}: {status}: {reasons}")
+            break
 
     opportunities=[r for w in reports if w.get("evaluation") for r in w["evaluation"]["opportunity_rows"]]
     exclusions=[r for w in reports if w.get("evaluation") for r in w["evaluation"]["exclusions"]]
@@ -186,7 +203,10 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
         ev=w.get("evaluation"); rows=ev["opportunity_rows"] if ev else []; summary=ev["summary"] if ev else {}
         predictions_w=[r for r in predictions if int(r.get("week",-1))==w["week"]]
         ready=sum(r.get("readiness")=="READY" for r in predictions_w); not_ready=len(predictions_w)-ready
-        metrics={"week":w["week"],"status":w["status"],**aggregate(rows),
+        metrics={"week":w["week"],"status":w["status"],"reasons":w["reasons"],
+                 "evaluation_complete":w.get("evaluation_complete",ev is not None),
+                 "audit_complete":w.get("audit_complete",w.get("audit") is not None),
+                 "fatal_integrity":w.get("fatal_integrity",False),**aggregate(rows),
                  "model_brier":probability_metrics(rows,"model_probability")["brier_score"],
                  "model_log_loss":probability_metrics(rows,"model_probability")["log_loss"],
                  "model_ece":probability_metrics(rows,"model_probability")["ece"],**{k:summary.get(k,0) for k in ("accepted_quotes","quotes_with_predictions","gradeable_quotes","unique_opportunities","gradeable_unique_opportunities","excluded_unique_opportunities","pushes","positive_edge_opportunities","positive_edge_profit","positive_edge_roi")}}
@@ -214,8 +234,16 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
                               "line_outside_support":any(x<summary["minimum"] or x>summary["maximum"] for x in lines) if summary["minimum"] is not None else False})
     pooled=aggregate(opportunities); model=probability_metrics(opportunities,"model_probability"); marketm=probability_metrics(opportunities,"no_vig_market_probability")
     complete_weekly=[r for r in weekly if r["opportunities"]]
+    finding_counts=Counter(item["code"] for w in reports for item in (w.get("audit") or {}).get("validation_findings",[]) if item["recoverable"])
+    fatal_weeks=[w["week"] for w in reports if w["status"] == "INTEGRITY_FAILURE"]
     season_summary={"schema_version":1,"season":season,"weeks":[start_week,end_week],"network_contacted":False,
                     "week_status_counts":dict(sorted(Counter(w["status"] for w in reports).items())),"reused_weeks":reused,"recomputed_weeks":recomputed,
+                    "complete_weeks":[w["week"] for w in reports if w["status"]=="COMPLETE"],
+                    "partial_weeks":[w["week"] for w in reports if w["status"]=="PARTIAL"],
+                    "missing_weeks":[w["week"] for w in reports if w["status"].startswith("MISSING_")],
+                    "fatal_integrity_weeks":fatal_weeks,
+                    "recoverable_audit_findings_by_code":dict(sorted(finding_counts.items())),
+                    "final_exit_nonzero":bool(fatal_weeks or stopped_error),
                     "micro":{**pooled,"model":model,"market":marketm,"model_minus_market":{k:(model[k]-marketm[k] if model[k] is not None and marketm[k] is not None else None) for k in ("brier_score","log_loss","ece")}},
                     "macro_weekly":{"weeks":len(complete_weekly),"model_brier":_mean(r["model_brier"] for r in complete_weekly),"model_log_loss":_mean(r["model_log_loss"] for r in complete_weekly),"roi":_mean(r["roi"] for r in complete_weekly)},
                     "clv_ready":False,"model_version":model_version}
@@ -232,6 +260,8 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
     names=[*ARTIFACTS,"weekly_metrics.csv","market_metrics.csv","opportunity_rows.csv","exclusions.csv"]
     manifest={"schema_version":1,"network_contacted":False,"artifacts":{n:_hash(output_dir/n) for n in sorted(names)}}
     _write(output_dir/"audit_manifest.json",manifest)
+    if stopped_error is not None:
+        raise stopped_error
     return {**artifacts,"audit_manifest.json":manifest}
 
 
@@ -239,8 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--season",type=int,required=True); p.add_argument("--start-week",type=int,default=1); p.add_argument("--end-week",type=int,default=18)
     p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--output-dir",type=Path,required=True); p.add_argument("--model-version",choices=MODEL_VERSIONS,required=True)
     p.add_argument("--simulations",type=int,default=10000); p.add_argument("--seed",type=int,default=1729); p.add_argument("--build-missing-predictions",action="store_true"); p.add_argument("--overwrite-predictions",action="store_true")
-    p.add_argument("--continue-on-error",action="store_true"); p.add_argument("--strict-outcomes",action="store_true"); p.add_argument("--market",choices=CANONICAL_PLAYER_PROP_MARKETS); p.add_argument("--bookmaker"); p.add_argument("--validate",action="store_true"); p.add_argument("--resume",action="store_true")
-    args=p.parse_args(argv); run(**vars(args)); return 0
+    p.add_argument("--continue-on-error",action="store_true",help="Continue across missing, partial, and fatal weeks; fatal integrity findings still produce a nonzero final exit."); p.add_argument("--strict-outcomes",action="store_true"); p.add_argument("--market",choices=CANONICAL_PLAYER_PROP_MARKETS); p.add_argument("--bookmaker"); p.add_argument("--validate",action="store_true",help="Check prediction invariants. Recoverable findings make a week PARTIAL; fatal contradictions remain explicit. Season artifacts are written whenever possible."); p.add_argument("--resume",action="store_true")
+    args=p.parse_args(argv); report=run(**vars(args)); return int(report["season_summary.json"].get("final_exit_nonzero",False))
 
 
 if __name__ == "__main__": raise SystemExit(main())
