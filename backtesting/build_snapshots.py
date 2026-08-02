@@ -47,6 +47,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--require-backtest-ready", action="store_true")
     parser.add_argument("--allow-paid-odds-fetch", action="store_true",
                         help="Explicitly authorize historical Odds API requests that may consume paid quota.")
+    parser.add_argument("--max-paid-requests", type=int,
+                        help="Hard operator-reviewed request ceiling; required with --allow-paid-odds-fetch.")
     parser.add_argument("--refresh", choices=("team-stats", "outcomes"), help="Refresh one free ESPN dataset; preserves odds.json and never contacts The Odds API.")
     return parser.parse_args(argv)
 
@@ -161,6 +163,20 @@ def request_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
     print(f"Expected paid historical requests: {paid}")
     print(f"Estimated Odds API credits: {paid * len(TEAM_MARKETS) * 10} (10 historical x 1 region x {len(TEAM_MARKETS)} markets per HTTP request)")
     return plan
+
+
+def validate_paid_odds_authorization(plan: list[dict[str, Any]], *, allow_paid: bool,
+                                     max_paid_requests: int | None) -> None:
+    required = sum(int(row.get("paid_requests") or 0) for row in plan)
+    if not allow_paid:
+        return
+    if max_paid_requests is None:
+        raise SnapshotError("--max-paid-requests is required with --allow-paid-odds-fetch")
+    if max_paid_requests < 0:
+        raise SnapshotError("--max-paid-requests must be nonnegative")
+    if required > max_paid_requests:
+        raise SnapshotError(
+            f"planned paid requests={required} exceed authorized maximum={max_paid_requests}")
 
 
 def _write_json(path: Path, records: Any, overwrite: bool) -> None:
@@ -425,6 +441,13 @@ def main(argv: list[str] | argparse.Namespace | None = None) -> int:
     paid_needed = any("odds" in row["actions"] for row in plan)
     if paid_needed and "odds-api" in args.providers and not getattr(args, "allow_paid_odds_fetch", False):
         print("ERROR: paid historical odds fetch blocked; inspect the plan, then rerun with --allow-paid-odds-fetch.")
+        return 2
+    try:
+        validate_paid_odds_authorization(
+            plan, allow_paid=getattr(args, "allow_paid_odds_fetch", False),
+            max_paid_requests=getattr(args, "max_paid_requests", None))
+    except SnapshotError as exc:
+        print(f"ERROR: {exc}")
         return 2
     try:
         sources = create_sources(args.providers, getattr(args, "odds_hours_before_kickoff", 24))

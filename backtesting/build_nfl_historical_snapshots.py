@@ -26,6 +26,7 @@ def parse_args(argv=None):
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--plan", action="store_true")
     p.add_argument("--allow-paid-odds-fetch", action="store_true")
+    p.add_argument("--max-paid-requests", type=int)
     return p.parse_args(argv)
 
 
@@ -41,6 +42,8 @@ def main(argv=None):
             if args.dry_run: command.append("--dry-run")
             if args.plan: command.append("--plan")
             if args.allow_paid_odds_fetch: command.append("--allow-paid-odds-fetch")
+            if args.max_paid_requests is not None:
+                command.extend(["--max-paid-requests", str(args.max_paid_requests)])
             result |= build(command)
     report = coverage(args.output_dir, "nfl", args.season)
     write_coverage(report, ROOT / "reports/nfl_historical_snapshot_coverage.json",

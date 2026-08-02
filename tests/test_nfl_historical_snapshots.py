@@ -2,7 +2,11 @@ import json
 from argparse import Namespace
 from pathlib import Path
 
-from backtesting.build_snapshots import _manifest, main, request_plan, prepare_canonical_games
+import pytest
+
+from backtesting.build_snapshots import (
+    _manifest, main, request_plan, prepare_canonical_games, validate_paid_odds_authorization,
+)
 from nfl_providers import JsonRawCache
 from backtesting.snapshot_coverage import coverage, markdown, write_coverage
 from backtesting.snapshot_sources import RawCache
@@ -53,6 +57,16 @@ def test_request_plan_counts_only_games_without_cached_odds(tmp_path, capsys):
     plan = request_plan(args)
     assert plan[0]["games_with_odds"] == plan[0]["expected_paid_requests"] == 1
     assert "Expected paid historical requests: 1" in capsys.readouterr().out
+
+
+def test_paid_team_odds_authorization_requires_and_enforces_ceiling():
+    plan = [{"paid_requests": 10}, {"paid_requests": 5}]
+    with pytest.raises(Exception, match="required"):
+        validate_paid_odds_authorization(plan, allow_paid=True, max_paid_requests=None)
+    with pytest.raises(Exception, match="exceed authorized"):
+        validate_paid_odds_authorization(plan, allow_paid=True, max_paid_requests=14)
+    validate_paid_odds_authorization(plan, allow_paid=True, max_paid_requests=15)
+    validate_paid_odds_authorization(plan, allow_paid=False, max_paid_requests=None)
 
 
 def test_dry_run_constructs_no_provider_and_makes_no_network_calls(tmp_path, monkeypatch):
