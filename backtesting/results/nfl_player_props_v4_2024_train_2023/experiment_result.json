@@ -2,7 +2,7 @@
   "artifacts": {
     "calibration_report.json": {
       "path": "calibration_report.json",
-      "sha256": "5168e7ef60da5fd06c18d6d2d8d6ea370ffca78826eedaedac0658a25e5b8791"
+      "sha256": "f993b27260bdae2f9e99dc69a38a7e0c9c3b69c2f776ed9f39e7836fad7de1f0"
     },
     "distribution_selection.json": {
       "path": "distribution_selection.json",
@@ -22,7 +22,7 @@
     },
     "reliability_plot.svg": {
       "path": "reliability_plot.svg",
-      "sha256": "5af12983d0ba8f2ef9faa8f42701f86c20bd7c0189a24cefe717bf5a621b9a75"
+      "sha256": "7d02efe359e034e0edfc9c552abfcc623b6c6d425bc47f1561b36afde221f62f"
     },
     "training_metrics.csv": {
       "path": "training_metrics.csv",
@@ -34,65 +34,65 @@
     },
     "v4_player_market_projections.json": {
       "path": "v4_player_market_projections.json",
-      "sha256": "c2ced6c771731f5410e91f62978b9c6f99ead376ceab26a124ae42e3a5d746a7"
+      "sha256": "323816518d5cbb02413e9f70a104dfe728b9f98a2b8982113b262d42593c169b"
     },
     "v4_predictions.csv": {
       "path": "v4_predictions.csv",
-      "sha256": "5daef13efa3d399e176a29f6c6803a2f9b4083da9bc6782c3b85f9559bb8f537"
+      "sha256": "dc6ce222814a2bfc1137660b3ae87ba405d6ab06cf94af4786a421b21b6cba98"
     },
     "v4_predictions.json": {
       "path": "v4_predictions.json",
-      "sha256": "b16ec4654ae109c229edf31486d6dfc77217b962a996f9d1195f5d33677c260f"
+      "sha256": "5b1ff28e8edfa3ed5b88fbafb599050a9e8f299eab0b48d4ea196d2f30247bd6"
     },
     "v4_summary.json": {
       "path": "v4_summary.json",
-      "sha256": "bb6380fe53a00e1cfb595064458a9c2f88a07b0233dbe114a7381a6d6a44e41f"
+      "sha256": "c00a622510cd05262ec2134f67eca9d438b43dbb7a208353aaa22070097af985"
     }
   },
   "baseline_comparison": {
     "baseline_metrics": {
-      "brier_score": 0.2840639844799812,
-      "ece": 0.18734489348370928,
-      "log_loss": 1.1354799942018448,
-      "roi": 0.030884549688636815
+      "brier_score": 0.344301435839559,
+      "ece": 0.2746021807100085,
+      "log_loss": 2.018077445753212,
+      "roi": -0.04048183639976879
     },
     "baseline_model_id": "nfl_game_baseline_v3",
     "bootstrap_draws": 1000,
     "bootstrap_method": "deterministic_game_cluster_bootstrap",
     "candidate_metrics": {
-      "brier_score": 0.27017482612130655,
-      "ece": 0.14973870799689012,
-      "log_loss": 0.8469129465142303,
-      "roi": 0.03201107610475809
+      "brier_score": 0.2911676810007339,
+      "ece": 0.19007837556060936,
+      "log_loss": 0.9091589663339825,
+      "roi": -0.026339647169911776
     },
     "metric_deltas": {
       "brier_score": {
         "ci_95": [
-          -0.052456224917688477,
-          0.03227605858862376
+          -0.06256460988346074,
+          -0.04329967726184697
         ],
-        "estimate": -0.013889158358674658
+        "estimate": -0.0531337548388251
       },
       "ece": {
         "ci_95": [
-          -0.10440975216309839,
-          0.04608513894880581
+          -0.09765205808569036,
+          -0.07121105792479027
         ],
-        "estimate": -0.037606185486819155
+        "estimate": -0.08452380514939917
       },
       "log_loss": {
         "ci_95": [
-          -0.49486004562023644,
-          -0.08243791517812094
+          -1.2200815851531703,
+          -0.9937180386814152
         ],
-        "estimate": -0.28856704768761443
+        "estimate": -1.1089184794192295
       },
       "roi": {
         "ci_95": [
-          -0.21624894130630043,
-          0.18358567387230887
+          -0.017614006310598458,
+          0.04314414250098763
         ],
-        "estimate": 0.0011265264161212755
+        "estimate": 0.014142189229857011
       }
     },
     "paired_opportunities": true
@@ -113,7 +113,7 @@
   },
   "configuration_hash": "ae86e5d1f777bddd0b778c5030596c31fc010f12731d2166aa1686dda919e905",
   "dataset": {
-    "independent_games": 22,
+    "independent_games": 272,
     "input_hashes": {
       "backtesting/data/snapshots/nfl/2023/week_01/games.json": "437aed6e728daf48dbf0ea8f4d5dfb9f689d05265e25fa8af0ecf9857d24747c",
       "backtesting/data/snapshots/nfl/2023/week_01/player_stats.json": "f86fc1f5c85cfb4655ac174ce40e213881f6dc192ddecbbee237063bf3fbb903",
@@ -153,103 +153,110 @@
       "backtesting/data/snapshots/nfl/2023/week_18/player_stats.json": "3c82443b9e6d3737d1f15e3ddf0c2c0d9485e6fcb485691fd3186b004011d70c",
       "backtesting/data/snapshots/nfl/2024/week_01/games.json": "52ec8d9c0d0b99b581896b69853839c8ad13c246e65ebaea8309932f71190f5e",
       "backtesting/data/snapshots/nfl/2024/week_01/odds.json": "780a610d906f3e9edafaa4f704d308ced6962d5dde098df291055a84afcec3b1",
-      "backtesting/data/snapshots/nfl/2024/week_01/player_identities.json": "934fde7d4479ae1025718f183c20a58e886d7124602c51fcfb728962fec51103",
-      "backtesting/data/snapshots/nfl/2024/week_01/player_prop_model_features.json": "7dbb638153ab2f83280ae89ebfd06581e97e4e862bfb641915a3a21994bb462e",
-      "backtesting/data/snapshots/nfl/2024/week_01/player_prop_predictions.json": "939729a2e4cc9c570668d1a2c44221970776e15bef311dbcaca3b727b7203475",
+      "backtesting/data/snapshots/nfl/2024/week_01/player_identities.json": "325a79e39aa4491a3f23242a057e6d478c88e4729abf62b49c8b329d02d96251",
+      "backtesting/data/snapshots/nfl/2024/week_01/player_prop_model_features.json": "2e00949765f8b1c464bbf766911984e528e615a86bee6cf12fac52f81c10bda7",
+      "backtesting/data/snapshots/nfl/2024/week_01/player_prop_predictions.json": "b621f66cd0ebc5689ae4339b6cb8281f39179d0be2055b1c80419973ab292008",
       "backtesting/data/snapshots/nfl/2024/week_02/games.json": "f6e274279d251ef8da2769a8409c26775939ff57f85e5e424f009abe3ac9ae73",
       "backtesting/data/snapshots/nfl/2024/week_02/odds.json": "1cab4c5c48f39f6ff68c25a95e54546e7d43fa2e25a36f5c7cb05723c8fae1d8",
-      "backtesting/data/snapshots/nfl/2024/week_02/player_identities.json": "fea12d3fed66b770f01e222302f5342f8104eed836a495590b2096806c2ce7b0",
-      "backtesting/data/snapshots/nfl/2024/week_02/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_02/player_prop_predictions.json": "0299a4947ce3706838dc828081f6b51bd31ab034d21b3db377d0a561bd1cee5b",
+      "backtesting/data/snapshots/nfl/2024/week_02/player_identities.json": "807717dd32766cd9397356f8e807879befc77b59701c3f4017f4b9795e67e31e",
+      "backtesting/data/snapshots/nfl/2024/week_02/player_prop_model_features.json": "feb8940617ea6f0fcd1393d0184c98b34b7afb7b7a6b2685417b872a82c179a4",
+      "backtesting/data/snapshots/nfl/2024/week_02/player_prop_predictions.json": "edaf6ea465ac4e638a3e4488bb5b2608aa885f82c21e52c3b1f8e5dbf12b6d75",
       "backtesting/data/snapshots/nfl/2024/week_03/games.json": "c7e7cf6b3603b1581a776b27214b9ee01ae3efd2ab08e52d9a60d70be86d9769",
       "backtesting/data/snapshots/nfl/2024/week_03/odds.json": "ee00911a182f0193dfbb63ea2d0dfdbc02e2848998e81b804b16146eed38ae46",
-      "backtesting/data/snapshots/nfl/2024/week_03/player_identities.json": "7ce8589e07a2532fa0fc3cf49af1b21a8a3bd1c0d7f582b92532c553cafbe824",
-      "backtesting/data/snapshots/nfl/2024/week_03/player_prop_model_features.json": "acf8b837d6cd2391dcb92fa83dab7579e26a353ca6749287849973329cbf2ef5",
-      "backtesting/data/snapshots/nfl/2024/week_03/player_prop_predictions.json": "210bf78fd2ebebbf9907827e09a162996bf691167ebfd52f9dfe89abe9b7f74d",
+      "backtesting/data/snapshots/nfl/2024/week_03/player_identities.json": "70a3388f61e255ac3557e2f58425b7bb83e83d205a06d5c9fd187131d41d040f",
+      "backtesting/data/snapshots/nfl/2024/week_03/player_prop_model_features.json": "15fb24d3a0ce2afb310d45a7f000284835eb5f032ec8570678e614cdf9b45ce0",
+      "backtesting/data/snapshots/nfl/2024/week_03/player_prop_predictions.json": "9c1b37b99863fa5f0db9ad51482859cfeb7adea5a8d638ef62b4b1b29a7fc5fb",
       "backtesting/data/snapshots/nfl/2024/week_04/games.json": "6c57d950a6218d67bd0081ff98649a76c6aeb52ebbc036f17b118ac22e538206",
       "backtesting/data/snapshots/nfl/2024/week_04/odds.json": "3913514892b205e94c9c57331c4649cdbe8ca1319b5f59aa0730fa7b3d6894f4",
-      "backtesting/data/snapshots/nfl/2024/week_04/player_identities.json": "8f434df85965de7b612b7a64ce0ecae4dda05cdc5b039397ea6cb60fa6e999b3",
-      "backtesting/data/snapshots/nfl/2024/week_04/player_prop_model_features.json": "b3e5a864ded6417234331626f4d7f57922c9a7b1e2f09d01402aff8a8827eb20",
-      "backtesting/data/snapshots/nfl/2024/week_04/player_prop_predictions.json": "7937f66b6759867931c27decb4be615d1906ddf254c894f35c42b8be254d76db",
+      "backtesting/data/snapshots/nfl/2024/week_04/player_identities.json": "79df9d1a4b1420777d166fce99d423e2d7b4ef97e6cdc484c1edf1439bcadb6a",
+      "backtesting/data/snapshots/nfl/2024/week_04/player_prop_model_features.json": "0a386d3dc24f02205b999452a0cd1aec4a241827feb23398a0a6410babbded80",
+      "backtesting/data/snapshots/nfl/2024/week_04/player_prop_predictions.json": "08422cfd54a7db70297cedc81bb5b1837039bc91c9e54db77f23d0a2cd777a43",
       "backtesting/data/snapshots/nfl/2024/week_05/games.json": "bd643716afe81d008bf1aca801f96292e48735b400913e0a7091e884e69a8e98",
       "backtesting/data/snapshots/nfl/2024/week_05/odds.json": "58eb24a00da190d908b38de417e7460aa67a0040b6438958c58b1f1394073229",
-      "backtesting/data/snapshots/nfl/2024/week_05/player_identities.json": "6b5145d56be6c806e6737a6cf9428ba1bfcd93feed6e7b380893a9d8ef5d5b1e",
-      "backtesting/data/snapshots/nfl/2024/week_05/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_05/player_prop_predictions.json": "902d36ea9d2dc15a5c5db7a56b4f1a91bc30350e9cd5d434d306962a3bdcd5e9",
+      "backtesting/data/snapshots/nfl/2024/week_05/player_identities.json": "126e5a75a367bd19eec31a0326c0a25f2e6907340d15cb22eaf7da05c87c53f9",
+      "backtesting/data/snapshots/nfl/2024/week_05/player_prop_model_features.json": "68e89d3b34a6fe51c1121fa564ec286db0fbcedb98a5cf6a967b62b47650354e",
+      "backtesting/data/snapshots/nfl/2024/week_05/player_prop_predictions.json": "203219179ae404f2342ea32595e424f40db011c20baa6c47ffe0f18e5d71e9ba",
       "backtesting/data/snapshots/nfl/2024/week_06/games.json": "a26b2fde53635170d01d91ea0f6f46415456ff7c3003b6f924b92dafcfb6f17f",
       "backtesting/data/snapshots/nfl/2024/week_06/odds.json": "98a45f5410668fb9e3d910432f38406d144b156fdd90a9d70bdd0d04d0326757",
-      "backtesting/data/snapshots/nfl/2024/week_06/player_identities.json": "db791feb2bc23c889eb35415d8fd9f63624e751f0421aed3d024c5412c101bc6",
-      "backtesting/data/snapshots/nfl/2024/week_06/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_06/player_prop_predictions.json": "2a6e09039d05186fc01236988e76e588bf84209cb43ce65d4d59612efa0cf8ba",
+      "backtesting/data/snapshots/nfl/2024/week_06/player_identities.json": "6476e093db8757cda7999ab47357d2f489db88e134a21104fb3f77b574f6fc64",
+      "backtesting/data/snapshots/nfl/2024/week_06/player_prop_model_features.json": "3540a7c482e372adfec3a5d18ac4ebd0bc29515bccef8d2b13028f2973c1f5c2",
+      "backtesting/data/snapshots/nfl/2024/week_06/player_prop_predictions.json": "d6ffe25e6b195e0e67979a3847aaebf466c33768bc23381fbf7ef16c79cc6174",
       "backtesting/data/snapshots/nfl/2024/week_07/games.json": "091a1452f1b338b859ca8206f0d34b25872dcdf1f68eb8d4c81c2a9e1565ec3b",
       "backtesting/data/snapshots/nfl/2024/week_07/odds.json": "057e1f9d474bbe7d0a38bd120f56e202fed07c87fb54e3cb8301ea4ccb0271c7",
-      "backtesting/data/snapshots/nfl/2024/week_07/player_identities.json": "e9fe6a4307771d9bfbcb1caacbe84f9be6a3b43e0db1b21049ea89442f79fcd8",
-      "backtesting/data/snapshots/nfl/2024/week_07/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_07/player_prop_predictions.json": "071efb9dd3f2cf76afb965690f69b05c1182f3e9d14687499656d55586ddeaf7",
+      "backtesting/data/snapshots/nfl/2024/week_07/player_identities.json": "6525287e02e6cc15818013933dbf3da440db36d5a64dea7d362dba35f787d207",
+      "backtesting/data/snapshots/nfl/2024/week_07/player_prop_model_features.json": "185d1e6a71cedc2a72e84b4e50a7f06d66459f3f9aefd034b7ed6485dcaf0e66",
+      "backtesting/data/snapshots/nfl/2024/week_07/player_prop_predictions.json": "40025b7816a3915fcad3612c126731b5529cdc2fef80875d9ad49591413d5104",
       "backtesting/data/snapshots/nfl/2024/week_08/games.json": "300349722f6dfb4998eb4ddbae5b76ff9f10b0b454264ec69c3ebb37a43ac7c6",
       "backtesting/data/snapshots/nfl/2024/week_08/odds.json": "48c23f14fd763cc47ff5e255ca650f10c7f534e8855e5c2ca8a25305d334667e",
-      "backtesting/data/snapshots/nfl/2024/week_08/player_identities.json": "50f51f1c134e6162df053225fea838a857c36f16d08b6a2cce9f61d0097bdea0",
-      "backtesting/data/snapshots/nfl/2024/week_08/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_08/player_prop_predictions.json": "734837d63751545eae87f0d33574466c734aad9c7c7756a1686b3d93f80e3567",
+      "backtesting/data/snapshots/nfl/2024/week_08/player_identities.json": "994b22488475054438e95f407164f916ccecebad515d30679852c58e5b60c250",
+      "backtesting/data/snapshots/nfl/2024/week_08/player_prop_model_features.json": "1c33713a687c2bef9b77e9049ee9a5fd1dd97dada049ddce7f9c1d79c2c70158",
+      "backtesting/data/snapshots/nfl/2024/week_08/player_prop_predictions.json": "65cef4746725fd0876c0288a43a9d333ef0d336801df29e0ec31917220df4f69",
       "backtesting/data/snapshots/nfl/2024/week_09/games.json": "4a8b5c37938b9a85043c1bef8163fe7d8b89ac27bc2cc4110ad9b1667999d745",
       "backtesting/data/snapshots/nfl/2024/week_09/odds.json": "75dcb9898cf8b50fde3ea86e5f49655e44e90b61cf8f563dfb17bb8eca0afa1a",
-      "backtesting/data/snapshots/nfl/2024/week_09/player_identities.json": "08bb11f17adb405a5f43a9136175baa90a0561a3429b7258e36140e7063f497d",
-      "backtesting/data/snapshots/nfl/2024/week_09/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_09/player_prop_predictions.json": "73d365e510f5b6ff34bfc99f3688c25c20ddade44eb5b115a11a31873a956985",
+      "backtesting/data/snapshots/nfl/2024/week_09/player_identities.json": "d04643700a575af4671e1de8e27842a1608e604b20f1ae02704e3a4b3c61f9ce",
+      "backtesting/data/snapshots/nfl/2024/week_09/player_prop_model_features.json": "466d2df15119c915ee33a3f9d822cd36f0cf2e91c206920f898ddc2fa849eaff",
+      "backtesting/data/snapshots/nfl/2024/week_09/player_prop_predictions.json": "2d9000f9931bcc3e8fc74927c90160758a41df53f818d1bdb9c122a44bbcf32c",
       "backtesting/data/snapshots/nfl/2024/week_10/games.json": "6aeaff96f2d561e06b7ab7a68d0dbcebb794e8375c5ae27bf4ae384289297120",
       "backtesting/data/snapshots/nfl/2024/week_10/odds.json": "6b5815cfc7c99c21fc9cf80f3336a4fc27bbe41e41b0671905dad5d3de1aec05",
-      "backtesting/data/snapshots/nfl/2024/week_10/player_identities.json": "4afb4430758f4b52cc03e12136d8f04080942550b6258a8eb0683597866ca3fe",
-      "backtesting/data/snapshots/nfl/2024/week_10/player_prop_model_features.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "backtesting/data/snapshots/nfl/2024/week_10/player_prop_predictions.json": "daa22f55245186c461c11e8234e4076042c38abdfc06c0a7fe039d85c4b145e6",
+      "backtesting/data/snapshots/nfl/2024/week_10/player_identities.json": "2e8b91c0a963cbcf6bd5669b115ab52ff88de5fc00ea4256690090b2a8b686be",
+      "backtesting/data/snapshots/nfl/2024/week_10/player_prop_model_features.json": "2c782de24478a00f0ddec7260715bd48adafebdd60311ffedc96a9b017d833e9",
+      "backtesting/data/snapshots/nfl/2024/week_10/player_prop_predictions.json": "580bbbd705018d437c58e5dfdd795fd77cce0158870e677384a73c90edcdae9a",
       "backtesting/data/snapshots/nfl/2024/week_11/games.json": "bece33d02d813728e253b2095a09927fa31e71a732f3ff29df1fccedd2dbe88a",
       "backtesting/data/snapshots/nfl/2024/week_11/odds.json": "c217b6fc6826954784f913ead7abf0d121fc25a85cc3aa84d1d24c8af64ce05c",
-      "backtesting/data/snapshots/nfl/2024/week_11/player_identities.json": "70b84b780835acfedb7dad99305476f135fd73f78c3b9d6f4426b0f48c33f58a",
-      "backtesting/data/snapshots/nfl/2024/week_11/player_prop_model_features.json": "77627bc1230f7a90610e66579fbb1719d8a1e293bab746ee239cb00f078a768c",
-      "backtesting/data/snapshots/nfl/2024/week_11/player_prop_predictions.json": "ff7bc1a96f5fc6565590d15116a27e0f63ecc02fe8bf8220dd850ba2c52f515b",
+      "backtesting/data/snapshots/nfl/2024/week_11/player_identities.json": "6ac37d741cf438db8978863a35acfb835aa3be5ceb169f516b3cfaf1fdd415c2",
+      "backtesting/data/snapshots/nfl/2024/week_11/player_prop_model_features.json": "d9b23d149f893af81a67872208b2594ef7d030d6451ea33567f4cb993e59f5e2",
+      "backtesting/data/snapshots/nfl/2024/week_11/player_prop_predictions.json": "2c6e439a33b1ef9ab14267a7cd5a79afd5026e585a4348de852c225894c6859e",
       "backtesting/data/snapshots/nfl/2024/week_12/games.json": "9e5f6eeab6da2dac209fbc01b8fd99f2c7e7672cb8e2241b9a7a45a1bc429a5f",
       "backtesting/data/snapshots/nfl/2024/week_12/odds.json": "5e35dcd1eb61ee22885f30e87812e2bc2914ebd3a5db78f349cf2578e4b78ce0",
-      "backtesting/data/snapshots/nfl/2024/week_12/player_identities.json": "1fe720631de9a97801e19da97eda8901f5eeaa3a73c9bc4bd1dc880a6e44f3c6",
-      "backtesting/data/snapshots/nfl/2024/week_12/player_prop_model_features.json": "fe1134bf617f9cce07c953bb7ed3a541a41e18dab1d6b16c6bbe8a669263875c",
-      "backtesting/data/snapshots/nfl/2024/week_12/player_prop_predictions.json": "02a2dcc4174d13b7669a5d388a078f735a85436eda03a019b50479f931b00313",
+      "backtesting/data/snapshots/nfl/2024/week_12/player_identities.json": "96d16e09268fe8c1947e8ea41cd480c69896c14b5c596dd51403309dc75cc60d",
+      "backtesting/data/snapshots/nfl/2024/week_12/player_prop_model_features.json": "043b6083ec5dcc5d75e869f3c19d530a6a517726b8b69797f4e789897ab4a8fe",
+      "backtesting/data/snapshots/nfl/2024/week_12/player_prop_predictions.json": "f8fb2578bd08423baa6bcad05f65c6294389ed57dc7562f1d995bfd346344333",
       "backtesting/data/snapshots/nfl/2024/week_13/games.json": "c629bee450e3e0641fc44a7116255f506fb4f5111424199b57f2439797c58c77",
       "backtesting/data/snapshots/nfl/2024/week_13/odds.json": "a3268f5068bc4303aa2ffa2cb6fd0c8039ba28fe6b8c18a73ab2f5631fe2caa4",
-      "backtesting/data/snapshots/nfl/2024/week_13/player_identities.json": "90c50a9c306dd48d18aa1e28a6e73e33b1b8464d9af5a3bff12d994cfe6a2e6e",
-      "backtesting/data/snapshots/nfl/2024/week_13/player_prop_model_features.json": "0a68d53b9bef8fd547162b1f2eaaaec9a1aee3bdbe2983293f90fd5d5872598e",
-      "backtesting/data/snapshots/nfl/2024/week_13/player_prop_predictions.json": "ca17c6a2f6a204d3a3901c864eef11f38ebed84694ad36258e1f95bdad04d116",
+      "backtesting/data/snapshots/nfl/2024/week_13/player_identities.json": "38ff3d4c9f88637fe65fda181c72640ed8439626292e4eb7f72b854085cc841e",
+      "backtesting/data/snapshots/nfl/2024/week_13/player_prop_model_features.json": "f50ff02adf14858902addcb5bc6cb708afcec882b81b632be71b30771fa79700",
+      "backtesting/data/snapshots/nfl/2024/week_13/player_prop_predictions.json": "237be03892fae22bf69b9977ae202951acc0869c8ee10f06b54f99abfeb6c26e",
       "backtesting/data/snapshots/nfl/2024/week_14/games.json": "68454501aa47e9fa9bb9aa64b2cdd4f43b65f3fa35c9ba97206a35e3e83bda11",
       "backtesting/data/snapshots/nfl/2024/week_14/odds.json": "9a7d1389530b930e2eab601955079295a526cf7277019c58e01ed2b7a9c38513",
-      "backtesting/data/snapshots/nfl/2024/week_14/player_identities.json": "3c36a8dcdd6a3cb204bdc89aba8602b51bc1a3d2cd5fcc70cbfa703598d192a0",
-      "backtesting/data/snapshots/nfl/2024/week_14/player_prop_model_features.json": "c9ede52f1dee0d12388ab4e2af3433771157d71ef85a2926fc20a1342d52c61b",
-      "backtesting/data/snapshots/nfl/2024/week_14/player_prop_predictions.json": "eecf485f3b0ecccab126513733c41b76b756859d06cf2a9e6ed98fb8f80ad4f5",
+      "backtesting/data/snapshots/nfl/2024/week_14/player_identities.json": "c50f7669872ef1e92beed03c754a241f33c1dff51ebe15642c58d8eba9573880",
+      "backtesting/data/snapshots/nfl/2024/week_14/player_prop_model_features.json": "0144b91b41059bb797083ed7c387ade49185f69916fb7069f96d3d5977bd7fd2",
+      "backtesting/data/snapshots/nfl/2024/week_14/player_prop_predictions.json": "23742cd7d9e83d8086f6f8345da207e9f247f841dcbb63c086c713ddafedd5e8",
       "backtesting/data/snapshots/nfl/2024/week_15/games.json": "414ecd6bcafa4f5091fb0c0358b7f0c50d4423a659d9cc3443b4a3726a57c107",
       "backtesting/data/snapshots/nfl/2024/week_15/odds.json": "b628416447176c773b60eac14a30e64f3260bdfa1e3dda7bbc9253110d7c135c",
-      "backtesting/data/snapshots/nfl/2024/week_15/player_identities.json": "777a30b0f45285c5d4b4b0cba0c05d6c3cf751e4092b7d8e921aca27bef58520",
-      "backtesting/data/snapshots/nfl/2024/week_15/player_prop_model_features.json": "dee515f9034463d650da0e76f80b9a04a4d2ba952e6a7a1f7e6fa6c241633917",
-      "backtesting/data/snapshots/nfl/2024/week_15/player_prop_predictions.json": "44def1ae5e67c7c64711e5312461edb66c2bf38c058a967e78e980679a7ea277",
+      "backtesting/data/snapshots/nfl/2024/week_15/player_identities.json": "c67a496bf9ad9da1dff4eeaa7adc4639d97b1c1bf1502889dfbc4913354ad147",
+      "backtesting/data/snapshots/nfl/2024/week_15/player_prop_model_features.json": "2d923e4874256b9e3361219a9b04fb3b55241150fdafe7c62bda7b45f7377ed2",
+      "backtesting/data/snapshots/nfl/2024/week_15/player_prop_predictions.json": "2a7616cefe0496cf948bd007c639b2f450f589b42aceaa80080dd69cadf48a5a",
       "backtesting/data/snapshots/nfl/2024/week_16/games.json": "95f20ec5d5761d6a878c38dccaa06bab7d96a3240e303a6349e0ed785448c122",
       "backtesting/data/snapshots/nfl/2024/week_16/odds.json": "268dd3e032d39963f07918173c052c83fb531ee79160b86c3cb01bf7f044482e",
-      "backtesting/data/snapshots/nfl/2024/week_16/player_identities.json": "3e860df4c9cae640e048e562c789bca1ab0e904f59aa018e776f5709a70c821b",
-      "backtesting/data/snapshots/nfl/2024/week_16/player_prop_model_features.json": "101d06fe6b5ebeb353ab42990d1fe8d70f9c87055c13534169bb7607f0fab150",
-      "backtesting/data/snapshots/nfl/2024/week_16/player_prop_predictions.json": "f137f59cd835d476df0bb9c2d878ec99180b18d3511920d3c5ad84c32a19b218",
+      "backtesting/data/snapshots/nfl/2024/week_16/player_identities.json": "6283ad2af5ccfeb3a8d4011cd7b8125afb7c75e1cf170fb284ffafa92e1f8f4d",
+      "backtesting/data/snapshots/nfl/2024/week_16/player_prop_model_features.json": "9b9546eed18d9b550a2f8942d535ca6e2287d83c82c93fde58b886949cf80309",
+      "backtesting/data/snapshots/nfl/2024/week_16/player_prop_predictions.json": "e767e0730ccf9534580e0fc52c86430109b319a1ecb021fce4242a47d9fcc161",
       "backtesting/data/snapshots/nfl/2024/week_17/games.json": "e27ecc144b6dd64cbc5adb859a23414105c631477e42eea47145b9e7d8ef7c65",
       "backtesting/data/snapshots/nfl/2024/week_17/odds.json": "84a94e0b95048174a94320eaec958b7cb8e014451f7ec31d235c8774bfa369d6",
-      "backtesting/data/snapshots/nfl/2024/week_17/player_identities.json": "55f7c434fb177754c586db380ec87431fe0c5f9a69d4f14ea9c52afe960c7c57",
-      "backtesting/data/snapshots/nfl/2024/week_17/player_prop_model_features.json": "bd3cf37c4be00a422ea19c95bc825bb33d02866a7fef1abbce401a595ad5ec2f",
-      "backtesting/data/snapshots/nfl/2024/week_17/player_prop_predictions.json": "e70833ae936383f909139fd7ef27319a7471844b03c26ff619a91149a7b02a7a",
+      "backtesting/data/snapshots/nfl/2024/week_17/player_identities.json": "d5cab82b5c57743618f0ff1225eddc42302003533e7c872cfe64875e9f746236",
+      "backtesting/data/snapshots/nfl/2024/week_17/player_prop_model_features.json": "0ed74d346edce4ee022bb844e0083ab6ce92ac71991e9043cc075b59e83d35ce",
+      "backtesting/data/snapshots/nfl/2024/week_17/player_prop_predictions.json": "d9e40bf793c5aa97d6eb4ecf112309d2cfe1fff3242a1d861f3a04c466fc2bc4",
       "backtesting/data/snapshots/nfl/2024/week_18/games.json": "85760e7a6a7b1d8cc172654a29b410137ef23c0a094f6c0184c93ae9aceec449",
       "backtesting/data/snapshots/nfl/2024/week_18/odds.json": "483589995b66ce1c93ec34263d3d48938ef518a13935baae9dd2233b8a04488f",
-      "backtesting/data/snapshots/nfl/2024/week_18/player_identities.json": "d9db3435bb9b6460ad8dc00f86f7d01f743274f63b5ebde0a3e7ac380eaf0070",
-      "backtesting/data/snapshots/nfl/2024/week_18/player_prop_model_features.json": "45ab7d8c1109f43530180ceedf24487e6f13e330d6a231a7638a64a66e9a8c3a",
-      "backtesting/data/snapshots/nfl/2024/week_18/player_prop_predictions.json": "bc838bc56a1636d46f11eb7b7664796c4e8bcbfec8fcc667391a0ee29c0d630a",
-      "backtesting/results/nfl_player_props_2024_history/opportunity_rows.csv": "cba40896cdf2e5847cd957f368fac00253a0e6d6ca8eb27a9604b8a7b6a06f83"
+      "backtesting/data/snapshots/nfl/2024/week_18/player_identities.json": "5670b217ba97469bfb1880c4adc2d8bcd457a9e5ba945a0a2b918225e3182639",
+      "backtesting/data/snapshots/nfl/2024/week_18/player_prop_model_features.json": "93b21c8f0ba8ab855df7aacf48479c169c39e0431a12f166200346037c8bf041",
+      "backtesting/data/snapshots/nfl/2024/week_18/player_prop_predictions.json": "63126c9b87774957d996980ef07e34531489ec2879c866015a2700e6bb357f66",
+      "backtesting/results/nfl_player_props_2024_history/opportunity_rows.csv": "6560673d75b66421106af42fc6aec434534fe0733b1d42634cecc3cd88591b3f"
     },
-    "opportunities": 3192
+    "opportunities": 74816
   },
   "evaluation_window": {
     "evaluated_weeks": [
       1,
+      2,
       3,
       4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
       11,
       12,
       13,
@@ -284,266 +291,266 @@
   "evidence": {
     "leakage_safe": true,
     "out_of_sample": true,
-    "status": "INSUFFICIENT_HISTORY"
+    "status": "PROMOTION_ELIGIBLE_SAMPLE"
   },
-  "experiment_id": "nfl_prop_v4_research_v1.2024.w01-w18.d67ef0d4c012",
-  "git_commit": "ff565cfb202315ed802087aa9cd457b5fd9aaed7",
+  "experiment_id": "nfl_prop_v4_research_v1.2024.w01-w18.b7bef39d8840",
+  "git_commit": "4205d7669e22427d05991fb49e3bd97232cc10a5",
   "metrics": {
     "by_confidence_bucket": {
       "0-10%": {
         "bets": 0,
-        "brier_score": 0.34777258691319946,
-        "ece": 0.3265894383349969,
-        "log_loss": 1.453623148791102,
-        "opportunities": 298,
+        "brier_score": 0.35183822324595415,
+        "ece": 0.33902347857250725,
+        "log_loss": 1.407386833986197,
+        "opportunities": 8687,
         "roi": null,
         "settled": 0,
         "units_profit": 0
       },
       "10-20%": {
         "bets": 0,
-        "brier_score": 0.24126438801039055,
-        "ece": 0.16513589292774714,
-        "log_loss": 0.7035888461636187,
-        "opportunities": 310,
+        "brier_score": 0.30069585538381305,
+        "ece": 0.2476399733613069,
+        "log_loss": 0.8556564102802013,
+        "opportunities": 7541,
         "roi": null,
         "settled": 0,
         "units_profit": 0
       },
       "20-30%": {
-        "bets": 3,
-        "brier_score": 0.264053500147902,
-        "ece": 0.15308185319909762,
-        "log_loss": 0.7317552539395982,
-        "opportunities": 345,
-        "roi": -1.0,
-        "settled": 3,
-        "units_profit": -3.0
+        "bets": 86,
+        "brier_score": 0.27545672353843326,
+        "ece": 0.17515779966412603,
+        "log_loss": 0.7568598079089439,
+        "opportunities": 7149,
+        "roi": 0.04767441860465116,
+        "settled": 86,
+        "units_profit": 4.1
       },
       "30-40%": {
-        "bets": 31,
-        "brier_score": 0.25335332860964366,
-        "ece": 0.08636542685362764,
-        "log_loss": 0.7010043334094984,
-        "opportunities": 330,
-        "roi": -0.20161290322580644,
-        "settled": 31,
-        "units_profit": -6.25
+        "bets": 785,
+        "brier_score": 0.26126450099896653,
+        "ece": 0.11065961661915535,
+        "log_loss": 0.7174344567778972,
+        "opportunities": 7141,
+        "roi": 0.0027643312101910786,
+        "settled": 785,
+        "units_profit": 2.169999999999997
       },
       "40-50%": {
-        "bets": 65,
-        "brier_score": 0.24941142272856906,
-        "ece": 0.029243988230735433,
-        "log_loss": 0.6919930650221906,
-        "opportunities": 313,
-        "roi": 0.05353846153846152,
-        "settled": 65,
-        "units_profit": 3.4799999999999986
+        "bets": 1552,
+        "brier_score": 0.2515391294453756,
+        "ece": 0.037079599915538886,
+        "log_loss": 0.6962777900244668,
+        "opportunities": 6890,
+        "roi": -0.030154639175257736,
+        "settled": 1552,
+        "units_profit": -46.800000000000004
       },
       "50-60%": {
-        "bets": 160,
-        "brier_score": 0.24941142272856906,
-        "ece": 0.02924398823073548,
-        "log_loss": 0.6919930650221906,
-        "opportunities": 313,
-        "roi": 0.10251752289301681,
-        "settled": 160,
-        "units_profit": 16.40280366288269
+        "bets": 3441,
+        "brier_score": 0.2515391294453756,
+        "ece": 0.037079599915538886,
+        "log_loss": 0.6962777900244668,
+        "opportunities": 6890,
+        "roi": -0.03502799919541395,
+        "settled": 3441,
+        "units_profit": -120.53134523141941
       },
       "60-70%": {
-        "bets": 236,
-        "brier_score": 0.25335332860964366,
-        "ece": 0.08636542685362758,
-        "log_loss": 0.7010043334094984,
-        "opportunities": 330,
-        "roi": 0.05893191238854297,
-        "settled": 236,
-        "units_profit": 13.907931323696141
+        "bets": 5207,
+        "brier_score": 0.26126450099896653,
+        "ece": 0.11065961661915535,
+        "log_loss": 0.7174344567778972,
+        "opportunities": 7141,
+        "roi": -0.017511796305629906,
+        "settled": 5207,
+        "units_profit": -91.18392336341492
       },
       "70-80%": {
-        "bets": 280,
-        "brier_score": 0.264053500147902,
-        "ece": 0.15308185319909762,
-        "log_loss": 0.7317552539395982,
-        "opportunities": 345,
-        "roi": 0.025636673718874462,
-        "settled": 280,
-        "units_profit": 7.178268641284849
+        "bets": 5937,
+        "brier_score": 0.27545672353843326,
+        "ece": 0.17515779966412603,
+        "log_loss": 0.7568598079089439,
+        "opportunities": 7149,
+        "roi": -0.025815495716831203,
+        "settled": 5937,
+        "units_profit": -153.26659807082686
       },
       "80-90%": {
-        "bets": 304,
-        "brier_score": 0.24126438801039055,
-        "ece": 0.1651358929277471,
-        "log_loss": 0.7035888461636187,
-        "opportunities": 310,
-        "roi": 0.09521741816041926,
-        "settled": 304,
-        "units_profit": 28.946095120767456
+        "bets": 7403,
+        "brier_score": 0.30069585538381305,
+        "ece": 0.24763997336130705,
+        "log_loss": 0.8556564102802013,
+        "opportunities": 7541,
+        "roi": -0.022729285676463696,
+        "settled": 7403,
+        "units_profit": -168.26490186286074
       },
       "90-100%": {
-        "bets": 298,
-        "brier_score": 0.34777258691319946,
-        "ece": 0.3265894383349969,
-        "log_loss": 1.453623148791102,
-        "opportunities": 298,
-        "roi": -0.0556572045381854,
-        "settled": 298,
-        "units_profit": -16.58584695237925
+        "bets": 8687,
+        "brier_score": 0.35183822324595415,
+        "ece": 0.33902347857250725,
+        "log_loss": 1.407386833986184,
+        "opportunities": 8687,
+        "roi": -0.03430561453910649,
+        "settled": 8687,
+        "units_profit": -298.01287350121805
       }
     },
     "by_market": {
       "passing_tds": {
-        "bets": 32,
-        "brier_score": 0.15760761441744037,
-        "ece": 0.17949233262879394,
-        "log_loss": 0.4866752715828428,
-        "opportunities": 86,
-        "roi": 0.10659401534654547,
-        "settled": 32,
-        "units_profit": 3.411008491089455
+        "bets": 812,
+        "brier_score": 0.24075630479084398,
+        "ece": 0.08704951027211098,
+        "log_loss": 0.7486294961429565,
+        "opportunities": 2238,
+        "roi": -0.006261704314198118,
+        "settled": 812,
+        "units_profit": -5.084503903128872
       },
       "passing_yards": {
-        "bets": 211,
-        "brier_score": 0.2174012897969346,
-        "ece": 0.0942713350077074,
-        "log_loss": 0.6425497668734947,
-        "opportunities": 476,
-        "roi": 0.36196438880931403,
-        "settled": 211,
-        "units_profit": 76.37448603876526
+        "bets": 5236,
+        "brier_score": 0.281417683247022,
+        "ece": 0.17923005512429782,
+        "log_loss": 0.865158231890965,
+        "opportunities": 11800,
+        "roi": 0.023602540695866092,
+        "settled": 5236,
+        "units_profit": 123.58290308355485
       },
       "receiving_yards": {
-        "bets": 805,
-        "brier_score": 0.2985974500973678,
-        "ece": 0.2026390258640844,
-        "log_loss": 0.9733484324020449,
-        "opportunities": 1830,
-        "roi": -0.038609932308135066,
-        "settled": 805,
-        "units_profit": -31.080995508048726
+        "bets": 18474,
+        "brier_score": 0.3054446615242868,
+        "ece": 0.21854234834698483,
+        "log_loss": 0.9790077579737695,
+        "opportunities": 40964,
+        "roi": -0.05089582267656559,
+        "settled": 18474,
+        "units_profit": -940.2494281268727
       },
       "receptions": {
-        "bets": 232,
-        "brier_score": 0.2627349699113178,
-        "ece": 0.13173608471324208,
-        "log_loss": 0.7581259987233275,
-        "opportunities": 584,
-        "roi": -0.08744849848440545,
-        "settled": 232,
-        "units_profit": -20.288051648382062
+        "bets": 5406,
+        "brier_score": 0.2667013140824079,
+        "ece": 0.13067049965974856,
+        "log_loss": 0.7842857585511822,
+        "opportunities": 12698,
+        "roi": -0.01667566975138779,
+        "settled": 5406,
+        "units_profit": -90.1486706760024
       },
       "rushing_attempts": {
-        "bets": 18,
-        "brier_score": 0.22897187682762202,
-        "ece": 0.10493230554307653,
-        "log_loss": 0.6452754243801083,
-        "opportunities": 40,
-        "roi": -0.1105299786018261,
-        "settled": 18,
-        "units_profit": -1.98953961483287
+        "bets": 545,
+        "brier_score": 0.275093260007667,
+        "ece": 0.1368069391053324,
+        "log_loss": 0.8023849476156203,
+        "opportunities": 1230,
+        "roi": 0.024529729399085338,
+        "settled": 545,
+        "units_profit": 13.36870252250151
       },
       "rushing_yards": {
-        "bets": 79,
-        "brier_score": 0.2064280966845007,
-        "ece": 0.06362253313915886,
-        "log_loss": 0.6014439281826455,
-        "opportunities": 176,
-        "roi": 0.2234473928817827,
-        "settled": 79,
-        "units_profit": 17.652344037660832
+        "bets": 2625,
+        "brier_score": 0.2866610327226322,
+        "ece": 0.1927009952409055,
+        "log_loss": 0.8639941269579151,
+        "opportunities": 5886,
+        "roi": 0.010187182883888594,
+        "settled": 2625,
+        "units_profit": 26.741355070207558
       }
     },
     "calibration_curve": [
       {
-        "absolute_calibration_error": 0.3265894383349969,
+        "absolute_calibration_error": 0.33902347857250725,
         "bucket": "0-10%",
-        "count": 298,
-        "observed_win_rate": 0.37583892617449666,
-        "predicted_probability_mean": 0.04924948783949977
+        "count": 8687,
+        "observed_win_rate": 0.3828709566018188,
+        "predicted_probability_mean": 0.043847478029311535
       },
       {
-        "absolute_calibration_error": 0.16513589292774714,
+        "absolute_calibration_error": 0.2476399733613069,
         "bucket": "10-20%",
-        "count": 310,
-        "observed_win_rate": 0.3161290322580645,
-        "predicted_probability_mean": 0.15099313933031736
+        "count": 7541,
+        "observed_win_rate": 0.3980904389338284,
+        "predicted_probability_mean": 0.1504504655725215
       },
       {
-        "absolute_calibration_error": 0.15308185319909762,
+        "absolute_calibration_error": 0.17515779966412603,
         "bucket": "20-30%",
-        "count": 345,
-        "observed_win_rate": 0.4028985507246377,
-        "predicted_probability_mean": 0.2498166975255401
+        "count": 7149,
+        "observed_win_rate": 0.4250944187998321,
+        "predicted_probability_mean": 0.24993661913570608
       },
       {
-        "absolute_calibration_error": 0.08636542685362764,
+        "absolute_calibration_error": 0.11065961661915535,
         "bucket": "30-40%",
-        "count": 330,
-        "observed_win_rate": 0.43636363636363634,
-        "predicted_probability_mean": 0.3499982095100087
+        "count": 7141,
+        "observed_win_rate": 0.4614199691919899,
+        "predicted_probability_mean": 0.35076035257283456
       },
       {
-        "absolute_calibration_error": 0.02924398823073543,
+        "absolute_calibration_error": 0.037079599915538886,
         "bucket": "40-50%",
-        "count": 313,
-        "observed_win_rate": 0.4792332268370607,
-        "predicted_probability_mean": 0.4499892386063253
+        "count": 6890,
+        "observed_win_rate": 0.4865021770682148,
+        "predicted_probability_mean": 0.4494225771526759
       },
       {
-        "absolute_calibration_error": 0.029243988230735485,
+        "absolute_calibration_error": 0.037079599915538886,
         "bucket": "50-60%",
-        "count": 313,
-        "observed_win_rate": 0.5207667731629393,
-        "predicted_probability_mean": 0.5500107613936748
+        "count": 6890,
+        "observed_win_rate": 0.5134978229317851,
+        "predicted_probability_mean": 0.550577422847324
       },
       {
-        "absolute_calibration_error": 0.08636542685362758,
+        "absolute_calibration_error": 0.11065961661915535,
         "bucket": "60-70%",
-        "count": 330,
-        "observed_win_rate": 0.5636363636363636,
-        "predicted_probability_mean": 0.6500017904899912
+        "count": 7141,
+        "observed_win_rate": 0.5385800308080101,
+        "predicted_probability_mean": 0.6492396474271654
       },
       {
-        "absolute_calibration_error": 0.15308185319909762,
+        "absolute_calibration_error": 0.17515779966412603,
         "bucket": "70-80%",
-        "count": 345,
-        "observed_win_rate": 0.5971014492753624,
-        "predicted_probability_mean": 0.75018330247446
+        "count": 7149,
+        "observed_win_rate": 0.5749055812001679,
+        "predicted_probability_mean": 0.7500633808642939
       },
       {
-        "absolute_calibration_error": 0.1651358929277471,
+        "absolute_calibration_error": 0.24763997336130705,
         "bucket": "80-90%",
-        "count": 310,
-        "observed_win_rate": 0.6838709677419355,
-        "predicted_probability_mean": 0.8490068606696826
+        "count": 7541,
+        "observed_win_rate": 0.6019095610661716,
+        "predicted_probability_mean": 0.8495495344274786
       },
       {
-        "absolute_calibration_error": 0.3265894383349969,
+        "absolute_calibration_error": 0.33902347857250725,
         "bucket": "90-100%",
-        "count": 298,
-        "observed_win_rate": 0.6241610738255033,
-        "predicted_probability_mean": 0.9507505121605002
+        "count": 8687,
+        "observed_win_rate": 0.6171290433981812,
+        "predicted_probability_mean": 0.9561525219706885
       }
     ],
     "overall": {
-      "bets": 1377,
-      "brier_score": 0.27017482612130655,
-      "ece": 0.14973870799689012,
-      "log_loss": 0.8469129465142303,
-      "opportunities": 3192,
-      "roi": 0.03201107610475809,
+      "bets": 33098,
+      "brier_score": 0.2911676810007339,
+      "ece": 0.19007837556060936,
+      "log_loss": 0.9091589663339825,
+      "opportunities": 74816,
+      "roi": -0.026339647169911776,
       "roi_uncertainty": {
-        "clusters": 22,
+        "clusters": 272,
         "confidence_interval_95": [
-          -0.06854658990346436,
-          -0.033161560235445184
+          -0.05998210836354732,
+          -0.05215943168505463
         ],
         "draws": 2000,
         "method": "deterministic_game_cluster_bootstrap",
-        "standard_error": 0.009054557372290061
+        "standard_error": 0.001995204923809044
       },
-      "settled": 1377,
-      "units_profit": 44.07925179625189
+      "settled": 33098,
+      "units_profit": -871.78964202974
     }
   },
   "model_id": "nfl_prop_v4_research_v1",

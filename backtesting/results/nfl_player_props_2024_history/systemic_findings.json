@@ -10,8 +10,15 @@
     ],
     "affected_weeks": [
       1,
+      2,
       3,
       4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
       11,
       12,
       13,
@@ -22,65 +29,178 @@
       18
     ],
     "code": "EVALUATION_UNIT_ARTIFACT",
-    "evidence_count": 3192,
+    "evidence_count": 74816,
     "recommended_next_diagnostic_step": "Use one deterministic or policy-selected side per base opportunity for decision ROI; retain side-specific rows for probability auditing.",
     "scope": "SEASON",
     "severity": "WARNING",
     "supporting_metric": {
-      "base_opportunities": 1596,
-      "side_forecasts": 3192
+      "base_opportunities": 37408,
+      "side_forecasts": 74816
     },
     "threshold": "side forecasts are at least twice base opportunities"
   },
   {
     "affected_markets": [
+      "passing_tds",
       "passing_yards",
       "receiving_yards",
       "receptions",
+      "rushing_attempts",
       "rushing_yards"
     ],
     "affected_weeks": [
       1,
+      2,
       3,
       4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
       11,
       12,
       13,
       14,
       15,
       16,
+      17,
       18
     ],
     "code": "GLOBAL_OVERCONFIDENCE",
-    "evidence_count": 618,
+    "evidence_count": 28730,
     "recommended_next_diagnostic_step": "Inspect simulation dispersion and feature-history depth.",
     "scope": "SEASON",
     "severity": "HIGH",
-    "supporting_metric": 0.18734489348370928,
+    "supporting_metric": 0.2746021807100085,
     "threshold": "ECE > 0.15 with >=30 extreme forecasts"
   },
   {
     "affected_markets": [
+      "passing_tds",
       "passing_yards",
       "receiving_yards",
-      "receptions"
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
     ],
     "affected_weeks": [
       1,
+      2,
+      3,
       4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
       12,
+      13,
       14,
       15,
       16,
+      17,
       18
     ],
     "code": "LINE_OUTSIDE_SUPPORT",
-    "evidence_count": 17,
+    "evidence_count": 1211,
     "recommended_next_diagnostic_step": "Inspect feature history and simulated support; do not tune in this audit.",
     "scope": "MARKET",
     "severity": "HIGH",
-    "supporting_metric": 0.0028643639427127212,
+    "supporting_metric": 0.12396355819428806,
     "threshold": "> 0 lines outside support"
+  },
+  {
+    "affected_markets": [
+      "passing_tds",
+      "passing_yards",
+      "receiving_yards",
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
+    ],
+    "affected_weeks": [],
+    "code": "MARKET_SPECIFIC_OVERCONFIDENCE",
+    "evidence_count": 6,
+    "recommended_next_diagnostic_step": "Prioritize the worst market in a separate calibration task.",
+    "scope": "MARKET",
+    "severity": "HIGH",
+    "supporting_metric": [
+      {
+        "count": 2238,
+        "ece": 0.15185432797140305,
+        "market": "passing_tds"
+      },
+      {
+        "count": 11800,
+        "ece": 0.34344856338983054,
+        "market": "passing_yards"
+      },
+      {
+        "count": 40964,
+        "ece": 0.2848391409530319,
+        "market": "receiving_yards"
+      },
+      {
+        "count": 12698,
+        "ece": 0.19677849834619626,
+        "market": "receptions"
+      },
+      {
+        "count": 1230,
+        "ece": 0.2787467170731707,
+        "market": "rushing_attempts"
+      },
+      {
+        "count": 5886,
+        "ece": 0.2800328430173292,
+        "market": "rushing_yards"
+      }
+    ],
+    "threshold": "market ECE > 0.15 with at least 30 forecasts"
+  },
+  {
+    "affected_markets": [
+      "passing_tds",
+      "passing_yards",
+      "receiving_yards",
+      "receptions",
+      "rushing_attempts",
+      "rushing_yards"
+    ],
+    "affected_weeks": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+    ],
+    "code": "NO_EVIDENCE_OF_DIRECTION_BUG",
+    "evidence_count": 74816,
+    "recommended_next_diagnostic_step": "Treat calibration weakness as a model issue, not a side-lookup defect.",
+    "scope": "SEASON",
+    "severity": "INFO",
+    "supporting_metric": {
+      "complement_brier_improvement": -0.08567405325064154,
+      "swap_brier_improvement": -0.08567405325064154
+    },
+    "threshold": "neither transform improves Brier by more than 5% or 0.01"
   },
   {
     "affected_markets": [],
@@ -104,44 +224,13 @@
       17,
       18
     ],
-    "code": "LOW_READY_COVERAGE",
+    "code": "OUTCOME_COVERAGE_GAP",
     "evidence_count": 18,
-    "recommended_next_diagnostic_step": "Inspect readiness reasons and local feature history.",
+    "recommended_next_diagnostic_step": "Repair outcome snapshot coverage; do not attribute this to the model.",
     "scope": "WEEK",
     "severity": "WARNING",
-    "supporting_metric": 0.03611337695346136,
-    "threshold": "ready coverage < 50%"
-  },
-  {
-    "affected_markets": [
-      "passing_yards",
-      "receiving_yards",
-      "rushing_attempts"
-    ],
-    "affected_weeks": [],
-    "code": "MARKET_SPECIFIC_OVERCONFIDENCE",
-    "evidence_count": 3,
-    "recommended_next_diagnostic_step": "Prioritize the worst market in a separate calibration task.",
-    "scope": "MARKET",
-    "severity": "HIGH",
-    "supporting_metric": [
-      {
-        "count": 476,
-        "ece": 0.3115046092436975,
-        "market": "passing_yards"
-      },
-      {
-        "count": 1830,
-        "ece": 0.20693066010928962,
-        "market": "receiving_yards"
-      },
-      {
-        "count": 40,
-        "ece": 0.172465,
-        "market": "rushing_attempts"
-      }
-    ],
-    "threshold": "market ECE > 0.15 with at least 30 forecasts"
+    "supporting_metric": 3326,
+    "threshold": "> 0 outcome exclusions"
   },
   {
     "affected_markets": [
@@ -154,8 +243,15 @@
     ],
     "affected_weeks": [
       1,
+      2,
       3,
       4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
       11,
       12,
       13,
@@ -165,52 +261,12 @@
       17,
       18
     ],
-    "code": "NO_EVIDENCE_OF_DIRECTION_BUG",
-    "evidence_count": 3192,
-    "recommended_next_diagnostic_step": "Treat calibration weakness as a model issue, not a side-lookup defect.",
-    "scope": "SEASON",
-    "severity": "INFO",
-    "supporting_metric": {
-      "complement_brier_improvement": -0.13322243859649124,
-      "swap_brier_improvement": -0.13322243859649124
-    },
-    "threshold": "neither transform improves Brier by more than 5% or 0.01"
-  },
-  {
-    "affected_markets": [],
-    "affected_weeks": [
-      1,
-      3,
-      11,
-      12,
-      13,
-      18
-    ],
-    "code": "OUTCOME_COVERAGE_GAP",
-    "evidence_count": 6,
-    "recommended_next_diagnostic_step": "Repair outcome snapshot coverage; do not attribute this to the model.",
-    "scope": "WEEK",
-    "severity": "WARNING",
-    "supporting_metric": 284,
-    "threshold": "> 0 outcome exclusions"
-  },
-  {
-    "affected_markets": [],
-    "affected_weeks": [
-      2,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10
-    ],
-    "code": "WEEK_SPECIFIC_DATA_GAP",
-    "evidence_count": 7,
-    "recommended_next_diagnostic_step": "Acquire or rebuild the named local snapshot artifacts.",
-    "scope": "WEEK",
-    "severity": "WARNING",
-    "supporting_metric": 7,
-    "threshold": "> 0 unavailable weeks"
+    "code": "SIMULATION_VARIANCE_TOO_LOW",
+    "evidence_count": 1211,
+    "recommended_next_diagnostic_step": "Increase dispersion only in a separate modeling task after validating history-depth effects.",
+    "scope": "MODEL",
+    "severity": "HIGH",
+    "supporting_metric": 0.12396355819428806,
+    "threshold": "> 2% of evaluated lines outside simulation support"
   }
 ]

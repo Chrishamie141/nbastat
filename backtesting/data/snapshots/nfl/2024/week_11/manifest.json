@@ -17,12 +17,54 @@
       "generation_timestamp": "2024-11-19T01:15:00Z",
       "model_version": "nfl_game_baseline_v3",
       "present": true,
-      "records": 16,
-      "row_count": 16,
+      "records": 443,
+      "row_count": 443,
       "seed": 1729,
-      "sha256": "2f27d5c392d75ef95c74faa181d825dd53567faeb858d9d5406d05e9e78608fd",
+      "sha256": "9f4f31a975aa4cd7ccf21cab5946ca963176190a02a05fbc6adca6922de42167",
       "simulations": 10000,
       "source": "offline-frozen-nfl-simulation",
+      "status": "complete"
+    },
+    "player_prop_odds": {
+      "bookmakers": [
+        "betmgm",
+        "betonlineag",
+        "betrivers",
+        "bovada",
+        "draftkings",
+        "fanduel",
+        "williamhill_us"
+      ],
+      "markets": [
+        "passing_tds",
+        "passing_yards",
+        "receiving_yards",
+        "receptions",
+        "rushing_attempts",
+        "rushing_yards"
+      ],
+      "present": true,
+      "provider": "the-odds-api",
+      "provider_snapshot_timestamps": [
+        "2024-11-15T01:10:38Z",
+        "2024-11-17T17:55:38Z",
+        "2024-11-17T21:00:38Z",
+        "2024-11-17T21:20:38Z",
+        "2024-11-18T01:15:38Z",
+        "2024-11-19T01:10:38Z"
+      ],
+      "records": 9420,
+      "requested_snapshot_timestamps": [
+        "2024-11-15T01:15:00Z",
+        "2024-11-17T18:00:00Z",
+        "2024-11-17T21:05:00Z",
+        "2024-11-17T21:25:00Z",
+        "2024-11-18T01:20:00Z",
+        "2024-11-19T01:15:00Z"
+      ],
+      "row_count": 9420,
+      "sha256": "a4c578c1ee89fde6f1ead491947ad1e3424d91ab8ad510ad7d9f7566c2e529ec",
+      "source": "the-odds-api-historical",
       "status": "complete"
     },
     "player_prop_predictions": {
@@ -31,93 +73,613 @@
       "present": true,
       "readiness_by_game": {
         "espn-401671630": {
-          "NOT_READY_NO_PLAYER_DATA": 396
+          "NOT_READY_INSUFFICIENT_HISTORY": 44,
+          "READY": 352
         },
         "espn-401671642": {
-          "NOT_READY_NO_PLAYER_DATA": 376
+          "NOT_READY_INSUFFICIENT_HISTORY": 80,
+          "READY": 296
         },
         "espn-401671665": {
-          "NOT_READY_NO_PLAYER_DATA": 372
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 342
         },
         "espn-401671675": {
-          "NOT_READY_NO_PLAYER_DATA": 410
+          "NOT_READY_INSUFFICIENT_HISTORY": 52,
+          "READY": 358
         },
         "espn-401671694": {
-          "NOT_READY_NO_PLAYER_DATA": 356
+          "NOT_READY_INSUFFICIENT_HISTORY": 68,
+          "READY": 288
         },
         "espn-401671701": {
-          "NOT_READY_NO_PLAYER_DATA": 326
+          "NOT_READY_INSUFFICIENT_HISTORY": 58,
+          "READY": 268
         },
         "espn-401671746": {
-          "NOT_READY_NO_PLAYER_DATA": 362
+          "NOT_READY_INSUFFICIENT_HISTORY": 70,
+          "READY": 292
         },
         "espn-401671748": {
-          "NOT_READY_NO_PLAYER_DATA": 342
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 312
         },
         "espn-401671757": {
-          "NOT_READY_NO_PLAYER_DATA": 402
+          "NOT_READY_INSUFFICIENT_HISTORY": 66,
+          "READY": 336
         },
         "espn-401671782": {
-          "NOT_READY_NO_PLAYER_DATA": 346
+          "NOT_READY_INSUFFICIENT_HISTORY": 72,
+          "READY": 274
         },
         "espn-401671813": {
-          "NOT_READY_NO_PLAYER_DATA": 388
+          "NOT_READY_INSUFFICIENT_HISTORY": 68,
+          "READY": 320
         },
         "espn-401671824": {
-          "NOT_READY_NO_PLAYER_DATA": 330
+          "NOT_READY_INSUFFICIENT_HISTORY": 44,
+          "READY": 286
         },
         "espn-401671851": {
           "NOT_READY_INSUFFICIENT_HISTORY": 28,
-          "NOT_READY_NO_PLAYER_DATA": 114,
-          "READY": 174
+          "READY": 288
         },
         "espn-401671869": {
-          "NOT_READY_NO_PLAYER_DATA": 392
+          "NOT_READY_INSUFFICIENT_HISTORY": 68,
+          "READY": 324
         }
       },
       "readiness_by_market": {
         "passing_tds": {
-          "NOT_READY_NO_PLAYER_DATA": 122,
-          "READY": 6
+          "READY": 128
         },
         "passing_yards": {
-          "NOT_READY_NO_PLAYER_DATA": 632,
-          "READY": 24
+          "READY": 656
         },
         "receiving_yards": {
-          "NOT_READY_NO_PLAYER_DATA": 2320,
-          "READY": 104
+          "READY": 2424
         },
         "receptions": {
-          "NOT_READY_NO_PLAYER_DATA": 680,
-          "READY": 36
+          "READY": 716
         },
         "rushing_attempts": {
-          "NOT_READY_INSUFFICIENT_HISTORY": 2,
-          "NOT_READY_NO_PLAYER_DATA": 156,
-          "READY": 2
+          "NOT_READY_INSUFFICIENT_HISTORY": 84,
+          "READY": 76
         },
         "rushing_yards": {
-          "NOT_READY_INSUFFICIENT_HISTORY": 26,
-          "NOT_READY_NO_PLAYER_DATA": 1002,
-          "READY": 2
+          "NOT_READY_INSUFFICIENT_HISTORY": 694,
+          "READY": 336
         }
       },
       "readiness_by_player": {
+        "12483": {
+          "READY": 28
+        },
+        "14880": {
+          "READY": 32
+        },
+        "14881": {
+          "READY": 42
+        },
+        "15795": {
+          "READY": 32
+        },
+        "15818": {
+          "READY": 30
+        },
+        "15847": {
+          "READY": 36
+        },
+        "15864": {
+          "READY": 40
+        },
+        "16002": {
+          "READY": 6
+        },
+        "16733": {
+          "READY": 10
+        },
+        "16757": {
+          "READY": 34
+        },
+        "16800": {
+          "READY": 38
+        },
+        "2468609": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 8
+        },
+        "2577327": {
+          "READY": 28
+        },
+        "2969939": {
+          "READY": 38
+        },
+        "2971618": {
+          "READY": 8
+        },
+        "2972515": {
+          "READY": 32
+        },
+        "2973405": {
+          "READY": 8
+        },
+        "2976499": {
+          "READY": 30
+        },
+        "2977187": {
+          "READY": 36
+        },
+        "2991662": {
+          "READY": 18
+        },
+        "2998565": {
+          "READY": 6
+        },
+        "3043078": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 6
+        },
+        "3043116": {
+          "READY": 20
+        },
+        "3043275": {
+          "READY": 6
+        },
+        "3045144": {
+          "READY": 4
+        },
+        "3046439": {
+          "READY": 28
+        },
+        "3046779": {
+          "READY": 32
+        },
+        "3050481": {
+          "READY": 6
+        },
+        "3051392": {
+          "READY": 4
+        },
+        "3051738": {
+          "READY": 24
+        },
+        "3051876": {
+          "READY": 30
+        },
+        "3051926": {
+          "READY": 8
+        },
+        "3054212": {
+          "READY": 24
+        },
+        "3054850": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 28
+        },
+        "3059915": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 28,
+          "READY": 10
+        },
+        "3068267": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 6
+        },
+        "3116164": {
+          "READY": 24
+        },
+        "3116365": {
+          "READY": 22
+        },
+        "3116385": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 36,
+          "READY": 10
+        },
         "3116406": {
           "READY": 32
         },
+        "3117251": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 26
+        },
+        "3117256": {
+          "READY": 20
+        },
+        "3118892": {
+          "READY": 4
+        },
+        "3120348": {
+          "READY": 8
+        },
+        "3121023": {
+          "READY": 28
+        },
+        "3121409": {
+          "READY": 28
+        },
+        "3121422": {
+          "READY": 36
+        },
+        "3121427": {
+          "READY": 4
+        },
+        "3123076": {
+          "READY": 30
+        },
+        "3126486": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 34
+        },
+        "3127292": {
+          "READY": 24
+        },
+        "3127310": {
+          "READY": 4
+        },
+        "3128429": {
+          "READY": 34
+        },
+        "3128720": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 6
+        },
+        "3134353": {
+          "READY": 8
+        },
+        "3139477": {
+          "READY": 52
+        },
+        "3139602": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 4
+        },
+        "3676833": {
+          "READY": 4
+        },
+        "3728262": {
+          "READY": 20
+        },
+        "3843945": {
+          "READY": 4
+        },
+        "3886598": {
+          "READY": 30
+        },
+        "3911853": {
+          "READY": 6
+        },
+        "3912547": {
+          "READY": 44
+        },
+        "3915411": {
+          "READY": 4
+        },
+        "3915416": {
+          "READY": 34
+        },
+        "3915486": {
+          "READY": 22
+        },
+        "3915511": {
+          "READY": 38
+        },
+        "3916148": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 6
+        },
+        "3916387": {
+          "READY": 60
+        },
         "3916433": {
+          "READY": 32
+        },
+        "3917914": {
+          "READY": 6
+        },
+        "3918298": {
+          "READY": 54
+        },
+        "3921690": {
+          "READY": 10
+        },
+        "3925357": {
+          "READY": 32
+        },
+        "3929630": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 34,
+          "READY": 16
+        },
+        "3929645": {
+          "READY": 22
+        },
+        "3929785": {
+          "READY": 26
+        },
+        "3930066": {
+          "READY": 6
+        },
+        "3930086": {
+          "READY": 24
+        },
+        "3932905": {
+          "READY": 10
+        },
+        "4035538": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 20,
+          "READY": 10
+        },
+        "4035687": {
+          "READY": 24
+        },
+        "4036133": {
+          "READY": 28
+        },
+        "4036378": {
+          "READY": 28
+        },
+        "4038441": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 4
+        },
+        "4038815": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 12
+        },
+        "4038941": {
+          "READY": 44
+        },
+        "4039057": {
+          "READY": 14
+        },
+        "4039160": {
+          "READY": 6
+        },
+        "4040655": {
+          "READY": 28
+        },
+        "4040715": {
+          "READY": 52
+        },
+        "4047365": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 8
+        },
+        "4047646": {
+          "READY": 40
+        },
+        "4047650": {
+          "READY": 34
+        },
+        "4048244": {
+          "READY": 28
+        },
+        "4239993": {
+          "READY": 36
+        },
+        "4239996": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 20,
+          "READY": 8
+        },
+        "4240021": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4
+        },
+        "4240472": {
+          "READY": 4
+        },
+        "4241374": {
+          "READY": 6
+        },
+        "4241389": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 34
+        },
+        "4241457": {
+          "READY": 34
+        },
+        "4241463": {
+          "READY": 30
+        },
+        "4241464": {
+          "READY": 34
+        },
+        "4241474": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 24,
+          "READY": 6
+        },
+        "4241478": {
           "READY": 32
         },
         "4241479": {
           "READY": 34
         },
+        "4241802": {
+          "READY": 8
+        },
+        "4241985": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 8
+        },
+        "4242335": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 36,
+          "READY": 12
+        },
+        "4242355": {
+          "READY": 28
+        },
+        "4242392": {
+          "READY": 12
+        },
+        "4242433": {
+          "READY": 24
+        },
+        "4243389": {
+          "READY": 20
+        },
+        "4243537": {
+          "READY": 24
+        },
+        "4248528": {
+          "READY": 24
+        },
+        "4249417": {
+          "READY": 20
+        },
+        "4258173": {
+          "READY": 36
+        },
+        "4258595": {
+          "READY": 22
+        },
+        "4259545": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 8
+        },
+        "4262921": {
+          "READY": 40
+        },
+        "4360078": {
+          "READY": 20
+        },
+        "4360086": {
+          "READY": 2
+        },
+        "4360939": {
+          "READY": 26
+        },
+        "4361050": {
+          "READY": 10
+        },
+        "4361372": {
+          "READY": 4
+        },
+        "4361409": {
+          "READY": 6
+        },
+        "4361411": {
+          "READY": 18
+        },
+        "4361418": {
+          "READY": 48
+        },
+        "4361432": {
+          "READY": 32
+        },
+        "4361579": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 6
+        },
+        "4361741": {
+          "READY": 42
+        },
+        "4361777": {
+          "READY": 6
+        },
+        "4362238": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 24
+        },
+        "4362249": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 34
+        },
+        "4362628": {
+          "READY": 40
+        },
+        "4366031": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 30
+        },
+        "4368003": {
+          "READY": 4
+        },
+        "4369863": {
+          "READY": 36
+        },
         "4372016": {
           "READY": 26
         },
+        "4372019": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 6,
+          "READY": 4
+        },
+        "4372414": {
+          "READY": 28
+        },
+        "4373626": {
+          "READY": 10
+        },
+        "4373678": {
+          "READY": 38
+        },
+        "4374302": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 38
+        },
+        "4382466": {
+          "READY": 12
+        },
+        "4426338": {
+          "READY": 52
+        },
+        "4426348": {
+          "READY": 50
+        },
+        "4426354": {
+          "READY": 40
+        },
+        "4426385": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 6,
+          "READY": 6
+        },
+        "4426386": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 4
+        },
+        "4426388": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 28
+        },
+        "4426496": {
+          "READY": 2
+        },
+        "4426502": {
+          "READY": 32
+        },
+        "4426515": {
+          "READY": 34
+        },
+        "4426948": {
+          "READY": 8
+        },
+        "4427095": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 30
+        },
+        "4427278": {
+          "READY": 6
+        },
+        "4427366": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 24
+        },
+        "4428209": {
+          "READY": 24
+        },
+        "4428557": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 14,
+          "READY": 8
+        },
         "4428718": {
           "READY": 24
+        },
+        "4428850": {
+          "READY": 6
+        },
+        "4429022": {
+          "READY": 28
+        },
+        "4429025": {
+          "READY": 28
         },
         "4429086": {
           "READY": 6
@@ -126,617 +688,144 @@
           "NOT_READY_INSUFFICIENT_HISTORY": 28,
           "READY": 20
         },
-        "history:espn-401671630:BAL:derrick henry": {
-          "NOT_READY_NO_PLAYER_DATA": 36
+        "4429205": {
+          "READY": 26
         },
-        "history:espn-401671630:BAL:diontae johnson": {
-          "NOT_READY_NO_PLAYER_DATA": 10
+        "4429501": {
+          "READY": 4
         },
-        "history:espn-401671630:BAL:isaiah likely": {
-          "NOT_READY_NO_PLAYER_DATA": 10
+        "4429615": {
+          "READY": 34
         },
-        "history:espn-401671630:BAL:justice hill": {
-          "NOT_READY_NO_PLAYER_DATA": 6
+        "4429795": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 30,
+          "READY": 10
         },
-        "history:espn-401671630:BAL:keaton mitchell": {
-          "NOT_READY_NO_PLAYER_DATA": 4
+        "4430539": {
+          "READY": 4
         },
-        "history:espn-401671630:BAL:lamar jackson": {
-          "NOT_READY_NO_PLAYER_DATA": 60
+        "4430737": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 32,
+          "READY": 6
         },
-        "history:espn-401671630:BAL:mark andrews": {
-          "NOT_READY_NO_PLAYER_DATA": 22
+        "4430802": {
+          "READY": 6
         },
-        "history:espn-401671630:BAL:nelson agholor": {
-          "NOT_READY_NO_PLAYER_DATA": 8
+        "4430807": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 24
         },
-        "history:espn-401671630:BAL:rashod bateman": {
-          "NOT_READY_NO_PLAYER_DATA": 26
+        "4430878": {
+          "READY": 34
         },
-        "history:espn-401671630:BAL:zay flowers": {
-          "NOT_READY_NO_PLAYER_DATA": 34
+        "4431280": {
+          "READY": 6
         },
-        "history:espn-401671630:PIT:calvin austin iii": {
-          "NOT_READY_NO_PLAYER_DATA": 20
+        "4431299": {
+          "READY": 22
         },
-        "history:espn-401671630:PIT:darnell washington": {
-          "NOT_READY_NO_PLAYER_DATA": 6
+        "4431452": {
+          "READY": 46
         },
-        "history:espn-401671630:PIT:george pickens": {
-          "NOT_READY_NO_PLAYER_DATA": 40
+        "4431611": {
+          "READY": 46
         },
-        "history:espn-401671630:PIT:jaylen warren": {
-          "NOT_READY_NO_PLAYER_DATA": 14
+        "4432577": {
+          "READY": 44
         },
-        "history:espn-401671630:PIT:najee harris": {
-          "NOT_READY_NO_PLAYER_DATA": 34
+        "4432620": {
+          "READY": 12
         },
-        "history:espn-401671630:PIT:pat freiermuth": {
-          "NOT_READY_NO_PLAYER_DATA": 18
+        "4432665": {
+          "READY": 30
         },
-        "history:espn-401671630:PIT:russell wilson": {
-          "NOT_READY_NO_PLAYER_DATA": 42
+        "4432773": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 34
         },
-        "history:espn-401671630:PIT:van jefferson": {
-          "NOT_READY_NO_PLAYER_DATA": 6
+        "4567048": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 26,
+          "READY": 14
         },
-        "history:espn-401671642:DET:amonra st brown": {
-          "NOT_READY_NO_PLAYER_DATA": 40
+        "4567096": {
+          "READY": 10
         },
-        "history:espn-401671642:DET:brock wright": {
-          "NOT_READY_NO_PLAYER_DATA": 12
+        "4569173": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 24,
+          "READY": 6
         },
-        "history:espn-401671642:DET:david montgomery": {
-          "NOT_READY_NO_PLAYER_DATA": 30
+        "4569559": {
+          "READY": 22
         },
-        "history:espn-401671642:DET:jahmyr gibbs": {
-          "NOT_READY_NO_PLAYER_DATA": 40
+        "4569603": {
+          "READY": 4
         },
-        "history:espn-401671642:DET:jameson williams": {
-          "NOT_READY_NO_PLAYER_DATA": 30
+        "4569618": {
+          "READY": 38
         },
-        "history:espn-401671642:DET:jared goff": {
-          "NOT_READY_NO_PLAYER_DATA": 32
+        "4569682": {
+          "READY": 24
         },
-        "history:espn-401671642:DET:kalif raymond": {
-          "NOT_READY_NO_PLAYER_DATA": 8
+        "4569987": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 6
         },
-        "history:espn-401671642:DET:tim patrick": {
-          "NOT_READY_NO_PLAYER_DATA": 8
+        "4572680": {
+          "READY": 26
         },
-        "history:espn-401671642:JAX:brenton strange": {
-          "NOT_READY_NO_PLAYER_DATA": 4
+        "4576297": {
+          "READY": 18
         },
-        "history:espn-401671642:JAX:brian thomas jr": {
-          "NOT_READY_NO_PLAYER_DATA": 36
+        "4596334": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4
         },
-        "history:espn-401671642:JAX:dernest johnson": {
-          "NOT_READY_NO_PLAYER_DATA": 8
+        "4597500": {
+          "READY": 4
         },
-        "history:espn-401671642:JAX:evan engram": {
-          "NOT_READY_NO_PLAYER_DATA": 30
+        "4612826": {
+          "READY": 38
         },
-        "history:espn-401671642:JAX:gabe davis": {
-          "NOT_READY_NO_PLAYER_DATA": 24
+        "4682745": {
+          "READY": 12
         },
-        "history:espn-401671642:JAX:mac jones": {
-          "NOT_READY_NO_PLAYER_DATA": 34
+        "4683062": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 20
         },
-        "history:espn-401671642:JAX:parker washington": {
-          "NOT_READY_NO_PLAYER_DATA": 12
+        "4685247": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 6,
+          "READY": 4
         },
-        "history:espn-401671642:JAX:travis etienne jr": {
-          "NOT_READY_NO_PLAYER_DATA": 28
+        "4688813": {
+          "READY": 32
         },
-        "history:espn-401671665:BUF:amari cooper": {
-          "NOT_READY_NO_PLAYER_DATA": 30
+        "4722893": {
+          "READY": 2
         },
-        "history:espn-401671665:BUF:curtis samuel": {
-          "NOT_READY_NO_PLAYER_DATA": 4
+        "4887558": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2
         },
-        "history:espn-401671665:BUF:dawson knox": {
-          "NOT_READY_NO_PLAYER_DATA": 24
+        "5083754": {
+          "READY": 2
         },
-        "history:espn-401671665:BUF:josh allen": {
-          "NOT_READY_NO_PLAYER_DATA": 54
-        },
-        "history:espn-401671665:BUF:khalil shakir": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671665:BUF:mack hollins": {
-          "NOT_READY_NO_PLAYER_DATA": 18
-        },
-        "history:espn-401671665:BUF:ray davis": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671665:BUF:ty johnson": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671665:KC:deandre hopkins": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671665:KC:juju smithschuster": {
-          "NOT_READY_NO_PLAYER_DATA": 8
-        },
-        "history:espn-401671665:KC:justin watson": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671665:KC:kareem hunt": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671665:KC:noah gray": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671665:KC:patrick mahomes": {
-          "NOT_READY_NO_PLAYER_DATA": 52
-        },
-        "history:espn-401671665:KC:travis kelce": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671665:KC:xavier worthy": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671675:CIN:andrei iosivas": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671675:CIN:chase brown": {
-          "NOT_READY_NO_PLAYER_DATA": 50
-        },
-        "history:espn-401671675:CIN:drew sample": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671675:CIN:jamarr chase": {
-          "NOT_READY_NO_PLAYER_DATA": 40
-        },
-        "history:espn-401671675:CIN:joe burrow": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671675:CIN:mike gesicki": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671675:CIN:tanner hudson": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671675:CIN:tee higgins": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671675:LAC:gus edwards": {
-          "NOT_READY_NO_PLAYER_DATA": 8
-        },
-        "history:espn-401671675:LAC:jalen reagor": {
-          "NOT_READY_NO_PLAYER_DATA": 8
-        },
-        "history:espn-401671675:LAC:jk dobbins": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671675:LAC:joshua palmer": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671675:LAC:justin herbert": {
-          "NOT_READY_NO_PLAYER_DATA": 44
-        },
-        "history:espn-401671675:LAC:ladd mcconkey": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671675:LAC:quentin johnston": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671675:LAC:will dissly": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671694:DAL:ceedee lamb": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671694:DAL:cooper rush": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671694:DAL:ezekiel elliott": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671694:DAL:jake ferguson": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671694:DAL:jalen tolbert": {
-          "NOT_READY_NO_PLAYER_DATA": 20
-        },
-        "history:espn-401671694:DAL:kavontae turpin": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671694:DAL:rico dowdle": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671694:DAL:ryan flournoy": {
-          "NOT_READY_NO_PLAYER_DATA": 2
-        },
-        "history:espn-401671694:HOU:cade stover": {
-          "NOT_READY_NO_PLAYER_DATA": 2
-        },
-        "history:espn-401671694:HOU:cj stroud": {
-          "NOT_READY_NO_PLAYER_DATA": 44
-        },
-        "history:espn-401671694:HOU:dalton schultz": {
-          "NOT_READY_NO_PLAYER_DATA": 20
-        },
-        "history:espn-401671694:HOU:joe mixon": {
-          "NOT_READY_NO_PLAYER_DATA": 46
-        },
-        "history:espn-401671694:HOU:john metchie iii": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671694:HOU:nico collins": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671694:HOU:tank dell": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671701:LAR:cooper kupp": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671701:LAR:demarcus robinson": {
-          "NOT_READY_NO_PLAYER_DATA": 20
-        },
-        "history:espn-401671701:LAR:kyren williams": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671701:LAR:matthew stafford": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671701:LAR:puka nacua": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671701:NE:austin hooper": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671701:NE:demario douglas": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671701:NE:drake maye": {
-          "NOT_READY_NO_PLAYER_DATA": 46
-        },
-        "history:espn-401671701:NE:hunter henry": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671701:NE:kayshon boutte": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671701:NE:rhamondre stevenson": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671746:CLE:cedric tillman": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671746:CLE:david njoku": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671746:CLE:elijah moore": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671746:CLE:jameis winston": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671746:CLE:jerome ford": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671746:CLE:jerry jeudy": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671746:CLE:nick chubb": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671746:NO:alvin kamara": {
-          "NOT_READY_NO_PLAYER_DATA": 58
-        },
-        "history:espn-401671746:NO:derek carr": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671746:NO:foster moreau": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671746:NO:juwan johnson": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671746:NO:marquez valdesscantling": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671746:NO:taysom hill": {
-          "NOT_READY_NO_PLAYER_DATA": 16
-        },
-        "history:espn-401671748:ATL:bijan robinson": {
-          "NOT_READY_NO_PLAYER_DATA": 50
-        },
-        "history:espn-401671748:ATL:darnell mooney": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671748:ATL:drake london": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671748:ATL:kirk cousins": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671748:ATL:rayray mccloud iii": {
-          "NOT_READY_NO_PLAYER_DATA": 20
-        },
-        "history:espn-401671748:ATL:tyler allgeier": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671748:DEN:adam trautman": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671748:DEN:audric estime": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671748:DEN:bo nix": {
-          "NOT_READY_NO_PLAYER_DATA": 52
-        },
-        "history:espn-401671748:DEN:courtland sutton": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671748:DEN:devaughn vele": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671748:DEN:jaleel mclaughlin": {
-          "NOT_READY_NO_PLAYER_DATA": 2
-        },
-        "history:espn-401671748:DEN:javonte williams": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671748:DEN:liljordan humphrey": {
-          "NOT_READY_NO_PLAYER_DATA": 14
-        },
-        "history:espn-401671748:DEN:troy franklin": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671757:SEA:aj barner": {
-          "NOT_READY_NO_PLAYER_DATA": 18
-        },
-        "history:espn-401671757:SEA:dk metcalf": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671757:SEA:geno smith": {
-          "NOT_READY_NO_PLAYER_DATA": 40
-        },
-        "history:espn-401671757:SEA:jaxon smithnjigba": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671757:SEA:kenneth walker iii": {
-          "NOT_READY_NO_PLAYER_DATA": 40
-        },
-        "history:espn-401671757:SEA:tyler lockett": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671757:SEA:zach charbonnet": {
-          "NOT_READY_NO_PLAYER_DATA": 12
-        },
-        "history:espn-401671757:SF:brock purdy": {
-          "NOT_READY_NO_PLAYER_DATA": 42
-        },
-        "history:espn-401671757:SF:christian mccaffrey": {
-          "NOT_READY_NO_PLAYER_DATA": 56
-        },
-        "history:espn-401671757:SF:deebo samuel": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671757:SF:jauan jennings": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671757:SF:kyle juszczyk": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671757:SF:ricky pearsall": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671782:IND:adonai mitchell": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671782:IND:alec pierce": {
-          "NOT_READY_NO_PLAYER_DATA": 20
-        },
-        "history:espn-401671782:IND:jonathan taylor": {
-          "NOT_READY_NO_PLAYER_DATA": 48
-        },
-        "history:espn-401671782:IND:josh downs": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671782:IND:kylen granson": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671782:IND:michael pittman jr": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671782:IND:mo aliecox": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671782:NYJ:aaron rodgers": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671782:NYJ:braelon allen": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671782:NYJ:breece hall": {
-          "NOT_READY_NO_PLAYER_DATA": 54
-        },
-        "history:espn-401671782:NYJ:davante adams": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671782:NYJ:garrett wilson": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671782:NYJ:jeremy ruckert": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671782:NYJ:tyler conklin": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671782:NYJ:xavier gipson": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671813:PHI:aj brown": {
-          "NOT_READY_NO_PLAYER_DATA": 40
-        },
-        "history:espn-401671813:PHI:dallas goedert": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671813:PHI:devonta smith": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671813:PHI:grant calcaterra": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671813:PHI:jahan dotson": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671813:PHI:jalen hurts": {
-          "NOT_READY_NO_PLAYER_DATA": 52
-        },
-        "history:espn-401671813:PHI:saquon barkley": {
-          "NOT_READY_NO_PLAYER_DATA": 50
-        },
-        "history:espn-401671813:WAS:austin ekeler": {
-          "NOT_READY_NO_PLAYER_DATA": 16
-        },
-        "history:espn-401671813:WAS:brian robinson jr": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671813:WAS:jayden daniels": {
-          "NOT_READY_NO_PLAYER_DATA": 50
-        },
-        "history:espn-401671813:WAS:luke mccaffrey": {
-          "NOT_READY_NO_PLAYER_DATA": 8
-        },
-        "history:espn-401671813:WAS:noah brown": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671813:WAS:olamide zaccheaus": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671813:WAS:terry mclaurin": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671824:MIN:cam akers": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671824:MIN:jalen nailor": {
-          "NOT_READY_NO_PLAYER_DATA": 12
-        },
-        "history:espn-401671824:MIN:jordan addison": {
-          "NOT_READY_NO_PLAYER_DATA": 26
-        },
-        "history:espn-401671824:MIN:josh oliver": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671824:MIN:justin jefferson": {
-          "NOT_READY_NO_PLAYER_DATA": 40
-        },
-        "history:espn-401671824:MIN:sam darnold": {
-          "NOT_READY_NO_PLAYER_DATA": 44
-        },
-        "history:espn-401671824:MIN:tj hockenson": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671824:TEN:calvin ridley": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671824:TEN:josh whyle": {
-          "NOT_READY_NO_PLAYER_DATA": 2
-        },
-        "history:espn-401671824:TEN:nick westbrookikhine": {
-          "NOT_READY_NO_PLAYER_DATA": 26
-        },
-        "history:espn-401671824:TEN:tony pollard": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671824:TEN:tyjae spears": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671824:TEN:tyler boyd": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671824:TEN:will levis": {
-          "NOT_READY_NO_PLAYER_DATA": 48
-        },
-        "history:espn-401671851:LV:alexander mattison": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671851:LV:brock bowers": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671851:LV:zamir white": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671851:MIA:jaylen wright": {
-          "NOT_READY_NO_PLAYER_DATA": 12
-        },
-        "history:espn-401671851:MIA:jonnu smith": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671851:MIA:malik washington": {
-          "NOT_READY_NO_PLAYER_DATA": 4
-        },
-        "history:espn-401671851:MIA:odell beckham jr": {
-          "NOT_READY_NO_PLAYER_DATA": 10
-        },
-        "history:espn-401671869:CHI:caleb williams": {
-          "NOT_READY_NO_PLAYER_DATA": 46
-        },
-        "history:espn-401671869:CHI:cole kmet": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671869:CHI:dandre swift": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671869:CHI:dj moore": {
-          "NOT_READY_NO_PLAYER_DATA": 34
-        },
-        "history:espn-401671869:CHI:keenan allen": {
-          "NOT_READY_NO_PLAYER_DATA": 30
-        },
-        "history:espn-401671869:CHI:rome odunze": {
-          "NOT_READY_NO_PLAYER_DATA": 22
-        },
-        "history:espn-401671869:CHI:roschon johnson": {
-          "NOT_READY_NO_PLAYER_DATA": 8
-        },
-        "history:espn-401671869:GB:christian watson": {
-          "NOT_READY_NO_PLAYER_DATA": 24
-        },
-        "history:espn-401671869:GB:dontayvion wicks": {
-          "NOT_READY_NO_PLAYER_DATA": 6
-        },
-        "history:espn-401671869:GB:emanuel wilson": {
-          "NOT_READY_NO_PLAYER_DATA": 2
-        },
-        "history:espn-401671869:GB:jayden reed": {
-          "NOT_READY_NO_PLAYER_DATA": 36
-        },
-        "history:espn-401671869:GB:jordan love": {
-          "NOT_READY_NO_PLAYER_DATA": 28
-        },
-        "history:espn-401671869:GB:josh jacobs": {
-          "NOT_READY_NO_PLAYER_DATA": 38
-        },
-        "history:espn-401671869:GB:romeo doubs": {
-          "NOT_READY_NO_PLAYER_DATA": 32
-        },
-        "history:espn-401671869:GB:tucker kraft": {
-          "NOT_READY_NO_PLAYER_DATA": 26
+        "8439": {
+          "READY": 34
         }
       },
       "readiness_by_week": {
         "11": {
-          "NOT_READY_INSUFFICIENT_HISTORY": 28,
-          "NOT_READY_NO_PLAYER_DATA": 4912,
-          "READY": 174
+          "NOT_READY_INSUFFICIENT_HISTORY": 778,
+          "READY": 4336
         }
       },
       "readiness_counts": {
-        "NOT_READY_INSUFFICIENT_HISTORY": 28,
-        "NOT_READY_NO_PLAYER_DATA": 4912,
-        "READY": 174
+        "NOT_READY_INSUFFICIENT_HISTORY": 778,
+        "READY": 4336
       },
       "records": 5114,
       "row_count": 5114,
       "seed": 1729,
-      "sha256": "d0a5e4749a41e7b3a04628c156ac54762e8f7dff8a24f1a88016ad4cc22863a1",
+      "sha256": "a44d6abdeb12782a990441ea3193f4d51c0a53000899bc10b35a146ad31dea92",
       "simulations": 10000,
       "source": "offline-frozen-nfl-simulation",
       "status": "complete"
@@ -1036,7 +1125,18 @@
       ],
       "network_contacted": false,
       "provider": "offline",
-      "records": 16
+      "records": 443
+    },
+    "player_prop_odds": {
+      "provider": "the-odds-api",
+      "records": 9420,
+      "timestamp_fields": [
+        "requested_snapshot_timestamp",
+        "provider_snapshot_timestamp",
+        "market_last_update",
+        "captured_at",
+        "data_as_of"
+      ]
     },
     "player_prop_predictions": {
       "inputs": [
@@ -1052,6 +1152,7 @@
   },
   "source_versions": {
     "player_prop_model_features": "nfl_game_baseline_v3",
+    "player_prop_odds": "the-odds-api-historical",
     "player_prop_predictions": "nfl_game_baseline_v3"
   },
   "week": 11

@@ -42,6 +42,11 @@ def _side_key(row: dict[str, Any]) -> tuple[Any, ...]:
     return (*_base_key(row), str(row.get("side") or ""), str(row.get("bookmaker") or ""))
 
 
+def _period_key(row: dict[str, Any]) -> tuple[int, int]:
+    """Return the chronological season/week key used by every walk-forward split."""
+    return (int(row["season"]), int(row["week"]))
+
+
 def _expected_value(row: dict[str, Any], probability_field: str) -> float | None:
     probability, odds = row.get(probability_field), row.get("decimal_odds")
     if not isinstance(probability, (int, float)) or not isinstance(odds, (int, float)) or odds <= 1:
@@ -59,28 +64,46 @@ def _logit(value: float) -> float:
 def add_walk_forward_residual_probabilities(rows: list[dict[str, Any]], *,
                                             min_train_rows: int = 100,
                                             min_prior_weeks: int = 2,
+                                            recency_half_life_periods: float | None = None,
                                             seed: int = 1729) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Fit market probability plus a learned V4 residual on earlier weeks only."""
+    """Fit market probability plus a learned V4 residual on earlier periods only.
+
+    A period is one season/week.  This distinction is essential when multiple
+    seasons are supplied: Week 1 of a later season must train on the preceding
+    season, never on Week 2+ of its own season.  Optional exponential weights
+    decay by chronological period and do not change the default behavior.
+    """
     output = [{**row} for row in rows]
     folds = []
     markets = sorted({str(row.get("market") or "") for row in output})
-    weeks = sorted({int(row["week"]) for row in output})
+    periods = sorted({_period_key(row) for row in output})
+    period_index = {period: index for index, period in enumerate(periods)}
     for market in markets:
         market_rows = [row for row in output if str(row.get("market") or "") == market]
-        for week in weeks:
-            train = [row for row in market_rows if int(row["week"]) < week and row.get("grade") in {"WIN", "LOSS"}]
-            test = [row for row in market_rows if int(row["week"]) == week]
-            prior_weeks = sorted({int(row["week"]) for row in train})
-            ready = (len(train) >= min_train_rows and len(prior_weeks) >= min_prior_weeks
+        for period in periods:
+            train = [row for row in market_rows if _period_key(row) < period and row.get("grade") in {"WIN", "LOSS"}]
+            test = [row for row in market_rows if _period_key(row) == period]
+            prior_periods = sorted({_period_key(row) for row in train})
+            ready = (len(train) >= min_train_rows and len(prior_periods) >= min_prior_weeks
                      and len({row["grade"] for row in train}) == 2)
             model = None
+            sample_weight = None
             if ready:
                 xtrain = np.asarray([[
                     _logit(float(row["no_vig_market_probability"])),
                     float(row["model_probability"]) - float(row["no_vig_market_probability"]),
                 ] for row in train])
                 ytrain = np.asarray([row["grade"] == "WIN" for row in train], dtype=int)
-                model = LogisticRegression(C=1.0, max_iter=2000, random_state=seed).fit(xtrain, ytrain)
+                if recency_half_life_periods is not None:
+                    if recency_half_life_periods <= 0:
+                        raise ValueError("recency_half_life_periods must be positive")
+                    test_index = period_index[period]
+                    sample_weight = np.asarray([
+                        0.5 ** ((test_index - period_index[_period_key(row)]) /
+                                float(recency_half_life_periods)) for row in train
+                    ])
+                model = LogisticRegression(C=1.0, max_iter=2000, random_state=seed).fit(
+                    xtrain, ytrain, sample_weight=sample_weight)
             raw_by_base: dict[tuple[Any, ...], list[tuple[dict[str, Any], float]]] = defaultdict(list)
             for row in test:
                 market_probability = float(row["no_vig_market_probability"])
@@ -104,9 +127,12 @@ def add_walk_forward_residual_probabilities(rows: list[dict[str, Any]], *,
                     probability = available * raw / total if total else available / len(values)
                     row["residual_probability"] = probability
                     row["residual_adjustment"] = probability - float(row["no_vig_market_probability"])
-            folds.append({"market": market, "test_week": week, "train_rows": len(train),
-                          "train_weeks": prior_weeks, "test_rows": len(test),
+            folds.append({"market": market, "test_season": period[0], "test_week": period[1],
+                          "train_rows": len(train), "train_weeks": sorted({p[1] for p in prior_periods}),
+                          "train_periods": [list(value) for value in prior_periods], "test_rows": len(test),
                           "status": "READY_WALK_FORWARD" if model is not None else "MARKET_ONLY_INSUFFICIENT_PRIOR_HISTORY",
+                          "recency_half_life_periods": recency_half_life_periods,
+                          "effective_train_weight": None if sample_weight is None else float(sample_weight.sum()),
                           "market_logit_coefficient": None if model is None else float(model.coef_[0][0]),
                           "v4_residual_coefficient": None if model is None else float(model.coef_[0][1]),
                           "intercept": None if model is None else float(model.intercept_[0])})
@@ -164,7 +190,7 @@ def _paired_roi_difference(candidate: list[dict[str, Any]], baseline: list[dict[
 
 
 def _max_drawdown(bets: list[dict[str, Any]]) -> float:
-    ordered = sorted(bets, key=lambda row: (int(row["week"]), str(row.get("game_id")), _side_key(row)))
+    ordered = sorted(bets, key=lambda row: (_period_key(row), str(row.get("game_id")), _side_key(row)))
     equity = peak = drawdown = 0.0
     for row in ordered:
         equity += float(row["profit_units"]); peak = max(peak, equity)

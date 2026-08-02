@@ -1,6 +1,6 @@
 {
   "ambiguous_players": [],
-  "duplicate_identities_merged": 237,
+  "duplicate_identities_merged": 670,
   "event_coverage": {
     "022add645ca37d612dbb69e8ef02f6b9": {
       "funnel": {
@@ -3559,21 +3559,21 @@
           "timestamp_eligible": 56
         },
         "receiving_yards": {
-          "deduplicated": 264,
+          "deduplicated": 268,
           "identity_ambiguous": 0,
-          "identity_matched": 264,
-          "identity_unknown": 24,
+          "identity_matched": 268,
+          "identity_unknown": 20,
           "normalized": 288,
           "normalized_rows": 288,
-          "paired": 264,
-          "persisted": 264,
+          "paired": 268,
+          "persisted": 268,
           "raw": 288,
           "raw_rows": 288,
-          "rejected": 24,
+          "rejected": 20,
           "rejections": {
-            "unknown_player": 24
+            "unknown_player": 20
           },
-          "timestamp_eligible": 264
+          "timestamp_eligible": 268
         },
         "receptions": {
           "deduplicated": 168,
@@ -3627,7 +3627,7 @@
       "normalized": {
         "player_pass_tds": 28,
         "player_pass_yds": 56,
-        "player_reception_yds": 264,
+        "player_reception_yds": 268,
         "player_receptions": 168,
         "player_rush_attempts": 66,
         "player_rush_yds": 136
@@ -3635,7 +3635,7 @@
       "persisted": {
         "player_pass_tds": 28,
         "player_pass_yds": 56,
-        "player_reception_yds": 264,
+        "player_reception_yds": 268,
         "player_receptions": 168,
         "player_rush_attempts": 66,
         "player_rush_yds": 136
@@ -3650,18 +3650,13 @@
       },
       "rejections": {
         "receiving_yards": {
-          "unknown_player": 24
+          "unknown_player": 20
         },
         "receptions": {
           "unknown_player": 16
         }
       },
       "unknown_players": [
-        {
-          "market": "receiving_yards",
-          "player_name": "John Bates",
-          "team": null
-        },
         {
           "market": "receiving_yards",
           "player_name": "Zach Ertz",
@@ -8035,38 +8030,38 @@
           "timestamp_eligible": 58
         },
         "receiving_yards": {
-          "deduplicated": 264,
+          "deduplicated": 270,
           "identity_ambiguous": 0,
-          "identity_matched": 264,
-          "identity_unknown": 64,
+          "identity_matched": 270,
+          "identity_unknown": 58,
           "normalized": 328,
           "normalized_rows": 328,
-          "paired": 264,
-          "persisted": 264,
+          "paired": 270,
+          "persisted": 270,
           "raw": 328,
           "raw_rows": 328,
-          "rejected": 64,
+          "rejected": 58,
           "rejections": {
-            "unknown_player": 64
+            "unknown_player": 58
           },
-          "timestamp_eligible": 264
+          "timestamp_eligible": 270
         },
         "receptions": {
-          "deduplicated": 178,
+          "deduplicated": 186,
           "identity_ambiguous": 0,
-          "identity_matched": 178,
-          "identity_unknown": 62,
+          "identity_matched": 186,
+          "identity_unknown": 54,
           "normalized": 240,
           "normalized_rows": 240,
-          "paired": 178,
-          "persisted": 178,
+          "paired": 186,
+          "persisted": 186,
           "raw": 240,
           "raw_rows": 240,
-          "rejected": 62,
+          "rejected": 54,
           "rejections": {
-            "unknown_player": 62
+            "unknown_player": 54
           },
-          "timestamp_eligible": 178
+          "timestamp_eligible": 186
         },
         "rushing_attempts": {
           "deduplicated": 44,
@@ -8103,16 +8098,16 @@
       "normalized": {
         "player_pass_tds": 28,
         "player_pass_yds": 58,
-        "player_reception_yds": 264,
-        "player_receptions": 178,
+        "player_reception_yds": 270,
+        "player_receptions": 186,
         "player_rush_attempts": 44,
         "player_rush_yds": 136
       },
       "persisted": {
         "player_pass_tds": 28,
         "player_pass_yds": 58,
-        "player_reception_yds": 264,
-        "player_receptions": 178,
+        "player_reception_yds": 270,
+        "player_receptions": 186,
         "player_rush_attempts": 44,
         "player_rush_yds": 136
       },
@@ -8126,10 +8121,10 @@
       },
       "rejections": {
         "receiving_yards": {
-          "unknown_player": 64
+          "unknown_player": 58
         },
         "receptions": {
-          "unknown_player": 62
+          "unknown_player": 54
         }
       },
       "unknown_players": [
@@ -8161,16 +8156,6 @@
         {
           "market": "receptions",
           "player_name": "Jermaine Burton",
-          "team": null
-        },
-        {
-          "market": "receiving_yards",
-          "player_name": "John Bates",
-          "team": null
-        },
-        {
-          "market": "receptions",
-          "player_name": "John Bates",
           "team": null
         },
         {
@@ -15616,54 +15601,74 @@
       ]
     }
   },
-  "files_containing_athlete_identities": [],
+  "files_containing_athlete_identities": [
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-10bf27f8b9bacd94.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-32a9da4aebc9b1b7.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-3a1b3df28b47e153.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-40f3c01a34403568.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-6cb9137de4bb01e6.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-6ce3196174be954a.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-6d1be1c91e17ea25.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-7c587e477db12283.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-8bb620e390f0b5b4.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-9509d0a5a237fd2d.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-a942d6d29eb4ded8.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-ab1be66a76a7d59c.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-cf14af5d3672fb98.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-d7090a9c90c5b7d0.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_07\\summary-d9bd6c8d7640b2f4.json"
+  ],
   "game_team_roster_coverage": {
-    "espn-401671616|BUF": 31,
-    "espn-401671616|TEN": 31,
-    "espn-401671640|CAR": 31,
-    "espn-401671640|WAS": 33,
-    "espn-401671644|GB": 31,
-    "espn-401671644|HOU": 31,
-    "espn-401671663|LAR": 28,
-    "espn-401671663|LV": 23,
-    "espn-401671695|BAL": 31,
-    "espn-401671695|TB": 27,
-    "espn-401671699|ARI": 31,
-    "espn-401671699|LAC": 28,
-    "espn-401671710|NYG": 35,
-    "espn-401671710|PHI": 32,
-    "espn-401671724|DET": 27,
-    "espn-401671724|MIN": 28,
-    "espn-401671730|ATL": 30,
-    "espn-401671730|SEA": 32,
-    "espn-401671777|KC": 31,
-    "espn-401671777|SF": 31,
-    "espn-401671785|NYJ": 32,
-    "espn-401671785|PIT": 26,
-    "espn-401671801|JAX": 26,
-    "espn-401671801|NE": 30,
-    "espn-401671816|DEN": 36,
-    "espn-401671816|NO": 33,
-    "espn-401671853|CIN": 31,
-    "espn-401671853|CLE": 36,
-    "espn-401671864|IND": 29,
-    "espn-401671864|MIA": 32
+    "espn-401671616|BUF": 40,
+    "espn-401671616|TEN": 38,
+    "espn-401671640|CAR": 41,
+    "espn-401671640|WAS": 43,
+    "espn-401671644|GB": 40,
+    "espn-401671644|HOU": 38,
+    "espn-401671663|LAR": 38,
+    "espn-401671663|LV": 32,
+    "espn-401671695|BAL": 41,
+    "espn-401671695|TB": 37,
+    "espn-401671699|ARI": 41,
+    "espn-401671699|LAC": 38,
+    "espn-401671710|NYG": 45,
+    "espn-401671710|PHI": 43,
+    "espn-401671724|DET": 37,
+    "espn-401671724|MIN": 38,
+    "espn-401671730|ATL": 40,
+    "espn-401671730|SEA": 40,
+    "espn-401671777|KC": 40,
+    "espn-401671777|SF": 42,
+    "espn-401671785|NYJ": 43,
+    "espn-401671785|PIT": 35,
+    "espn-401671801|JAX": 37,
+    "espn-401671801|NE": 41,
+    "espn-401671816|DEN": 47,
+    "espn-401671816|NO": 40,
+    "espn-401671853|CIN": 41,
+    "espn-401671853|CLE": 45,
+    "espn-401671864|IND": 38,
+    "espn-401671864|MIA": 40
   },
   "identities_added_beyond_existing_espn_evidence": 0,
   "identities_extracted_by_source": {
-    "player_stats": 1150
+    "injury_roster": 138,
+    "player_stats": 401,
+    "provider_box_score": 1330
   },
   "identities_rejected_ambiguous_game_context": 56,
   "identities_rejected_historical_scope": 0,
   "identities_rejected_missing_name": 0,
-  "identities_rejected_missing_team": 0,
-  "identities_with_stats": 913,
-  "identities_without_stats": 0,
+  "identities_rejected_missing_team": 427,
+  "identities_with_stats": 299,
+  "identities_without_stats": 900,
   "identity_collision_count": 0,
   "identity_collisions": {},
-  "identity_registry_players": 913,
+  "identity_registry_players": 1199,
   "identity_registry_players_by_source": {
-    "player_stats": 913
+    "injury_roster": 138,
+    "player_stats": 299,
+    "provider_box_score": 1091
   },
   "network_contacted": false,
   "paid_requests_made": 0,
@@ -15697,18 +15702,20 @@
       "roster_boxscore_identity_data": false
     }
   },
-  "prop_quotes_reconciled_via_roster_only_identity": 0,
-  "provider_id_coverage": 0.0,
-  "provider_identities": 0,
+  "prop_quotes_reconciled_via_roster_only_identity": 64,
+  "provider_id_coverage": 0.8748957464553795,
+  "provider_identities": 1049,
   "reconciliation_method_counts": {
     "EXACT_NAME_TEAM": 9774
   },
   "records_inspected_by_source": {
-    "player_stats": 1150
+    "injury_roster": 138,
+    "player_stats": 401,
+    "provider_box_score": 1757
   },
   "rejection_counters": {
     "incomplete_over_under_pair": 4,
-    "unknown_player": 4508
+    "unknown_player": 4490
   },
   "remaining_unknown_players": [
     "Aaron Jones",
@@ -15743,7 +15750,6 @@
     "James Cook",
     "Jeremy Ruckert",
     "Jermaine Burton",
-    "John Bates",
     "John Metchie III",
     "Jordan Whittington",
     "Josh Oliver",
@@ -15782,39 +15788,39 @@
     "Zach Ertz"
   ],
   "unique_identities_per_game_team": {
-    "espn-401671616|BUF": 31,
-    "espn-401671616|TEN": 31,
-    "espn-401671640|CAR": 31,
-    "espn-401671640|WAS": 33,
-    "espn-401671644|GB": 31,
-    "espn-401671644|HOU": 31,
-    "espn-401671663|LAR": 28,
-    "espn-401671663|LV": 23,
-    "espn-401671695|BAL": 31,
-    "espn-401671695|TB": 27,
-    "espn-401671699|ARI": 31,
-    "espn-401671699|LAC": 28,
-    "espn-401671710|NYG": 35,
-    "espn-401671710|PHI": 32,
-    "espn-401671724|DET": 27,
-    "espn-401671724|MIN": 28,
-    "espn-401671730|ATL": 30,
-    "espn-401671730|SEA": 32,
-    "espn-401671777|KC": 31,
-    "espn-401671777|SF": 31,
-    "espn-401671785|NYJ": 32,
-    "espn-401671785|PIT": 26,
-    "espn-401671801|JAX": 26,
-    "espn-401671801|NE": 30,
-    "espn-401671816|DEN": 36,
-    "espn-401671816|NO": 33,
-    "espn-401671853|CIN": 31,
-    "espn-401671853|CLE": 36,
-    "espn-401671864|IND": 29,
-    "espn-401671864|MIA": 32
+    "espn-401671616|BUF": 40,
+    "espn-401671616|TEN": 38,
+    "espn-401671640|CAR": 41,
+    "espn-401671640|WAS": 43,
+    "espn-401671644|GB": 40,
+    "espn-401671644|HOU": 38,
+    "espn-401671663|LAR": 38,
+    "espn-401671663|LV": 32,
+    "espn-401671695|BAL": 41,
+    "espn-401671695|TB": 37,
+    "espn-401671699|ARI": 41,
+    "espn-401671699|LAC": 38,
+    "espn-401671710|NYG": 45,
+    "espn-401671710|PHI": 43,
+    "espn-401671724|DET": 37,
+    "espn-401671724|MIN": 38,
+    "espn-401671730|ATL": 40,
+    "espn-401671730|SEA": 40,
+    "espn-401671777|KC": 40,
+    "espn-401671777|SF": 42,
+    "espn-401671785|NYJ": 43,
+    "espn-401671785|PIT": 35,
+    "espn-401671801|JAX": 37,
+    "espn-401671801|NE": 41,
+    "espn-401671816|DEN": 47,
+    "espn-401671816|NO": 40,
+    "espn-401671853|CIN": 41,
+    "espn-401671853|CLE": 45,
+    "espn-401671864|IND": 38,
+    "espn-401671864|MIA": 40
   },
-  "unknown_player_count_after_roster_evidence": 4508,
-  "unknown_player_count_before_roster_evidence": 4508,
+  "unknown_player_count_after_roster_evidence": 4490,
+  "unknown_player_count_before_roster_evidence": 4490,
   "unresolved_sportsbook_players_by_game_team_market": [
     {
       "game_id": "espn-401671490",
@@ -15832,12 +15838,6 @@
       "game_id": "espn-401671490",
       "market": "receiving_yards",
       "player_name": "Jermaine Burton",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671490",
-      "market": "receiving_yards",
-      "player_name": "John Bates",
       "team": null
     },
     {
@@ -15874,12 +15874,6 @@
       "game_id": "espn-401671490",
       "market": "receptions",
       "player_name": "Jermaine Burton",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671490",
-      "market": "receptions",
-      "player_name": "John Bates",
       "team": null
     },
     {
@@ -16636,12 +16630,6 @@
       "game_id": "espn-401671716",
       "market": "receptions",
       "player_name": "Zach Ertz",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671718",
-      "market": "receiving_yards",
-      "player_name": "John Bates",
       "team": null
     },
     {

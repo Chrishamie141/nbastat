@@ -1,80 +1,80 @@
 [
   {
     "market": "passing_tds",
-    "roi": -0.1286396269237206,
+    "roi": -0.036941325097735005,
     "roi_uncertainty": {
-      "clusters": 14,
+      "clusters": 269,
       "confidence_interval_95": [
-        -0.2145318895601401,
-        -0.02242638375055396
+        -0.06063972619066294,
+        -0.01328182046702136
       ],
       "method": "deterministic_2000_draw_game_cluster_bootstrap",
-      "standard_error": 0.04814856434033997
+      "standard_error": 0.012170567549035198
     }
   },
   {
     "market": "passing_yards",
-    "roi": -0.03193773032237128,
+    "roi": -0.0507672435337804,
     "roi_uncertainty": {
-      "clusters": 14,
+      "clusters": 269,
       "confidence_interval_95": [
-        -0.07369756555123537,
-        0.010812104569521811
+        -0.05964783356871196,
+        -0.0420491650902578
       ],
       "method": "deterministic_2000_draw_game_cluster_bootstrap",
-      "standard_error": 0.02211861137896344
+      "standard_error": 0.0044165752728366715
     }
   },
   {
     "market": "receiving_yards",
-    "roi": -0.050116529400684236,
+    "roi": -0.059831831726199596,
     "roi_uncertainty": {
-      "clusters": 22,
+      "clusters": 272,
       "confidence_interval_95": [
-        -0.07634195817782059,
-        -0.023982057627434872
+        -0.06494440370472862,
+        -0.05513536724521986
       ],
       "method": "deterministic_2000_draw_game_cluster_bootstrap",
-      "standard_error": 0.01338076714086871
+      "standard_error": 0.002546077699950687
     }
   },
   {
     "market": "receptions",
-    "roi": -0.05745472037077547,
+    "roi": -0.051623503393548126,
     "roi_uncertainty": {
-      "clusters": 22,
+      "clusters": 272,
       "confidence_interval_95": [
-        -0.086052941404192,
-        -0.028409565917232763
+        -0.05841140376863789,
+        -0.044395453606114764
       ],
       "method": "deterministic_2000_draw_game_cluster_bootstrap",
-      "standard_error": 0.014730768214381367
+      "standard_error": 0.0035991441862446576
     }
   },
   {
     "market": "rushing_attempts",
-    "roi": -0.11534112473176861,
+    "roi": -0.05160088063766643,
     "roi_uncertainty": {
-      "clusters": 11,
+      "clusters": 262,
       "confidence_interval_95": [
-        -0.13776433560413298,
-        -0.08984154090279098
+        -0.058651714462675204,
+        -0.044594574104953544
       ],
       "method": "deterministic_2000_draw_game_cluster_bootstrap",
-      "standard_error": 0.012100872684687123
+      "standard_error": 0.0035118919909040394
     }
   },
   {
     "market": "rushing_yards",
-    "roi": -0.05689654613737458,
+    "roi": -0.05938360447118585,
     "roi_uncertainty": {
-      "clusters": 11,
+      "clusters": 265,
       "confidence_interval_95": [
-        -0.12407872210252605,
-        -0.00501879926517333
+        -0.06959565724182873,
+        -0.04828537033603594
       ],
       "method": "deterministic_2000_draw_game_cluster_bootstrap",
-      "standard_error": 0.030461552485554294
+      "standard_error": 0.005402089808687629
     }
   }
 ]

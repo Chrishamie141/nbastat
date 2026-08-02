@@ -1,8 +1,6 @@
 {
-  "ambiguous_players": [
-    "Gus Edwards"
-  ],
-  "duplicate_identities_merged": 229,
+  "ambiguous_players": [],
+  "duplicate_identities_merged": 602,
   "event_coverage": {
     "022add645ca37d612dbb69e8ef02f6b9": {
       "funnel": {
@@ -6970,21 +6968,21 @@
           "timestamp_eligible": 56
         },
         "receiving_yards": {
-          "deduplicated": 264,
+          "deduplicated": 268,
           "identity_ambiguous": 0,
-          "identity_matched": 264,
-          "identity_unknown": 24,
+          "identity_matched": 268,
+          "identity_unknown": 20,
           "normalized": 288,
           "normalized_rows": 288,
-          "paired": 264,
-          "persisted": 264,
+          "paired": 268,
+          "persisted": 268,
           "raw": 288,
           "raw_rows": 288,
-          "rejected": 24,
+          "rejected": 20,
           "rejections": {
-            "unknown_player": 24
+            "unknown_player": 20
           },
-          "timestamp_eligible": 264
+          "timestamp_eligible": 268
         },
         "receptions": {
           "deduplicated": 168,
@@ -7038,7 +7036,7 @@
       "normalized": {
         "player_pass_tds": 28,
         "player_pass_yds": 56,
-        "player_reception_yds": 264,
+        "player_reception_yds": 268,
         "player_receptions": 168,
         "player_rush_attempts": 66,
         "player_rush_yds": 136
@@ -7046,7 +7044,7 @@
       "persisted": {
         "player_pass_tds": 28,
         "player_pass_yds": 56,
-        "player_reception_yds": 264,
+        "player_reception_yds": 268,
         "player_receptions": 168,
         "player_rush_attempts": 66,
         "player_rush_yds": 136
@@ -7061,18 +7059,13 @@
       },
       "rejections": {
         "receiving_yards": {
-          "unknown_player": 24
+          "unknown_player": 20
         },
         "receptions": {
           "unknown_player": 16
         }
       },
       "unknown_players": [
-        {
-          "market": "receiving_yards",
-          "player_name": "John Bates",
-          "team": null
-        },
         {
           "market": "receiving_yards",
           "player_name": "Zach Ertz",
@@ -15460,38 +15453,34 @@
           "timestamp_eligible": 180
         },
         "rushing_attempts": {
-          "deduplicated": 48,
-          "identity_ambiguous": 8,
-          "identity_matched": 48,
+          "deduplicated": 56,
+          "identity_ambiguous": 0,
+          "identity_matched": 56,
           "identity_unknown": 0,
           "normalized": 56,
           "normalized_rows": 56,
-          "paired": 48,
-          "persisted": 48,
+          "paired": 56,
+          "persisted": 56,
           "raw": 56,
           "raw_rows": 56,
-          "rejected": 8,
-          "rejections": {
-            "ambiguous_player": 8
-          },
-          "timestamp_eligible": 48
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 56
         },
         "rushing_yards": {
-          "deduplicated": 122,
-          "identity_ambiguous": 14,
-          "identity_matched": 122,
+          "deduplicated": 136,
+          "identity_ambiguous": 0,
+          "identity_matched": 136,
           "identity_unknown": 0,
           "normalized": 136,
           "normalized_rows": 136,
-          "paired": 122,
-          "persisted": 122,
+          "paired": 136,
+          "persisted": 136,
           "raw": 136,
           "raw_rows": 136,
-          "rejected": 14,
-          "rejections": {
-            "ambiguous_player": 14
-          },
-          "timestamp_eligible": 122
+          "rejected": 0,
+          "rejections": {},
+          "timestamp_eligible": 136
         }
       },
       "game_id": "espn-401671689",
@@ -15500,16 +15489,16 @@
         "player_pass_yds": 62,
         "player_reception_yds": 308,
         "player_receptions": 180,
-        "player_rush_attempts": 48,
-        "player_rush_yds": 122
+        "player_rush_attempts": 56,
+        "player_rush_yds": 136
       },
       "persisted": {
         "player_pass_tds": 28,
         "player_pass_yds": 62,
         "player_reception_yds": 308,
         "player_receptions": 180,
-        "player_rush_attempts": 48,
-        "player_rush_yds": 122
+        "player_rush_attempts": 56,
+        "player_rush_yds": 136
       },
       "raw_provider": {
         "player_pass_tds": 28,
@@ -15519,14 +15508,7 @@
         "player_rush_attempts": 56,
         "player_rush_yds": 136
       },
-      "rejections": {
-        "rushing_attempts": {
-          "ambiguous_player": 8
-        },
-        "rushing_yards": {
-          "ambiguous_player": 14
-        }
-      },
+      "rejections": {},
       "unknown_players": []
     },
     "89f860b80a0c5b61375d4aa49d9ec853": {
@@ -16563,38 +16545,38 @@
           "timestamp_eligible": 58
         },
         "receiving_yards": {
-          "deduplicated": 264,
+          "deduplicated": 270,
           "identity_ambiguous": 0,
-          "identity_matched": 264,
-          "identity_unknown": 64,
+          "identity_matched": 270,
+          "identity_unknown": 58,
           "normalized": 328,
           "normalized_rows": 328,
-          "paired": 264,
-          "persisted": 264,
+          "paired": 270,
+          "persisted": 270,
           "raw": 328,
           "raw_rows": 328,
-          "rejected": 64,
+          "rejected": 58,
           "rejections": {
-            "unknown_player": 64
+            "unknown_player": 58
           },
-          "timestamp_eligible": 264
+          "timestamp_eligible": 270
         },
         "receptions": {
-          "deduplicated": 178,
+          "deduplicated": 186,
           "identity_ambiguous": 0,
-          "identity_matched": 178,
-          "identity_unknown": 62,
+          "identity_matched": 186,
+          "identity_unknown": 54,
           "normalized": 240,
           "normalized_rows": 240,
-          "paired": 178,
-          "persisted": 178,
+          "paired": 186,
+          "persisted": 186,
           "raw": 240,
           "raw_rows": 240,
-          "rejected": 62,
+          "rejected": 54,
           "rejections": {
-            "unknown_player": 62
+            "unknown_player": 54
           },
-          "timestamp_eligible": 178
+          "timestamp_eligible": 186
         },
         "rushing_attempts": {
           "deduplicated": 44,
@@ -16631,16 +16613,16 @@
       "normalized": {
         "player_pass_tds": 28,
         "player_pass_yds": 58,
-        "player_reception_yds": 264,
-        "player_receptions": 178,
+        "player_reception_yds": 270,
+        "player_receptions": 186,
         "player_rush_attempts": 44,
         "player_rush_yds": 136
       },
       "persisted": {
         "player_pass_tds": 28,
         "player_pass_yds": 58,
-        "player_reception_yds": 264,
-        "player_receptions": 178,
+        "player_reception_yds": 270,
+        "player_receptions": 186,
         "player_rush_attempts": 44,
         "player_rush_yds": 136
       },
@@ -16654,10 +16636,10 @@
       },
       "rejections": {
         "receiving_yards": {
-          "unknown_player": 64
+          "unknown_player": 58
         },
         "receptions": {
-          "unknown_player": 62
+          "unknown_player": 54
         }
       },
       "unknown_players": [
@@ -16689,16 +16671,6 @@
         {
           "market": "receptions",
           "player_name": "Jermaine Burton",
-          "team": null
-        },
-        {
-          "market": "receiving_yards",
-          "player_name": "John Bates",
-          "team": null
-        },
-        {
-          "market": "receptions",
-          "player_name": "John Bates",
           "team": null
         },
         {
@@ -19932,38 +19904,38 @@
           "timestamp_eligible": 58
         },
         "receiving_yards": {
-          "deduplicated": 228,
+          "deduplicated": 254,
           "identity_ambiguous": 0,
-          "identity_matched": 228,
-          "identity_unknown": 58,
+          "identity_matched": 254,
+          "identity_unknown": 32,
           "normalized": 286,
           "normalized_rows": 286,
-          "paired": 228,
-          "persisted": 228,
+          "paired": 254,
+          "persisted": 254,
           "raw": 286,
           "raw_rows": 286,
-          "rejected": 58,
+          "rejected": 32,
           "rejections": {
-            "unknown_player": 58
+            "unknown_player": 32
           },
-          "timestamp_eligible": 228
+          "timestamp_eligible": 254
         },
         "receptions": {
-          "deduplicated": 154,
+          "deduplicated": 170,
           "identity_ambiguous": 0,
-          "identity_matched": 154,
-          "identity_unknown": 34,
+          "identity_matched": 170,
+          "identity_unknown": 18,
           "normalized": 188,
           "normalized_rows": 188,
-          "paired": 154,
-          "persisted": 154,
+          "paired": 170,
+          "persisted": 170,
           "raw": 188,
           "raw_rows": 188,
-          "rejected": 34,
+          "rejected": 18,
           "rejections": {
-            "unknown_player": 34
+            "unknown_player": 18
           },
-          "timestamp_eligible": 154
+          "timestamp_eligible": 170
         },
         "rushing_attempts": {
           "deduplicated": 36,
@@ -20000,16 +19972,16 @@
       "normalized": {
         "player_pass_tds": 28,
         "player_pass_yds": 58,
-        "player_reception_yds": 228,
-        "player_receptions": 154,
+        "player_reception_yds": 254,
+        "player_receptions": 170,
         "player_rush_attempts": 36,
         "player_rush_yds": 110
       },
       "persisted": {
         "player_pass_tds": 28,
         "player_pass_yds": 58,
-        "player_reception_yds": 228,
-        "player_receptions": 154,
+        "player_reception_yds": 254,
+        "player_receptions": 170,
         "player_rush_attempts": 36,
         "player_rush_yds": 110
       },
@@ -20023,10 +19995,10 @@
       },
       "rejections": {
         "receiving_yards": {
-          "unknown_player": 58
+          "unknown_player": 32
         },
         "receptions": {
-          "unknown_player": 34
+          "unknown_player": 18
         }
       },
       "unknown_players": [
@@ -20038,16 +20010,6 @@
         {
           "market": "receptions",
           "player_name": "Kyle Pitts",
-          "team": null
-        },
-        {
-          "market": "receiving_yards",
-          "player_name": "Mason Tipton",
-          "team": null
-        },
-        {
-          "market": "receptions",
-          "player_name": "Mason Tipton",
           "team": null
         }
       ]
@@ -30091,55 +30053,68 @@
     }
   },
   "files_containing_athlete_identities": [
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-0a25e1cab173adb0.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-233897968c123537.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-305cba599f5244be.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-3775c2166fbee006.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-3f6ad4f3465cac25.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-4ce73e0f609038e6.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-7265392d58a18abf.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-7854b7241880e629.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-799821a979204dcb.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-b2ef308b186ad83c.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-b368db5f93d4eeff.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-bbd99aad9dd5ca11.json",
+    "backtesting\\data\\raw_cache\\espn\\nfl\\2024\\week_14\\summary-d97f96d10019e08d.json",
     "backtesting\\data\\raw_cache\\espn\\nfl\\2025\\week_14\\summary-712c8719518f5010.json"
   ],
   "game_team_roster_coverage": {
-    "espn-401671601|NO": 32,
-    "espn-401671601|NYG": 29,
-    "espn-401671631|CLE": 36,
-    "espn-401671631|PIT": 31,
-    "espn-401671648|ATL": 27,
-    "espn-401671648|MIN": 33,
-    "espn-401671654|LV": 28,
-    "espn-401671654|TB": 31,
-    "espn-401671660|ARI": 33,
-    "espn-401671660|SEA": 29,
-    "espn-401671690|CIN": 28,
-    "espn-401671690|DAL": 31,
-    "espn-401671713|CAR": 32,
-    "espn-401671713|PHI": 30,
-    "espn-401671773|BUF": 29,
-    "espn-401671773|LAR": 28,
-    "espn-401671774|CHI": 31,
-    "espn-401671774|SF": 32,
-    "espn-401671788|KC": 29,
-    "espn-401671788|LAC": 33,
-    "espn-401671814|DET": 27,
-    "espn-401671814|GB": 29,
-    "espn-401671821|JAX": 29,
-    "espn-401671821|TEN": 28,
-    "espn-401671848|MIA": 59,
-    "espn-401671848|NYJ": 65
+    "espn-401671601|NO": 41,
+    "espn-401671601|NYG": 39,
+    "espn-401671631|CLE": 45,
+    "espn-401671631|PIT": 40,
+    "espn-401671648|ATL": 37,
+    "espn-401671648|MIN": 43,
+    "espn-401671654|LV": 37,
+    "espn-401671654|TB": 41,
+    "espn-401671660|ARI": 42,
+    "espn-401671660|SEA": 38,
+    "espn-401671690|CIN": 37,
+    "espn-401671690|DAL": 42,
+    "espn-401671713|CAR": 43,
+    "espn-401671713|PHI": 41,
+    "espn-401671773|BUF": 40,
+    "espn-401671773|LAR": 38,
+    "espn-401671774|CHI": 40,
+    "espn-401671774|SF": 43,
+    "espn-401671788|KC": 38,
+    "espn-401671788|LAC": 43,
+    "espn-401671814|DET": 36,
+    "espn-401671814|GB": 39,
+    "espn-401671821|JAX": 40,
+    "espn-401671821|TEN": 35,
+    "espn-401671848|MIA": 60,
+    "espn-401671848|NYJ": 66
   },
   "identities_added_beyond_existing_espn_evidence": 0,
   "identities_extracted_by_source": {
-    "injury_roster": 8,
-    "player_stats": 974,
-    "provider_box_score": 96
+    "injury_roster": 127,
+    "player_stats": 333,
+    "provider_box_score": 1226
   },
   "identities_rejected_ambiguous_game_context": 56,
   "identities_rejected_historical_scope": 0,
   "identities_rejected_missing_name": 0,
-  "identities_rejected_missing_team": 29,
-  "identities_with_stats": 785,
-  "identities_without_stats": 64,
+  "identities_rejected_missing_team": 398,
+  "identities_with_stats": 248,
+  "identities_without_stats": 836,
   "identity_collision_count": 0,
   "identity_collisions": {},
-  "identity_registry_players": 849,
+  "identity_registry_players": 1084,
   "identity_registry_players_by_source": {
-    "injury_roster": 8,
-    "player_stats": 785,
-    "provider_box_score": 74
+    "injury_roster": 119,
+    "player_stats": 248,
+    "provider_box_score": 986
   },
   "network_contacted": false,
   "paid_requests_made": 0,
@@ -30173,21 +30148,20 @@
       "roster_boxscore_identity_data": false
     }
   },
-  "prop_quotes_reconciled_via_roster_only_identity": 0,
-  "provider_id_coverage": 0.08480565371024736,
-  "provider_identities": 72,
+  "prop_quotes_reconciled_via_roster_only_identity": 134,
+  "provider_id_coverage": 0.8800738007380073,
+  "provider_identities": 954,
   "reconciliation_method_counts": {
     "EXACT_NAME_TEAM": 8990
   },
   "records_inspected_by_source": {
-    "injury_roster": 8,
-    "player_stats": 974,
-    "provider_box_score": 125
+    "injury_roster": 127,
+    "player_stats": 333,
+    "provider_box_score": 1624
   },
   "rejection_counters": {
-    "ambiguous_player": 22,
     "incomplete_over_under_pair": 6,
-    "unknown_player": 7998
+    "unknown_player": 7938
   },
   "remaining_unknown_players": [
     "Aaron Jones",
@@ -30237,7 +30211,6 @@
     "Jaylen Wright",
     "Jeremy Ruckert",
     "Jermaine Burton",
-    "John Bates",
     "John Metchie III",
     "Jordan Whittington",
     "Josh Oliver",
@@ -30257,7 +30230,6 @@
     "Luke McCaffrey",
     "Luke Schoonmaker",
     "Marquez Valdes-Scantling",
-    "Mason Tipton",
     "Mecole Hardman",
     "Mike Gesicki",
     "Mike Williams",
@@ -30289,35 +30261,35 @@
     "Zach Ertz"
   ],
   "unique_identities_per_game_team": {
-    "espn-401671601|NO": 32,
-    "espn-401671601|NYG": 29,
-    "espn-401671631|CLE": 36,
-    "espn-401671631|PIT": 31,
-    "espn-401671648|ATL": 27,
-    "espn-401671648|MIN": 33,
-    "espn-401671654|LV": 28,
-    "espn-401671654|TB": 31,
-    "espn-401671660|ARI": 33,
-    "espn-401671660|SEA": 29,
-    "espn-401671690|CIN": 28,
-    "espn-401671690|DAL": 31,
-    "espn-401671713|CAR": 32,
-    "espn-401671713|PHI": 30,
-    "espn-401671773|BUF": 29,
-    "espn-401671773|LAR": 28,
-    "espn-401671774|CHI": 31,
-    "espn-401671774|SF": 32,
-    "espn-401671788|KC": 29,
-    "espn-401671788|LAC": 33,
-    "espn-401671814|DET": 27,
-    "espn-401671814|GB": 29,
-    "espn-401671821|JAX": 29,
-    "espn-401671821|TEN": 28,
-    "espn-401671848|MIA": 59,
-    "espn-401671848|NYJ": 65
+    "espn-401671601|NO": 41,
+    "espn-401671601|NYG": 39,
+    "espn-401671631|CLE": 45,
+    "espn-401671631|PIT": 40,
+    "espn-401671648|ATL": 37,
+    "espn-401671648|MIN": 43,
+    "espn-401671654|LV": 37,
+    "espn-401671654|TB": 41,
+    "espn-401671660|ARI": 42,
+    "espn-401671660|SEA": 38,
+    "espn-401671690|CIN": 37,
+    "espn-401671690|DAL": 42,
+    "espn-401671713|CAR": 43,
+    "espn-401671713|PHI": 41,
+    "espn-401671773|BUF": 40,
+    "espn-401671773|LAR": 38,
+    "espn-401671774|CHI": 40,
+    "espn-401671774|SF": 43,
+    "espn-401671788|KC": 38,
+    "espn-401671788|LAC": 43,
+    "espn-401671814|DET": 36,
+    "espn-401671814|GB": 39,
+    "espn-401671821|JAX": 40,
+    "espn-401671821|TEN": 35,
+    "espn-401671848|MIA": 60,
+    "espn-401671848|NYJ": 66
   },
-  "unknown_player_count_after_roster_evidence": 7998,
-  "unknown_player_count_before_roster_evidence": 7998,
+  "unknown_player_count_after_roster_evidence": 7938,
+  "unknown_player_count_before_roster_evidence": 7938,
   "unresolved_sportsbook_players_by_game_team_market": [
     {
       "game_id": "espn-401671490",
@@ -30335,12 +30307,6 @@
       "game_id": "espn-401671490",
       "market": "receiving_yards",
       "player_name": "Jermaine Burton",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671490",
-      "market": "receiving_yards",
-      "player_name": "John Bates",
       "team": null
     },
     {
@@ -30377,12 +30343,6 @@
       "game_id": "espn-401671490",
       "market": "receptions",
       "player_name": "Jermaine Burton",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671490",
-      "market": "receptions",
-      "player_name": "John Bates",
       "team": null
     },
     {
@@ -31786,12 +31746,6 @@
     {
       "game_id": "espn-401671718",
       "market": "receiving_yards",
-      "player_name": "John Bates",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671718",
-      "market": "receiving_yards",
       "player_name": "Zach Ertz",
       "team": null
     },
@@ -31995,20 +31949,8 @@
     },
     {
       "game_id": "espn-401671733",
-      "market": "receiving_yards",
-      "player_name": "Mason Tipton",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671733",
       "market": "receptions",
       "player_name": "Kyle Pitts",
-      "team": null
-    },
-    {
-      "game_id": "espn-401671733",
-      "market": "receptions",
-      "player_name": "Mason Tipton",
       "team": null
     },
     {
