@@ -9,8 +9,10 @@ from backtesting.research_nfl_player_stat_distributions import (
     MODEL_ID,
     _non_crossing,
     _select_configuration,
+    _weekly_projection_metrics,
     add_stability_scores,
     apply_thresholds,
+    baseline_comparison,
     build_distribution_samples,
     parlay_dependency_diagnostics,
 )
@@ -50,6 +52,10 @@ def _projection() -> dict:
         "feature_set": "rich", "model_disagreement": 1.0,
         "historical_output_std": 14.0, "recent_output_std": 12.0,
         "usage_mean": .20, "usage_volatility": .02, "recent_participation_rate": 1.0,
+        "rolling_mean_5": 62.0, "ewm_recent": 63.0, "season_mean": 61.0,
+        "rolling_median": 60.0, "opponent_strength_numeric": 1.05,
+        "baseline_p10": 40.0, "baseline_p25": 50.0, "baseline_p50": 60.0,
+        "baseline_p75": 72.0, "baseline_p90": 85.0,
         "crps": 8.0, "pinball": {"p10": 2.5, "p25": 3.0, "p50": 3.0, "p75": 2.0, "p90": 1.2},
         "research_only": True,
     }
@@ -110,3 +116,20 @@ def test_parlay_diagnostics_never_assume_independence_without_evidence() -> None
     assert all(row["independence_allowed"] is False for row in report["relationships"])
     assert "DO_NOT_MULTIPLY" in report["independence_policy"]
     assert MODEL_ID.startswith("nfl_player_stat_distribution")
+
+
+def test_weekly_macro_metrics_keep_seasons_separate() -> None:
+    first = _projection()
+    second = {**_projection(), "season": 2024}
+    rows = _weekly_projection_metrics([first, second])
+    assert [(row["season"], row["week"]) for row in rows] == [(2024, 3), (2025, 3)]
+
+
+def test_frozen_baseline_comparison_is_paired_on_identical_rows() -> None:
+    projection = _projection()
+    key = (2025, 3, "g1", "p1", "receiving_yards")
+    rows = baseline_comparison([projection], {key: 50.0}, {key: 60.0})
+    current_v4 = next(row for row in rows if row["market"] == "ALL" and row["baseline"] == "current_v4")
+    assert current_v4["rows"] == 1
+    assert current_v4["candidate_mae_on_same_rows"] == pytest.approx(5.0)
+    assert current_v4["paired_mae_delta"] == pytest.approx(-5.0)

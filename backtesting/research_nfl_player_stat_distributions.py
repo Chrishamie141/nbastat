@@ -163,6 +163,7 @@ class DistributionFeatureState:
         self.team_rush_rate: dict[str, list[float]] = defaultdict(list)
         self.team_passing: dict[str, list[float]] = defaultdict(list)
         self.market_values: dict[str, list[float]] = defaultdict(list)
+        self.league_team_market: dict[str, list[float]] = defaultdict(list)
 
     def features(self, row: dict[str, Any], market: str) -> dict[str, float | None]:
         player_id, team, opponent = row["player_id"], row["team"], row["opponent"]
@@ -195,7 +196,7 @@ class DistributionFeatureState:
             "qb_strength_mean_5": _mean(self.team_passing[team][-5:]),
             "home": row.get("home"), "season_week": float((season - 2020) * 20 + week),
         }
-        market_average = _mean(self.market_values[market])
+        market_average = _mean(self.league_team_market[market])
         result["opponent_strength_numeric"] = (
             None if result["opponent_allowed_mean_5"] is None or not market_average
             else float(result["opponent_allowed_mean_5"] / market_average)
@@ -228,6 +229,7 @@ class DistributionFeatureState:
                     total = team_totals[(team, market)]
                     self.team_market[(team, market)].append(total)
                     self.defense_allowed[(opponent, market)].append(total)
+                    self.league_team_market[market].append(total)
             passes, rushes = team_usage.get((team, "pass_attempts"), 0.0), team_usage.get((team, "rush_attempts"), 0.0)
             if passes + rushes > 0:
                 self.team_plays[team].append(passes + rushes)
@@ -275,7 +277,7 @@ def build_distribution_samples(root: Path, seasons: Sequence[int], min_history: 
                         except (TypeError, ValueError):
                             pass
                 if int(features["history_games"] or 0) >= min_history:
-                    market_average = _mean(state.market_values[market])
+                    market_average = _mean(state.league_team_market[market])
                     samples.append({
                         "season": period[0], "week": period[1], "game_id": row["game_id"],
                         "canonical_player_id": row["player_id"], "player_name": row.get("player_name"),
@@ -851,13 +853,23 @@ def baseline_comparison(projections: Sequence[dict[str, Any]], v3: dict[tuple[in
             pairs = [(actual, float(predicted)) for actual, predicted in pairs if predicted is not None and math.isfinite(float(predicted))]
             if pairs:
                 actual = np.asarray([item[0] for item in pairs]); predicted = np.asarray([item[1] for item in pairs])
+                paired_rows = [row for row in market_rows if getter(row) is not None and math.isfinite(float(getter(row)))]
+                candidate_paired = np.asarray([row["expected_output"] for row in paired_rows], dtype=float)
+                candidate_mae = float(mean_absolute_error(actual, candidate_paired))
+                candidate_rmse = float(mean_squared_error(actual, candidate_paired) ** .5)
                 result.append({"market": market, "baseline": name, "rows": len(pairs),
                                "mae": float(mean_absolute_error(actual, predicted)),
                                "rmse": float(mean_squared_error(actual, predicted) ** .5),
-                               "median_absolute_error": float(np.median(np.abs(actual - predicted)))})
+                               "median_absolute_error": float(np.median(np.abs(actual - predicted))),
+                               "candidate_mae_on_same_rows": candidate_mae,
+                               "candidate_rmse_on_same_rows": candidate_rmse,
+                               "paired_mae_delta": candidate_mae - float(mean_absolute_error(actual, predicted)),
+                               "paired_rmse_delta": candidate_rmse - float(mean_squared_error(actual, predicted) ** .5)})
             else:
                 result.append({"market": market, "baseline": name, "rows": 0,
-                               "mae": None, "rmse": None, "median_absolute_error": None})
+                               "mae": None, "rmse": None, "median_absolute_error": None,
+                               "candidate_mae_on_same_rows": None, "candidate_rmse_on_same_rows": None,
+                               "paired_mae_delta": None, "paired_rmse_delta": None})
     return result
 
 
@@ -938,7 +950,8 @@ def parlay_dependency_diagnostics(projections: Sequence[dict[str, Any]]) -> dict
                 correlation = float(np.corrcoef(left, right)[0, 1])
         relationships.append({"relationship": relation, "pairs": len(values),
                               "standardized_residual_correlation": correlation,
-                              "independence_allowed": bool(correlation is not None and abs(correlation) < .05)})
+                              "independence_allowed": False,
+                              "independence_reason": "AGGREGATE_RELATIONSHIP_CORRELATION_IS_NOT_SUFFICIENT_TO_VERIFY_A_SPECIFIC_LEG_PAIR"})
     return {
         "method": "OUTER_FOLD_STANDARDIZED_RESIDUAL_CORRELATION",
         "relationships": relationships,
@@ -955,6 +968,14 @@ def _grouped_projection_metrics(projections: Sequence[dict[str, Any]], field: st
         groups[str(row.get(field) if row.get(field) is not None else "UNKNOWN")].append(row)
     return [{field: value, **_projection_metrics(rows), **_interval_metrics(rows)}
             for value, rows in sorted(groups.items())]
+
+
+def _weekly_projection_metrics(projections: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    groups: dict[tuple[int, int], list[dict[str, Any]]] = defaultdict(list)
+    for row in projections:
+        groups[(int(row["season"]), int(row["week"]))].append(row)
+    return [{"season": period[0], "week": period[1], **_projection_metrics(rows), **_interval_metrics(rows)}
+            for period, rows in sorted(groups.items())]
 
 
 def _history_bucket(depth: int) -> str:
@@ -1025,14 +1046,15 @@ def _promotion_assessment(projections: Sequence[dict[str, Any]], threshold_rows:
     weeks = {(row["season"], row["week"]) for row in projections}
     games = {row["game_id"] for row in projections}
     calibrated_groups = [row for row in critical if row["forecasts"] >= 100]
-    stability_weeks = {(row["season"], row["week"]) for row in threshold_rows
-                       if row["stability_class"] in {"ELITE_STABILITY", "HIGH_STABILITY"}}
+    stable_rows = [row for row in threshold_rows if row["stability_class"] in {"ELITE_STABILITY", "HIGH_STABILITY"}]
+    stability_weeks = {(row["season"], row["week"]) for row in stable_rows}
+    stability_calibration = _calibration_group(stable_rows)
     concentrations = {}
     for field in ("market", "team", "canonical_player_id", "week"):
         counts = Counter(str(row[field]) for row in projections)
         concentrations[field] = max(counts.values(), default=0) / max(1, len(projections))
     gates = {
-        "mae_improved_vs_frozen_baseline": bool(frozen.get("mae") is not None and candidate["mae"] < frozen["mae"]),
+        "mae_improved_vs_frozen_baseline": bool(frozen.get("paired_mae_delta") is not None and frozen["paired_mae_delta"] < 0),
         "crps_improved_vs_simple_quantile_baseline": bool(baseline_distribution["crps"] is not None and candidate["crps"] < baseline_distribution["crps"]),
         "interval_coverage_non_inferior": bool(
             baseline_distribution["p10_p90_coverage"] is not None
@@ -1046,7 +1068,10 @@ def _promotion_assessment(projections: Sequence[dict[str, Any]], threshold_rows:
         "threshold_probabilities_calibrated": bool(
             len(calibrated_groups) == 4 and all(abs(float(row["calibration_error"])) <= .05 for row in calibrated_groups)
         ),
-        "stability_reliable_multiple_weeks": len(stability_weeks) >= 8,
+        "stability_reliable_multiple_weeks": bool(
+            len(stability_weeks) >= 8 and stability_calibration["forecasts"] >= 500
+            and abs(float(stability_calibration["calibration_error"])) <= .05
+        ),
         "no_fatal_leakage_or_integrity_finding": True,
         "reproducible_offline": True,
         "sufficient_weeks": len(weeks) >= 15, "sufficient_games": len(games) >= 100,
@@ -1058,6 +1083,7 @@ def _promotion_assessment(projections: Sequence[dict[str, Any]], threshold_rows:
         "policy": "RESEARCH_ONLY_EVEN_IF_GATES_PASS; NO_PRODUCTION_WAGERING",
         "candidate": candidate, "frozen_center_baseline": frozen,
         "simple_quantile_baseline": baseline_distribution,
+        "combined_high_stability_calibration": stability_calibration,
         "segment_concentrations": concentrations,
     }
 
@@ -1112,7 +1138,7 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
     diagnostics = mean_variance_diagnostics(projections)
     dependencies = parlay_dependency_diagnostics(projections)
     promotion = _promotion_assessment(projections, threshold_rows, baselines, critical)
-    weekly = _grouped_projection_metrics(projections, "week")
+    weekly = _weekly_projection_metrics(projections)
     macro_weekly = {
         "weeks": len(weekly), "mae": _mean(row["mae"] for row in weekly if row["mae"] is not None),
         "rmse": _mean(row["rmse"] for row in weekly if row["rmse"] is not None),
