@@ -1,0 +1,29 @@
+{
+  "accepted_canonical_rows_have_zero_unresolved_accounting_violations": true,
+  "canonical_event_reconciliation": {
+    "accepted_events": 0,
+    "accepted_rows_unresolved_accounting_violations": 0,
+    "dropback_partitions_valid": true,
+    "input_events": 0,
+    "pass_allocations_valid": true,
+    "quarantined_findings": 0,
+    "rush_partitions_valid": true
+  },
+  "historical_outcome_reconciliation": {
+    "accepted_rows_unresolved_accounting_violations": 0,
+    "milestone_1_historical_acceptance": false,
+    "official_player_games": 16057,
+    "reconciled_player_games": 0,
+    "status": "BLOCKED_MISSING_PLAY_BY_PLAY",
+    "unreconciled_player_games": 16057
+  },
+  "milestone_0_acceptance": true,
+  "milestone_1_acceptance": false,
+  "milestone_1_blocker": "MISSING_PLAY_BY_PLAY",
+  "network_contacted": false,
+  "quarantine_by_reason": {
+    "PROVIDER_SEMANTICS_UNRESOLVED": 16057
+  },
+  "quarantine_count": 16057,
+  "schema_version": 1
+}

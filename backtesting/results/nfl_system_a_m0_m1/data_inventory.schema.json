@@ -1,0 +1,162 @@
+{
+  "$id": "nfl-system-a-data-inventory-v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fields": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "availability_status": {
+            "enum": [
+              "AVAILABLE_RAW",
+              "DERIVABLE",
+              "INSUFFICIENT_COVERAGE",
+              "MISSING"
+            ]
+          },
+          "canonical_field_name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "data_type": {},
+          "derivation_cutoff_rule": {},
+          "derivation_dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "derivation_rule": {},
+          "display_name": {},
+          "domain": {
+            "enum": [
+              "audit_only",
+              "efficiency",
+              "game_context",
+              "identifier",
+              "opportunity",
+              "play_event",
+              "player_outcome",
+              "team_outcome"
+            ]
+          },
+          "fallback_provider": {},
+          "first_available_date": {},
+          "game_coverage_count": {},
+          "game_coverage_rate": {},
+          "join_success_rate": {},
+          "known_anomalies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "last_audited_at": {},
+          "last_available_date": {},
+          "leakage_notes": {},
+          "licensing_notes": {},
+          "null_semantics": {},
+          "player_game_coverage_count": {},
+          "player_game_coverage_rate": {},
+          "primary_provider": {
+            "enum": [
+              "canonical-derived",
+              "espn",
+              "espn-box-score",
+              "espn-scoreboard",
+              "none"
+            ]
+          },
+          "provider_field_name": {},
+          "provider_semantics": {},
+          "reconciliation_rule": {},
+          "required_for_launch": {
+            "type": "boolean"
+          },
+          "role": {
+            "enum": [
+              "CONTEXT_METADATA",
+              "FEATURE_CANDIDATE",
+              "IDENTIFIER",
+              "RECONCILIATION_FIELD",
+              "TRAINING_TARGET"
+            ]
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "seasons_available": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "source_artifact_hash": {},
+          "status_reason": {},
+          "support": {},
+          "temporal_safety": {
+            "enum": [
+              "NOT_APPLICABLE",
+              "POSTGAME_ONLY",
+              "PREGAME_SAFE",
+              "TIMESTAMP_UNVERIFIED"
+            ]
+          },
+          "unit": {},
+          "valid_range": {},
+          "zero_semantics": {}
+        },
+        "required": [
+          "canonical_field_name",
+          "display_name",
+          "schema_version",
+          "domain",
+          "role",
+          "data_type",
+          "unit",
+          "valid_range",
+          "support",
+          "null_semantics",
+          "zero_semantics",
+          "availability_status",
+          "temporal_safety",
+          "primary_provider",
+          "provider_field_name",
+          "provider_semantics",
+          "fallback_provider",
+          "derivation_rule",
+          "derivation_dependencies",
+          "derivation_cutoff_rule",
+          "seasons_available",
+          "first_available_date",
+          "last_available_date",
+          "game_coverage_count",
+          "game_coverage_rate",
+          "player_game_coverage_count",
+          "player_game_coverage_rate",
+          "join_success_rate",
+          "leakage_notes",
+          "licensing_notes",
+          "known_anomalies",
+          "reconciliation_rule",
+          "required_for_launch",
+          "status_reason",
+          "last_audited_at",
+          "source_artifact_hash"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "fields"
+  ],
+  "title": "NFL System A Data Inventory",
+  "type": "object"
+}

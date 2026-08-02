@@ -1,0 +1,2242 @@
+{
+  "definitions": [
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "aborted_play",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "aborted_rush_residual",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "active_inactive_status",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "batted_or_tipped_unassigned_attempt",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "canonical_game_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "game_id",
+          "provider": "espn-scoreboard",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "canonical_player_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "canonical_player_id",
+          "provider": "espn-box-score",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "canonical_team_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "canonical_team_id",
+          "provider": "espn-box-score",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "clock",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "clock",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "completed_pass",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "counts_as_official_play",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "credited_reception",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "credited_target",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "data_provider_name",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "data_provider_name",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "data_provider_version",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "data_provider_version",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "defense_team_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "defense_team_id",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "defensive_play",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "depth_chart_status",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "designed_qb_rush",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "designed_rb_wr_rush",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "drive_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "drive_id",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "dropback",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "duplicate_play_indicator",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "field_surface",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "inactive_status",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "injury_report_timestamp",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "injury_status",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "interception",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "kickoff_utc",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "kickoff_time",
+          "provider": "espn-scoreboard",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "kickoff_weather",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "lateral_indicator",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "no_play",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "offense_team_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "offense_team_id",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "official_rush_attempt",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "overtime_indicator",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "overtime_indicator",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "pass_attempt",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "penalty_nullified_play",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "play_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "play_id",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "play_sequence",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "play_sequence",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "precipitation",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_correction_status",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_game_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "espn_event_id",
+          "provider": "espn-scoreboard",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_kneel_treatment",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_lateral_semantics",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_player_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "provider_player_id",
+          "provider": "espn-box-score",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_rush_lateral_fumble_treatment",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "provider_scramble_treatment",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "qb_kneel",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "qb_scramble",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "quarter",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Requires play-by-play source not stored.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "quarter",
+          "provider": "none",
+          "semantics": "Requires play-by-play source not stored."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "receiving_yards",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Official player box-score outcome for the completed game.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "receiving_yards",
+          "provider": "espn-box-score",
+          "semantics": "Official player box-score outcome for the completed game."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "receptions",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Official player box-score outcome for the completed game.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "receptions",
+          "provider": "espn-box-score",
+          "semantics": "Official player box-score outcome for the completed game."
+        }
+      ],
+      "reconciliation_expectation": "Must equal the player total aggregated from accepted canonical events.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "replay_or_correction_indicator",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "rest_days",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "roof_status",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "route_share",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "rush_attempts",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Official player box-score outcome for the completed game.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "rush_attempts",
+          "provider": "espn-box-score",
+          "semantics": "Official player box-score outcome for the completed game."
+        }
+      ],
+      "reconciliation_expectation": "Must equal the player total aggregated from accepted canonical events.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "rusher_player_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "rushing_yards",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Official player box-score outcome for the completed game.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "rushing_yards",
+          "provider": "espn-box-score",
+          "semantics": "Official player box-score outcome for the completed game."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "sack",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "sack_yards",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "season",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "season",
+          "provider": "espn-scoreboard",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "snap_share",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "special_teams_play",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "spike",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "starting_qb",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "starting_qb_continuity",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "target_player_id",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "targets",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Official player box-score outcome for the completed game.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "targets",
+          "provider": "espn-box-score",
+          "semantics": "Official player box-score outcome for the completed game."
+        }
+      ],
+      "reconciliation_expectation": "Must equal the player total aggregated from accepted canonical events.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "targets_per_team_dropback_proxy",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "A target-frequency proxy. It is explicitly not route share.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "canonical-derived",
+          "semantics": "A target-frequency proxy. It is explicitly not route share."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "team_rush",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "temperature",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "throwaway",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "travel_time_zone_context",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "two_point_attempt",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "unassigned_non_target_attempt",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+        }
+      ],
+      "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "week",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": "week",
+          "provider": "espn-scoreboard",
+          "semantics": "ESPN scoreboard/game or box-score identifier retained in frozen snapshots."
+        }
+      ],
+      "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    },
+    {
+      "aborted_plays": "Team/aborted residual unless provider semantics resolve a player official rush.",
+      "batted_tipped_passes": "Unassigned unless the provider credits an intended target.",
+      "canonical_field_name": "wind",
+      "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
+      "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
+      "football_meaning": "Unavailable in stored historical snapshots or lacks verified historical publication timing.",
+      "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
+      "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
+      "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
+      "null_handling": "null means unknown or unavailable; it must not be interpreted as zero",
+      "overtime": "Included in official game totals and marked explicitly on canonical events.",
+      "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
+      "provider_mappings": [
+        {
+          "field": null,
+          "provider": "none",
+          "semantics": "Unavailable in stored historical snapshots or lacks verified historical publication timing."
+        }
+      ],
+      "reconciliation_expectation": "Context metadata is not an official player-stat total.",
+      "sacks": "Dropbacks, not pass attempts; sack yards remain separate from player passing yards.",
+      "schema_version": 1,
+      "scrambles": "One DROPBACK/SCRAMBLE event that also increments official player rushing attempts.",
+      "spikes": "Official pass attempts with no credited target.",
+      "team_rushes": "Retained in team residual; never forced onto a player.",
+      "throwaways": "Official pass attempts with no credited target.",
+      "two_point_attempts": "Represented but excluded from ordinary official player-stat effects."
+    }
+  ],
+  "provider_scope": [
+    "espn-scoreboard",
+    "espn-box-score"
+  ],
+  "schema_version": 1
+}
