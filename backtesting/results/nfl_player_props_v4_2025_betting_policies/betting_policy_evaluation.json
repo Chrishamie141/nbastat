@@ -143,6 +143,36 @@
       "roi_improvement_gate_pass": false
     }
   },
+  "probability_diagnostics": {
+    "market_no_vig": {
+      "brier_score": 0.24771343129047596,
+      "ece": 0.005856218476461441,
+      "log_loss": 0.6885223141452081,
+      "ranking_auc": 0.54936836028464,
+      "rows": 36590
+    },
+    "market_residual_walk_forward": {
+      "brier_score": 0.24722185886733986,
+      "ece": 0.0064493834242623045,
+      "log_loss": 0.6875208772401465,
+      "ranking_auc": 0.5554073177878474,
+      "rows": 36590
+    },
+    "v3_baseline": {
+      "brier_score": 0.424621839901935,
+      "ece": 0.39821226007105764,
+      "log_loss": 3.415094892106546,
+      "ranking_auc": 0.5103514648370466,
+      "rows": 36590
+    },
+    "v4_candidate": {
+      "brier_score": 0.31425610109391816,
+      "ece": 0.22432635047056246,
+      "log_loss": 0.9157293786067631,
+      "ranking_auc": 0.5300301719092988,
+      "rows": 36590
+    }
+  },
   "residual_model_folds": [
     {
       "intercept": null,

@@ -19,6 +19,9 @@ from typing import Any
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+
+from .evaluate_nfl_player_props import probability_metrics
 
 
 EV_THRESHOLDS = (0.0, 0.01, 0.02, 0.03, 0.05, 0.075, 0.10, 0.15, 0.20)
@@ -236,6 +239,21 @@ def evaluate_policies(rows: list[dict[str, Any]], *, decision_threshold: float =
     if incoherent:
         raise ValueError(f"incomplete side pairs for {len(incoherent)} base opportunities")
     total_bases = len(groups)
+    probability_diagnostics = {}
+    for policy, field in {
+        "market_no_vig": "no_vig_market_probability",
+        "v3_baseline": "baseline_probability",
+        "v4_candidate": "model_probability",
+        "market_residual_walk_forward": "residual_probability",
+    }.items():
+        metric = probability_metrics(enriched, field)
+        outcomes = [1 if row["grade"] == "WIN" else 0 for row in enriched]
+        probabilities = [float(row[field]) for row in enriched]
+        probability_diagnostics[policy] = {
+            "rows": len(enriched), "brier_score": metric["brier_score"],
+            "log_loss": metric["log_loss"], "ece": metric["ece"],
+            "ranking_auc": float(roc_auc_score(outcomes, probabilities)),
+        }
     controls = {}
     for policy in ("always_over", "always_under", "deterministic_random_side",
                    "market_favorite", "highest_no_vig_probability"):
@@ -285,6 +303,7 @@ def evaluate_policies(rows: list[dict[str, Any]], *, decision_threshold: float =
             "decision_threshold": decision_threshold, "decision_threshold_unit": "expected_profit_per_unit_staked",
             "controls": controls, "selected_policy_metrics": selected,
             "policy_comparisons": comparisons,
+            "probability_diagnostics": probability_diagnostics,
             "threshold_metrics": threshold_metrics, "segment_metrics": segment_metrics,
             "residual_model_folds": folds,
             "guardrails": [

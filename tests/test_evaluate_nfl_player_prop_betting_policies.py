@@ -26,6 +26,9 @@ def test_every_policy_selects_at_most_one_side_and_controls_are_present():
     assert report["controls"]["always_over"]["bets"] == 3
     assert report["controls"]["always_under"]["bets"] == 3
     assert report["controls"]["no_bet"]["bets"] == 0
+    assert set(report["probability_diagnostics"]) == {
+        "market_no_vig", "v3_baseline", "v4_candidate", "market_residual_walk_forward"}
+    assert all(0 <= value["ranking_auc"] <= 1 for value in report["probability_diagnostics"].values())
     assert report["selected_policy_metrics"]["v4_ev"]["bets"] <= 3
     assert report["selected_policy_metrics"]["market_residual_walk_forward_ev"]["bets"] <= 3
     comparison = report["policy_comparisons"]["market_residual_walk_forward_ev_vs_v3_ev"]
