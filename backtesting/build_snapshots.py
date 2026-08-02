@@ -132,9 +132,9 @@ def request_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
         ready = _backtest_ready(args.data_dir, args.league, args.season, week)
         actions = [] if ready else [d for d in ("games", "odds", "team_stats", "outcomes") if not loaded[d]]
         if loaded["games"] and missing_games: actions = [*([a for a in actions if a != "odds"]), "odds"]
-        requests = missing_games if "odds" in actions else 0
+        request_paths: set[Path] = set()
         cache_hits = 0
-        if requests:
+        if missing_games and "odds" in actions:
             for game in missing:
                 # Normalized canonical schedules always contain kickoff_time.
                 # Keep request_plan useful for older hand-written snapshots,
@@ -142,12 +142,17 @@ def request_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
                 # as a paid miss.
                 if game.get("kickoff_time"):
                     _, params = _odds_request(str(args.season), week, game, getattr(args, "odds_hours_before_kickoff", 24))
-                    cache_hits += odds_cache.path("odds-api", "nfl", args.season, week, "odds", params).exists()
+                    request_paths.add(odds_cache.path("odds-api", "nfl", args.season, week, "odds", params))
+                else:
+                    request_paths.add(Path("__unidentified_historical_request__") / str(game.get("game_id")))
+        requests = len(request_paths)
+        cache_hits = sum(path.exists() for path in request_paths)
         paid_requests = requests - cache_hits
         needed += requests; hits += cache_hits; paid += paid_requests
         row = {"week": week, "ready": ready, "counts": {k: len(v) for k,v in loaded.items()},
                "games_with_odds": len(game_ids & odds_ids), "games_without_odds": missing_games,
                "canonical_games": len(game_ids), "historical_requests_needed": requests,
+               "unique_historical_request_timestamps": requests,
                "cache_hits": cache_hits, "paid_requests": paid_requests,
                "estimated_credits": paid_requests * len(TEAM_MARKETS) * 10,
                "actions": actions, "expected_paid_requests": paid_requests}

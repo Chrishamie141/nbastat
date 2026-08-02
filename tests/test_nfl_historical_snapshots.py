@@ -126,6 +126,23 @@ def test_exact_plan_is_cache_aware_and_credits_differ_from_http_requests(tmp_pat
     assert row["estimated_credits"] == 30
 
 
+def test_exact_plan_deduplicates_games_sharing_historical_request_timestamp(tmp_path):
+    data_dir = tmp_path / "snapshots"
+    week = data_dir / "nfl/2025/week_02"; week.mkdir(parents=True)
+    kickoff = "2025-09-11T00:00:00Z"
+    (week / "games.json").write_text(json.dumps([
+        {"game_id": "a", "kickoff_time": kickoff}, {"game_id": "b", "kickoff_time": kickoff},
+    ]))
+    for dataset in ("odds", "team_stats", "outcomes"):
+        (week / f"{dataset}.json").write_text("[]")
+    args = Namespace(league="nfl", season="2025", start_week=2, end_week=2,
+                     data_dir=data_dir, odds_hours_before_kickoff=24)
+    row = request_plan(args)[0]
+    assert row["games_without_odds"] == 2
+    assert row["historical_requests_needed"] == row["paid_requests"] == 1
+    assert row["estimated_credits"] == 30
+
+
 def test_cache_identity_is_parameter_complete_and_has_no_api_key(tmp_path):
     cache = JsonRawCache(tmp_path)
     base = {"date": "2025-09-01T00:00:00Z", "regions": "us", "markets": "h2h",
