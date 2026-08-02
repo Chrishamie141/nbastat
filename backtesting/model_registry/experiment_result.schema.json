@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smartbetsports.local/schemas/nfl-player-prop-experiment-result-v1.json",
+  "title": "NFL player-prop experiment result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "model_id",
+    "git_commit",
+    "configuration_hash",
+    "configuration",
+    "training_window",
+    "evaluation_window",
+    "dataset",
+    "metrics",
+    "reproducibility",
+    "evidence",
+    "baseline_comparison",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "experiment_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{2,79}$"},
+    "model_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{2,79}$"},
+    "git_commit": {"type": "string"},
+    "configuration_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "configuration": {"type": "object"},
+    "training_window": {
+      "type": "object",
+      "required": ["strategy", "weeks"],
+      "properties": {"strategy": {"type": "string"}, "weeks": {"type": "array", "items": {"type": "integer"}}}
+    },
+    "evaluation_window": {
+      "type": "object",
+      "required": ["season", "requested_weeks", "evaluated_weeks"],
+      "properties": {
+        "season": {"type": "integer"},
+        "requested_weeks": {"type": "array", "items": {"type": "integer"}},
+        "evaluated_weeks": {"type": "array", "items": {"type": "integer"}}
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "required": ["opportunities", "independent_games", "input_hashes"],
+      "properties": {
+        "opportunities": {"type": "integer", "minimum": 0},
+        "independent_games": {"type": "integer", "minimum": 0},
+        "input_hashes": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["overall", "by_market", "by_confidence_bucket", "calibration_curve"],
+      "properties": {
+        "overall": {"$ref": "#/$defs/metrics"},
+        "by_market": {"type": "object", "additionalProperties": {"$ref": "#/$defs/metrics"}},
+        "by_confidence_bucket": {"type": "object", "additionalProperties": {"$ref": "#/$defs/metrics"}},
+        "calibration_curve": {"type": "array"}
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "required": ["seed", "simulations", "network_contacted", "deterministic"],
+      "properties": {
+        "seed": {"type": "integer"},
+        "simulations": {"type": "integer", "minimum": 1},
+        "network_contacted": {"const": false},
+        "deterministic": {"const": true}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["leakage_safe", "out_of_sample", "status"],
+      "properties": {
+        "leakage_safe": {"type": "boolean"},
+        "out_of_sample": {"type": "boolean"},
+        "status": {"enum": ["INSUFFICIENT_HISTORY", "PROMOTION_ELIGIBLE_SAMPLE"]}
+      }
+    },
+    "baseline_comparison": {"type": ["object", "null"]},
+    "artifacts": {"type": "object"}
+  },
+  "$defs": {
+    "nullableNumber": {"type": ["number", "null"]},
+    "metrics": {
+      "type": "object",
+      "required": ["opportunities", "settled", "brier_score", "log_loss", "ece", "roi", "units_profit"],
+      "properties": {
+        "opportunities": {"type": "integer", "minimum": 0},
+        "settled": {"type": "integer", "minimum": 0},
+        "brier_score": {"$ref": "#/$defs/nullableNumber"},
+        "log_loss": {"$ref": "#/$defs/nullableNumber"},
+        "ece": {"$ref": "#/$defs/nullableNumber"},
+        "roi": {"$ref": "#/$defs/nullableNumber"},
+        "units_profit": {"$ref": "#/$defs/nullableNumber"},
+        "roi_uncertainty": {"type": "object"}
+      }
+    }
+  }
+}

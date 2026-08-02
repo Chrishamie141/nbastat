@@ -108,4 +108,11 @@ def test_research_command_is_offline_artifact_first_and_deterministic(tmp_path,m
     assert availability["usage_share_volatility"]["status"] == "AVAILABLE"
     assert availability["projected_pace"]["status"] == "NOT_PERSISTED"
     assert first["research_manifest.json"]["network_contacted"] is False
+    contract=first["experiment_result.json"]
+    assert contract["model_id"] == "nfl_game_baseline_v3"
+    assert contract["metrics"]["overall"]["brier_score"] is not None
+    assert contract["metrics"]["by_market"]["receiving_yards"]["roi"] is not None
+    assert contract["evidence"]["status"] == "INSUFFICIENT_HISTORY"
+    assert contract["baseline_comparison"] is None
+    assert (outputs[0]/"reliability_plot.svg").read_text().startswith("<svg")
     assert (outputs[0]/"research_manifest.json").read_bytes() == (outputs[1]/"research_manifest.json").read_bytes()

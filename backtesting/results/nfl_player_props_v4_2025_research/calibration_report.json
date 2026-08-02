@@ -1,0 +1,10 @@
+{
+  "folds": [],
+  "reason": "requires two prior evaluated weeks and historical prop lines",
+  "status": "INSUFFICIENT_HISTORY",
+  "supported_methods": [
+    "isotonic",
+    "beta",
+    "platt"
+  ]
+}

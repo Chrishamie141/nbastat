@@ -1,0 +1,33 @@
+{
+  "calibration": {
+    "method": "none",
+    "scope": "player_prop_probabilities"
+  },
+  "description": "Frozen deterministic NFL V3 game projection plus empirical player-prop simulation benchmark.",
+  "distribution": {
+    "family": "empirical_monte_carlo",
+    "market_specific": false
+  },
+  "feature_set": {
+    "features": [
+      "completed_team_scoring_history",
+      "completed_player_market_history",
+      "recent_form",
+      "player_usage_proxies",
+      "home_away",
+      "pregame_market_context",
+      "team_scoring_variance"
+    ],
+    "version": "nfl-v3-features-1"
+  },
+  "git_commit": "47dfab1d594edad6f62a6814fd19ff19269aa418",
+  "model_id": "nfl_game_baseline_v3",
+  "schema_version": 1,
+  "sport": "nfl",
+  "state": "benchmark",
+  "target": "player_props",
+  "variance": {
+    "method": "simulation_heuristic",
+    "separately_learned": false
+  }
+}

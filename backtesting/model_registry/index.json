@@ -1,0 +1,24 @@
+{
+  "experiments": {
+    "nfl_game_baseline_v3.2025.w01-w18.a4d5378e021f": {
+      "path": "experiments/nfl_game_baseline_v3.2025.w01-w18.a4d5378e021f.json",
+      "sha256": "3e9f3b2474ee46ab9545c8e265ff1c2248f42550f095588cfec2142b22ab776d"
+    },
+    "nfl_prop_v4_research_v1.2025.w01-w18.e367d5a6cb85": {
+      "path": "experiments/nfl_prop_v4_research_v1.2025.w01-w18.e367d5a6cb85.json",
+      "sha256": "ae51b2d0ffa6e1c22f9208728aeb4dc81a1c1f73829fbfa88327863e912f04d9"
+    }
+  },
+  "models": {
+    "nfl_game_baseline_v3": {
+      "path": "models/nfl_game_baseline_v3.json",
+      "sha256": "25e3d6f594b2474a41ca4ae9f5ed046f9d07a1b115da6f6920d82f1363a8e93e"
+    },
+    "nfl_prop_v4_research_v1": {
+      "path": "models/nfl_prop_v4_research_v1.json",
+      "sha256": "290b7bda4450ad5fe3fe7d089d4771135afc0a3554249d9f0af89ceaaef88a3a"
+    }
+  },
+  "promotions": {},
+  "schema_version": 1
+}

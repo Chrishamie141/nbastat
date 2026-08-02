@@ -23,6 +23,8 @@ from .analyze_nfl_player_prop_errors import (
     load_joined_analysis_rows,
 )
 from .config import SNAPSHOTS_DIR
+from .experiment_results import build_experiment_result, write_reliability_svg
+from .evaluate_nfl_player_props import probability_metrics
 from .game_matching import normalize_team
 from .snapshots import snapshot_week_dir
 
@@ -31,8 +33,9 @@ FAMILIES=("normal","lognormal","gamma","poisson","negative_binomial",
           "zero_inflated_poisson","zero_inflated_negative_binomial")
 JSON_ARTIFACTS=("research_summary.json","distribution_comparison.json","variance_model_report.json",
                 "calibration_report.json","permutation_importance.json","residual_clusters.json",
-                "feature_availability.json")
+                "feature_availability.json","experiment_result.json")
 CSV_ARTIFACTS=("distribution_comparison.csv","permutation_importance.csv","residual_clusters.csv")
+VISUAL_ARTIFACTS=("reliability_plot.svg",)
 
 
 def _hash(path: Path) -> str: return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -292,6 +295,7 @@ def walk_forward_calibration(rows: list[dict[str,Any]], seed: int, min_train_row
 
 def research(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
              season_results_dir: Path, output_dir: Path, seed: int=1729,
+             model_id: str="nfl_game_baseline_v3", simulations: int=10000,
              min_train_rows: int=100, min_test_rows: int=20,
              min_segment_size: int=20) -> dict[str,Any]:
     rows,exclusions,input_paths=load_joined_analysis_rows(season=season,start_week=start_week,end_week=end_week,
@@ -327,18 +331,33 @@ def research(*, season: int, start_week: int, end_week: int, snapshot_root: Path
     output_dir.mkdir(parents=True,exist_ok=True)
     for name,value in artifacts.items(): _write_json(output_dir/name,value)
     _write_csv(output_dir/"distribution_comparison.csv",distributions); _write_csv(output_dir/"permutation_importance.csv",importance); _write_csv(output_dir/"residual_clusters.csv",clusters)
+    write_reliability_svg(output_dir/"reliability_plot.svg",probability_metrics(rows,"model_probability")["bins"])
+    input_hashes={path.as_posix():_semantic_hash(path) for path in sorted(set(input_paths))}
+    research_artifact_paths=[output_dir/name for name in (*artifacts.keys(),*CSV_ARTIFACTS,*VISUAL_ARTIFACTS)]
+    experiment=build_experiment_result(model_id=model_id,season=season,
+        requested_weeks=(start_week,end_week),rows=rows,seed=seed,simulations=simulations,
+        configuration={"experiment_contract_version":"nfl-player-prop-experiment-v1",
+            "command":"research_nfl_player_prop_models","model_id":model_id,
+            "season":season,"start_week":start_week,"end_week":end_week,"seed":seed,
+            "simulations":simulations,"min_train_rows":min_train_rows,
+            "min_test_rows":min_test_rows,"min_segment_size":min_segment_size},
+        input_hashes=input_hashes,artifact_paths=research_artifact_paths,
+        training_strategy="frozen_heuristic_baseline_no_outcome_fit",training_weeks=[],
+        leakage_safe=True,out_of_sample=True)
+    _write_json(output_dir/"experiment_result.json",experiment)
     manifest={"schema_version":1,"network_contacted":False,
-              "config":{"season":season,"start_week":start_week,"end_week":end_week,"seed":seed,"min_train_rows":min_train_rows,"min_test_rows":min_test_rows,"min_segment_size":min_segment_size},
-              "inputs":{path.as_posix():_semantic_hash(path) for path in sorted(set(input_paths))},
-              "artifacts":{name:_hash(output_dir/name) for name in sorted((*JSON_ARTIFACTS,*CSV_ARTIFACTS))}}
+              "config":{"model_id":model_id,"season":season,"start_week":start_week,"end_week":end_week,"seed":seed,"simulations":simulations,"min_train_rows":min_train_rows,"min_test_rows":min_test_rows,"min_segment_size":min_segment_size},
+              "inputs":input_hashes,
+              "artifacts":{name:_hash(output_dir/name) for name in sorted((*JSON_ARTIFACTS,*CSV_ARTIFACTS,*VISUAL_ARTIFACTS))}}
     _write_json(output_dir/"research_manifest.json",manifest)
-    return {**artifacts,"research_manifest.json":manifest}
+    return {**artifacts,"experiment_result.json":experiment,"research_manifest.json":manifest}
 
 
 def main(argv: list[str] | None=None) -> int:
     parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--season",type=int,required=True)
     parser.add_argument("--start-week",type=int,default=1); parser.add_argument("--end-week",type=int,default=18)
     parser.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); parser.add_argument("--season-results-dir",type=Path,required=True); parser.add_argument("--output-dir",type=Path,required=True)
+    parser.add_argument("--model-id",default="nfl_game_baseline_v3"); parser.add_argument("--simulations",type=int,default=10000)
     parser.add_argument("--seed",type=int,default=1729); parser.add_argument("--min-train-rows",type=int,default=100); parser.add_argument("--min-test-rows",type=int,default=20); parser.add_argument("--min-segment-size",type=int,default=20)
     research(**vars(parser.parse_args(argv))); return 0
 

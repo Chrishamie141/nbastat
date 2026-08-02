@@ -1,0 +1,380 @@
+[
+  {
+    "candidates": [
+      {
+        "average_nll": 6.517118145609583,
+        "count": 139,
+        "family": "student_t",
+        "rank": 1
+      },
+      {
+        "average_nll": 7.134364874513334,
+        "count": 139,
+        "family": "normal",
+        "rank": 2
+      },
+      {
+        "average_nll": 7.861671264390798,
+        "count": 139,
+        "family": "negative_binomial",
+        "rank": 3
+      },
+      {
+        "average_nll": 7.978469444706918,
+        "count": 139,
+        "family": "gamma",
+        "rank": 4
+      },
+      {
+        "average_nll": 8.023720918778725,
+        "count": 139,
+        "family": "zero_inflated_negative_binomial",
+        "rank": 5
+      },
+      {
+        "average_nll": 8.615626150294512,
+        "count": 139,
+        "family": "lognormal",
+        "rank": 6
+      },
+      {
+        "average_nll": 16.89753172719481,
+        "count": 139,
+        "family": "zero_inflated_poisson",
+        "rank": 7
+      },
+      {
+        "average_nll": 16.93763460700893,
+        "count": 139,
+        "family": "poisson",
+        "rank": 8
+      }
+    ],
+    "market": "passing_yards",
+    "rows": 139,
+    "selected_family": "student_t",
+    "selection_policy": "lowest walk-forward interval/discrete negative log likelihood",
+    "status": "SELECTED",
+    "walk_forward_weeks": [
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "candidates": [
+      {
+        "average_nll": 1.4760108103179659,
+        "count": 139,
+        "family": "poisson",
+        "rank": 1
+      },
+      {
+        "average_nll": 1.4967373038411347,
+        "count": 139,
+        "family": "negative_binomial",
+        "rank": 2
+      },
+      {
+        "average_nll": 1.5562108011211733,
+        "count": 139,
+        "family": "gamma",
+        "rank": 3
+      },
+      {
+        "average_nll": 1.5763659878813066,
+        "count": 139,
+        "family": "normal",
+        "rank": 4
+      },
+      {
+        "average_nll": 1.5907710675455449,
+        "count": 139,
+        "family": "student_t",
+        "rank": 5
+      },
+      {
+        "average_nll": 1.6559810787367495,
+        "count": 139,
+        "family": "lognormal",
+        "rank": 6
+      },
+      {
+        "average_nll": 1.726735435699668,
+        "count": 139,
+        "family": "zero_inflated_poisson",
+        "rank": 7
+      },
+      {
+        "average_nll": 1.742883599830534,
+        "count": 139,
+        "family": "zero_inflated_negative_binomial",
+        "rank": 8
+      }
+    ],
+    "market": "passing_tds",
+    "rows": 139,
+    "selected_family": "poisson",
+    "selection_policy": "lowest walk-forward interval/discrete negative log likelihood",
+    "status": "SELECTED",
+    "walk_forward_weeks": [
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "candidates": [
+      {
+        "average_nll": 2.7176870417537873,
+        "count": 462,
+        "family": "negative_binomial",
+        "rank": 1
+      },
+      {
+        "average_nll": 2.7176870417537873,
+        "count": 462,
+        "family": "zero_inflated_negative_binomial",
+        "rank": 2
+      },
+      {
+        "average_nll": 2.7597222043363985,
+        "count": 462,
+        "family": "gamma",
+        "rank": 3
+      },
+      {
+        "average_nll": 2.760020712827441,
+        "count": 462,
+        "family": "student_t",
+        "rank": 4
+      },
+      {
+        "average_nll": 2.765962014428248,
+        "count": 462,
+        "family": "poisson",
+        "rank": 5
+      },
+      {
+        "average_nll": 2.765962014428248,
+        "count": 462,
+        "family": "zero_inflated_poisson",
+        "rank": 6
+      },
+      {
+        "average_nll": 2.8544388642894636,
+        "count": 462,
+        "family": "lognormal",
+        "rank": 7
+      },
+      {
+        "average_nll": 2.975467718514815,
+        "count": 462,
+        "family": "normal",
+        "rank": 8
+      }
+    ],
+    "market": "rushing_attempts",
+    "rows": 462,
+    "selected_family": "negative_binomial",
+    "selection_policy": "lowest walk-forward interval/discrete negative log likelihood",
+    "status": "SELECTED",
+    "walk_forward_weeks": [
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "candidates": [
+      {
+        "average_nll": 4.87581266350596,
+        "count": 462,
+        "family": "student_t",
+        "rank": 1
+      },
+      {
+        "average_nll": 5.330383666593063,
+        "count": 462,
+        "family": "normal",
+        "rank": 2
+      },
+      {
+        "average_nll": 6.700502496145448,
+        "count": 462,
+        "family": "negative_binomial",
+        "rank": 3
+      },
+      {
+        "average_nll": 6.743429236115911,
+        "count": 462,
+        "family": "zero_inflated_negative_binomial",
+        "rank": 4
+      },
+      {
+        "average_nll": 6.804303774010272,
+        "count": 462,
+        "family": "gamma",
+        "rank": 5
+      },
+      {
+        "average_nll": 7.338408944717248,
+        "count": 462,
+        "family": "lognormal",
+        "rank": 6
+      },
+      {
+        "average_nll": 11.842878536515043,
+        "count": 462,
+        "family": "poisson",
+        "rank": 7
+      },
+      {
+        "average_nll": 11.8813258457218,
+        "count": 462,
+        "family": "zero_inflated_poisson",
+        "rank": 8
+      }
+    ],
+    "market": "rushing_yards",
+    "rows": 462,
+    "selected_family": "student_t",
+    "selection_policy": "lowest walk-forward interval/discrete negative log likelihood",
+    "status": "SELECTED",
+    "walk_forward_weeks": [
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "candidates": [
+      {
+        "average_nll": 1.907307091368967,
+        "count": 937,
+        "family": "negative_binomial",
+        "rank": 1
+      },
+      {
+        "average_nll": 1.9115403372808855,
+        "count": 937,
+        "family": "poisson",
+        "rank": 2
+      },
+      {
+        "average_nll": 1.9633826346650531,
+        "count": 937,
+        "family": "zero_inflated_negative_binomial",
+        "rank": 3
+      },
+      {
+        "average_nll": 1.9668086919414256,
+        "count": 937,
+        "family": "zero_inflated_poisson",
+        "rank": 4
+      },
+      {
+        "average_nll": 1.9754203627121862,
+        "count": 937,
+        "family": "gamma",
+        "rank": 5
+      },
+      {
+        "average_nll": 2.001536395992945,
+        "count": 937,
+        "family": "student_t",
+        "rank": 6
+      },
+      {
+        "average_nll": 2.042951917120394,
+        "count": 937,
+        "family": "normal",
+        "rank": 7
+      },
+      {
+        "average_nll": 2.1275978119058516,
+        "count": 937,
+        "family": "lognormal",
+        "rank": 8
+      }
+    ],
+    "market": "receptions",
+    "rows": 937,
+    "selected_family": "negative_binomial",
+    "selection_policy": "lowest walk-forward interval/discrete negative log likelihood",
+    "status": "SELECTED",
+    "walk_forward_weeks": [
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "candidates": [
+      {
+        "average_nll": 5.058152378475942,
+        "count": 1200,
+        "family": "student_t",
+        "rank": 1
+      },
+      {
+        "average_nll": 5.4305191276391405,
+        "count": 1200,
+        "family": "zero_inflated_negative_binomial",
+        "rank": 2
+      },
+      {
+        "average_nll": 5.492843467715141,
+        "count": 1200,
+        "family": "normal",
+        "rank": 3
+      },
+      {
+        "average_nll": 5.6761553795438,
+        "count": 1200,
+        "family": "negative_binomial",
+        "rank": 4
+      },
+      {
+        "average_nll": 6.127890211701382,
+        "count": 1200,
+        "family": "gamma",
+        "rank": 5
+      },
+      {
+        "average_nll": 7.610433796993098,
+        "count": 1200,
+        "family": "lognormal",
+        "rank": 6
+      },
+      {
+        "average_nll": 10.936885311087675,
+        "count": 1200,
+        "family": "zero_inflated_poisson",
+        "rank": 7
+      },
+      {
+        "average_nll": 11.678213070880592,
+        "count": 1200,
+        "family": "poisson",
+        "rank": 8
+      }
+    ],
+    "market": "receiving_yards",
+    "rows": 1200,
+    "selected_family": "student_t",
+    "selection_policy": "lowest walk-forward interval/discrete negative log likelihood",
+    "status": "SELECTED",
+    "walk_forward_weeks": [
+      13,
+      15,
+      17,
+      18
+    ]
+  }
+]

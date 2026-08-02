@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="320.0" y="24" text-anchor="middle" font-size="18">NFL Player-Prop Reliability</text>
+  <line x1="80" y1="400" x2="440" y2="40" stroke="#9ca3af" stroke-dasharray="6 4"/>
+  <line x1="80" y1="40" x2="80" y2="400" stroke="black"/>
+  <line x1="80" y1="400" x2="440" y2="400" stroke="black"/>
+  <polyline points="99.302,242.759 135.053,280.674 170.207,235.074 206.297,220.000 242.349,210.526 277.651,229.474 313.703,220.000 349.793,204.926 384.947,159.326 420.698,197.241" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <circle cx="99.302" cy="242.759" r="5" fill="#2563eb"><title>n=87</title></circle>
+  <circle cx="135.053" cy="280.674" r="5" fill="#2563eb"><title>n=178</title></circle>
+  <circle cx="170.207" cy="235.074" r="5" fill="#2563eb"><title>n=203</title></circle>
+  <circle cx="206.297" cy="220.000" r="5" fill="#2563eb"><title>n=222</title></circle>
+  <circle cx="242.349" cy="210.526" r="5" fill="#2563eb"><title>n=228</title></circle>
+  <circle cx="277.651" cy="229.474" r="5" fill="#2563eb"><title>n=228</title></circle>
+  <circle cx="313.703" cy="220.000" r="5" fill="#2563eb"><title>n=222</title></circle>
+  <circle cx="349.793" cy="204.926" r="5" fill="#2563eb"><title>n=203</title></circle>
+  <circle cx="384.947" cy="159.326" r="5" fill="#2563eb"><title>n=178</title></circle>
+  <circle cx="420.698" cy="197.241" r="5" fill="#2563eb"><title>n=87</title></circle>
+  <text x="80.000" y="424" text-anchor="middle">0.0</text>
+  <text x="66" y="405.000" text-anchor="end">0.0</text>
+  <text x="152.000" y="424" text-anchor="middle">0.2</text>
+  <text x="66" y="333.000" text-anchor="end">0.2</text>
+  <text x="224.000" y="424" text-anchor="middle">0.4</text>
+  <text x="66" y="261.000" text-anchor="end">0.4</text>
+  <text x="296.000" y="424" text-anchor="middle">0.6</text>
+  <text x="66" y="189.000" text-anchor="end">0.6</text>
+  <text x="368.000" y="424" text-anchor="middle">0.8</text>
+  <text x="66" y="117.000" text-anchor="end">0.8</text>
+  <text x="440.000" y="424" text-anchor="middle">1.0</text>
+  <text x="66" y="45.000" text-anchor="end">1.0</text>
+  <text x="260.0" y="458" text-anchor="middle">Mean predicted probability</text>
+  <text x="22" y="220.0" text-anchor="middle" transform="rotate(-90 22 220.0)">Observed win rate</text>
+</svg>

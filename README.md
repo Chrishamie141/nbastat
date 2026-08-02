@@ -109,7 +109,39 @@ Primary outputs are `error_analysis_summary.json`, `feature_attribution.json`, `
 For market-family comparison and leakage-safe modeling research, run:
 
 ```bash
-python -m backtesting.research_nfl_player_prop_models --season 2025 --start-week 1 --end-week 18 --snapshot-root backtesting/data/snapshots --season-results-dir backtesting/results/nfl_player_props_2025_history --output-dir backtesting/results/nfl_player_props_2025_model_research --seed 1729 --min-train-rows 100 --min-test-rows 20 --min-segment-size 20
+python -m backtesting.research_nfl_player_prop_models --season 2025 --start-week 1 --end-week 18 --snapshot-root backtesting/data/snapshots --season-results-dir backtesting/results/nfl_player_props_2025_history --output-dir backtesting/results/nfl_player_props_2025_model_research --model-id nfl_game_baseline_v3 --simulations 10000 --seed 1729 --min-train-rows 100 --min-test-rows 20 --min-segment-size 20
 ```
 
 This compares Normal, Lognormal, Gamma, Poisson, Negative Binomial, zero-inflated Poisson, and zero-inflated Negative Binomial forecasts by market. It also supports expanding walk-forward variance models, isotonic and beta calibration, permutation importance, and residual clusters for team, player archetype, sportsbook, line size, favorite/underdog, home/away, implied team total, and projected pace. Learned stages fail closed as `INSUFFICIENT_HISTORY` until each test fold has at least two prior evaluated weeks. Research outputs never mutate production predictions.
+
+## Immutable model registry
+
+Every model and experiment has an append-only, content-addressed record under `backtesting/model_registry`. The research command writes `experiment_result.json` using the shared v1 contract in `backtesting/model_registry/experiment_result.schema.json`. It includes Git, configuration, and input-dataset hashes; train/evaluation windows; reproducibility settings; Brier score, log loss, ECE, and ROI with game-cluster uncertainty; calibration bins; a reliability plot; and profit/quality breakdowns by market and confidence bucket.
+
+Register and validate an experiment explicitly:
+
+```bash
+python -m backtesting.model_registry --root backtesting/model_registry register-experiment --result backtesting/results/nfl_player_props_2025_model_research/experiment_result.json
+python -m backtesting.model_registry --root backtesting/model_registry validate
+python -m backtesting.model_registry --root backtesting/model_registry promotion-check --experiment-id nfl_game_baseline_v3.2025.w01-w18.a4d5378e021f --baseline-model-id nfl_game_baseline_v3
+```
+
+Registration is idempotent only when content is identical; reusing an ID for different content fails. The registry index is derived and hash-validated. Promotion fails closed unless evidence is leakage-safe, out-of-sample, paired against the benchmark on identical opportunities, spans at least 15 evaluated weeks and 100 independent games, and the 95% confidence intervals show lower Brier/log loss and higher ROI without worse ECE. The current Week 1 baseline is registered as `INSUFFICIENT_HISTORY`, so it cannot be promoted.
+
+## NFL Player Prop V4 research candidate
+
+V4 replaces the history-distribution-first player simulator with per-market supervised models. It uses 2024 completed games to build weekly leakage-safe features, fits an equal-weight Elastic Net/Random Forest/histogram-gradient-boosting ensemble for each conditional mean, learns variance from squared walk-forward residuals, selects a distribution backend by walk-forward negative log likelihood, and evaluates on frozen 2025 prop opportunities. Every player-market projection includes local feature-ablation explanations; aggregate permutation importance is recorded by fold. Research-only expected value and quarter-Kelly sizing are capped at 5%.
+
+```bash
+python -m backtesting.research_nfl_player_prop_v4 --snapshot-root backtesting/data/snapshots --season-results-dir backtesting/results/nfl_player_props_2025_history --output-dir backtesting/results/nfl_player_props_v4_2025_research --evaluation-season 2025 --start-week 1 --end-week 18 --training-seasons 2024 --seed 1729 --simulations 10000 --min-train-rows 100 --kelly-fraction 0.25 --kelly-cap 0.05 --registry-root backtesting/model_registry --register
+```
+
+The command writes training metrics, distribution selection, calibration status, permutation importance, feature coverage, compact opportunity predictions, deduplicated explained player-market projections, a reliability plot, paired baseline deltas with game-cluster confidence intervals, an experiment contract, and a deterministic manifest. It is offline and does not alter production predictions.
+
+Distribution resolution is registry-backed and fails closed for unpromoted models. Research callers must opt in explicitly:
+
+```bash
+python -m backtesting.model_registry --root backtesting/model_registry best-distribution --market receiving_yards --model-id nfl_prop_v4_research_v1 --allow-experimental
+```
+
+The current real run trains on 11,880 samples and evaluates 1,836 Week 1 opportunities. Its Brier, log-loss, and ECE improvements over `nfl_game_baseline_v3` clear zero in the paired 95% intervals, but its ROI interval crosses zero. Calibration remains `INSUFFICIENT_HISTORY` because only one evaluated prop week exists. The registry therefore keeps `nfl_prop_v4_research_v1` experimental and rejects promotion until at least 15 evaluated weeks, 100 independent games, and statistically positive ROI evidence exist.
