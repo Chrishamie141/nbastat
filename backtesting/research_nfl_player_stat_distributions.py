@@ -860,7 +860,18 @@ def calibration_tables(threshold_rows: Sequence[dict[str, Any]]) -> tuple[list[d
     by_market = []
     for market in PLAYER_MARKETS:
         rows = [row for row in threshold_rows if row["market"] == market]
-        by_market.append({"market": market, **_calibration_group(rows)})
+        side_metrics = {}
+        for side in ("OVER", "UNDER"):
+            side_rows = []
+            for row in rows:
+                actual, line = float(row["actual"]), float(row["line"])
+                if actual == line:
+                    result = "PUSH"
+                else:
+                    result = "WIN" if (side == "OVER" and actual > line) or (side == "UNDER" and actual < line) else "LOSS"
+                side_rows.append({**row, "probability": row[f"{side.lower()}_probability"], "result": result})
+            side_metrics[side.lower()] = _calibration_group(side_rows)
+        by_market.append({"market": market, "selected_side": _calibration_group(rows), **side_metrics})
     by_stability = []
     for stability in ("ELITE_STABILITY", "HIGH_STABILITY", "MODERATE_STABILITY", "HIGH_VARIANCE", "INSUFFICIENT_EVIDENCE"):
         rows = [row for row in threshold_rows if row["stability_class"] == stability]
@@ -1039,6 +1050,8 @@ def parlay_dependency_diagnostics(projections: Sequence[dict[str, Any]]) -> dict
         "pace_correlation": {"status": "PROXY_ONLY_NOT_IDENTIFIED_FOR_PARLAY_MULTIPLICATION"},
         "mutual_exclusion_policy": "REJECT_SAME_PLAYER_CONTRADICTORY_SIDES_AND_EXPLICIT_LOGICAL_CONTRADICTIONS",
         "independence_policy": "DO_NOT_MULTIPLY_MARGINALS_UNLESS_RELATIONSHIP_IS_VERIFIED_INDEPENDENT",
+        "combined_probability": {"status": "NOT_ESTIMATED",
+                                 "reason": "NO_QUALIFIED_LEGS_AND_NO_PAIR_SPECIFIC_DEPENDENCE_MODEL"},
     }
 
 
@@ -1268,6 +1281,13 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
         "best_supported_architecture_by_market": {
             market: Counter(row["configuration"] for row in projections if row["market"] == market).most_common(1)[0][0]
             if any(row["market"] == market for row in projections) else None for market in PLAYER_MARKETS
+        },
+        "best_full_coverage_center_by_market": {
+            market: min(
+                [row for row in baselines if row["market"] == market and row["baseline"] not in {"current_v3", "current_v4"}
+                 and row["rows"] == max(item["rows"] for item in baselines if item["market"] == market)],
+                key=lambda row: (float(row["mae"]), row["baseline"]),
+            )["baseline"] for market in PLAYER_MARKETS
         },
         "reproducibility": {"network_contacted": False, "seed": seed, "deterministic_estimators": True},
     }

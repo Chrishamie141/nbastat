@@ -14,6 +14,7 @@ from backtesting.research_nfl_player_stat_distributions import (
     apply_thresholds,
     baseline_comparison,
     build_distribution_samples,
+    calibration_tables,
     parlay_dependency_diagnostics,
 )
 
@@ -152,3 +153,18 @@ def test_frozen_baseline_comparison_is_paired_on_identical_rows() -> None:
     assert current_v4["rows"] == 1
     assert current_v4["candidate_mae_on_same_rows"] == pytest.approx(5.0)
     assert current_v4["paired_mae_delta"] == pytest.approx(-5.0)
+
+
+def test_calibration_reports_over_and_under_separately() -> None:
+    projection = add_stability_scores([_projection()])[0]
+    threshold = {
+        "season": 2025, "week": 3, "game_id": "g1", "canonical_player_id": "p1",
+        "market": "receiving_yards", "line": 50.5, "books": ["book"],
+    }
+    threshold_rows = apply_thresholds([projection], [threshold], probability_threshold=.50)
+    by_market, _by_stability, _critical = calibration_tables(threshold_rows)
+    receiving = next(row for row in by_market if row["market"] == "receiving_yards")
+    assert receiving["over"]["forecasts"] == 1
+    assert receiving["under"]["forecasts"] == 1
+    assert receiving["over"]["empirical_hit_rate"] == 1.0
+    assert receiving["under"]["empirical_hit_rate"] == 0.0
