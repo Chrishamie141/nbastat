@@ -1,0 +1,110 @@
+[
+  {
+    "actual_zero_mass": 0.027115858668857847,
+    "diagnoses": [
+      "INSUFFICIENT_VARIANCE"
+    ],
+    "empirical_squared_error": 6809.806496612526,
+    "high_variance_fraction": 0.06491372226787182,
+    "historical_zero_mass_projection": 0.029271173735361866,
+    "insufficient_history_fraction": 0.08545603944124898,
+    "market": "passing_yards",
+    "mean_predicted_variance": 2252.279952215276,
+    "mean_residual_bias": -4.197404057930683,
+    "residual_skew": 0.11459185929474876,
+    "rows": 1217,
+    "variance_ratio_predicted_to_empirical": 0.33074066837811783
+  },
+  {
+    "actual_zero_mass": 0.30238290879211177,
+    "diagnoses": [
+      "INSUFFICIENT_VARIANCE",
+      "INCORRECT_SKEW_RISK",
+      "UNSTABLE_ROLE_ASSUMPTIONS"
+    ],
+    "empirical_squared_error": 1.368185663536502,
+    "high_variance_fraction": 0.3952341824157765,
+    "historical_zero_mass_projection": 0.3095906395954061,
+    "insufficient_history_fraction": 0.08545603944124898,
+    "market": "passing_tds",
+    "mean_predicted_variance": 0.9471533412232835,
+    "mean_residual_bias": -0.03721941058674385,
+    "residual_skew": 0.5230823963873334,
+    "rows": 1217,
+    "variance_ratio_predicted_to_empirical": 0.6922695994161134
+  },
+  {
+    "actual_zero_mass": 0.0,
+    "diagnoses": [
+      "INSUFFICIENT_VARIANCE",
+      "INCORRECT_SKEW_RISK",
+      "UNSTABLE_ROLE_ASSUMPTIONS",
+      "INSUFFICIENT_HISTORY"
+    ],
+    "empirical_squared_error": 16.397515297354328,
+    "high_variance_fraction": 0.2733673221655742,
+    "historical_zero_mass_projection": 0.000486331196601458,
+    "insufficient_history_fraction": 0.11289147851420248,
+    "market": "rushing_attempts",
+    "mean_predicted_variance": 6.803194665689312,
+    "mean_residual_bias": -0.07399985592478098,
+    "residual_skew": 0.708222802240708,
+    "rows": 4119,
+    "variance_ratio_predicted_to_empirical": 0.4148918017345579
+  },
+  {
+    "actual_zero_mass": 0.02379218256858461,
+    "diagnoses": [
+      "INSUFFICIENT_VARIANCE",
+      "INCORRECT_SKEW_RISK",
+      "UNSTABLE_ROLE_ASSUMPTIONS",
+      "INSUFFICIENT_HISTORY"
+    ],
+    "empirical_squared_error": 683.7205504158372,
+    "high_variance_fraction": 0.5824229181840253,
+    "historical_zero_mass_projection": 0.0242942029437345,
+    "insufficient_history_fraction": 0.11289147851420248,
+    "market": "rushing_yards",
+    "mean_predicted_variance": 202.75520393299013,
+    "mean_residual_bias": -0.40861719851850825,
+    "residual_skew": 1.246134768585933,
+    "rows": 4119,
+    "variance_ratio_predicted_to_empirical": 0.2965468915767924
+  },
+  {
+    "actual_zero_mass": 0.09581730172520789,
+    "diagnoses": [
+      "INSUFFICIENT_VARIANCE",
+      "INCORRECT_SKEW_RISK",
+      "UNSTABLE_ROLE_ASSUMPTIONS"
+    ],
+    "empirical_squared_error": 3.409551213651476,
+    "high_variance_fraction": 0.3369740598237557,
+    "historical_zero_mass_projection": 0.09018952094957211,
+    "insufficient_history_fraction": 0.06813950601961027,
+    "market": "receptions",
+    "mean_predicted_variance": 2.0243729592889097,
+    "mean_residual_bias": -0.04994593095073281,
+    "residual_skew": 0.8080205246310528,
+    "rows": 8057,
+    "variance_ratio_predicted_to_empirical": 0.5937359002509005
+  },
+  {
+    "actual_zero_mass": 0.10475363038351744,
+    "diagnoses": [
+      "INSUFFICIENT_VARIANCE",
+      "INCORRECT_SKEW_RISK",
+      "UNSTABLE_ROLE_ASSUMPTIONS"
+    ],
+    "empirical_squared_error": 674.4631011637168,
+    "high_variance_fraction": 0.6296388233833933,
+    "historical_zero_mass_projection": 0.09757080943957418,
+    "insufficient_history_fraction": 0.06813950601961027,
+    "market": "receiving_yards",
+    "mean_predicted_variance": 226.13460200099783,
+    "mean_residual_bias": -0.6447210078593444,
+    "residual_skew": 1.176502112121265,
+    "rows": 8057,
+    "variance_ratio_predicted_to_empirical": 0.3352809095276314
+  }
+]

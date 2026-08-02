@@ -1,0 +1,80 @@
+{
+  "by_market": [
+    {
+      "market": "passing_yards",
+      "p10_p90_average_width": 161.38043442578484,
+      "p10_p90_coverage": 0.6589975349219392,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 83.42743097847377,
+      "p25_p75_coverage": 0.38373048479868527,
+      "p25_p75_nominal": 0.5,
+      "rows": 1217,
+      "sharpness_p10_p90": 1.6672053633199606
+    },
+    {
+      "market": "passing_tds",
+      "p10_p90_average_width": 2.762902965048745,
+      "p10_p90_coverage": 0.914543960558751,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 1.5213636859461102,
+      "p25_p75_coverage": 0.7313064913722268,
+      "p25_p75_nominal": 0.5,
+      "rows": 1217,
+      "sharpness_p10_p90": 2.2196658044407416
+    },
+    {
+      "market": "rushing_attempts",
+      "p10_p90_average_width": 9.715309317204268,
+      "p10_p90_coverage": 0.8630735615440641,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 3.943191757158529,
+      "p25_p75_coverage": 0.40009711094925954,
+      "p25_p75_nominal": 0.5,
+      "rows": 4119,
+      "sharpness_p10_p90": 1.6626192839212635
+    },
+    {
+      "market": "rushing_yards",
+      "p10_p90_average_width": 46.86416610223083,
+      "p10_p90_coverage": 0.7176499150279194,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 24.134971797534984,
+      "p25_p75_coverage": 0.4352998300558388,
+      "p25_p75_nominal": 0.5,
+      "rows": 4119,
+      "sharpness_p10_p90": 2.710040884701789
+    },
+    {
+      "market": "receptions",
+      "p10_p90_average_width": 4.211877262945619,
+      "p10_p90_coverage": 0.7827975673327541,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 2.129014590586551,
+      "p25_p75_coverage": 0.5328285962517066,
+      "p25_p75_nominal": 0.5,
+      "rows": 8057,
+      "sharpness_p10_p90": 1.861780442022899
+    },
+    {
+      "market": "receiving_yards",
+      "p10_p90_average_width": 52.55333718072806,
+      "p10_p90_coverage": 0.7713789251582475,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 27.26135786493497,
+      "p25_p75_coverage": 0.45004344048653344,
+      "p25_p75_nominal": 0.5,
+      "rows": 8057,
+      "sharpness_p10_p90": 2.5846718442730436
+    }
+  ],
+  "overall": {
+    "p10_p90_average_width": 33.23268250690571,
+    "p10_p90_coverage": 0.7820503247965355,
+    "p10_p90_nominal": 0.8,
+    "p25_p75_average_width": 17.017653612428823,
+    "p25_p75_coverage": 0.47476293586201745,
+    "p25_p75_nominal": 0.5,
+    "rows": 26786,
+    "sharpness_p10_p90": 2.186454697095854
+  }
+}

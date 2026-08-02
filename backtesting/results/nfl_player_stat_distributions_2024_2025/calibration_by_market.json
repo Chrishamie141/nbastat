@@ -1,0 +1,254 @@
+[
+  {
+    "market": "passing_yards",
+    "over": {
+      "average_interval_width": 149.46473314600317,
+      "average_probability": 0.4845537390133036,
+      "average_stability_score": 79.0962876414468,
+      "brier_score": 0.2691650863783348,
+      "calibration_error": 0.015074789961436352,
+      "empirical_hit_rate": 0.49962852897473997,
+      "forecasts": 8076,
+      "hit_rate_ci_95": [
+        0.48872644505967106,
+        0.5105309661122461
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 149.46473314600317,
+      "average_probability": 0.6565656140052835,
+      "average_stability_score": 79.0962876414468,
+      "brier_score": 0.2691650863783348,
+      "calibration_error": -0.11496085917616017,
+      "empirical_hit_rate": 0.5416047548291233,
+      "forecasts": 8076,
+      "hit_rate_ci_95": [
+        0.5307205010590486,
+        0.5524494476862183
+      ]
+    },
+    "under": {
+      "average_interval_width": 149.46473314600317,
+      "average_probability": 0.5154462609866963,
+      "average_stability_score": 79.0962876414468,
+      "brier_score": 0.2691650863783348,
+      "calibration_error": -0.015074789961436297,
+      "empirical_hit_rate": 0.50037147102526,
+      "forecasts": 8076,
+      "hit_rate_ci_95": [
+        0.4894690338877538,
+        0.5112735549403289
+      ]
+    }
+  },
+  {
+    "market": "passing_tds",
+    "over": {
+      "average_interval_width": 3.0034566680161525,
+      "average_probability": 0.4725696612439563,
+      "average_stability_score": 52.10587477536706,
+      "brier_score": 0.2424474256067593,
+      "calibration_error": 0.02396468028093346,
+      "empirical_hit_rate": 0.49653434152488973,
+      "forecasts": 1587,
+      "hit_rate_ci_95": [
+        0.4719733278923196,
+        0.5211120924435607
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 3.0034566680161525,
+      "average_probability": 0.6788732616379226,
+      "average_stability_score": 52.10587477536706,
+      "brier_score": 0.2424474256067593,
+      "calibration_error": -0.08214988419620872,
+      "empirical_hit_rate": 0.5967233774417139,
+      "forecasts": 1587,
+      "hit_rate_ci_95": [
+        0.57238282140587,
+        0.6205968110381964
+      ]
+    },
+    "under": {
+      "average_interval_width": 3.0034566680161525,
+      "average_probability": 0.5274303387560437,
+      "average_stability_score": 52.10587477536706,
+      "brier_score": 0.2424474256067593,
+      "calibration_error": -0.02396468028093346,
+      "empirical_hit_rate": 0.5034656584751103,
+      "forecasts": 1587,
+      "hit_rate_ci_95": [
+        0.4788879075564393,
+        0.5280266721076804
+      ]
+    }
+  },
+  {
+    "market": "rushing_attempts",
+    "over": {
+      "average_interval_width": 8.887930652957293,
+      "average_probability": 0.4730973860805516,
+      "average_stability_score": 59.46947294948715,
+      "brier_score": 0.2562691934027991,
+      "calibration_error": 0.025054868169263667,
+      "empirical_hit_rate": 0.49815225424981524,
+      "forecasts": 1353,
+      "hit_rate_ci_95": [
+        0.47155326216835686,
+        0.5247617089231473
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 8.887930652957293,
+      "average_probability": 0.6393873983904539,
+      "average_stability_score": 59.46947294948715,
+      "brier_score": 0.2562691934027991,
+      "calibration_error": -0.0828463784347998,
+      "empirical_hit_rate": 0.5565410199556541,
+      "forecasts": 1353,
+      "hit_rate_ci_95": [
+        0.5299467029278198,
+        0.5828151816721545
+      ]
+    },
+    "under": {
+      "average_interval_width": 8.887930652957293,
+      "average_probability": 0.5269026139194485,
+      "average_stability_score": 59.46947294948715,
+      "brier_score": 0.2562691934027991,
+      "calibration_error": -0.025054868169263722,
+      "empirical_hit_rate": 0.5018477457501848,
+      "forecasts": 1353,
+      "hit_rate_ci_95": [
+        0.47523829107685267,
+        0.5284467378316431
+      ]
+    }
+  },
+  {
+    "market": "rushing_yards",
+    "over": {
+      "average_interval_width": 49.89564391160381,
+      "average_probability": 0.45505495674564506,
+      "average_stability_score": 48.5969930274201,
+      "brier_score": 0.2603469772944901,
+      "calibration_error": 0.01454586208751768,
+      "empirical_hit_rate": 0.46960081883316274,
+      "forecasts": 4885,
+      "hit_rate_ci_95": [
+        0.455634902519803,
+        0.4836145081019838
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 49.89564391160381,
+      "average_probability": 0.6430014629574093,
+      "average_stability_score": 48.5969930274201,
+      "brier_score": 0.2603469772944901,
+      "calibration_error": -0.09417853562885259,
+      "empirical_hit_rate": 0.5488229273285568,
+      "forecasts": 4885,
+      "hit_rate_ci_95": [
+        0.534835778863029,
+        0.5627333495322827
+      ]
+    },
+    "under": {
+      "average_interval_width": 49.89564391160381,
+      "average_probability": 0.544945043254355,
+      "average_stability_score": 48.5969930274201,
+      "brier_score": 0.2603469772944901,
+      "calibration_error": -0.014545862087517736,
+      "empirical_hit_rate": 0.5303991811668373,
+      "forecasts": 4885,
+      "hit_rate_ci_95": [
+        0.5163854918980161,
+        0.5443650974801969
+      ]
+    }
+  },
+  {
+    "market": "receptions",
+    "over": {
+      "average_interval_width": 5.031107885720913,
+      "average_probability": 0.45775666483858984,
+      "average_stability_score": 57.56723544318339,
+      "brier_score": 0.24342729666603963,
+      "calibration_error": 0.024444644490379086,
+      "empirical_hit_rate": 0.48220130932896893,
+      "forecasts": 9776,
+      "hit_rate_ci_95": [
+        0.47230506841823144,
+        0.49211153266213387
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 5.031107885720913,
+      "average_probability": 0.6513141289175771,
+      "average_stability_score": 57.56723544318339,
+      "brier_score": 0.24342729666603963,
+      "calibration_error": -0.06252525821381283,
+      "empirical_hit_rate": 0.5887888707037643,
+      "forecasts": 9776,
+      "hit_rate_ci_95": [
+        0.5790019165344306,
+        0.5985060734784603
+      ]
+    },
+    "under": {
+      "average_interval_width": 5.031107885720913,
+      "average_probability": 0.5422433351614101,
+      "average_stability_score": 57.56723544318339,
+      "brier_score": 0.24342729666603963,
+      "calibration_error": -0.024444644490378975,
+      "empirical_hit_rate": 0.5177986906710311,
+      "forecasts": 9776,
+      "hit_rate_ci_95": [
+        0.5078884673378662,
+        0.5276949315817686
+      ]
+    }
+  },
+  {
+    "market": "receiving_yards",
+    "over": {
+      "average_interval_width": 64.80982375916814,
+      "average_probability": 0.4658049833737117,
+      "average_stability_score": 51.58458999291504,
+      "brier_score": 0.25377730674777693,
+      "calibration_error": 0.01908149578589524,
+      "empirical_hit_rate": 0.4848864791596069,
+      "forecasts": 29510,
+      "hit_rate_ci_95": [
+        0.4791867148481259,
+        0.4905901777585323
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 64.80982375916814,
+      "average_probability": 0.6361657055936519,
+      "average_stability_score": 51.58458999291504,
+      "brier_score": 0.25377730674777693,
+      "calibration_error": -0.07862588858246933,
+      "empirical_hit_rate": 0.5575398170111826,
+      "forecasts": 29510,
+      "hit_rate_ci_95": [
+        0.5518658832207924,
+        0.5631987722812125
+      ]
+    },
+    "under": {
+      "average_interval_width": 64.80982375916814,
+      "average_probability": 0.5341950166262883,
+      "average_stability_score": 51.58458999291504,
+      "brier_score": 0.25377730674777693,
+      "calibration_error": -0.01908149578589524,
+      "empirical_hit_rate": 0.5151135208403931,
+      "forecasts": 29510,
+      "hit_rate_ci_95": [
+        0.5094098222414677,
+        0.520813285151874
+      ]
+    }
+  }
+]

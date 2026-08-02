@@ -1,0 +1,45 @@
+{
+  "combined_probability": {
+    "reason": "NO_QUALIFIED_LEGS_AND_NO_PAIR_SPECIFIC_DEPENDENCE_MODEL",
+    "status": "NOT_ESTIMATED"
+  },
+  "independence_policy": "DO_NOT_MULTIPLY_MARGINALS_UNLESS_RELATIONSHIP_IS_VERIFIED_INDEPENDENT",
+  "method": "OUTER_FOLD_STANDARDIZED_RESIDUAL_CORRELATION",
+  "mutual_exclusion_policy": "REJECT_SAME_PLAYER_CONTRADICTORY_SIDES_AND_EXPLICIT_LOGICAL_CONTRADICTIONS",
+  "pace_correlation": {
+    "status": "PROXY_ONLY_NOT_IDENTIFIED_FOR_PARLAY_MULTIPLICATION"
+  },
+  "relationships": [
+    {
+      "independence_allowed": false,
+      "independence_reason": "AGGREGATE_RELATIONSHIP_CORRELATION_IS_NOT_SUFFICIENT_TO_VERIFY_A_SPECIFIC_LEG_PAIR",
+      "pairs": 26897,
+      "relationship": "SAME_PLAYER",
+      "standardized_residual_correlation": 0.33906851687520007
+    },
+    {
+      "independence_allowed": false,
+      "independence_reason": "AGGREGATE_RELATIONSHIP_CORRELATION_IS_NOT_SUFFICIENT_TO_VERIFY_A_SPECIFIC_LEG_PAIR",
+      "pairs": 36040,
+      "relationship": "QUARTERBACK_RECEIVER_PROXY",
+      "standardized_residual_correlation": 0.1550766335389305
+    },
+    {
+      "independence_allowed": false,
+      "independence_reason": "AGGREGATE_RELATIONSHIP_CORRELATION_IS_NOT_SUFFICIENT_TO_VERIFY_A_SPECIFIC_LEG_PAIR",
+      "pairs": 262200,
+      "relationship": "SAME_TEAM",
+      "standardized_residual_correlation": 0.0028316829359007444
+    },
+    {
+      "independence_allowed": false,
+      "independence_reason": "AGGREGATE_RELATIONSHIP_CORRELATION_IS_NOT_SUFFICIENT_TO_VERIFY_A_SPECIFIC_LEG_PAIR",
+      "pairs": 330324,
+      "relationship": "SAME_GAME",
+      "standardized_residual_correlation": 0.0014861137423447417
+    }
+  ],
+  "weather_correlation": {
+    "status": "UNAVAILABLE_NO_WEATHER_INPUT"
+  }
+}

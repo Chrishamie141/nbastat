@@ -1,0 +1,36 @@
+{
+  "by_market": [
+    {
+      "crps": 52.20696605793017,
+      "market": "passing_yards",
+      "rows": 1217
+    },
+    {
+      "crps": 0.7101571999994614,
+      "market": "passing_tds",
+      "rows": 1217
+    },
+    {
+      "crps": 2.208795081354942,
+      "market": "rushing_attempts",
+      "rows": 4119
+    },
+    {
+      "crps": 13.971580184489506,
+      "market": "rushing_yards",
+      "rows": 4119
+    },
+    {
+      "crps": 1.0780928972240362,
+      "market": "receptions",
+      "rows": 8057
+    },
+    {
+      "crps": 14.564576212410758,
+      "market": "receiving_yards",
+      "rows": 8057
+    }
+  ],
+  "method": "FIVE_QUANTILE_PINBALL_INTEGRAL_APPROXIMATION",
+  "overall": 9.597554309760367
+}

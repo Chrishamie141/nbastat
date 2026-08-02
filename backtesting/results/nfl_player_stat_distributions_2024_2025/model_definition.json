@@ -1,0 +1,115 @@
+{
+  "calibration": {
+    "method": "untouched_outer_fold_threshold_and_quantile_calibration"
+  },
+  "description": "Matchup-specific independent player-stat distribution with nested expanding walk-forward selection.",
+  "distribution": {
+    "parametric_families": [
+      "normal",
+      "student_t",
+      "lognormal",
+      "gamma",
+      "poisson",
+      "negative_binomial",
+      "zero_inflated_poisson",
+      "zero_inflated_negative_binomial"
+    ],
+    "quantiles": [
+      0.1,
+      0.25,
+      0.5,
+      0.75,
+      0.9
+    ],
+    "selected_configuration_counts": {
+      "parametric_rich_negative_binomial": 7,
+      "parametric_rich_poisson": 30,
+      "parametric_rich_student_t": 6,
+      "quantile_direct_rich": 173
+    },
+    "selection": "PRIOR_OUTER_FOLD_CRPS_ONLY"
+  },
+  "feature_set": {
+    "features": [
+      "history_games",
+      "career_mean",
+      "season_mean",
+      "rolling_mean_3",
+      "rolling_mean_5",
+      "ewm_recent",
+      "rolling_median",
+      "last_value",
+      "home",
+      "season_week",
+      "career_std",
+      "rolling_std_5",
+      "rolling_iqr",
+      "downside_p10",
+      "downside_p25",
+      "upside_p75",
+      "upside_p90",
+      "zero_rate",
+      "recent_form_delta",
+      "usage_mean_3",
+      "usage_mean_all",
+      "usage_std",
+      "team_market_mean_5",
+      "opponent_allowed_mean_5",
+      "opponent_allowed_std_5",
+      "team_plays_mean_5",
+      "team_pass_rate_5",
+      "team_rush_rate_5",
+      "qb_strength_mean_5",
+      "usage_share_mean",
+      "usage_share_volatility",
+      "recent_participation_rate",
+      "target_share_proxy",
+      "rush_attempt_share_proxy",
+      "reception_share_proxy",
+      "receiving_yard_share_proxy",
+      "rushing_yard_share_proxy",
+      "projected_game_total",
+      "projected_margin",
+      "projected_team_points",
+      "projected_opponent_points"
+    ],
+    "known_gaps": {
+      "defensive_front_and_coverage": "NOT_AVAILABLE",
+      "depth_chart": "NOT_AVAILABLE",
+      "game_script": "PROXY_ONLY_PREGAME_TOTAL_AND_MARGIN_WHEN_AVAILABLE",
+      "goal_line_usage": "NOT_AVAILABLE",
+      "injury_status": "NOT_AVAILABLE",
+      "neutral_situation_pace": "PROXY_ONLY_TEAM_PLAYS",
+      "offensive_line_context": "NOT_AVAILABLE",
+      "quarterback_changes": "NOT_AVAILABLE",
+      "red_zone_usage": "NOT_AVAILABLE",
+      "rest": "NOT_AVAILABLE",
+      "route_participation": "NOT_AVAILABLE",
+      "snap_share": "NOT_AVAILABLE",
+      "travel": "NOT_AVAILABLE",
+      "weather": "NOT_AVAILABLE"
+    },
+    "missingness_policy": "IMPUTE_PRESENT_TRAINING_VALUES; NEVER_TREAT_MISSING_AS_ZERO",
+    "version": "nfl-player-stat-distribution-features-1"
+  },
+  "git_commit": "89c0784d616097c4b7d3adc1d6810303deee4164",
+  "model_id": "nfl_player_stat_distribution_research_v1",
+  "production_wagering": false,
+  "schema_version": 1,
+  "sport": "nfl",
+  "sportsbook_usage": "LINES_ARE_POST_PROJECTION_THRESHOLDS_ONLY; PRICES_AND_IMPLIED_PROBABILITIES_EXCLUDED",
+  "stability": {
+    "source": "PRE_REGISTERED_BEFORE_OUTER_TEST_EVALUATION",
+    "thresholds": {
+      "elite": 82.0,
+      "high": 68.0,
+      "minimum_history": 5,
+      "moderate": 50.0
+    }
+  },
+  "state": "experimental",
+  "target": "player_stat_distribution",
+  "variance": {
+    "method": "market_specific_random_forest_on_leakage_safe_rolling_center_squared_error"
+  }
+}
