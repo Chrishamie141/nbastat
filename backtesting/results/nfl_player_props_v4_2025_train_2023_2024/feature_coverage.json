@@ -1,0 +1,107 @@
+{
+  "model_features": [
+    {
+      "feature": "history_games",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "rolling_mean_3",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "rolling_mean_5",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "rolling_mean_all",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "rolling_std_5",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "rolling_std_all",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "last_value",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "recent_form_delta",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "zero_rate",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "usage_mean_3",
+      "training_coverage": 0.9753362349527507
+    },
+    {
+      "feature": "usage_mean_all",
+      "training_coverage": 0.9753362349527507
+    },
+    {
+      "feature": "team_market_mean_5",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "opponent_allowed_mean_5",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "team_plays_mean_5",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "qb_strength_mean_5",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "home",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "season_week",
+      "training_coverage": 1.0
+    },
+    {
+      "feature": "game_total",
+      "training_coverage": 0.0
+    },
+    {
+      "feature": "team_spread",
+      "training_coverage": 0.0
+    },
+    {
+      "feature": "implied_team_total",
+      "training_coverage": 0.0
+    }
+  ],
+  "requested_features": {
+    "defensive_line_grades": "NOT_AVAILABLE",
+    "explosive_play_rate": "NOT_AVAILABLE",
+    "goal_line_carries": "NOT_AVAILABLE",
+    "implied_team_total": "EVALUATION_ONLY_NO_2024_TRAINING_HISTORY",
+    "neutral_situation_pace": "NOT_AVAILABLE",
+    "offensive_line": "NOT_AVAILABLE",
+    "offensive_line_grades": "NOT_AVAILABLE",
+    "opponent_defense": "DERIVED_AVAILABLE",
+    "opponent_rb_receiving_defense": "NOT_AVAILABLE",
+    "opponent_wr1_defense": "NOT_AVAILABLE",
+    "pass_rate_over_expectation": "NOT_AVAILABLE",
+    "qb_pressure_rate": "NOT_AVAILABLE",
+    "qb_strength": "DERIVED_TEAM_PASSING_HISTORY",
+    "red_zone_usage": "NOT_AVAILABLE",
+    "rolling_usage": "DERIVED_AVAILABLE",
+    "route_participation": "NOT_AVAILABLE",
+    "snap_share": "NOT_AVAILABLE",
+    "target_share": "DERIVED_AVAILABLE",
+    "team_plays_pace_proxy": "DERIVED_AVAILABLE",
+    "vegas_total_spread": "EVALUATION_ONLY_NO_2024_TRAINING_HISTORY",
+    "weather": "NOT_AVAILABLE"
+  }
+}

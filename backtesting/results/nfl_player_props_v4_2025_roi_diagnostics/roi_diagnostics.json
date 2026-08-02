@@ -1,0 +1,4167 @@
+{
+  "analysis_role": "DESCRIPTIVE_DIAGNOSTIC_ONLY",
+  "decision_threshold": 0.05,
+  "descriptive_positive_ci_thresholds": [],
+  "evaluation_rows": 36590,
+  "guardrails": [
+    "Thresholds are a preregistered diagnostic grid, not a search result.",
+    "No threshold or segment discovered on 2025 may be promoted from this analysis.",
+    "Any policy change must be frozen before a later forward shadow sample.",
+    "Confidence intervals resample independent games, not correlated side rows."
+  ],
+  "independent_games": 271,
+  "required_next_evidence": "A later forward shadow season or other untouched out-of-sample window.",
+  "schema_version": 1,
+  "segments": {
+    "v3_baseline": {
+      "by_bookmaker": [
+        {
+          "bets": 3673,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 257,
+          "losses": 1853,
+          "roi": -0.0640095977979561,
+          "roi_ci_95": [
+            -0.10201944453045948,
+            -0.026451242948937196
+          ],
+          "units_profit": -235.10725271189276,
+          "win_rate": 0.4955077593248026,
+          "wins": 1820
+        },
+        {
+          "bets": 2389,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 269,
+          "losses": 1191,
+          "roi": -0.037677780168456805,
+          "roi_ci_95": [
+            -0.08593385248555847,
+            0.008288561567309453
+          ],
+          "units_profit": -90.0122168224433,
+          "win_rate": 0.501465048137296,
+          "wins": 1198
+        },
+        {
+          "bets": 1742,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 845,
+          "roi": -0.031996390781572126,
+          "roi_ci_95": [
+            -0.07981877418444468,
+            0.015577342043328389
+          ],
+          "units_profit": -55.73771274149864,
+          "win_rate": 0.5149253731343284,
+          "wins": 897
+        },
+        {
+          "bets": 1898,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 264,
+          "losses": 968,
+          "roi": -0.04602476502394259,
+          "roi_ci_95": [
+            -0.09517932929622869,
+            0.005311008714576114
+          ],
+          "units_profit": -87.35500401544304,
+          "win_rate": 0.48998946259220233,
+          "wins": 930
+        },
+        {
+          "bets": 2733,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 269,
+          "losses": 1308,
+          "roi": -0.014378870975870579,
+          "roi_ci_95": [
+            -0.0558900432770674,
+            0.027737205800809798
+          ],
+          "units_profit": -39.297454377054294,
+          "win_rate": 0.5214050493962679,
+          "wins": 1425
+        },
+        {
+          "bets": 2077,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 220,
+          "losses": 996,
+          "roi": -0.062302366674154126,
+          "roi_ci_95": [
+            -0.10203175655921992,
+            -0.023637386689015612
+          ],
+          "units_profit": -129.40201558221813,
+          "win_rate": 0.5204622051035147,
+          "wins": 1081
+        },
+        {
+          "bets": 2118,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 269,
+          "losses": 1033,
+          "roi": -0.030735284527211502,
+          "roi_ci_95": [
+            -0.074234959510011,
+            0.015319432318545474
+          ],
+          "units_profit": -65.09733262863396,
+          "win_rate": 0.512275731822474,
+          "wins": 1085
+        },
+        {
+          "bets": 1215,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 269,
+          "losses": 593,
+          "roi": -0.0218480862199547,
+          "roi_ci_95": [
+            -0.0799747034452116,
+            0.03353568540573346
+          ],
+          "units_profit": -26.54542475724496,
+          "win_rate": 0.5119341563786008,
+          "wins": 622
+        }
+      ],
+      "by_market": [
+        {
+          "bets": 447,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 259,
+          "losses": 213,
+          "market": "passing_tds",
+          "roi": 0.010161020930802431,
+          "roi_ci_95": [
+            -0.09036963461714377,
+            0.11493946404340834
+          ],
+          "units_profit": 4.5419763560686865,
+          "win_rate": 0.5234899328859061,
+          "wins": 234
+        },
+        {
+          "bets": 2214,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 267,
+          "losses": 1171,
+          "market": "passing_yards",
+          "roi": -0.11096715189529657,
+          "roi_ci_95": [
+            -0.20000152239755625,
+            -0.021131054686010158
+          ],
+          "units_profit": -245.68127429618661,
+          "win_rate": 0.47109304426377596,
+          "wins": 1043
+        },
+        {
+          "bets": 9190,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 4494,
+          "market": "receiving_yards",
+          "roi": -0.03216911416279415,
+          "roi_ci_95": [
+            -0.06884453397974577,
+            0.002867517697498812
+          ],
+          "units_profit": -295.6341591560782,
+          "win_rate": 0.5109902067464636,
+          "wins": 4696
+        },
+        {
+          "bets": 3337,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 1603,
+          "market": "receptions",
+          "roi": -0.0324039492757111,
+          "roi_ci_95": [
+            -0.07067863736023082,
+            0.005465946361550536
+          ],
+          "units_profit": -108.13197873304794,
+          "win_rate": 0.5196284087503746,
+          "wins": 1734
+        },
+        {
+          "bets": 733,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 260,
+          "losses": 354,
+          "market": "rushing_attempts",
+          "roi": -0.025179594278751997,
+          "roi_ci_95": [
+            -0.10071841015105669,
+            0.04895792853672703
+          ],
+          "units_profit": -18.456642606325214,
+          "win_rate": 0.5170532060027285,
+          "wins": 379
+        },
+        {
+          "bets": 1924,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 268,
+          "losses": 952,
+          "market": "rushing_yards",
+          "roi": -0.033883750104396974,
+          "roi_ci_95": [
+            -0.10854849717422899,
+            0.03198578694481255
+          ],
+          "units_profit": -65.19233520085977,
+          "win_rate": 0.5051975051975052,
+          "wins": 972
+        }
+      ],
+      "by_market_bookmaker": [
+        {
+          "bets": 100,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 88,
+          "losses": 44,
+          "market": "passing_tds",
+          "roi": 0.14523603429587129,
+          "roi_ci_95": [
+            -0.061226704850940596,
+            0.3607028235482735
+          ],
+          "units_profit": 14.52360342958713,
+          "win_rate": 0.56,
+          "wins": 56
+        },
+        {
+          "bets": 99,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 92,
+          "losses": 47,
+          "market": "passing_tds",
+          "roi": 0.07645393958817645,
+          "roi_ci_95": [
+            -0.11693810257506486,
+            0.313572056454682
+          ],
+          "units_profit": 7.568940019229468,
+          "win_rate": 0.5252525252525253,
+          "wins": 52
+        },
+        {
+          "bets": 31,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 28,
+          "losses": 14,
+          "market": "passing_tds",
+          "roi": 0.12703173415878335,
+          "roi_ci_95": [
+            -0.2105070135154773,
+            0.48377079573652154
+          ],
+          "units_profit": 3.937983758922284,
+          "win_rate": 0.5483870967741935,
+          "wins": 17
+        },
+        {
+          "bets": 48,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 46,
+          "losses": 23,
+          "market": "passing_tds",
+          "roi": -0.019068838048973705,
+          "roi_ci_95": [
+            -0.30838203077786414,
+            0.25345150426303525
+          ],
+          "units_profit": -0.9153042263507378,
+          "win_rate": 0.5208333333333334,
+          "wins": 25
+        },
+        {
+          "bets": 63,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 57,
+          "losses": 32,
+          "market": "passing_tds",
+          "roi": -0.15408064600971197,
+          "roi_ci_95": [
+            -0.36679817706780643,
+            0.07449676028470008
+          ],
+          "units_profit": -9.707080698611854,
+          "win_rate": 0.49206349206349204,
+          "wins": 31
+        },
+        {
+          "bets": 50,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 46,
+          "losses": 21,
+          "market": "passing_tds",
+          "roi": 0.0032100773524620417,
+          "roi_ci_95": [
+            -0.241670740048022,
+            0.24814176025624798
+          ],
+          "units_profit": 0.1605038676231021,
+          "win_rate": 0.58,
+          "wins": 29
+        },
+        {
+          "bets": 53,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 51,
+          "losses": 31,
+          "market": "passing_tds",
+          "roi": -0.20905649716904545,
+          "roi_ci_95": [
+            -0.46414838497088334,
+            0.05523826908810003
+          ],
+          "units_profit": -11.079994349959408,
+          "win_rate": 0.41509433962264153,
+          "wins": 22
+        },
+        {
+          "bets": 3,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 3,
+          "losses": 1,
+          "market": "passing_tds",
+          "roi": 0.01777485187623436,
+          "roi_ci_95": [
+            -1.0,
+            0.6451612903225806
+          ],
+          "units_profit": 0.053324555628703085,
+          "win_rate": 0.6666666666666666,
+          "wins": 2
+        },
+        {
+          "bets": 300,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 223,
+          "losses": 158,
+          "market": "passing_yards",
+          "roi": -0.1147089915143219,
+          "roi_ci_95": [
+            -0.21391159387517547,
+            -0.01397623876898012
+          ],
+          "units_profit": -34.41269745429657,
+          "win_rate": 0.47333333333333333,
+          "wins": 142
+        },
+        {
+          "bets": 259,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 197,
+          "losses": 132,
+          "market": "passing_yards",
+          "roi": -0.06999825212359999,
+          "roi_ci_95": [
+            -0.17699079678507665,
+            0.04575075472799959
+          ],
+          "units_profit": -18.129547300012398,
+          "win_rate": 0.49034749034749037,
+          "wins": 127
+        },
+        {
+          "bets": 287,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 217,
+          "losses": 152,
+          "market": "passing_yards",
+          "roi": -0.12146710532927017,
+          "roi_ci_95": [
+            -0.2314881743286242,
+            -0.011149848330266492
+          ],
+          "units_profit": -34.86105922950054,
+          "win_rate": 0.47038327526132406,
+          "wins": 135
+        },
+        {
+          "bets": 285,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 209,
+          "losses": 159,
+          "market": "passing_yards",
+          "roi": -0.15531856155491705,
+          "roi_ci_95": [
+            -0.25384014166909413,
+            -0.05192336089013185
+          ],
+          "units_profit": -44.26579004315136,
+          "win_rate": 0.4421052631578947,
+          "wins": 126
+        },
+        {
+          "bets": 334,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 231,
+          "losses": 172,
+          "market": "passing_yards",
+          "roi": -0.08205362630036801,
+          "roi_ci_95": [
+            -0.18474614316463606,
+            0.022069021904148934
+          ],
+          "units_profit": -27.405911184322918,
+          "win_rate": 0.48502994011976047,
+          "wins": 162
+        },
+        {
+          "bets": 218,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 164,
+          "losses": 110,
+          "market": "passing_yards",
+          "roi": -0.0712115168437466,
+          "roi_ci_95": [
+            -0.1896634327464367,
+            0.04502915684432548
+          ],
+          "units_profit": -15.52411067193676,
+          "win_rate": 0.4954128440366973,
+          "wins": 108
+        },
+        {
+          "bets": 313,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 223,
+          "losses": 168,
+          "market": "passing_yards",
+          "roi": -0.12321827427569743,
+          "roi_ci_95": [
+            -0.2206656999082819,
+            -0.02289453593183047
+          ],
+          "units_profit": -38.567319848293295,
+          "win_rate": 0.46325878594249204,
+          "wins": 145
+        },
+        {
+          "bets": 218,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 174,
+          "losses": 120,
+          "market": "passing_yards",
+          "roi": -0.14915063561776498,
+          "roi_ci_95": [
+            -0.26746092537258254,
+            -0.036819498721398745
+          ],
+          "units_profit": -32.514838564672765,
+          "win_rate": 0.44954128440366975,
+          "wins": 98
+        },
+        {
+          "bets": 1583,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 256,
+          "losses": 801,
+          "market": "receiving_yards",
+          "roi": -0.0689421607550172,
+          "roi_ci_95": [
+            -0.12051582722527415,
+            -0.02008613539603997
+          ],
+          "units_profit": -109.13544047519223,
+          "win_rate": 0.4939987365761213,
+          "wins": 782
+        },
+        {
+          "bets": 1333,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 267,
+          "losses": 669,
+          "market": "receiving_yards",
+          "roi": -0.051939583397905074,
+          "roi_ci_95": [
+            -0.1048387019331889,
+            -0.0015843300898823322
+          ],
+          "units_profit": -69.23546466940746,
+          "win_rate": 0.4981245311327832,
+          "wins": 664
+        },
+        {
+          "bets": 956,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 263,
+          "losses": 463,
+          "market": "receiving_yards",
+          "roi": -0.03601715149106606,
+          "roi_ci_95": [
+            -0.09635748750407844,
+            0.020743488699886417
+          ],
+          "units_profit": -34.43239682545915,
+          "win_rate": 0.5156903765690377,
+          "wins": 493
+        },
+        {
+          "bets": 962,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 255,
+          "losses": 468,
+          "market": "receiving_yards",
+          "roi": -0.00655199456383379,
+          "roi_ci_95": [
+            -0.07073253129104866,
+            0.054859609003967504
+          ],
+          "units_profit": -6.303018770408106,
+          "win_rate": 0.5135135135135135,
+          "wins": 494
+        },
+        {
+          "bets": 1403,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 268,
+          "losses": 666,
+          "market": "receiving_yards",
+          "roi": -0.003314652075936841,
+          "roi_ci_95": [
+            -0.05755685388307608,
+            0.047386291539887555
+          ],
+          "units_profit": -4.650456862539388,
+          "win_rate": 0.5253029223093372,
+          "wins": 737
+        },
+        {
+          "bets": 1174,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 215,
+          "losses": 593,
+          "market": "receiving_yards",
+          "roi": -0.07496606317712072,
+          "roi_ci_95": [
+            -0.12333778107738642,
+            -0.024425834073660918
+          ],
+          "units_profit": -88.01015816993973,
+          "win_rate": 0.4948892674616695,
+          "wins": 581
+        },
+        {
+          "bets": 1059,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 265,
+          "losses": 495,
+          "market": "receiving_yards",
+          "roi": 0.008315097233884752,
+          "roi_ci_95": [
+            -0.05163509368690302,
+            0.06437985391191992
+          ],
+          "units_profit": 8.805687970683953,
+          "win_rate": 0.5325779036827195,
+          "wins": 564
+        },
+        {
+          "bets": 720,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 257,
+          "losses": 339,
+          "market": "receiving_yards",
+          "roi": 0.010176512008588727,
+          "roi_ci_95": [
+            -0.061001259843884756,
+            0.08053003208423677
+          ],
+          "units_profit": 7.327088646183883,
+          "win_rate": 0.5291666666666667,
+          "wins": 381
+        },
+        {
+          "bets": 956,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 249,
+          "losses": 500,
+          "market": "receptions",
+          "roi": -0.10428957577499649,
+          "roi_ci_95": [
+            -0.1618995152277071,
+            -0.04491051512540695
+          ],
+          "units_profit": -99.70083444089664,
+          "win_rate": 0.4769874476987448,
+          "wins": 456
+        },
+        {
+          "bets": 381,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 195,
+          "losses": 192,
+          "market": "receptions",
+          "roi": -0.030566570743563042,
+          "roi_ci_95": [
+            -0.14655360326602077,
+            0.08972806658300705
+          ],
+          "units_profit": -11.645863453297519,
+          "win_rate": 0.49606299212598426,
+          "wins": 189
+        },
+        {
+          "bets": 268,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 144,
+          "losses": 116,
+          "market": "receptions",
+          "roi": 0.08588053699996004,
+          "roi_ci_95": [
+            -0.02170662164629735,
+            0.20347191612584267
+          ],
+          "units_profit": 23.015983915989292,
+          "win_rate": 0.5671641791044776,
+          "wins": 152
+        },
+        {
+          "bets": 309,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 180,
+          "losses": 159,
+          "market": "receptions",
+          "roi": -0.035567559159385184,
+          "roi_ci_95": [
+            -0.16033953269852685,
+            0.08597956524366113
+          ],
+          "units_profit": -10.990375780250021,
+          "win_rate": 0.4854368932038835,
+          "wins": 150
+        },
+        {
+          "bets": 535,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 234,
+          "losses": 241,
+          "market": "receptions",
+          "roi": 0.03735384881297567,
+          "roi_ci_95": [
+            -0.03566726408451048,
+            0.1138234173495381
+          ],
+          "units_profit": 19.984309114941983,
+          "win_rate": 0.5495327102803739,
+          "wins": 294
+        },
+        {
+          "bets": 351,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 172,
+          "losses": 123,
+          "market": "receptions",
+          "roi": 0.020490285818783923,
+          "roi_ci_95": [
+            -0.06097497444781915,
+            0.10135813939967764
+          ],
+          "units_profit": 7.192090322393157,
+          "win_rate": 0.6495726495726496,
+          "wins": 228
+        },
+        {
+          "bets": 429,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 211,
+          "losses": 216,
+          "market": "receptions",
+          "roi": -0.06658688679756053,
+          "roi_ci_95": [
+            -0.1572361168743755,
+            0.026705690183113924
+          ],
+          "units_profit": -28.565774436153465,
+          "win_rate": 0.4965034965034965,
+          "wins": 213
+        },
+        {
+          "bets": 108,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 85,
+          "losses": 56,
+          "market": "receptions",
+          "roi": -0.06871772199791407,
+          "roi_ci_95": [
+            -0.26902606757800973,
+            0.11941524667201248
+          ],
+          "units_profit": -7.42151397577472,
+          "win_rate": 0.48148148148148145,
+          "wins": 52
+        },
+        {
+          "bets": 385,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 213,
+          "losses": 187,
+          "market": "rushing_attempts",
+          "roi": -0.033997399471143226,
+          "roi_ci_95": [
+            -0.1288626200001817,
+            0.06167846875560144
+          ],
+          "units_profit": -13.088998796390142,
+          "win_rate": 0.5142857142857142,
+          "wins": 198
+        },
+        {
+          "bets": 67,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 58,
+          "losses": 29,
+          "market": "rushing_attempts",
+          "roi": 0.10921926394273784,
+          "roi_ci_95": [
+            -0.13028402252929086,
+            0.34632996675330774
+          ],
+          "units_profit": 7.317690684163436,
+          "win_rate": 0.5671641791044776,
+          "wins": 38
+        },
+        {
+          "bets": 29,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 26,
+          "losses": 15,
+          "market": "rushing_attempts",
+          "roi": -0.11681479274651069,
+          "roi_ci_95": [
+            -0.4479521741865444,
+            0.22943526633519215
+          ],
+          "units_profit": -3.38762898964881,
+          "win_rate": 0.4827586206896552,
+          "wins": 14
+        },
+        {
+          "bets": 48,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 47,
+          "losses": 27,
+          "market": "rushing_attempts",
+          "roi": -0.1236351615396468,
+          "roi_ci_95": [
+            -0.3962849650349651,
+            0.15544002443154908
+          ],
+          "units_profit": -5.9344877539030465,
+          "win_rate": 0.4375,
+          "wins": 21
+        },
+        {
+          "bets": 111,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 94,
+          "losses": 58,
+          "market": "rushing_attempts",
+          "roi": -0.10432573443804453,
+          "roi_ci_95": [
+            -0.2664211215324446,
+            0.07557074249621734
+          ],
+          "units_profit": -11.580156522622943,
+          "win_rate": 0.4774774774774775,
+          "wins": 53
+        },
+        {
+          "bets": 54,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 45,
+          "losses": 23,
+          "market": "rushing_attempts",
+          "roi": 0.0153550948430206,
+          "roi_ci_95": [
+            -0.1971151401001602,
+            0.24198245773307298
+          ],
+          "units_profit": 0.8291751215231123,
+          "win_rate": 0.5740740740740741,
+          "wins": 31
+        },
+        {
+          "bets": 39,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 38,
+          "losses": 15,
+          "market": "rushing_attempts",
+          "roi": 0.1894298371936712,
+          "roi_ci_95": [
+            -0.10070133944172492,
+            0.49769567410922694
+          ],
+          "units_profit": 7.387763650553177,
+          "win_rate": 0.6153846153846154,
+          "wins": 24
+        },
+        {
+          "bets": 349,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 196,
+          "losses": 163,
+          "market": "rushing_yards",
+          "roi": 0.019218094628354464,
+          "roi_ci_95": [
+            -0.08173490325465202,
+            0.1144380467398047
+          ],
+          "units_profit": 6.707115025295708,
+          "win_rate": 0.5329512893982808,
+          "wins": 186
+        },
+        {
+          "bets": 250,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 165,
+          "losses": 122,
+          "market": "rushing_yards",
+          "roi": -0.023551888412475307,
+          "roi_ci_95": [
+            -0.1361893698963775,
+            0.08838719475922564
+          ],
+          "units_profit": -5.887972103118827,
+          "win_rate": 0.512,
+          "wins": 128
+        },
+        {
+          "bets": 171,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 134,
+          "losses": 85,
+          "market": "rushing_yards",
+          "roi": -0.05854149340234925,
+          "roi_ci_95": [
+            -0.19686383793141152,
+            0.08848844373502071
+          ],
+          "units_profit": -10.010595371801722,
+          "win_rate": 0.5029239766081871,
+          "wins": 86
+        },
+        {
+          "bets": 246,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 183,
+          "losses": 132,
+          "market": "rushing_yards",
+          "roi": -0.07701637171292587,
+          "roi_ci_95": [
+            -0.19369194143814134,
+            0.04498913403155613
+          ],
+          "units_profit": -18.946027441379766,
+          "win_rate": 0.4634146341463415,
+          "wins": 114
+        },
+        {
+          "bets": 287,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 194,
+          "losses": 139,
+          "market": "rushing_yards",
+          "roi": -0.02069044677316787,
+          "roi_ci_95": [
+            -0.13094426471864037,
+            0.07904987192376206
+          ],
+          "units_profit": -5.938158223899179,
+          "win_rate": 0.5156794425087108,
+          "wins": 148
+        },
+        {
+          "bets": 230,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 156,
+          "losses": 126,
+          "market": "rushing_yards",
+          "roi": -0.14804137413861304,
+          "roi_ci_95": [
+            -0.2724273270419801,
+            -0.011683162653910154
+          ],
+          "units_profit": -34.049516051881,
+          "win_rate": 0.45217391304347826,
+          "wins": 104
+        },
+        {
+          "bets": 225,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 163,
+          "losses": 108,
+          "market": "rushing_yards",
+          "roi": -0.01367864717984415,
+          "roi_ci_95": [
+            -0.1362299452721108,
+            0.10200646090034789
+          ],
+          "units_profit": -3.077695615464934,
+          "win_rate": 0.52,
+          "wins": 117
+        },
+        {
+          "bets": 166,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 128,
+          "losses": 77,
+          "market": "rushing_yards",
+          "roi": 0.036207919164999665,
+          "roi_ci_95": [
+            -0.10427849277994287,
+            0.18155436190989485
+          ],
+          "units_profit": 6.010514581389944,
+          "win_rate": 0.536144578313253,
+          "wins": 89
+        }
+      ],
+      "by_side": [
+        {
+          "bets": 1109,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 175,
+          "losses": 579,
+          "roi": -0.08424475624554416,
+          "roi_ci_95": [
+            -0.1818283377560708,
+            0.008036124103328273
+          ],
+          "side": "OVER",
+          "units_profit": -93.42743467630848,
+          "win_rate": 0.47790802524797116,
+          "wins": 530
+        },
+        {
+          "bets": 16736,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 271,
+          "losses": 8208,
+          "roi": -0.03794974778681409,
+          "roi_ci_95": [
+            -0.070268978168233,
+            -0.00515879867687486
+          ],
+          "side": "UNDER",
+          "units_profit": -635.1269789601206,
+          "win_rate": 0.5095602294455067,
+          "wins": 8528
+        }
+      ],
+      "by_week": [
+        {
+          "bets": 847,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 435,
+          "roi": -0.07535471720267309,
+          "roi_ci_95": [
+            -0.18832110464247587,
+            0.04181347195665498
+          ],
+          "units_profit": -63.8254454706641,
+          "week": "1",
+          "win_rate": 0.48642266824085006,
+          "wins": 412
+        },
+        {
+          "bets": 995,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 459,
+          "roi": 0.019620855540928902,
+          "roi_ci_95": [
+            -0.12777957131855952,
+            0.164850900152407
+          ],
+          "units_profit": 19.522751263224258,
+          "week": "10",
+          "win_rate": 0.5386934673366834,
+          "wins": 536
+        },
+        {
+          "bets": 996,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 457,
+          "roi": 0.01919349166097078,
+          "roi_ci_95": [
+            -0.08550771757999735,
+            0.12142179650094928
+          ],
+          "units_profit": 19.116717694326898,
+          "week": "11",
+          "win_rate": 0.5411646586345381,
+          "wins": 539
+        },
+        {
+          "bets": 936,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 488,
+          "roi": -0.0948450242864888,
+          "roi_ci_95": [
+            -0.25626371809879167,
+            0.04605488094602609
+          ],
+          "units_profit": -88.77494273215352,
+          "week": "12",
+          "win_rate": 0.47863247863247865,
+          "wins": 448
+        },
+        {
+          "bets": 1150,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 550,
+          "roi": -0.014070277107504728,
+          "roi_ci_95": [
+            -0.13095559300850562,
+            0.09411736175849443
+          ],
+          "units_profit": -16.180818673630437,
+          "week": "13",
+          "win_rate": 0.5217391304347826,
+          "wins": 600
+        },
+        {
+          "bets": 907,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 415,
+          "roi": 0.012497143164311888,
+          "roi_ci_95": [
+            -0.11762825670554747,
+            0.13827814834225644
+          ],
+          "units_profit": 11.334908850030882,
+          "week": "14",
+          "win_rate": 0.5424476295479603,
+          "wins": 492
+        },
+        {
+          "bets": 1083,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 540,
+          "roi": -0.04757975058568819,
+          "roi_ci_95": [
+            -0.14539287683585986,
+            0.04051760645308943
+          ],
+          "units_profit": -51.528869884300306,
+          "week": "15",
+          "win_rate": 0.5013850415512465,
+          "wins": 543
+        },
+        {
+          "bets": 927,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 455,
+          "roi": -0.03669614575361146,
+          "roi_ci_95": [
+            -0.18318306163852222,
+            0.10364637948185809
+          ],
+          "units_profit": -34.01732711359782,
+          "week": "16",
+          "win_rate": 0.5091693635382956,
+          "wins": 472
+        },
+        {
+          "bets": 916,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 443,
+          "roi": -0.015725561988856544,
+          "roi_ci_95": [
+            -0.14218800188443875,
+            0.12110199677471524
+          ],
+          "units_profit": -14.404614781792596,
+          "week": "17",
+          "win_rate": 0.5163755458515283,
+          "wins": 473
+        },
+        {
+          "bets": 603,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 269,
+          "roi": 0.045230740110922284,
+          "roi_ci_95": [
+            -0.11990388148187366,
+            0.21535527709578925
+          ],
+          "units_profit": 27.274136286886137,
+          "week": "18",
+          "win_rate": 0.5538971807628524,
+          "wins": 334
+        },
+        {
+          "bets": 1048,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 527,
+          "roi": -0.05854975444784809,
+          "roi_ci_95": [
+            -0.19255938602444422,
+            0.06047654350908961
+          ],
+          "units_profit": -61.360142661344796,
+          "week": "2",
+          "win_rate": 0.49713740458015265,
+          "wins": 521
+        },
+        {
+          "bets": 1140,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 531,
+          "roi": 0.00948309785010857,
+          "roi_ci_95": [
+            -0.1140246140367572,
+            0.11522813136749896
+          ],
+          "units_profit": 10.81073154912377,
+          "week": "3",
+          "win_rate": 0.5342105263157895,
+          "wins": 609
+        },
+        {
+          "bets": 1219,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 592,
+          "roi": -0.030499343090491064,
+          "roi_ci_95": [
+            -0.1484317215118726,
+            0.09600476847155276
+          ],
+          "units_profit": -37.178699227308606,
+          "week": "4",
+          "win_rate": 0.5143560295324036,
+          "wins": 627
+        },
+        {
+          "bets": 1076,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 643,
+          "roi": -0.2471032487120412,
+          "roi_ci_95": [
+            -0.3512671122631976,
+            -0.13778753651244857
+          ],
+          "units_profit": -265.88309561415633,
+          "week": "5",
+          "win_rate": 0.4024163568773234,
+          "wins": 433
+        },
+        {
+          "bets": 1096,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 515,
+          "roi": 0.00351573210138359,
+          "roi_ci_95": [
+            -0.08157850523164255,
+            0.07965121141014517
+          ],
+          "units_profit": 3.853242383116415,
+          "week": "6",
+          "win_rate": 0.5301094890510949,
+          "wins": 581
+        },
+        {
+          "bets": 1029,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 496,
+          "roi": -0.012844602196292418,
+          "roi_ci_95": [
+            -0.14912781928746469,
+            0.1022485029153222
+          ],
+          "units_profit": -13.217095659984897,
+          "week": "7",
+          "win_rate": 0.5179786200194364,
+          "wins": 533
+        },
+        {
+          "bets": 886,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 13,
+          "losses": 460,
+          "roi": -0.09064081003799421,
+          "roi_ci_95": [
+            -0.24044492539817375,
+            0.05692414750968555
+          ],
+          "units_profit": -80.30775769366286,
+          "week": "8",
+          "win_rate": 0.48081264108352145,
+          "wins": 426
+        },
+        {
+          "bets": 991,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 512,
+          "roi": -0.09463985080781145,
+          "roi_ci_95": [
+            -0.21800559364466413,
+            0.023085496428475374
+          ],
+          "units_profit": -93.78809215054115,
+          "week": "9",
+          "win_rate": 0.48335015136226034,
+          "wins": 479
+        }
+      ],
+      "decision_threshold": 0.05
+    },
+    "v4_candidate": {
+      "by_bookmaker": [
+        {
+          "bets": 3543,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 257,
+          "losses": 1596,
+          "roi": 0.03549963245586708,
+          "roi_ci_95": [
+            0.0035409218505410146,
+            0.0685901010035619
+          ],
+          "units_profit": 125.77519779113707,
+          "win_rate": 0.5495342929720576,
+          "wins": 1947
+        },
+        {
+          "bets": 1645,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 267,
+          "losses": 796,
+          "roi": -0.006964551398960017,
+          "roi_ci_95": [
+            -0.05912772029002036,
+            0.04312877842149328
+          ],
+          "units_profit": -11.456687051289228,
+          "win_rate": 0.5161094224924012,
+          "wins": 849
+        },
+        {
+          "bets": 1746,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 861,
+          "roi": -0.046857968471024976,
+          "roi_ci_95": [
+            -0.08806441399311919,
+            -0.004541250965324045
+          ],
+          "units_profit": -81.8140129504096,
+          "win_rate": 0.506872852233677,
+          "wins": 885
+        },
+        {
+          "bets": 1699,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 265,
+          "losses": 865,
+          "roi": -0.04872195975685403,
+          "roi_ci_95": [
+            -0.09547557445002963,
+            0.0010304356113965238
+          ],
+          "units_profit": -82.778609626895,
+          "win_rate": 0.49087698646262506,
+          "wins": 834
+        },
+        {
+          "bets": 2572,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 269,
+          "losses": 1268,
+          "roi": -0.03368711269581174,
+          "roi_ci_95": [
+            -0.06595472882799905,
+            0.0007386021560192481
+          ],
+          "units_profit": -86.6432538536278,
+          "win_rate": 0.5069984447900466,
+          "wins": 1304
+        },
+        {
+          "bets": 2104,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 217,
+          "losses": 1045,
+          "roi": -0.02597320593223203,
+          "roi_ci_95": [
+            -0.0708243529121455,
+            0.015064855714615247
+          ],
+          "units_profit": -54.64762528141619,
+          "win_rate": 0.5033269961977186,
+          "wins": 1059
+        },
+        {
+          "bets": 2401,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 269,
+          "losses": 1194,
+          "roi": -0.0417890689618253,
+          "roi_ci_95": [
+            -0.07514807362020741,
+            -0.0046100790200486455
+          ],
+          "units_profit": -100.33555457734253,
+          "win_rate": 0.502707205331112,
+          "wins": 1207
+        },
+        {
+          "bets": 970,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 259,
+          "losses": 491,
+          "roi": -0.06526872257223643,
+          "roi_ci_95": [
+            -0.1223044421469903,
+            -0.00796832414653937
+          ],
+          "units_profit": -63.31066089506934,
+          "win_rate": 0.49381443298969074,
+          "wins": 479
+        }
+      ],
+      "by_market": [
+        {
+          "bets": 410,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 253,
+          "losses": 217,
+          "market": "passing_tds",
+          "roi": -0.041195695855006,
+          "roi_ci_95": [
+            -0.14098413177265046,
+            0.06909919516963023
+          ],
+          "units_profit": -16.89023530055246,
+          "win_rate": 0.47073170731707314,
+          "wins": 193
+        },
+        {
+          "bets": 2020,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 265,
+          "losses": 1078,
+          "market": "passing_yards",
+          "roi": -0.1184976095069956,
+          "roi_ci_95": [
+            -0.2194354612404008,
+            -0.027330399366758733
+          ],
+          "units_profit": -239.36517120413112,
+          "win_rate": 0.46633663366336636,
+          "wins": 942
+        },
+        {
+          "bets": 8609,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 4125,
+          "market": "receiving_yards",
+          "roi": -0.013053193181657725,
+          "roi_ci_95": [
+            -0.04862459960923003,
+            0.02123642833534596
+          ],
+          "units_profit": -112.37494010089135,
+          "win_rate": 0.5208502729701475,
+          "wins": 4484
+        },
+        {
+          "bets": 3079,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 1470,
+          "market": "receptions",
+          "roi": 0.012981981954039244,
+          "roi_ci_95": [
+            -0.025528711775415956,
+            0.04789817447298978
+          ],
+          "units_profit": 39.97152243648683,
+          "win_rate": 0.5225722637219876,
+          "wins": 1609
+        },
+        {
+          "bets": 664,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 256,
+          "losses": 296,
+          "market": "rushing_attempts",
+          "roi": 0.053073951054335426,
+          "roi_ci_95": [
+            -0.029400917628852438,
+            0.1347546507412903
+          ],
+          "units_profit": 35.24110350007872,
+          "win_rate": 0.5542168674698795,
+          "wins": 368
+        },
+        {
+          "bets": 1898,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 266,
+          "losses": 930,
+          "market": "rushing_yards",
+          "roi": -0.03255715794304702,
+          "roi_ci_95": [
+            -0.10948459130535174,
+            0.041073545600774974
+          ],
+          "units_profit": -61.79348577590324,
+          "win_rate": 0.5100105374077977,
+          "wins": 968
+        }
+      ],
+      "by_market_bookmaker": [
+        {
+          "bets": 90,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 84,
+          "losses": 46,
+          "market": "passing_tds",
+          "roi": -0.012752932940215842,
+          "roi_ci_95": [
+            -0.21829284351497683,
+            0.20409023444517518
+          ],
+          "units_profit": -1.1477639646194258,
+          "win_rate": 0.4888888888888889,
+          "wins": 44
+        },
+        {
+          "bets": 57,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 54,
+          "losses": 27,
+          "market": "passing_tds",
+          "roi": 0.08974675046521591,
+          "roi_ci_95": [
+            -0.19900619269910663,
+            0.3666846427896446
+          ],
+          "units_profit": 5.1155647765173065,
+          "win_rate": 0.5263157894736842,
+          "wins": 30
+        },
+        {
+          "bets": 54,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 52,
+          "losses": 32,
+          "market": "passing_tds",
+          "roi": -0.12947315800391374,
+          "roi_ci_95": [
+            -0.38950226267668053,
+            0.17454650068375108
+          ],
+          "units_profit": -6.991550532211342,
+          "win_rate": 0.4074074074074074,
+          "wins": 22
+        },
+        {
+          "bets": 37,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 34,
+          "losses": 23,
+          "market": "passing_tds",
+          "roi": -0.22273637273637276,
+          "roi_ci_95": [
+            -0.5219318181818182,
+            0.09660413660413661
+          ],
+          "units_profit": -8.241245791245792,
+          "win_rate": 0.3783783783783784,
+          "wins": 14
+        },
+        {
+          "bets": 47,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 46,
+          "losses": 28,
+          "market": "passing_tds",
+          "roi": -0.13809968851928653,
+          "roi_ci_95": [
+            -0.42696478531954424,
+            0.18028582796068396
+          ],
+          "units_profit": -6.490685360406467,
+          "win_rate": 0.40425531914893614,
+          "wins": 19
+        },
+        {
+          "bets": 41,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 39,
+          "losses": 16,
+          "market": "passing_tds",
+          "roi": 0.05885706728760811,
+          "roi_ci_95": [
+            -0.21278069756330625,
+            0.3536090861166695
+          ],
+          "units_profit": 2.4131397587919325,
+          "win_rate": 0.6097560975609756,
+          "wins": 25
+        },
+        {
+          "bets": 76,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 65,
+          "losses": 42,
+          "market": "passing_tds",
+          "roi": -0.022578194358733882,
+          "roi_ci_95": [
+            -0.25770951249655766,
+            0.22473127902350212
+          ],
+          "units_profit": -1.715942771263775,
+          "win_rate": 0.4473684210526316,
+          "wins": 34
+        },
+        {
+          "bets": 8,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 8,
+          "losses": 3,
+          "market": "passing_tds",
+          "roi": 0.0210310729856377,
+          "roi_ci_95": [
+            -0.5787751285647499,
+            0.47738429172510516
+          ],
+          "units_profit": 0.1682485838851016,
+          "win_rate": 0.625,
+          "wins": 5
+        },
+        {
+          "bets": 273,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 213,
+          "losses": 149,
+          "market": "passing_yards",
+          "roi": -0.14793551984862272,
+          "roi_ci_95": [
+            -0.26547932595893786,
+            -0.029242064129828788
+          ],
+          "units_profit": -40.386396918674,
+          "win_rate": 0.4542124542124542,
+          "wins": 124
+        },
+        {
+          "bets": 248,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 188,
+          "losses": 123,
+          "market": "passing_yards",
+          "roi": -0.04516279205229127,
+          "roi_ci_95": [
+            -0.17629802273138137,
+            0.07425178186053548
+          ],
+          "units_profit": -11.200372428968235,
+          "win_rate": 0.5040322580645161,
+          "wins": 125
+        },
+        {
+          "bets": 262,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 202,
+          "losses": 144,
+          "market": "passing_yards",
+          "roi": -0.158178639103481,
+          "roi_ci_95": [
+            -0.27469614433096873,
+            -0.04321468868459046
+          ],
+          "units_profit": -41.44280344511203,
+          "win_rate": 0.45038167938931295,
+          "wins": 118
+        },
+        {
+          "bets": 249,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 190,
+          "losses": 136,
+          "market": "passing_yards",
+          "roi": -0.12808523316341697,
+          "roi_ci_95": [
+            -0.25386871068320466,
+            -0.0013997230070740886
+          ],
+          "units_profit": -31.893223057690825,
+          "win_rate": 0.4538152610441767,
+          "wins": 113
+        },
+        {
+          "bets": 299,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 219,
+          "losses": 157,
+          "market": "passing_yards",
+          "roi": -0.1010580268948872,
+          "roi_ci_95": [
+            -0.2164294236692772,
+            0.00866316862474293
+          ],
+          "units_profit": -30.216350041571275,
+          "win_rate": 0.47491638795986624,
+          "wins": 142
+        },
+        {
+          "bets": 199,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 151,
+          "losses": 106,
+          "market": "passing_yards",
+          "roi": -0.12193207709921715,
+          "roi_ci_95": [
+            -0.2416109542631282,
+            0.012106173167554236
+          ],
+          "units_profit": -24.264483342744214,
+          "win_rate": 0.46733668341708545,
+          "wins": 93
+        },
+        {
+          "bets": 293,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 217,
+          "losses": 157,
+          "market": "passing_yards",
+          "roi": -0.12145812748367943,
+          "roi_ci_95": [
+            -0.22138586692261178,
+            -0.011864406779660993
+          ],
+          "units_profit": -35.58723135271807,
+          "win_rate": 0.4641638225255973,
+          "wins": 136
+        },
+        {
+          "bets": 197,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 163,
+          "losses": 106,
+          "market": "passing_yards",
+          "roi": -0.12372746505914958,
+          "roi_ci_95": [
+            -0.26562364958823526,
+            0.009615747520534117
+          ],
+          "units_profit": -24.37431061665247,
+          "win_rate": 0.4619289340101523,
+          "wins": 91
+        },
+        {
+          "bets": 1608,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 256,
+          "losses": 726,
+          "market": "receiving_yards",
+          "roi": 0.030740245868345388,
+          "roi_ci_95": [
+            -0.014763372050942553,
+            0.07679031203624267
+          ],
+          "units_profit": 49.43031535629938,
+          "win_rate": 0.5485074626865671,
+          "wins": 882
+        },
+        {
+          "bets": 854,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 255,
+          "losses": 412,
+          "market": "receiving_yards",
+          "roi": -0.020972181019705702,
+          "roi_ci_95": [
+            -0.08534046954251884,
+            0.04887416268808089
+          ],
+          "units_profit": -17.91024259082867,
+          "win_rate": 0.5175644028103045,
+          "wins": 442
+        },
+        {
+          "bets": 923,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 263,
+          "losses": 447,
+          "market": "receiving_yards",
+          "roi": -0.03571197486670704,
+          "roi_ci_95": [
+            -0.09555191502560953,
+            0.024924328215209908
+          ],
+          "units_profit": -32.962152801970596,
+          "win_rate": 0.5157096424702059,
+          "wins": 476
+        },
+        {
+          "bets": 842,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 250,
+          "losses": 414,
+          "market": "receiving_yards",
+          "roi": -0.03425649668679474,
+          "roi_ci_95": [
+            -0.09256458890488527,
+            0.02732804721829348
+          ],
+          "units_profit": -28.843970210281174,
+          "win_rate": 0.5083135391923991,
+          "wins": 428
+        },
+        {
+          "bets": 1373,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 268,
+          "losses": 655,
+          "market": "receiving_yards",
+          "roi": -0.007129524782872524,
+          "roi_ci_95": [
+            -0.04795338826001155,
+            0.03889515629519737
+          ],
+          "units_profit": -9.788837526883976,
+          "win_rate": 0.5229424617625638,
+          "wins": 718
+        },
+        {
+          "bets": 1178,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 215,
+          "losses": 569,
+          "market": "receiving_yards",
+          "roi": -0.0025495010053301894,
+          "roi_ci_95": [
+            -0.05841341824928923,
+            0.0502337376031246
+          ],
+          "units_profit": -3.003312184278963,
+          "win_rate": 0.5169779286926995,
+          "wins": 609
+        },
+        {
+          "bets": 1271,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 267,
+          "losses": 624,
+          "market": "receiving_yards",
+          "roi": -0.03598471853299545,
+          "roi_ci_95": [
+            -0.08722362649729871,
+            0.020050864580293527
+          ],
+          "units_profit": -45.73657725543722,
+          "win_rate": 0.5090479937057435,
+          "wins": 647
+        },
+        {
+          "bets": 560,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 238,
+          "losses": 278,
+          "market": "receiving_yards",
+          "roi": -0.042071719441982375,
+          "roi_ci_95": [
+            -0.11807497155878884,
+            0.031011539851433227
+          ],
+          "units_profit": -23.56016288751013,
+          "win_rate": 0.5035714285714286,
+          "wins": 282
+        },
+        {
+          "bets": 849,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 247,
+          "losses": 349,
+          "market": "receptions",
+          "roi": 0.10763660691895627,
+          "roi_ci_95": [
+            0.04870592795164027,
+            0.16601687963027031
+          ],
+          "units_profit": 91.38347927419387,
+          "win_rate": 0.5889281507656066,
+          "wins": 500
+        },
+        {
+          "bets": 268,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 163,
+          "losses": 128,
+          "market": "receptions",
+          "roi": 0.05291511071138225,
+          "roi_ci_95": [
+            -0.08528808755878187,
+            0.19681687803116604
+          ],
+          "units_profit": 14.181249670650445,
+          "win_rate": 0.5223880597014925,
+          "wins": 140
+        },
+        {
+          "bets": 245,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 142,
+          "losses": 109,
+          "market": "receptions",
+          "roi": 0.05329261919908846,
+          "roi_ci_95": [
+            -0.052380156462323156,
+            0.17117301843156696
+          ],
+          "units_profit": 13.056691703776673,
+          "win_rate": 0.5551020408163265,
+          "wins": 136
+        },
+        {
+          "bets": 343,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 193,
+          "losses": 178,
+          "market": "receptions",
+          "roi": -0.01354417152134318,
+          "roi_ci_95": [
+            -0.12588555770087007,
+            0.09774773095841376
+          ],
+          "units_profit": -4.645650831820711,
+          "win_rate": 0.48104956268221577,
+          "wins": 165
+        },
+        {
+          "bets": 454,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 224,
+          "losses": 232,
+          "market": "receptions",
+          "roi": -0.06004045378730935,
+          "roi_ci_95": [
+            -0.1587477242947996,
+            0.031178698865425195
+          ],
+          "units_profit": -27.258366019438444,
+          "win_rate": 0.4889867841409692,
+          "wins": 222
+        },
+        {
+          "bets": 377,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 180,
+          "losses": 205,
+          "market": "receptions",
+          "roi": -0.06421454976546481,
+          "roi_ci_95": [
+            -0.17375121277024572,
+            0.0481375387070381
+          ],
+          "units_profit": -24.208885261580235,
+          "win_rate": 0.4562334217506631,
+          "wins": 172
+        },
+        {
+          "bets": 434,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 211,
+          "losses": 215,
+          "market": "receptions",
+          "roi": -0.035912777029670634,
+          "roi_ci_95": [
+            -0.12779682875441004,
+            0.05336271450838619
+          ],
+          "units_profit": -15.586145230877056,
+          "win_rate": 0.5046082949308756,
+          "wins": 219
+        },
+        {
+          "bets": 109,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 84,
+          "losses": 54,
+          "market": "receptions",
+          "roi": -0.06376927402218083,
+          "roi_ci_95": [
+            -0.24400823649590692,
+            0.12080264718515908
+          ],
+          "units_profit": -6.95085086841771,
+          "win_rate": 0.5045871559633027,
+          "wins": 55
+        },
+        {
+          "bets": 341,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 197,
+          "losses": 148,
+          "market": "rushing_attempts",
+          "roi": 0.06145162632980142,
+          "roi_ci_95": [
+            -0.043866623222679264,
+            0.15874651665551057
+          ],
+          "units_profit": 20.955004578462283,
+          "win_rate": 0.5659824046920822,
+          "wins": 193
+        },
+        {
+          "bets": 52,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 49,
+          "losses": 19,
+          "market": "rushing_attempts",
+          "roi": 0.25093421917369224,
+          "roi_ci_95": [
+            -0.01790994246217195,
+            0.5081027319092171
+          ],
+          "units_profit": 13.048579397031997,
+          "win_rate": 0.6346153846153846,
+          "wins": 33
+        },
+        {
+          "bets": 33,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 32,
+          "losses": 18,
+          "market": "rushing_attempts",
+          "roi": -0.16931353537499694,
+          "roi_ci_95": [
+            -0.47370369210494767,
+            0.13581933435204346
+          ],
+          "units_profit": -5.587346667374899,
+          "win_rate": 0.45454545454545453,
+          "wins": 15
+        },
+        {
+          "bets": 48,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 45,
+          "losses": 23,
+          "market": "rushing_attempts",
+          "roi": 0.03416898284537995,
+          "roi_ci_95": [
+            -0.2591554589556508,
+            0.3265350478555457
+          ],
+          "units_profit": 1.6401111765782375,
+          "win_rate": 0.5208333333333334,
+          "wins": 25
+        },
+        {
+          "bets": 86,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 77,
+          "losses": 42,
+          "market": "rushing_attempts",
+          "roi": -0.02816742737389165,
+          "roi_ci_95": [
+            -0.23622470765570552,
+            0.17628265086357664
+          ],
+          "units_profit": -2.4223987541546816,
+          "win_rate": 0.5116279069767442,
+          "wins": 44
+        },
+        {
+          "bets": 62,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 52,
+          "losses": 29,
+          "market": "rushing_attempts",
+          "roi": 0.03777999539110919,
+          "roi_ci_95": [
+            -0.21749851597677686,
+            0.2827371520968271
+          ],
+          "units_profit": 2.34235971424877,
+          "win_rate": 0.532258064516129,
+          "wins": 33
+        },
+        {
+          "bets": 42,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 41,
+          "losses": 17,
+          "market": "rushing_attempts",
+          "roi": 0.1253522394115956,
+          "roi_ci_95": [
+            -0.14624328963801717,
+            0.39893155509941425
+          ],
+          "units_profit": 5.264794055287015,
+          "win_rate": 0.5952380952380952,
+          "wins": 25
+        },
+        {
+          "bets": 382,
+          "bookmaker": "betmgm",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 215,
+          "losses": 178,
+          "market": "rushing_yards",
+          "roi": 0.014504082370353324,
+          "roi_ci_95": [
+            -0.07286433101508852,
+            0.10568852765411904
+          ],
+          "units_profit": 5.54055946547497,
+          "win_rate": 0.5340314136125655,
+          "wins": 204
+        },
+        {
+          "bets": 166,
+          "bookmaker": "betonlineag",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 132,
+          "losses": 87,
+          "market": "rushing_yards",
+          "roi": -0.08850280648007271,
+          "roi_ci_95": [
+            -0.24357469320356373,
+            0.07754913719750363
+          ],
+          "units_profit": -14.691465875692069,
+          "win_rate": 0.4759036144578313,
+          "wins": 79
+        },
+        {
+          "bets": 229,
+          "bookmaker": "betrivers",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 168,
+          "losses": 111,
+          "market": "rushing_yards",
+          "roi": -0.03444039828610224,
+          "roi_ci_95": [
+            -0.15090731367042037,
+            0.08641059878114223
+          ],
+          "units_profit": -7.886851207517414,
+          "win_rate": 0.5152838427947598,
+          "wins": 118
+        },
+        {
+          "bets": 180,
+          "bookmaker": "bovada",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 139,
+          "losses": 91,
+          "market": "rushing_yards",
+          "roi": -0.05997017173574857,
+          "roi_ci_95": [
+            -0.19475985725525813,
+            0.08870638133756574
+          ],
+          "units_profit": -10.794630912434743,
+          "win_rate": 0.49444444444444446,
+          "wins": 89
+        },
+        {
+          "bets": 313,
+          "bookmaker": "draftkings",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 205,
+          "losses": 154,
+          "market": "rushing_yards",
+          "roi": -0.033439668214610065,
+          "roi_ci_95": [
+            -0.13602549116500615,
+            0.07779308743501738
+          ],
+          "units_profit": -10.46661615117295,
+          "win_rate": 0.5079872204472844,
+          "wins": 159
+        },
+        {
+          "bets": 247,
+          "bookmaker": "fanatics",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 163,
+          "losses": 120,
+          "market": "rushing_yards",
+          "roi": -0.03209086625851613,
+          "roi_ci_95": [
+            -0.15199808714137136,
+            0.08969945380673373
+          ],
+          "units_profit": -7.926443965853483,
+          "win_rate": 0.5141700404858299,
+          "wins": 127
+        },
+        {
+          "bets": 285,
+          "bookmaker": "fanduel",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 188,
+          "losses": 139,
+          "market": "rushing_yards",
+          "roi": -0.02447176148187165,
+          "roi_ci_95": [
+            -0.12893353907152358,
+            0.07954863108917604
+          ],
+          "units_profit": -6.97445202233342,
+          "win_rate": 0.512280701754386,
+          "wins": 146
+        },
+        {
+          "bets": 96,
+          "bookmaker": "williamhill_us",
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 83,
+          "losses": 50,
+          "market": "rushing_yards",
+          "roi": -0.08951651152473056,
+          "roi_ci_95": [
+            -0.30070940572617477,
+            0.1319786855043025
+          ],
+          "units_profit": -8.593585106374134,
+          "win_rate": 0.4791666666666667,
+          "wins": 46
+        }
+      ],
+      "by_side": [
+        {
+          "bets": 10241,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 270,
+          "losses": 5080,
+          "roi": -0.0359669035763279,
+          "roi_ci_95": [
+            -0.06832721388074808,
+            -0.0029202109013813245
+          ],
+          "side": "OVER",
+          "units_profit": -368.33705952517397,
+          "win_rate": 0.5039546919246167,
+          "wins": 5161
+        },
+        {
+          "bets": 6439,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 271,
+          "losses": 3036,
+          "roi": 0.002038492480239377,
+          "roi_ci_95": [
+            -0.05036988477583818,
+            0.05511515187290187
+          ],
+          "side": "UNDER",
+          "units_profit": 13.125853080261349,
+          "win_rate": 0.5284982140083864,
+          "wins": 3403
+        }
+      ],
+      "by_week": [
+        {
+          "bets": 812,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 369,
+          "roi": 0.03650697424206493,
+          "roi_ci_95": [
+            -0.07517007619714566,
+            0.13009450169929718
+          ],
+          "units_profit": 29.64366308455672,
+          "week": "1",
+          "win_rate": 0.5455665024630542,
+          "wins": 443
+        },
+        {
+          "bets": 903,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 452,
+          "roi": -0.04781110419309808,
+          "roi_ci_95": [
+            -0.1437226573111843,
+            0.05856324433621523
+          ],
+          "units_profit": -43.17342708636757,
+          "week": "10",
+          "win_rate": 0.4994462901439646,
+          "wins": 451
+        },
+        {
+          "bets": 915,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 417,
+          "roi": 0.03370598421188275,
+          "roi_ci_95": [
+            -0.03903775564673717,
+            0.10938557451497485
+          ],
+          "units_profit": 30.840975553872713,
+          "week": "11",
+          "win_rate": 0.5442622950819672,
+          "wins": 498
+        },
+        {
+          "bets": 898,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 469,
+          "roi": -0.08751436000454803,
+          "roi_ci_95": [
+            -0.17139339180940852,
+            0.013143643152220027
+          ],
+          "units_profit": -78.58789528408413,
+          "week": "12",
+          "win_rate": 0.477728285077951,
+          "wins": 429
+        },
+        {
+          "bets": 1091,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 532,
+          "roi": -0.0210217405876537,
+          "roi_ci_95": [
+            -0.12765250937549727,
+            0.07558962337321944
+          ],
+          "units_profit": -22.93471898113019,
+          "week": "13",
+          "win_rate": 0.5123739688359303,
+          "wins": 559
+        },
+        {
+          "bets": 888,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 468,
+          "roi": -0.10810160743537277,
+          "roi_ci_95": [
+            -0.19822321444177038,
+            -0.017509806687344615
+          ],
+          "units_profit": -95.99422740261102,
+          "week": "14",
+          "win_rate": 0.47297297297297297,
+          "wins": 420
+        },
+        {
+          "bets": 1016,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 508,
+          "roi": -0.04430392630542786,
+          "roi_ci_95": [
+            -0.15873707857937508,
+            0.06885019367894792
+          ],
+          "units_profit": -45.0127891263147,
+          "week": "15",
+          "win_rate": 0.5,
+          "wins": 508
+        },
+        {
+          "bets": 888,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 436,
+          "roi": -0.037006847974205045,
+          "roi_ci_95": [
+            -0.15700754624821128,
+            0.08123568344835766
+          ],
+          "units_profit": -32.86208100109408,
+          "week": "16",
+          "win_rate": 0.509009009009009,
+          "wins": 452
+        },
+        {
+          "bets": 888,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 442,
+          "roi": -0.040310426740349944,
+          "roi_ci_95": [
+            -0.14068895381729601,
+            0.05917999537981057
+          ],
+          "units_profit": -35.79565894543075,
+          "week": "17",
+          "win_rate": 0.5022522522522522,
+          "wins": 446
+        },
+        {
+          "bets": 565,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 284,
+          "roi": -0.05773048196023916,
+          "roi_ci_95": [
+            -0.19574431234827738,
+            0.08473066968055878
+          ],
+          "units_profit": -32.617722307535125,
+          "week": "18",
+          "win_rate": 0.49734513274336284,
+          "wins": 281
+        },
+        {
+          "bets": 969,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 475,
+          "roi": -0.029424077276560184,
+          "roi_ci_95": [
+            -0.13848067531646124,
+            0.09072267302886443
+          ],
+          "units_profit": -28.511930880986817,
+          "week": "2",
+          "win_rate": 0.5098039215686274,
+          "wins": 494
+        },
+        {
+          "bets": 1040,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 532,
+          "roi": -0.06679354008342904,
+          "roi_ci_95": [
+            -0.15108524090176975,
+            0.009291946251564882
+          ],
+          "units_profit": -69.4652816867662,
+          "week": "3",
+          "win_rate": 0.48846153846153845,
+          "wins": 508
+        },
+        {
+          "bets": 1101,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 16,
+          "losses": 562,
+          "roi": -0.06752100059642924,
+          "roi_ci_95": [
+            -0.18248566653567258,
+            0.04038834777089782
+          ],
+          "units_profit": -74.34062165666859,
+          "week": "4",
+          "win_rate": 0.4895549500454133,
+          "wins": 539
+        },
+        {
+          "bets": 986,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 460,
+          "roi": 0.02273101654591784,
+          "roi_ci_95": [
+            -0.06752548546926439,
+            0.10241461556627726
+          ],
+          "units_profit": 22.41278231427499,
+          "week": "5",
+          "win_rate": 0.5334685598377282,
+          "wins": 526
+        },
+        {
+          "bets": 1013,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 484,
+          "roi": 0.002452618395461994,
+          "roi_ci_95": [
+            -0.07564397375744139,
+            0.07288080954802856
+          ],
+          "units_profit": 2.484502434603,
+          "week": "6",
+          "win_rate": 0.5222112537018756,
+          "wins": 529
+        },
+        {
+          "bets": 953,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 15,
+          "losses": 386,
+          "roi": 0.13270834074910876,
+          "roi_ci_95": [
+            0.009113457031455413,
+            0.2636872709327443
+          ],
+          "units_profit": 126.47104873390064,
+          "week": "7",
+          "win_rate": 0.5949632738719832,
+          "wins": 567
+        },
+        {
+          "bets": 826,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 13,
+          "losses": 387,
+          "roi": 0.014312382298685165,
+          "roi_ci_95": [
+            -0.06813598056191428,
+            0.09654886602897782
+          ],
+          "units_profit": 11.822027778713947,
+          "week": "8",
+          "win_rate": 0.5314769975786925,
+          "wins": 439
+        },
+        {
+          "bets": 928,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "independent_games": 14,
+          "losses": 453,
+          "roi": -0.02110975429509211,
+          "roi_ci_95": [
+            -0.10717892951992122,
+            0.062862808891915
+          ],
+          "units_profit": -19.589851985845478,
+          "week": "9",
+          "win_rate": 0.5118534482758621,
+          "wins": 475
+        }
+      ],
+      "decision_threshold": 0.05
+    }
+  },
+  "selection_allowed": false,
+  "settled_rows": 36590,
+  "stability": {
+    "v3_baseline": {
+      "leave_one_bookmaker_out": [
+        {
+          "bets": 14172,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "betmgm",
+          "independent_games": 271,
+          "losses": 6934,
+          "roi": -0.034818456175877525,
+          "roi_ci_95": [
+            -0.06404414160038123,
+            -0.003995933232758504
+          ],
+          "units_profit": -493.4471609245363,
+          "win_rate": 0.5107253739768558,
+          "wins": 7238
+        },
+        {
+          "bets": 15456,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "betonlineag",
+          "independent_games": 271,
+          "losses": 7596,
+          "roi": -0.04131354793051151,
+          "roi_ci_95": [
+            -0.06937964235766296,
+            -0.011197100618521486
+          ],
+          "units_profit": -638.5421968139858,
+          "win_rate": 0.5085403726708074,
+          "wins": 7860
+        },
+        {
+          "bets": 16103,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "betrivers",
+          "independent_games": 271,
+          "losses": 7942,
+          "roi": -0.041782071719240546,
+          "roi_ci_95": [
+            -0.07064849895156008,
+            -0.012243537802364786
+          ],
+          "units_profit": -672.8167008949305,
+          "win_rate": 0.506799975159908,
+          "wins": 8161
+        },
+        {
+          "bets": 15947,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "bovada",
+          "independent_games": 271,
+          "losses": 7819,
+          "roi": -0.04020815260682172,
+          "roi_ci_95": [
+            -0.06933733012638438,
+            -0.011096300594617031
+          ],
+          "units_profit": -641.199409620986,
+          "win_rate": 0.5096883426349784,
+          "wins": 8128
+        },
+        {
+          "bets": 15112,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "draftkings",
+          "independent_games": 271,
+          "losses": 7479,
+          "roi": -0.04560990995628472,
+          "roi_ci_95": [
+            -0.07516053980993447,
+            -0.016342416350817745
+          ],
+          "units_profit": -689.2569592593748,
+          "win_rate": 0.5050952885124405,
+          "wins": 7633
+        },
+        {
+          "bets": 15768,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "fanatics",
+          "independent_games": 271,
+          "losses": 7791,
+          "roi": -0.037997995817745496,
+          "roi_ci_95": [
+            -0.06695793397263759,
+            -0.008043007527728803
+          ],
+          "units_profit": -599.152398054211,
+          "win_rate": 0.5058980213089802,
+          "wins": 7977
+        },
+        {
+          "bets": 15727,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "fanduel",
+          "independent_games": 271,
+          "losses": 7754,
+          "roi": -0.04218586386518695,
+          "roi_ci_95": [
+            -0.07275881244790906,
+            -0.0128175323531243
+          ],
+          "units_profit": -663.4570810077951,
+          "win_rate": 0.5069625484834998,
+          "wins": 7973
+        },
+        {
+          "bets": 16630,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "williamhill_us",
+          "independent_games": 271,
+          "losses": 8194,
+          "roi": -0.042213408832181845,
+          "roi_ci_95": [
+            -0.07075681654875234,
+            -0.012700287971703254
+          ],
+          "units_profit": -702.0089888791841,
+          "win_rate": 0.507276007215875,
+          "wins": 8436
+        }
+      ],
+      "leave_one_market_out": [
+        {
+          "bets": 17398,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "passing_tds",
+          "independent_games": 271,
+          "losses": 8574,
+          "roi": -0.04213681974896527,
+          "roi_ci_95": [
+            -0.07044735017102258,
+            -0.013009474700585536
+          ],
+          "units_profit": -733.0963899924977,
+          "win_rate": 0.5071847338774572,
+          "wins": 8824
+        },
+        {
+          "bets": 15631,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "passing_yards",
+          "independent_games": 271,
+          "losses": 7616,
+          "roi": -0.030892018382716553,
+          "roi_ci_95": [
+            -0.05938337429607028,
+            -0.0006493882159931774
+          ],
+          "units_profit": -482.87313934024246,
+          "win_rate": 0.5127630989699955,
+          "wins": 8015
+        },
+        {
+          "bets": 8655,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "receiving_yards",
+          "independent_games": 271,
+          "losses": 4293,
+          "roi": -0.05001967122823233,
+          "roi_ci_95": [
+            -0.08572886921529921,
+            -0.012702369561992161
+          ],
+          "units_profit": -432.9202544803508,
+          "win_rate": 0.5039861351819758,
+          "wins": 4362
+        },
+        {
+          "bets": 14508,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "receptions",
+          "independent_games": 271,
+          "losses": 7184,
+          "roi": -0.042764160111895586,
+          "roi_ci_95": [
+            -0.07528557333676672,
+            -0.011772900146570505
+          ],
+          "units_profit": -620.4224349033811,
+          "win_rate": 0.5048249241797629,
+          "wins": 7324
+        },
+        {
+          "bets": 17112,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "rushing_attempts",
+          "independent_games": 271,
+          "losses": 8433,
+          "roi": -0.04149706469320383,
+          "roi_ci_95": [
+            -0.06931639140196619,
+            -0.01172527162252872
+          ],
+          "units_profit": -710.0977710301039,
+          "win_rate": 0.5071879382889201,
+          "wins": 8679
+        },
+        {
+          "bets": 15921,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "rushing_yards",
+          "independent_games": 271,
+          "losses": 7835,
+          "roi": -0.04166585506158968,
+          "roi_ci_95": [
+            -0.07392488689352683,
+            -0.011469788804244105
+          ],
+          "units_profit": -663.3620784355693,
+          "win_rate": 0.5078826706865147,
+          "wins": 8086
+        }
+      ],
+      "leave_one_week_out": [
+        {
+          "bets": 16998,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "1",
+          "independent_games": 255,
+          "losses": 8352,
+          "roi": -0.03910630475148635,
+          "roi_ci_95": [
+            -0.07076963948003025,
+            -0.008815381975153401
+          ],
+          "units_profit": -664.728968165765,
+          "win_rate": 0.508648076244264,
+          "wins": 8646
+        },
+        {
+          "bets": 16850,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "10",
+          "independent_games": 257,
+          "losses": 8328,
+          "roi": -0.04439627091392601,
+          "roi_ci_95": [
+            -0.07296851113896392,
+            -0.01445295547704387
+          ],
+          "units_profit": -748.0771648996533,
+          "win_rate": 0.5057566765578635,
+          "wins": 8522
+        },
+        {
+          "bets": 16849,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "11",
+          "independent_games": 256,
+          "losses": 8330,
+          "roi": -0.044374807485949075,
+          "roi_ci_95": [
+            -0.07743258909152881,
+            -0.01643363991993451
+          ],
+          "units_profit": -747.671131330756,
+          "win_rate": 0.5056086414624014,
+          "wins": 8519
+        },
+        {
+          "bets": 16909,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "12",
+          "independent_games": 257,
+          "losses": 8299,
+          "roi": -0.03783662374500417,
+          "roi_ci_95": [
+            -0.06960621485149586,
+            -0.0066481821437769624
+          ],
+          "units_profit": -639.7794709042755,
+          "win_rate": 0.5091962860015377,
+          "wins": 8610
+        },
+        {
+          "bets": 16695,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "13",
+          "independent_games": 255,
+          "losses": 8237,
+          "roi": -0.04266987690702597,
+          "roi_ci_95": [
+            -0.07324114585579931,
+            -0.00969963557020438
+          ],
+          "units_profit": -712.3735949627986,
+          "win_rate": 0.5066187481281821,
+          "wins": 8458
+        },
+        {
+          "bets": 16938,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "14",
+          "independent_games": 257,
+          "losses": 8372,
+          "roi": -0.043682212922804345,
+          "roi_ci_95": [
+            -0.07462470682369818,
+            -0.011702822403112675
+          ],
+          "units_profit": -739.88932248646,
+          "win_rate": 0.5057267682134845,
+          "wins": 8566
+        },
+        {
+          "bets": 16762,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "15",
+          "independent_games": 255,
+          "losses": 8247,
+          "roi": -0.04039049897101353,
+          "roi_ci_95": [
+            -0.0741599648728035,
+            -0.009497196643741265
+          ],
+          "units_profit": -677.0255437521288,
+          "win_rate": 0.5079942727598139,
+          "wins": 8515
+        },
+        {
+          "bets": 16918,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "16",
+          "independent_games": 255,
+          "losses": 8332,
+          "roi": -0.04105314378312042,
+          "roi_ci_95": [
+            -0.07201114748475197,
+            -0.011019822027739039
+          ],
+          "units_profit": -694.5370865228313,
+          "win_rate": 0.5075067974937936,
+          "wins": 8586
+        },
+        {
+          "bets": 16929,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "17",
+          "independent_games": 255,
+          "losses": 8344,
+          "roi": -0.042184996092777864,
+          "roi_ci_95": [
+            -0.07548665337107337,
+            -0.011030351817370814
+          ],
+          "units_profit": -714.1497988546365,
+          "win_rate": 0.5071179632583142,
+          "wins": 8585
+        },
+        {
+          "bets": 17242,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "18",
+          "independent_games": 256,
+          "losses": 8518,
+          "roi": -0.04383647778235212,
+          "roi_ci_95": [
+            -0.07317162974467774,
+            -0.01368203856076226
+          ],
+          "units_profit": -755.8285499233152,
+          "win_rate": 0.505973784943742,
+          "wins": 8724
+        },
+        {
+          "bets": 16797,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "2",
+          "independent_games": 255,
+          "losses": 8260,
+          "roi": -0.03972103774335204,
+          "roi_ci_95": [
+            -0.07160358313142104,
+            -0.007556165830682835
+          ],
+          "units_profit": -667.1942709750842,
+          "win_rate": 0.5082455200333393,
+          "wins": 8537
+        },
+        {
+          "bets": 16705,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "3",
+          "independent_games": 255,
+          "losses": 8256,
+          "roi": -0.04426011045708188,
+          "roi_ci_95": [
+            -0.07491863499412629,
+            -0.010648422686737583
+          ],
+          "units_profit": -739.3651451855528,
+          "win_rate": 0.5057767135588147,
+          "wins": 8449
+        },
+        {
+          "bets": 16626,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "4",
+          "independent_games": 255,
+          "losses": 8195,
+          "roi": -0.041584007843685815,
+          "roi_ci_95": [
+            -0.07383989865425514,
+            -0.0107521012883816
+          ],
+          "units_profit": -691.3757144091204,
+          "win_rate": 0.5070973174545892,
+          "wins": 8431
+        },
+        {
+          "bets": 16769,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "5",
+          "independent_games": 257,
+          "losses": 8144,
+          "roi": -0.02759087113258231,
+          "roi_ci_95": [
+            -0.05673726369002676,
+            0.003656970469828599
+          ],
+          "units_profit": -462.6713180222727,
+          "win_rate": 0.5143419404854195,
+          "wins": 8625
+        },
+        {
+          "bets": 16749,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "6",
+          "independent_games": 256,
+          "losses": 8272,
+          "roi": -0.04372844086330799,
+          "roi_ci_95": [
+            -0.07810454029168772,
+            -0.014307652790701161
+          ],
+          "units_profit": -732.4076560195455,
+          "win_rate": 0.5061197683443788,
+          "wins": 8477
+        },
+        {
+          "bets": 16816,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "7",
+          "independent_games": 256,
+          "losses": 8291,
+          "roi": -0.04253908884255734,
+          "roi_ci_95": [
+            -0.07515423132375354,
+            -0.013934048130673077
+          ],
+          "units_profit": -715.3373179764442,
+          "win_rate": 0.5069576593720266,
+          "wins": 8525
+        },
+        {
+          "bets": 16959,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "8",
+          "independent_games": 258,
+          "losses": 8327,
+          "roi": -0.03822434435655205,
+          "roi_ci_95": [
+            -0.06745643451613957,
+            -0.00872655295640604
+          ],
+          "units_profit": -648.2466559427662,
+          "win_rate": 0.5089922754879415,
+          "wins": 8632
+        },
+        {
+          "bets": 16854,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "9",
+          "independent_games": 257,
+          "losses": 8275,
+          "roi": -0.037662651090891654,
+          "roi_ci_95": [
+            -0.0669392092652711,
+            -0.008132715229272846
+          ],
+          "units_profit": -634.7663214858879,
+          "win_rate": 0.5090186305921443,
+          "wins": 8579
+        }
+      ]
+    },
+    "v4_candidate": {
+      "leave_one_bookmaker_out": [
+        {
+          "bets": 13137,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "betmgm",
+          "independent_games": 271,
+          "losses": 6520,
+          "roi": -0.03661310833798049,
+          "roi_ci_95": [
+            -0.06292346002617595,
+            -0.008824123199816082
+          ],
+          "units_profit": -480.9864042360497,
+          "win_rate": 0.5036918626779325,
+          "wins": 6617
+        },
+        {
+          "bets": 15035,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "betonlineag",
+          "independent_games": 271,
+          "losses": 7320,
+          "roi": -0.02286361951404213,
+          "roi_ci_95": [
+            -0.04807038994586683,
+            0.0023402887013763336
+          ],
+          "units_profit": -343.7545193936234,
+          "win_rate": 0.5131360159627536,
+          "wins": 7715
+        },
+        {
+          "bets": 14934,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "betrivers",
+          "independent_games": 271,
+          "losses": 7255,
+          "roi": -0.018307030500502412,
+          "roi_ci_95": [
+            -0.04247030510111463,
+            0.006275133056551294
+          ],
+          "units_profit": -273.39719349450303,
+          "win_rate": 0.514195794830588,
+          "wins": 7679
+        },
+        {
+          "bets": 14981,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "bovada",
+          "independent_games": 271,
+          "losses": 7251,
+          "roi": -0.018185207717643523,
+          "roi_ci_95": [
+            -0.04198081882374936,
+            0.006677825320978711
+          ],
+          "units_profit": -272.4325968180176,
+          "win_rate": 0.5159869167612309,
+          "wins": 7730
+        },
+        {
+          "bets": 14108,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "draftkings",
+          "independent_games": 271,
+          "losses": 6848,
+          "roi": -0.019036571632498216,
+          "roi_ci_95": [
+            -0.04491743706735372,
+            0.006019925242894889
+          ],
+          "units_profit": -268.56795259128484,
+          "win_rate": 0.5146016444570456,
+          "wins": 7260
+        },
+        {
+          "bets": 14576,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "fanatics",
+          "independent_games": 271,
+          "losses": 7071,
+          "roi": -0.02062044327411474,
+          "roi_ci_95": [
+            -0.045933339974137635,
+            0.0032769111492912156
+          ],
+          "units_profit": -300.56358116349645,
+          "win_rate": 0.5148874862788145,
+          "wins": 7505
+        },
+        {
+          "bets": 14279,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "fanduel",
+          "independent_games": 271,
+          "losses": 6922,
+          "roi": -0.01784968498267176,
+          "roi_ci_95": [
+            -0.04350830535746613,
+            0.007263945484376193
+          ],
+          "units_profit": -254.8756518675701,
+          "win_rate": 0.5152321591147839,
+          "wins": 7357
+        },
+        {
+          "bets": 15710,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_bookmaker": "williamhill_us",
+          "independent_games": 271,
+          "losses": 7625,
+          "roi": -0.018580556686813705,
+          "roi_ci_95": [
+            -0.04291398585824493,
+            0.0058583585387841156
+          ],
+          "units_profit": -291.9005455498433,
+          "win_rate": 0.5146403564608529,
+          "wins": 8085
+        }
+      ],
+      "leave_one_market_out": [
+        {
+          "bets": 16270,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "passing_tds",
+          "independent_games": 271,
+          "losses": 7899,
+          "roi": -0.02079415925902644,
+          "roi_ci_95": [
+            -0.046012698101623735,
+            0.004776695277793294
+          ],
+          "units_profit": -338.32097114436016,
+          "win_rate": 0.5145052243392747,
+          "wins": 8371
+        },
+        {
+          "bets": 14660,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "passing_yards",
+          "independent_games": 271,
+          "losses": 7038,
+          "roi": -0.007902185214241577,
+          "roi_ci_95": [
+            -0.034106199309346136,
+            0.017600240419817892
+          ],
+          "units_profit": -115.8460352407815,
+          "win_rate": 0.5199181446111869,
+          "wins": 7622
+        },
+        {
+          "bets": 8071,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "receiving_yards",
+          "independent_games": 271,
+          "losses": 3991,
+          "roi": -0.03008750667129492,
+          "roi_ci_95": [
+            -0.06667545046618101,
+            0.00538897562167846
+          ],
+          "units_profit": -242.83626634402128,
+          "win_rate": 0.505513567092058,
+          "wins": 4080
+        },
+        {
+          "bets": 13601,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "receptions",
+          "independent_games": 271,
+          "losses": 6646,
+          "roi": -0.029055417166487716,
+          "roi_ci_95": [
+            -0.055293101724916145,
+            -0.001127841206616302
+          ],
+          "units_profit": -395.18272888139944,
+          "win_rate": 0.5113594588633189,
+          "wins": 6955
+        },
+        {
+          "bets": 16016,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "rushing_attempts",
+          "independent_games": 271,
+          "losses": 7820,
+          "roi": -0.024378890481080877,
+          "roi_ci_95": [
+            -0.049853645705368085,
+            -0.0001835971466647971
+          ],
+          "units_profit": -390.4523099449913,
+          "win_rate": 0.5117382617382618,
+          "wins": 8196
+        },
+        {
+          "bets": 14782,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_market": "rushing_yards",
+          "independent_games": 271,
+          "losses": 7186,
+          "roi": -0.01984966314903324,
+          "roi_ci_95": [
+            -0.046852956608870476,
+            0.005830800375596923
+          ],
+          "units_profit": -293.4177206690094,
+          "win_rate": 0.5138682181030984,
+          "wins": 7596
+        }
+      ],
+      "leave_one_week_out": [
+        {
+          "bets": 15868,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "1",
+          "independent_games": 255,
+          "losses": 7747,
+          "roi": -0.024253520892958742,
+          "roi_ci_95": [
+            -0.04872486026790694,
+            0.0009638631438620368
+          ],
+          "units_profit": -384.85486952946934,
+          "win_rate": 0.5117847239727754,
+          "wins": 8121
+        },
+        {
+          "bets": 15777,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "10",
+          "independent_games": 257,
+          "losses": 7664,
+          "roi": -0.019778017326395704,
+          "roi_ci_95": [
+            -0.04486104502879276,
+            0.005910514375013819
+          ],
+          "units_profit": -312.03777935854504,
+          "win_rate": 0.5142295746973442,
+          "wins": 8113
+        },
+        {
+          "bets": 15765,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "11",
+          "independent_games": 256,
+          "losses": 7699,
+          "roi": -0.024487927814702527,
+          "roi_ci_95": [
+            -0.05126585299854088,
+            0.0018409561562709748
+          ],
+          "units_profit": -386.05218199878533,
+          "win_rate": 0.511639708214399,
+          "wins": 8066
+        },
+        {
+          "bets": 15782,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "12",
+          "independent_games": 257,
+          "losses": 7647,
+          "roi": -0.0175277728526694,
+          "roi_ci_95": [
+            -0.0430261711106514,
+            0.008953222328154365
+          ],
+          "units_profit": -276.6233111608285,
+          "win_rate": 0.5154606513749842,
+          "wins": 8135
+        },
+        {
+          "bets": 15589,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "13",
+          "independent_games": 255,
+          "losses": 7584,
+          "roi": -0.02131480450726682,
+          "roi_ci_95": [
+            -0.04904964300400444,
+            0.003517729251865605
+          ],
+          "units_profit": -332.2764874637824,
+          "win_rate": 0.5135031111681314,
+          "wins": 8005
+        },
+        {
+          "bets": 15792,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "14",
+          "independent_games": 257,
+          "losses": 7648,
+          "roi": -0.016414449027501367,
+          "roi_ci_95": [
+            -0.041871451097432726,
+            0.00823734889649263
+          ],
+          "units_profit": -259.2169790423016,
+          "win_rate": 0.5157041540020263,
+          "wins": 8144
+        },
+        {
+          "bets": 15664,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "15",
+          "independent_games": 255,
+          "losses": 7608,
+          "roi": -0.019803269747101504,
+          "roi_ci_95": [
+            -0.042391741970884175,
+            0.005983612967233911
+          ],
+          "units_profit": -310.19841731859793,
+          "win_rate": 0.5143003064351379,
+          "wins": 8056
+        },
+        {
+          "bets": 15792,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "16",
+          "independent_games": 255,
+          "losses": 7680,
+          "roi": -0.020412178662855784,
+          "roi_ci_95": [
+            -0.04616769987159252,
+            0.00517100337318304
+          ],
+          "units_profit": -322.34912544381854,
+          "win_rate": 0.513677811550152,
+          "wins": 8112
+        },
+        {
+          "bets": 15792,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "17",
+          "independent_games": 255,
+          "losses": 7674,
+          "roi": -0.020226415115215418,
+          "roi_ci_95": [
+            -0.046488882659344435,
+            0.004681610554750646
+          ],
+          "units_profit": -319.4155474994819,
+          "win_rate": 0.5140577507598785,
+          "wins": 8118
+        },
+        {
+          "bets": 16115,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "18",
+          "independent_games": 256,
+          "losses": 7832,
+          "roi": -0.020018211860836334,
+          "roi_ci_95": [
+            -0.04451792466604643,
+            0.004119078182916334
+          ],
+          "units_profit": -322.5934841373775,
+          "win_rate": 0.5139931740614334,
+          "wins": 8283
+        },
+        {
+          "bets": 15711,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "2",
+          "independent_games": 255,
+          "losses": 7641,
+          "roi": -0.020794301798989615,
+          "roi_ci_95": [
+            -0.046174043784102614,
+            0.004865681714038465
+          ],
+          "units_profit": -326.6992755639258,
+          "win_rate": 0.5136528546877983,
+          "wins": 8070
+        },
+        {
+          "bets": 15640,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "3",
+          "independent_games": 255,
+          "losses": 7584,
+          "roi": -0.01827019979272036,
+          "roi_ci_95": [
+            -0.045298327952242805,
+            0.005796761768277659
+          ],
+          "units_profit": -285.74592475814643,
+          "win_rate": 0.5150895140664962,
+          "wins": 8056
+        },
+        {
+          "bets": 15579,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "4",
+          "independent_games": 255,
+          "losses": 7554,
+          "roi": -0.0180287941965623,
+          "roi_ci_95": [
+            -0.04370480418508274,
+            0.007775428028407
+          ],
+          "units_profit": -280.87058478824406,
+          "win_rate": 0.5151165029847872,
+          "wins": 8025
+        },
+        {
+          "bets": 15694,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "5",
+          "independent_games": 257,
+          "losses": 7656,
+          "roi": -0.02406167890653674,
+          "roi_ci_95": [
+            -0.05162454066766107,
+            0.0012135746083531435
+          ],
+          "units_profit": -377.6239887591876,
+          "win_rate": 0.5121702561488467,
+          "wins": 8038
+        },
+        {
+          "bets": 15667,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "6",
+          "independent_games": 256,
+          "losses": 7632,
+          "roi": -0.022831155223049442,
+          "roi_ci_95": [
+            -0.04792747807540059,
+            0.004939589257687991
+          ],
+          "units_profit": -357.6957088795156,
+          "win_rate": 0.5128614284802451,
+          "wins": 8035
+        },
+        {
+          "bets": 15727,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "7",
+          "independent_games": 256,
+          "losses": 7730,
+          "roi": -0.030627726532638986,
+          "roi_ci_95": [
+            -0.055849405805676225,
+            -0.004653586666119905
+          ],
+          "units_profit": -481.6822551788133,
+          "win_rate": 0.5084885865072805,
+          "wins": 7997
+        },
+        {
+          "bets": 15854,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "8",
+          "independent_games": 258,
+          "losses": 7729,
+          "roi": -0.02315082844856986,
+          "roi_ci_95": [
+            -0.049152420224377956,
+            0.004394131227147983
+          ],
+          "units_profit": -367.03323422362655,
+          "win_rate": 0.512488961776208,
+          "wins": 8125
+        },
+        {
+          "bets": 15752,
+          "bootstrap_draws": 1000,
+          "bootstrap_method": "deterministic_game_cluster_bootstrap",
+          "excluded_week": "9",
+          "independent_games": 257,
+          "losses": 7663,
+          "roi": -0.021306586748290196,
+          "roi_ci_95": [
+            -0.047497316105202955,
+            0.004523528689713643
+          ],
+          "units_profit": -335.62135445906716,
+          "win_rate": 0.513522092432707,
+          "wins": 8089
+        }
+      ]
+    }
+  },
+  "threshold_metrics": [
+    {
+      "bets": 18386,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.0,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 9046,
+      "policy": "v3_baseline",
+      "roi": -0.04003815839615499,
+      "roi_ci_95": [
+        -0.06851688471909986,
+        -0.01146233763746521
+      ],
+      "units_profit": -736.1415802717056,
+      "win_rate": 0.5079952137495921,
+      "wins": 9340
+    },
+    {
+      "bets": 18275,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.01,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8995,
+      "policy": "v3_baseline",
+      "roi": -0.040574090890814714,
+      "roi_ci_95": [
+        -0.0687295674848951,
+        -0.011794981724248917
+      ],
+      "units_profit": -741.4915110296389,
+      "win_rate": 0.507797537619699,
+      "wins": 9280
+    },
+    {
+      "bets": 18184,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.02,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8949,
+      "policy": "v3_baseline",
+      "roi": -0.040260251874615814,
+      "roi_ci_95": [
+        -0.06861575466748113,
+        -0.011189706362845945
+      ],
+      "units_profit": -732.092420088014,
+      "win_rate": 0.5078640563132424,
+      "wins": 9235
+    },
+    {
+      "bets": 18066,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.03,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8887,
+      "policy": "v3_baseline",
+      "roi": -0.039933706108421105,
+      "roi_ci_95": [
+        -0.06860692785043494,
+        -0.010895439119512376
+      ],
+      "units_profit": -721.4423345547357,
+      "win_rate": 0.5080814790213661,
+      "wins": 9179
+    },
+    {
+      "bets": 17945,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.04,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8826,
+      "policy": "v3_baseline",
+      "roi": -0.0397134596349239,
+      "roi_ci_95": [
+        -0.06857769624856944,
+        -0.010082598277762183
+      ],
+      "units_profit": -712.6580331487094,
+      "win_rate": 0.5081638339370298,
+      "wins": 9119
+    },
+    {
+      "bets": 17845,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.05,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8787,
+      "policy": "v3_baseline",
+      "roi": -0.04082680939402797,
+      "roi_ci_95": [
+        -0.0692155251665589,
+        -0.011637187597767655
+      ],
+      "units_profit": -728.5544136364291,
+      "win_rate": 0.5075931633510787,
+      "wins": 9058
+    },
+    {
+      "bets": 17570,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.075,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8666,
+      "policy": "v3_baseline",
+      "roi": -0.04219666166872594,
+      "roi_ci_95": [
+        -0.07165132721635263,
+        -0.012511868183870765
+      ],
+      "units_profit": -741.3953455195148,
+      "win_rate": 0.5067729083665339,
+      "wins": 8904
+    },
+    {
+      "bets": 17293,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.1,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8511,
+      "policy": "v3_baseline",
+      "roi": -0.040205818998897795,
+      "roi_ci_95": [
+        -0.06970336363968292,
+        -0.010197925395823695
+      ],
+      "units_profit": -695.2792279479396,
+      "win_rate": 0.5078355403920661,
+      "wins": 8782
+    },
+    {
+      "bets": 16670,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.15,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8190,
+      "policy": "v3_baseline",
+      "roi": -0.038159895410440556,
+      "roi_ci_95": [
+        -0.06798970564190464,
+        -0.007312591857103904
+      ],
+      "units_profit": -636.125456492044,
+      "win_rate": 0.5086982603479304,
+      "wins": 8480
+    },
+    {
+      "bets": 16014,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.2,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 7834,
+      "policy": "v3_baseline",
+      "roi": -0.03359174299855807,
+      "roi_ci_95": [
+        -0.06469321383399165,
+        -0.00043955451870878696
+      ],
+      "units_profit": -537.9381723789089,
+      "win_rate": 0.5108030473335831,
+      "wins": 8180
+    },
+    {
+      "bets": 18610,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.0,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 9097,
+      "policy": "v4_candidate",
+      "roi": -0.025438055699665597,
+      "roi_ci_95": [
+        -0.04993094631646376,
+        -0.0027249326293997426
+      ],
+      "units_profit": -473.4022165707768,
+      "win_rate": 0.5111767866738313,
+      "wins": 9513
+    },
+    {
+      "bets": 18207,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.01,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8894,
+      "policy": "v4_candidate",
+      "roi": -0.024885459833133023,
+      "roi_ci_95": [
+        -0.04903587562766239,
+        -0.0020777232915211914
+      ],
+      "units_profit": -453.08956718185294,
+      "win_rate": 0.5115065634096776,
+      "wins": 9313
+    },
+    {
+      "bets": 17816,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.02,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8691,
+      "policy": "v4_candidate",
+      "roi": -0.023817351929257758,
+      "roi_ci_95": [
+        -0.0478475594840883,
+        -0.00026033834898790594
+      ],
+      "units_profit": -424.32994197165624,
+      "win_rate": 0.5121800628648406,
+      "wins": 9125
+    },
+    {
+      "bets": 17463,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.03,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8522,
+      "policy": "v4_candidate",
+      "roi": -0.02407930757068515,
+      "roi_ci_95": [
+        -0.048882132363571744,
+        0.00011675234123434816
+      ],
+      "units_profit": -420.49694810687475,
+      "win_rate": 0.5119967932199507,
+      "wins": 8941
+    },
+    {
+      "bets": 17112,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.04,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8341,
+      "policy": "v4_candidate",
+      "roi": -0.022934676573850746,
+      "roi_ci_95": [
+        -0.04823467208598161,
+        0.001484794091722456
+      ],
+      "units_profit": -392.458185531734,
+      "win_rate": 0.5125642823749416,
+      "wins": 8771
+    },
+    {
+      "bets": 16680,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.05,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 8116,
+      "policy": "v4_candidate",
+      "roi": -0.021295635877992367,
+      "roi_ci_95": [
+        -0.045974917020232514,
+        0.0035401273319278213
+      ],
+      "units_profit": -355.21120644491265,
+      "win_rate": 0.5134292565947243,
+      "wins": 8564
+    },
+    {
+      "bets": 15666,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.075,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 7592,
+      "policy": "v4_candidate",
+      "roi": -0.01746812737919452,
+      "roi_ci_95": [
+        -0.042597433599716406,
+        0.008047494170814577
+      ],
+      "units_profit": -273.65568352246135,
+      "win_rate": 0.5153836333460998,
+      "wins": 8074
+    },
+    {
+      "bets": 14729,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.1,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 7147,
+      "policy": "v4_candidate",
+      "roi": -0.018341311947309882,
+      "roi_ci_95": [
+        -0.04494210346468014,
+        0.008090821467752895
+      ],
+      "units_profit": -270.14918367192723,
+      "win_rate": 0.5147667866114468,
+      "wins": 7582
+    },
+    {
+      "bets": 12808,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.15,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 6202,
+      "policy": "v4_candidate",
+      "roi": -0.016044893216357287,
+      "roi_ci_95": [
+        -0.044713210075998676,
+        0.01324470321705968
+      ],
+      "units_profit": -205.50299231510414,
+      "win_rate": 0.5157713928794504,
+      "wins": 6606
+    },
+    {
+      "bets": 10880,
+      "bootstrap_draws": 1000,
+      "bootstrap_method": "deterministic_game_cluster_bootstrap",
+      "edge_threshold": 0.2,
+      "evidence_role": "DESCRIPTIVE_ONLY_NOT_FOR_SELECTION",
+      "independent_games": 271,
+      "losses": 5233,
+      "policy": "v4_candidate",
+      "roi": -0.009494386970785086,
+      "roi_ci_95": [
+        -0.04226536229413716,
+        0.022291364607348315
+      ],
+      "units_profit": -103.29893024214174,
+      "win_rate": 0.5190257352941177,
+      "wins": 5647
+    }
+  ],
+  "thresholds": [
+    0.0,
+    0.01,
+    0.02,
+    0.03,
+    0.04,
+    0.05,
+    0.075,
+    0.1,
+    0.15,
+    0.2
+  ],
+  "weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ]
+}

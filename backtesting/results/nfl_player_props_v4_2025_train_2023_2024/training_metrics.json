@@ -1,0 +1,104 @@
+[
+  {
+    "mae": 68.84853127856823,
+    "market": "passing_yards",
+    "r2": 0.24031668842644904,
+    "rmse": 87.30244877752524,
+    "training_rows": 1104,
+    "walk_forward_rows": 467,
+    "walk_forward_weeks": [
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "mae": 0.8856960209345264,
+    "market": "passing_tds",
+    "r2": 0.13411606703248635,
+    "rmse": 1.119879448873125,
+    "training_rows": 1104,
+    "walk_forward_rows": 467,
+    "walk_forward_weeks": [
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "mae": 2.8868250135919062,
+    "market": "rushing_attempts",
+    "r2": 0.58829751417803,
+    "rmse": 4.125288383369403,
+    "training_rows": 3715,
+    "walk_forward_rows": 1573,
+    "walk_forward_weeks": [
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "mae": 17.435027591300003,
+    "market": "rushing_yards",
+    "r2": 0.4530138951532835,
+    "rmse": 24.411688218315998,
+    "training_rows": 3715,
+    "walk_forward_rows": 1573,
+    "walk_forward_weeks": [
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "mae": 1.3868320336288162,
+    "market": "receptions",
+    "r2": 0.345887518723472,
+    "rmse": 1.8433977750186858,
+    "training_rows": 7465,
+    "walk_forward_rows": 3166,
+    "walk_forward_weeks": [
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      18
+    ]
+  },
+  {
+    "mae": 22.448220571870138,
+    "market": "receiving_yards",
+    "r2": 0.5613236519917457,
+    "rmse": 32.98266826642596,
+    "training_rows": 8400,
+    "walk_forward_rows": 3599,
+    "walk_forward_weeks": [
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      18
+    ]
+  }
+]
