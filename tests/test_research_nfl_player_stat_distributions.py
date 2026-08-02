@@ -65,11 +65,12 @@ def test_feature_builder_does_not_use_current_week_outcome(tmp_path: Path) -> No
     _write_week(tmp_path, 2023, 1, 10.0)
     _write_week(tmp_path, 2023, 2, 20.0)
     _write_week(tmp_path, 2023, 3, 1000.0)
-    samples, _inputs = build_distribution_samples(tmp_path, (2023,), min_history=2)
+    samples, _inputs, identity_audit = build_distribution_samples(tmp_path, (2023,), min_history=2)
     week_three = next(row for row in samples if row["week"] == 3)
     assert week_three["features"]["career_mean"] == pytest.approx(15.0)
     assert week_three["features"]["rolling_mean_5"] == pytest.approx(15.0)
     assert week_three["actual"] == 1000.0
+    assert identity_audit["completed_stat_rows"] == 3
 
 
 def test_configuration_selection_uses_only_supplied_prior_oof_rows() -> None:
@@ -83,6 +84,24 @@ def test_configuration_selection_uses_only_supplied_prior_oof_rows() -> None:
     selected, evidence = _select_configuration("receiving_yards", prior, min_selection_rows=2)
     assert selected == "quantile_direct_rich"
     assert evidence["status"] == "PRIOR_OOF_CRPS_SELECTED"
+
+
+def test_missing_stat_player_id_uses_existing_unique_identity_artifact(tmp_path: Path) -> None:
+    _write_week(tmp_path, 2025, 1, 10.0)
+    _write_week(tmp_path, 2025, 2, 20.0)
+    directory = tmp_path / "nfl" / "2025" / "week_02"
+    stats = json.loads((directory / "player_stats.json").read_text())
+    stats[0].pop("canonical_player_id")
+    (directory / "player_stats.json").write_text(json.dumps(stats), encoding="utf-8")
+    identities = [{
+        "game_id": "game-2025-2", "team": "BUF", "player_name": "Player One",
+        "normalized_player_name": "player one", "canonical_player_id": "player-1",
+    }]
+    (directory / "player_identities.json").write_text(json.dumps(identities), encoding="utf-8")
+    samples, _inputs, audit = build_distribution_samples(tmp_path, (2025,), min_history=1)
+    week_two = next(row for row in samples if row["week"] == 2)
+    assert week_two["canonical_player_id"] == "player-1"
+    assert audit["identity_resolved_stat_rows"] == 1
 
 
 def test_quantiles_are_deterministically_non_crossing() -> None:

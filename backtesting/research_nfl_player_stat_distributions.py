@@ -29,7 +29,8 @@ from .config import SNAPSHOTS_DIR
 from .game_matching import normalize_team
 from .model_registry import DEFAULT_ROOT, git_commit, register_model
 from .nfl_simulation import PLAYER_MARKETS
-from .research_nfl_player_prop_v4 import _distribution, _load_history
+from .player_identity_registry import normalize_player_name
+from .research_nfl_player_prop_v4 import _distribution, _market_values, _usage_value
 
 
 MODEL_ID = "nfl_player_stat_distribution_research_v1"
@@ -255,9 +256,88 @@ def _load_persisted_features(root: Path, seasons: Sequence[int]) -> tuple[dict[t
     return result, inputs
 
 
-def build_distribution_samples(root: Path, seasons: Sequence[int], min_history: int = 2) -> tuple[list[dict[str, Any]], list[Path]]:
+def _load_resolved_history(root: Path, seasons: Sequence[int]) -> tuple[list[dict[str, Any]], list[Path], dict[str, int]]:
+    """Load outcomes and resolve missing IDs through existing identity artifacts."""
+    aggregated: dict[tuple[int, int, str, str], dict[str, Any]] = {}
+    games: dict[str, dict[str, Any]] = {}
+    inputs: list[Path] = []
+    audit = Counter()
+    for season in seasons:
+        for directory in sorted((root / "nfl" / str(season)).glob("week_*")):
+            try:
+                week = int(directory.name.split("_")[-1])
+            except ValueError:
+                continue
+            games_path = directory / "games.json"
+            stats_path = directory / "player_stats.json"
+            identities_path = directory / "player_identities.json"
+            if games_path.exists():
+                inputs.append(games_path)
+                for game in json.loads(games_path.read_text(encoding="utf-8")):
+                    games[str(game.get("game_id"))] = game
+            identity_index: dict[tuple[str, str, str], set[str]] = defaultdict(set)
+            if identities_path.exists():
+                inputs.append(identities_path)
+                for identity in json.loads(identities_path.read_text(encoding="utf-8")):
+                    canonical = str(identity.get("canonical_player_id") or identity.get("player_id") or "").strip()
+                    if not canonical:
+                        continue
+                    key = (str(identity.get("game_id") or ""), normalize_team(identity.get("team")),
+                           normalize_player_name(identity.get("normalized_player_name") or identity.get("player_name")))
+                    identity_index[key].add(canonical)
+            if not stats_path.exists():
+                continue
+            inputs.append(stats_path)
+            for raw in json.loads(stats_path.read_text(encoding="utf-8")):
+                if str(raw.get("record_role") or "").lower() != "completed_game_history":
+                    continue
+                audit["completed_stat_rows"] += 1
+                game_id = str(raw.get("game_id") or "")
+                team = normalize_team(raw.get("team"))
+                player_id = str(raw.get("canonical_player_id") or raw.get("player_id") or "").strip()
+                if not player_id:
+                    name = normalize_player_name(raw.get("player_name") or raw.get("player"))
+                    candidates = identity_index.get((game_id, team, name), set())
+                    if len(candidates) == 1:
+                        player_id = next(iter(candidates))
+                        audit["identity_resolved_stat_rows"] += 1
+                    else:
+                        audit["unresolved_stat_rows"] += 1
+                        continue
+                if not game_id:
+                    audit["unresolved_stat_rows"] += 1
+                    continue
+                values = _market_values(raw)
+                if not values:
+                    audit["rows_without_supported_market"] += 1
+                    continue
+                key = (season, week, game_id, player_id)
+                item = aggregated.setdefault(key, {
+                    "season": season, "week": week, "game_id": game_id,
+                    "player_id": player_id, "player_name": raw.get("player_name") or raw.get("player"),
+                    "team": team, "values": {}, "usage": {},
+                })
+                item["values"].update(values)
+                for market in values:
+                    usage = _usage_value(raw, market)
+                    if usage is not None:
+                        item["usage"][market] = usage
+                audit["resolved_supported_stat_rows"] += 1
+    for item in aggregated.values():
+        game = games.get(item["game_id"], {})
+        home, away, team = normalize_team(game.get("home_team")), normalize_team(game.get("away_team")), item["team"]
+        item["opponent"] = away if team == home else home if team == away else "UNKNOWN"
+        item["home"] = 1.0 if team == home else 0.0 if team == away else None
+        item["kickoff"] = str(game.get("kickoff_time") or game.get("commence_time") or "")
+    rows = sorted(aggregated.values(), key=lambda row: (
+        row["season"], row["week"], row["kickoff"], row["game_id"], row["player_id"],
+    ))
+    return rows, sorted(set(inputs)), dict(sorted(audit.items()))
+
+
+def build_distribution_samples(root: Path, seasons: Sequence[int], min_history: int = 2) -> tuple[list[dict[str, Any]], list[Path], dict[str, int]]:
     """Build one pregame feature row per realized player/game/market outcome."""
-    history, inputs = _load_history(root, tuple(seasons))
+    history, inputs, identity_audit = _load_resolved_history(root, tuple(seasons))
     persisted, persisted_inputs = _load_persisted_features(root, seasons)
     state = DistributionFeatureState()
     samples: list[dict[str, Any]] = []
@@ -292,7 +372,7 @@ def build_distribution_samples(root: Path, seasons: Sequence[int], min_history: 
             by_game[str(row["game_id"])].append(row)
         for game_id in sorted(by_game):
             state.update_game(by_game[game_id])
-    return samples, sorted(set(inputs + persisted_inputs))
+    return samples, sorted(set(inputs + persisted_inputs)), identity_audit
 
 
 def _matrix(rows: Sequence[dict[str, Any]], names: Sequence[str]) -> np.ndarray:
@@ -1117,7 +1197,7 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
                  min_selection_rows: int = 100, seed: int = 1729,
                  probability_threshold: float = .70, register: bool = False,
                  registry_root: Path = DEFAULT_ROOT) -> dict[str, Any]:
-    samples, inputs = build_distribution_samples(snapshot_root, seasons, min_history)
+    samples, inputs, identity_audit = build_distribution_samples(snapshot_root, seasons, min_history)
     projections, folds = nested_walk_forward(
         samples, evaluation_seasons=evaluation_seasons, min_train_rows=min_train_rows,
         min_selection_rows=min_selection_rows, seed=seed,
@@ -1151,6 +1231,7 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
         "network_contacted": False, "training_target": "REALIZED_PLAYER_STAT_OUTPUT",
         "sportsbook_role": "POST_PROJECTION_THRESHOLD_ONLY", "seasons": list(seasons),
         "evaluation_seasons": list(evaluation_seasons), "samples": len(samples),
+        "identity_resolution_audit": identity_audit,
         "outer_fold_projections": len(projections), "threshold_forecasts": len(threshold_rows),
         "qualified_legs": sum(row["decision"] == "QUALIFY" for row in threshold_rows),
         "micro_metrics": _projection_metrics(projections), "macro_weekly_metrics": macro_weekly,
