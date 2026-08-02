@@ -1,0 +1,80 @@
+[
+  {
+    "market": "passing_tds",
+    "roi": -0.1286396269237206,
+    "roi_uncertainty": {
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.2145318895601401,
+        -0.02242638375055396
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.04814856434033997
+    }
+  },
+  {
+    "market": "passing_yards",
+    "roi": -0.03193773032237128,
+    "roi_uncertainty": {
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.07369756555123537,
+        0.010812104569521811
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.02211861137896344
+    }
+  },
+  {
+    "market": "receiving_yards",
+    "roi": -0.050116529400684236,
+    "roi_uncertainty": {
+      "clusters": 22,
+      "confidence_interval_95": [
+        -0.07634195817782059,
+        -0.023982057627434872
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.01338076714086871
+    }
+  },
+  {
+    "market": "receptions",
+    "roi": -0.05745472037077547,
+    "roi_uncertainty": {
+      "clusters": 22,
+      "confidence_interval_95": [
+        -0.086052941404192,
+        -0.028409565917232763
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.014730768214381367
+    }
+  },
+  {
+    "market": "rushing_attempts",
+    "roi": -0.11534112473176861,
+    "roi_uncertainty": {
+      "clusters": 11,
+      "confidence_interval_95": [
+        -0.13776433560413298,
+        -0.08984154090279098
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.012100872684687123
+    }
+  },
+  {
+    "market": "rushing_yards",
+    "roi": -0.05689654613737458,
+    "roi_uncertainty": {
+      "clusters": 11,
+      "confidence_interval_95": [
+        -0.12407872210252605,
+        -0.00501879926517333
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.030461552485554294
+    }
+  }
+]

@@ -1,0 +1,240 @@
+{
+  "clv_ready": false,
+  "complete_weeks": [],
+  "fatal_integrity_weeks": [],
+  "final_exit_nonzero": false,
+  "macro_weekly": {
+    "model_brier": 0.331862221695872,
+    "model_log_loss": 1.4005854841513197,
+    "roi": -0.04502827010308148,
+    "weeks": 11
+  },
+  "micro": {
+    "average_american_odds": -58.06892230576441,
+    "average_edge": 0.0032508336862947062,
+    "average_market_probability": 0.4967491663137053,
+    "average_model_probability": 0.5,
+    "hit_rate_ci_95": [
+      0.48266493469270244,
+      0.5173350653072976
+    ],
+    "hit_rate_excluding_pushes": 0.5,
+    "losses": 1596,
+    "market": {
+      "bins": [
+        {
+          "absolute_calibration_error": 0.021266760899951248,
+          "bucket": "10-20%",
+          "count": 6,
+          "observed_win_rate": 0.16666666666666666,
+          "predicted_probability_mean": 0.1879334275666179
+        },
+        {
+          "absolute_calibration_error": 0.01358726917937314,
+          "bucket": "20-30%",
+          "count": 335,
+          "observed_win_rate": 0.27761194029850744,
+          "predicted_probability_mean": 0.2640246711191343
+        },
+        {
+          "absolute_calibration_error": 0.008097921614024006,
+          "bucket": "30-40%",
+          "count": 423,
+          "observed_win_rate": 0.35933806146572106,
+          "predicted_probability_mean": 0.35124013985169705
+        },
+        {
+          "absolute_calibration_error": 0.008892721761254885,
+          "bucket": "40-50%",
+          "count": 745,
+          "observed_win_rate": 0.45369127516778524,
+          "predicted_probability_mean": 0.4625839969290401
+        },
+        {
+          "absolute_calibration_error": 0.015597669389429636,
+          "bucket": "50-60%",
+          "count": 948,
+          "observed_win_rate": 0.5379746835443038,
+          "predicted_probability_mean": 0.5223770141548741
+        },
+        {
+          "absolute_calibration_error": 0.0030717578302636994,
+          "bucket": "60-70%",
+          "count": 394,
+          "observed_win_rate": 0.6472081218274112,
+          "predicted_probability_mean": 0.6502798796576749
+        },
+        {
+          "absolute_calibration_error": 0.01358726917937314,
+          "bucket": "70-80%",
+          "count": 335,
+          "observed_win_rate": 0.7223880597014926,
+          "predicted_probability_mean": 0.7359753288808657
+        },
+        {
+          "absolute_calibration_error": 0.021266760899951276,
+          "bucket": "80-90%",
+          "count": 6,
+          "observed_win_rate": 0.8333333333333334,
+          "predicted_probability_mean": 0.8120665724333821
+        }
+      ],
+      "brier_score": 0.233769306506976,
+      "count": 3192,
+      "ece": 0.011092115664833853,
+      "log_loss": 0.659896889414307,
+      "pushes_excluded": 0
+    },
+    "model": {
+      "bins": [
+        {
+          "absolute_calibration_error": 0.3266282079646018,
+          "bucket": "0-10%",
+          "count": 452,
+          "observed_win_rate": 0.3606194690265487,
+          "predicted_probability_mean": 0.0339912610619469
+        },
+        {
+          "absolute_calibration_error": 0.18992294520547948,
+          "bucket": "10-20%",
+          "count": 292,
+          "observed_win_rate": 0.339041095890411,
+          "predicted_probability_mean": 0.1491181506849315
+        },
+        {
+          "absolute_calibration_error": 0.14286034482758625,
+          "bucket": "20-30%",
+          "count": 290,
+          "observed_win_rate": 0.3931034482758621,
+          "predicted_probability_mean": 0.2502431034482758
+        },
+        {
+          "absolute_calibration_error": 0.12777964285714288,
+          "bucket": "30-40%",
+          "count": 280,
+          "observed_win_rate": 0.4785714285714286,
+          "predicted_probability_mean": 0.3507917857142857
+        },
+        {
+          "absolute_calibration_error": 0.06631631205673755,
+          "bucket": "40-50%",
+          "count": 282,
+          "observed_win_rate": 0.5106382978723404,
+          "predicted_probability_mean": 0.44432198581560284
+        },
+        {
+          "absolute_calibration_error": 0.0660757142857143,
+          "bucket": "50-60%",
+          "count": 280,
+          "observed_win_rate": 0.48928571428571427,
+          "predicted_probability_mean": 0.5553614285714286
+        },
+        {
+          "absolute_calibration_error": 0.1275826241134751,
+          "bucket": "60-70%",
+          "count": 282,
+          "observed_win_rate": 0.5212765957446809,
+          "predicted_probability_mean": 0.648859219858156
+        },
+        {
+          "absolute_calibration_error": 0.14286034482758614,
+          "bucket": "70-80%",
+          "count": 290,
+          "observed_win_rate": 0.6068965517241379,
+          "predicted_probability_mean": 0.7497568965517241
+        },
+        {
+          "absolute_calibration_error": 0.19091924398625437,
+          "bucket": "80-90%",
+          "count": 291,
+          "observed_win_rate": 0.6597938144329897,
+          "predicted_probability_mean": 0.850713058419244
+        },
+        {
+          "absolute_calibration_error": 0.3256864238410596,
+          "bucket": "90-100%",
+          "count": 453,
+          "observed_win_rate": 0.6401766004415012,
+          "predicted_probability_mean": 0.9658630242825608
+        }
+      ],
+      "brier_score": 0.2840639844799812,
+      "count": 3192,
+      "ece": 0.18734489348370928,
+      "log_loss": 1.1354799942018448,
+      "pushes_excluded": 0
+    },
+    "model_minus_market": {
+      "brier_score": 0.050294677973005214,
+      "ece": 0.17625277781887544,
+      "log_loss": 0.47558310478753774
+    },
+    "opportunities": 3192,
+    "pushes": 0,
+    "roi": -0.05205501571369749,
+    "roi_uncertainty": {
+      "clusters": 22,
+      "confidence_interval_95": [
+        -0.06863922308109473,
+        -0.033142961883934896
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.009054557372290061
+    },
+    "sample_status": "OK",
+    "units_profit": -166.1596101581224,
+    "units_returned": 3025.8403898418774,
+    "units_wagered": 3192,
+    "wins": 1596
+  },
+  "missing_weeks": [],
+  "model_version": "nfl_game_baseline_v3",
+  "network_contacted": false,
+  "partial_weeks": [
+    1,
+    3,
+    4,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "recomputed_weeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "recoverable_audit_findings_by_code": {
+    "NOT_READY_PREDICTION": 51380
+  },
+  "reused_weeks": [],
+  "schema_version": 1,
+  "season": 2024,
+  "week_status_counts": {
+    "PARTIAL": 11,
+    "PREDICTIONS_NOT_READY": 7
+  },
+  "weeks": [
+    1,
+    18
+  ]
+}

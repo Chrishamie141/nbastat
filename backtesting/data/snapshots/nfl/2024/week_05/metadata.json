@@ -14,15 +14,305 @@
       "sha256": "f10af8dba41f87cd522949dfe1207d3231afec326625a8e042ac4f2855090477"
     },
     "player_stats": {
-      "records": 1095,
-      "sha256": "77679af7b5768949a9f011c1037c25726edc0a7d6ffacf557b63692c102f3718"
+      "records": 363,
+      "sha256": "59278632f38307ae44cbc71c4853a110154d7e2769f01039cc3d4a2fb6722585"
     },
     "team_stats": {
       "records": 28,
       "sha256": "566ad8b4dcc6f4b3758a4f38ffac3b2896cc6d908aae98d49317fd6310c6f3cf"
     }
   },
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671815",
+      "evidence": [],
+      "game_id": "espn-401671815",
+      "offensive_players_discovered": 22,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 70,
+      "raw_player_stat_records_inspected": 70,
+      "receiving_rows_emitted": 13,
+      "rejection_reasons": {
+        "unsupported_category": 48
+      },
+      "rows_rejected": 48,
+      "rushing_rows_emitted": 6,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671804",
+      "evidence": [],
+      "game_id": "espn-401671804",
+      "offensive_players_discovered": 22,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 82,
+      "raw_player_stat_records_inspected": 82,
+      "receiving_rows_emitted": 12,
+      "rejection_reasons": {
+        "unsupported_category": 60
+      },
+      "rows_rejected": 60,
+      "rushing_rows_emitted": 7,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671872",
+      "evidence": [],
+      "game_id": "espn-401671872",
+      "offensive_players_discovered": 27,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 83,
+      "raw_player_stat_records_inspected": 83,
+      "receiving_rows_emitted": 15,
+      "rejection_reasons": {
+        "unsupported_category": 56
+      },
+      "rows_rejected": 56,
+      "rushing_rows_emitted": 9,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671626",
+      "evidence": [],
+      "game_id": "espn-401671626",
+      "offensive_players_discovered": 26,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 77,
+      "raw_player_stat_records_inspected": 77,
+      "receiving_rows_emitted": 16,
+      "rejection_reasons": {
+        "unsupported_category": 51
+      },
+      "rows_rejected": 51,
+      "rushing_rows_emitted": 8,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671700",
+      "evidence": [],
+      "game_id": "espn-401671700",
+      "offensive_players_discovered": 27,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 78,
+      "raw_player_stat_records_inspected": 78,
+      "receiving_rows_emitted": 15,
+      "rejection_reasons": {
+        "unsupported_category": 51
+      },
+      "rows_rejected": 51,
+      "rushing_rows_emitted": 10,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671718",
+      "evidence": [],
+      "game_id": "espn-401671718",
+      "offensive_players_discovered": 29,
+      "passing_rows_emitted": 4,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 90,
+      "raw_player_stat_records_inspected": 90,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 61
+      },
+      "rows_rejected": 61,
+      "rushing_rows_emitted": 11,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671633",
+      "evidence": [],
+      "game_id": "espn-401671633",
+      "offensive_players_discovered": 31,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 89,
+      "raw_player_stat_records_inspected": 89,
+      "receiving_rows_emitted": 18,
+      "rejection_reasons": {
+        "unsupported_category": 58
+      },
+      "rows_rejected": 58,
+      "rushing_rows_emitted": 10,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671859",
+      "evidence": [],
+      "game_id": "espn-401671859",
+      "offensive_players_discovered": 25,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 76,
+      "raw_player_stat_records_inspected": 76,
+      "receiving_rows_emitted": 15,
+      "rejection_reasons": {
+        "unsupported_category": 51
+      },
+      "rows_rejected": 51,
+      "rushing_rows_emitted": 8,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671747",
+      "evidence": [],
+      "game_id": "espn-401671747",
+      "offensive_players_discovered": 29,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 79,
+      "raw_player_stat_records_inspected": 79,
+      "receiving_rows_emitted": 17,
+      "rejection_reasons": {
+        "unsupported_category": 50
+      },
+      "rows_rejected": 50,
+      "rushing_rows_emitted": 9,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671756",
+      "evidence": [],
+      "game_id": "espn-401671756",
+      "offensive_players_discovered": 21,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 76,
+      "raw_player_stat_records_inspected": 76,
+      "receiving_rows_emitted": 13,
+      "rejection_reasons": {
+        "unsupported_category": 55
+      },
+      "rows_rejected": 55,
+      "rushing_rows_emitted": 6,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671679",
+      "evidence": [],
+      "game_id": "espn-401671679",
+      "offensive_players_discovered": 25,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 76,
+      "raw_player_stat_records_inspected": 76,
+      "receiving_rows_emitted": 16,
+      "rejection_reasons": {
+        "unsupported_category": 51
+      },
+      "rows_rejected": 51,
+      "rushing_rows_emitted": 7,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671680",
+      "evidence": [],
+      "game_id": "espn-401671680",
+      "offensive_players_discovered": 23,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 82,
+      "raw_player_stat_records_inspected": 82,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 59
+      },
+      "rows_rejected": 59,
+      "rushing_rows_emitted": 7,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671784",
+      "evidence": [
+        {
+          "category": "passing",
+          "player_name": "Dak Prescott",
+          "provider_player_id": "2577417",
+          "stats": {
+            "completions": 29,
+            "interceptions": 2,
+            "passing_attempts": 42,
+            "passing_tds": 2,
+            "passing_yards": 352
+          }
+        },
+        {
+          "category": "rushing",
+          "player_name": "Dak Prescott",
+          "provider_player_id": "2577417",
+          "stats": {
+            "rushing_attempts": 1,
+            "rushing_tds": 0,
+            "rushing_yards": 3
+          }
+        }
+      ],
+      "game_id": "espn-401671784",
+      "offensive_players_discovered": 32,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 85,
+      "raw_player_stat_records_inspected": 85,
+      "receiving_rows_emitted": 19,
+      "rejection_reasons": {
+        "unsupported_category": 53
+      },
+      "rows_rejected": 53,
+      "rushing_rows_emitted": 10,
+      "week": 5
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671687",
+      "evidence": [],
+      "game_id": "espn-401671687",
+      "offensive_players_discovered": 24,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 81,
+      "raw_player_stat_records_inspected": 81,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 57
+      },
+      "rows_rejected": 57,
+      "rushing_rows_emitted": 7,
+      "week": 5
+    }
+  ],
   "estimated_paid_credits": 0,
   "feature_only": true,
   "leakage_policy": "Only completed games strictly before a prediction cutoff are eligible.",

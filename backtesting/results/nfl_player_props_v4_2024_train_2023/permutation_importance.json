@@ -1,0 +1,6482 @@
+[
+  {
+    "feature": "history_games",
+    "importance": -1.7713429639218277,
+    "importance_stddev": 1.6422556361940526,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.1471181763579267,
+    "importance_stddev": 0.3467357599809788,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": -0.027245119176549794,
+    "importance_stddev": 1.0330535146407411,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.870287263810971,
+    "importance_stddev": 0.8616440151310245,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.5072396578798759,
+    "importance_stddev": 1.431533524918254,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.1285749705470863,
+    "importance_stddev": 0.47706157169860447,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.7790662780336532,
+    "importance_stddev": 1.6653682525587055,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 1.547918533870981,
+    "importance_stddev": 0.43929206062049797,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.09702176287785562,
+    "importance_stddev": 0.19404352575571124,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.5959922968249429,
+    "importance_stddev": 2.058295792237784,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": -0.46718044401083886,
+    "importance_stddev": 2.3626307610583672,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.866133552182913,
+    "importance_stddev": 1.7227462536986096,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 1.1604818604300022,
+    "importance_stddev": 0.5546761953945657,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -1.2367421885044707,
+    "importance_stddev": 0.8677644892091213,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.21260972632240396,
+    "importance_stddev": 0.23999606031837734,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "home",
+    "importance": 1.3804243068209643,
+    "importance_stddev": 1.228497266188451,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.8057114939401074,
+    "importance_stddev": 1.281788249103156,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.3987981248513293,
+    "importance_stddev": 0.3056912020025596,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.2613685719021362,
+    "importance_stddev": 1.538515523983095,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.7034607170976855,
+    "importance_stddev": 0.8382142115784699,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 1.1081672715470177,
+    "importance_stddev": 0.5931177549154965,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 1.847632781775286,
+    "importance_stddev": 0.486471934339562,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.007296473961368122,
+    "importance_stddev": 1.7776965340100288,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 1.3298884672125353,
+    "importance_stddev": 0.6340685231120632,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.2648152622438943,
+    "importance_stddev": 0.32434301764931545,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": -0.7368537280915148,
+    "importance_stddev": 1.2768636577043355,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.9488432127468386,
+    "importance_stddev": 1.4601080747215984,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.7877846848354679,
+    "importance_stddev": 1.4691420100963954,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 2.6437974862094107,
+    "importance_stddev": 1.5537213743943652,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.48645165558831704,
+    "importance_stddev": 0.5629880783019625,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.24119327425194825,
+    "importance_stddev": 0.3128270546891554,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "home",
+    "importance": 4.7124838725826095,
+    "importance_stddev": 0.49465506211649135,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.5577172709494349,
+    "importance_stddev": 1.3687484842716262,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.7256617199221296,
+    "importance_stddev": 0.3851542704645221,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": -0.8836930169273728,
+    "importance_stddev": 1.147900991285392,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.48926007186889536,
+    "importance_stddev": 2.050120364206135,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.8994996475976308,
+    "importance_stddev": 0.47651807334969615,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -1.5744211887513828,
+    "importance_stddev": 1.043845240506137,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "last_value",
+    "importance": 1.2936735260669352,
+    "importance_stddev": 2.56463949767725,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.1858979813605842,
+    "importance_stddev": 0.8876833409626583,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.4248739416214491,
+    "importance_stddev": 1.1599880381876992,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.7413555078021645,
+    "importance_stddev": 1.4570077624053368,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 3.0442352889464614,
+    "importance_stddev": 1.9686183250253069,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.7553236127272271,
+    "importance_stddev": 0.4869939060765972,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.5987261968585031,
+    "importance_stddev": 2.5578404090084685,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.7775598480074294,
+    "importance_stddev": 0.7053518964684892,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.008790809669797284,
+    "importance_stddev": 0.23924271266829156,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "home",
+    "importance": -0.2090884626738756,
+    "importance_stddev": 1.0858701045234005,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.48615297749157804,
+    "importance_stddev": 0.4169500801625424,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 2.41236472990622,
+    "importance_stddev": 0.6485536515369847,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.7154337814044623,
+    "importance_stddev": 0.48763902592089015,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 1.944646442388212,
+    "importance_stddev": 1.3487623119003156,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.09993490683256852,
+    "importance_stddev": 0.5967737475413776,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 2.1293898504550057,
+    "importance_stddev": 0.7320895181552337,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "last_value",
+    "importance": 3.9349442613135492,
+    "importance_stddev": 2.107218463484112,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -1.256470712646923,
+    "importance_stddev": 0.7631357276953076,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.025866485786723105,
+    "importance_stddev": 0.38731463626525686,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 8.675488505237327,
+    "importance_stddev": 2.31267733965585,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 3.756209208255129,
+    "importance_stddev": 1.4893841232648348,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.9565601331568615,
+    "importance_stddev": 1.1623947936665926,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.724355277507992,
+    "importance_stddev": 1.6521693257374253,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.38112720522954363,
+    "importance_stddev": 0.3999684800110505,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.10782256927368791,
+    "importance_stddev": 0.26379380880728526,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "home",
+    "importance": 1.8944005643256774,
+    "importance_stddev": 0.6373205810263902,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.2243243178243887,
+    "importance_stddev": 1.0511771941071326,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.09913688121653194,
+    "importance_stddev": 0.5002749826757436,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 1.010770744590775,
+    "importance_stddev": 1.98389473971456,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 2.6581055346110958,
+    "importance_stddev": 3.007228456458109,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.2647385776916735,
+    "importance_stddev": 0.8567188217327563,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 1.4744026106389612,
+    "importance_stddev": 0.8316496717460548,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "last_value",
+    "importance": 4.9103235901667235,
+    "importance_stddev": 3.339447988209678,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.6082859466942466,
+    "importance_stddev": 1.2985649132158383,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.7216335820197429,
+    "importance_stddev": 0.44068568678216424,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 5.395283882656488,
+    "importance_stddev": 3.343976347667572,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 1.2814533443516865,
+    "importance_stddev": 0.7055610256755356,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.6058457509953428,
+    "importance_stddev": 0.7642887713275553,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -3.0392946368837044,
+    "importance_stddev": 1.5423783512806424,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -2.00853509239939,
+    "importance_stddev": 0.8126678788424342,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.006043511432238802,
+    "importance_stddev": 0.08607811625400931,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "home",
+    "importance": 0.7244932334759596,
+    "importance_stddev": 0.4311450020923531,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.16765421101207778,
+    "importance_stddev": 0.28459224618411916,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": -0.08317238624501613,
+    "importance_stddev": 0.35591314766891063,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.3011707258011228,
+    "importance_stddev": 1.2489798538497119,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 1.5012380426224354,
+    "importance_stddev": 1.4020132221056558,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.005446668624909989,
+    "importance_stddev": 0.4042114522029732,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.2476615469787248,
+    "importance_stddev": 0.908418324826305,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "last_value",
+    "importance": -1.9523497100897031,
+    "importance_stddev": 1.9199446541320793,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.18621306943054208,
+    "importance_stddev": 0.9280436812800136,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.119057115652447,
+    "importance_stddev": 0.1902270826964714,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.15006830971887553,
+    "importance_stddev": 2.0506116989586363,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": -0.9368336097313857,
+    "importance_stddev": 0.6926965734067773,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.650535695496879,
+    "importance_stddev": 0.8770684506090132,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 1.46939283774756,
+    "importance_stddev": 1.1143160436320083,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.9468069411977268,
+    "importance_stddev": 0.7158236075868343,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.02379500026379162,
+    "importance_stddev": 0.1465268087261191,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "home",
+    "importance": 0.8473249142585217,
+    "importance_stddev": 1.7901451210959505,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_yards",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.0062034264144973815,
+    "importance_stddev": 0.022935387409812154,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.022217093593605065,
+    "importance_stddev": 0.006950398579072355,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.005902716119641105,
+    "importance_stddev": 0.004957603783466375,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.002633067912467446,
+    "importance_stddev": 0.005253892194182254,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.002418379269601956,
+    "importance_stddev": 0.011617474667294734,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.02151748964998732,
+    "importance_stddev": 0.011052213353524553,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.03420866252141308,
+    "importance_stddev": 0.011482805671007111,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.006554040295171903,
+    "importance_stddev": 0.014673212492939207,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.006971050512548515,
+    "importance_stddev": 0.009874654420812054,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.032406193226611736,
+    "importance_stddev": 0.017102378016565205,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.015694779900949096,
+    "importance_stddev": 0.009747189187649982,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.008671989865968132,
+    "importance_stddev": 0.004523542327431515,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.013619750494715666,
+    "importance_stddev": 0.020485600015918808,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.015318923080448622,
+    "importance_stddev": 0.015660852388899818,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.05803458178699925,
+    "importance_stddev": 0.04557433900710574,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "home",
+    "importance": -0.004267712796857448,
+    "importance_stddev": 0.028153603673347852,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 25,
+    "test_week": 9,
+    "train_rows": 179
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.005152504947066205,
+    "importance_stddev": 0.00725369230434251,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.013210202463994514,
+    "importance_stddev": 0.008172558740544546,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.0037345223290087713,
+    "importance_stddev": 0.003908129526998079,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -8.855069755560052e-05,
+    "importance_stddev": 0.020277875063006906,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.006376732849703104,
+    "importance_stddev": 0.009177873875821824,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.027740864043575342,
+    "importance_stddev": 0.013183890949617257,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.0022115395954585893,
+    "importance_stddev": 0.011847047914496688,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.026748975982868163,
+    "importance_stddev": 0.016524514798134077,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.014803026923490514,
+    "importance_stddev": 0.01392884516780888,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": -0.008868244529945146,
+    "importance_stddev": 0.006856387663415554,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": -0.0006613644002086749,
+    "importance_stddev": 0.011187242939735024,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0046522990146431464,
+    "importance_stddev": 0.01772530696271378,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.018383634175349474,
+    "importance_stddev": 0.010622371826515058,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.013956027643957758,
+    "importance_stddev": 0.018638686317306634,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.018692638964081375,
+    "importance_stddev": 0.029718254415179675,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "home",
+    "importance": 0.003065601322665379,
+    "importance_stddev": 0.033382412857749746,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 28,
+    "test_week": 11,
+    "train_rows": 236
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.004810220828811817,
+    "importance_stddev": 0.007356117976663672,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.012773379194069512,
+    "importance_stddev": 0.0054027624105371045,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.01582762652442804,
+    "importance_stddev": 0.0026337224480442764,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.007874419193754978,
+    "importance_stddev": 0.009568802827887095,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.008820538652309917,
+    "importance_stddev": 0.009007541578495253,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.00759260041465859,
+    "importance_stddev": 0.009488620594468686,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.00947296635792203,
+    "importance_stddev": 0.003982530280886043,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.0024915152075425605,
+    "importance_stddev": 0.01192004558053069,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.08176424146822851,
+    "importance_stddev": 0.01929144210225283,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.01578886125323533,
+    "importance_stddev": 0.004002179687970788,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.00598134103648551,
+    "importance_stddev": 0.021745375912182712,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0012677271219843967,
+    "importance_stddev": 0.006921802886050789,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.012632264173517704,
+    "importance_stddev": 0.005848712722425323,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.014399742037731245,
+    "importance_stddev": 0.008562506813436331,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.014380474132460176,
+    "importance_stddev": 0.01649788723748151,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "home",
+    "importance": -0.02934043543286229,
+    "importance_stddev": 0.019839532959038553,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 30,
+    "test_week": 13,
+    "train_rows": 297
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.004669827651815228,
+    "importance_stddev": 0.0025051252390425865,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.002547098125755953,
+    "importance_stddev": 0.0012557844482544867,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.01790667201187728,
+    "importance_stddev": 0.0025632365560935774,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.007573293927638702,
+    "importance_stddev": 0.0067304306965007546,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.012115424589542956,
+    "importance_stddev": 0.005131781258928048,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.0006942046297343963,
+    "importance_stddev": 0.007404831172213717,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.003991652278387603,
+    "importance_stddev": 0.003407008465016829,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.004167813194068648,
+    "importance_stddev": 0.005840133314861564,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.040697415572816364,
+    "importance_stddev": 0.01193828490188873,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.05098412844109927,
+    "importance_stddev": 0.011277973533157641,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.023610476743653908,
+    "importance_stddev": 0.0068505980127377564,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.002371800714233019,
+    "importance_stddev": 0.00859361242878471,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.013311369005214258,
+    "importance_stddev": 0.006875127429266151,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.02622744403574162,
+    "importance_stddev": 0.008863817892278903,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.0015596730721655794,
+    "importance_stddev": 0.018539994951049552,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "home",
+    "importance": 0.025638920572773817,
+    "importance_stddev": 0.013531988091296491,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 35,
+    "test_week": 15,
+    "train_rows": 357
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.034492959882311915,
+    "importance_stddev": 0.007372202689452861,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.014611279521383391,
+    "importance_stddev": 0.006743656119367145,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.02802129568020304,
+    "importance_stddev": 0.01072091847861323,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.00038028929572677674,
+    "importance_stddev": 0.004550171820003611,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.005893850897876573,
+    "importance_stddev": 0.004508024977615563,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.013625559843733837,
+    "importance_stddev": 0.005313069424592707,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.005438347462952064,
+    "importance_stddev": 0.0033267583517782415,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.011946959297315485,
+    "importance_stddev": 0.009160167976607887,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.06386144974880445,
+    "importance_stddev": 0.028340910912975085,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.041977164471414107,
+    "importance_stddev": 0.0117882725154726,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.018928590632593178,
+    "importance_stddev": 0.005404201745265042,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.0054985852927371456,
+    "importance_stddev": 0.0013524747785174749,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.02153297083410366,
+    "importance_stddev": 0.009684425200202395,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.0011074717800577006,
+    "importance_stddev": 0.014307351643154479,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.012188806089065585,
+    "importance_stddev": 0.010508376612681506,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "home",
+    "importance": 0.026554891979425732,
+    "importance_stddev": 0.012930932705751252,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 37,
+    "test_week": 17,
+    "train_rows": 428
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.0020834985854065514,
+    "importance_stddev": 0.014352804716604356,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": -0.0005215971137680242,
+    "importance_stddev": 0.0028300305011684877,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.036569855935806236,
+    "importance_stddev": 0.013325187976488974,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.004297253601067075,
+    "importance_stddev": 0.006591532154789979,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.012709636939614999,
+    "importance_stddev": 0.015428506158291975,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.011819125885058911,
+    "importance_stddev": 0.0037840950741997092,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.0072131113765775854,
+    "importance_stddev": 0.0049377070999415225,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.012722152630596461,
+    "importance_stddev": 0.007056333494281673,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.04867411347407948,
+    "importance_stddev": 0.02939753399564462,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": -0.007424065415554959,
+    "importance_stddev": 0.004467482164079549,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.006246746927749625,
+    "importance_stddev": 0.008158205376528815,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.005478485967520897,
+    "importance_stddev": 0.00750065645532496,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.008378245603618838,
+    "importance_stddev": 0.009448254837555188,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.004573777377177501,
+    "importance_stddev": 0.010945226591675438,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.006916362694640377,
+    "importance_stddev": 0.005665767069517187,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "home",
+    "importance": -0.006951824080838697,
+    "importance_stddev": 0.004109168942712357,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "passing_tds",
+    "test_rows": 32,
+    "test_week": 18,
+    "train_rows": 465
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.0261956150247304,
+    "importance_stddev": 0.005998959006262333,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.030144427806081796,
+    "importance_stddev": 0.04167382150106412,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.004580450391321644,
+    "importance_stddev": 0.018036822246165853,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.05881543768366422,
+    "importance_stddev": 0.029702199952500438,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.02552661816331625,
+    "importance_stddev": 0.018817180247248013,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.05548638506726622,
+    "importance_stddev": 0.03538295357833506,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.0630260670392376,
+    "importance_stddev": 0.022240027510072594,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.04184159337741296,
+    "importance_stddev": 0.0160380373576588,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.7649977289972206,
+    "importance_stddev": 0.20704121771169556,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.2892160543108049,
+    "importance_stddev": 0.1057852307673561,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0012869078904924613,
+    "importance_stddev": 0.012922602271064006,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.034986142746692026,
+    "importance_stddev": 0.049471432227470524,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.00914145329130216,
+    "importance_stddev": 0.031434166605397426,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.027147720603096826,
+    "importance_stddev": 0.015701392851162618,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "home",
+    "importance": 0.005209135291202749,
+    "importance_stddev": 0.011158886673355652,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.016237489272051864,
+    "importance_stddev": 0.00828545872751243,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.07615596767817738,
+    "importance_stddev": 0.015013000707200878,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.0758402867250946,
+    "importance_stddev": 0.008735530946997055,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.10668652411257282,
+    "importance_stddev": 0.019684109663566502,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.012498843321316233,
+    "importance_stddev": 0.010392905719359006,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.02703173210970311,
+    "importance_stddev": 0.022786323242036503,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.1367470018239934,
+    "importance_stddev": 0.031125755692848273,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.03854630170039286,
+    "importance_stddev": 0.024181497087828224,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.000272534445002659,
+    "importance_stddev": 0.0003337851637949223,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.450773286645417,
+    "importance_stddev": 0.25795767267951475,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.37346548205118113,
+    "importance_stddev": 0.03861904484715253,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0118221651318966,
+    "importance_stddev": 0.01501238597509779,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.039036612481767555,
+    "importance_stddev": 0.02271922490432221,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.015678599407786376,
+    "importance_stddev": 0.010697023158547531,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.0007575588849281445,
+    "importance_stddev": 0.02605889969945536,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "home",
+    "importance": 0.018233653195127885,
+    "importance_stddev": 0.0084117817341214,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.01036766697736482,
+    "importance_stddev": 0.005040735852585433,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.07614625205760853,
+    "importance_stddev": 0.025658140882769177,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.0657136133294995,
+    "importance_stddev": 0.029763134718934693,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.09091220884933363,
+    "importance_stddev": 0.03289267713780598,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.010956589682384088,
+    "importance_stddev": 0.014739061799868731,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.023761473303330848,
+    "importance_stddev": 0.00742414488304135,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.08658418232887186,
+    "importance_stddev": 0.012227918903526775,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.07403693718634363,
+    "importance_stddev": 0.017086853797566425,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.0003361095021737981,
+    "importance_stddev": 0.0006722190043475962,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.450385310240307,
+    "importance_stddev": 0.06943029952336345,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.4810888977602832,
+    "importance_stddev": 0.07150416902862357,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.0019959197035252173,
+    "importance_stddev": 0.016491031735800854,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.04727810712697265,
+    "importance_stddev": 0.03223940478486039,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.04963458556481211,
+    "importance_stddev": 0.007401037133774054,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.024481533693767866,
+    "importance_stddev": 0.02190560539310089,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "home",
+    "importance": 0.006494356037006099,
+    "importance_stddev": 0.003750285777077234,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.0036194233979907507,
+    "importance_stddev": 0.010720529633729851,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.042510630687963055,
+    "importance_stddev": 0.017070635481233946,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.13736942085526999,
+    "importance_stddev": 0.033518541401796706,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.016407548434555254,
+    "importance_stddev": 0.013915810831034336,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.00957809832514247,
+    "importance_stddev": 0.008899269915477338,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.018285319877725838,
+    "importance_stddev": 0.017876344076388558,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.09295738374421916,
+    "importance_stddev": 0.04151452143684202,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.014418631287920026,
+    "importance_stddev": 0.010900925316919791,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.912859284419083,
+    "importance_stddev": 0.1703148846766895,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.3026675882932083,
+    "importance_stddev": 0.04625340010152841,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.014931943707084106,
+    "importance_stddev": 0.013420945427481392,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.10447033058756672,
+    "importance_stddev": 0.033124111570423054,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.010607302695305876,
+    "importance_stddev": 0.017328008012125525,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.00652112719136051,
+    "importance_stddev": 0.011558983305124632,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "home",
+    "importance": -0.0008232897986547805,
+    "importance_stddev": 0.010663926883797201,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.0281054426920714,
+    "importance_stddev": 0.011187562813743333,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.03562463319049147,
+    "importance_stddev": 0.010652642052688413,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.1500740292540061,
+    "importance_stddev": 0.03391428727081568,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.1292482104347159,
+    "importance_stddev": 0.025764534042169003,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.026780925254768384,
+    "importance_stddev": 0.01656430185722078,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.002703714376231847,
+    "importance_stddev": 0.006606984025607884,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.25809136079783607,
+    "importance_stddev": 0.07047604480753544,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.0008693234203916766,
+    "importance_stddev": 0.011011650456686757,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.0017285043704737824,
+    "importance_stddev": 0.0014113179086104749,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.8370939889989272,
+    "importance_stddev": 0.1132677174499525,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.4922709275018239,
+    "importance_stddev": 0.08227821244606337,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.005349123777664122,
+    "importance_stddev": 0.007631616646779156,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.024034080549221314,
+    "importance_stddev": 0.018174801366752303,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.011669314063243253,
+    "importance_stddev": 0.011546935370594152,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.011512074217000822,
+    "importance_stddev": 0.011089698820250031,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "home",
+    "importance": -0.003127735236397111,
+    "importance_stddev": 0.004425689454680001,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.00034057045935771414,
+    "importance_stddev": 0.018433614578613703,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.08021471786582071,
+    "importance_stddev": 0.018875381209543823,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.2931056243924212,
+    "importance_stddev": 0.05386231000242023,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.1063133628030906,
+    "importance_stddev": 0.028094937554145848,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.06254963751498321,
+    "importance_stddev": 0.012227884771999813,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.043151128786109896,
+    "importance_stddev": 0.01772090574502037,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.2668370692440572,
+    "importance_stddev": 0.07123164724725997,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.0023477283056542396,
+    "importance_stddev": 0.01516700353723636,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.9718612022006468,
+    "importance_stddev": 0.14964103038124887,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.4324890319429727,
+    "importance_stddev": 0.06295364318114725,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.022580084288764724,
+    "importance_stddev": 0.008046343836100986,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.014577493604539794,
+    "importance_stddev": 0.06254257697499854,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.003003583440890445,
+    "importance_stddev": 0.02235463945064539,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.012183580289837615,
+    "importance_stddev": 0.014722070211269716,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "home",
+    "importance": 0.004698189141929543,
+    "importance_stddev": 0.0035016816641554966,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_attempts",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.2188997099784075,
+    "importance_stddev": 0.06230071531466965,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.5745868707435523,
+    "importance_stddev": 0.16512513330603504,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.04751259581664265,
+    "importance_stddev": 0.06855208229529769,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.9065659412344995,
+    "importance_stddev": 0.21866054849322392,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.12597403499103627,
+    "importance_stddev": 0.04250051231728582,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.6726267933197189,
+    "importance_stddev": 0.21984252959159634,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.2662950632660678,
+    "importance_stddev": 0.3718271283179673,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.028090895585278018,
+    "importance_stddev": 0.020871979874507392,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.010759178355843701,
+    "importance_stddev": 0.0072181293569988855,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.9803959600499899,
+    "importance_stddev": 0.5680770204968226,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.73646360999352,
+    "importance_stddev": 0.2650015540532558,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.06453445329204435,
+    "importance_stddev": 0.08590323257074617,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.05045479829512765,
+    "importance_stddev": 0.23158194866146972,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.06935403703766099,
+    "importance_stddev": 0.09904514551706582,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.03259320222435278,
+    "importance_stddev": 0.0649997863794927,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "home",
+    "importance": 0.11311197066451761,
+    "importance_stddev": 0.08301056854011998,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 95,
+    "test_week": 9,
+    "train_rows": 571
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.011668343846076113,
+    "importance_stddev": 0.08356244807543871,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.2458486065551014,
+    "importance_stddev": 0.18275996764162974,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.3345389539168863,
+    "importance_stddev": 0.230252319436741,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.7298768552270118,
+    "importance_stddev": 0.42137147107214973,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.1559750710026691,
+    "importance_stddev": 0.09928801721650955,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.029374041835080078,
+    "importance_stddev": 0.29764785516194686,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.305408953032984,
+    "importance_stddev": 0.16372055127942345,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.16003624674321415,
+    "importance_stddev": 0.12600594500118034,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.014239092439073887,
+    "importance_stddev": 0.010059571862878801,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 2.0784646168112646,
+    "importance_stddev": 0.8196414636779094,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": -0.3489585456089891,
+    "importance_stddev": 0.0863994842864047,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.033795133088626986,
+    "importance_stddev": 0.1500552611663654,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.12490753560675998,
+    "importance_stddev": 0.2359875075924725,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.025497310099445513,
+    "importance_stddev": 0.11491420120940733,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.15232650990896915,
+    "importance_stddev": 0.12150794543017009,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "home",
+    "importance": 0.13499724850981848,
+    "importance_stddev": 0.04181605142337923,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 106,
+    "test_week": 11,
+    "train_rows": 767
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.07363378206546436,
+    "importance_stddev": 0.04788707686067428,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.6058292300842727,
+    "importance_stddev": 0.14128360894718006,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.3248820846430192,
+    "importance_stddev": 0.05021439996906642,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 1.360450596129429,
+    "importance_stddev": 0.19765686468806332,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.08601547888627863,
+    "importance_stddev": 0.06939002526953944,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.34611728076872444,
+    "importance_stddev": 0.16302913761762866,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.1785930404075433,
+    "importance_stddev": 0.08583353244855786,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.15181937296455175,
+    "importance_stddev": 0.1559393796844208,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.057342869464748605,
+    "importance_stddev": 0.01584368353470672,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 2.541188441254263,
+    "importance_stddev": 0.37085238334896725,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.7527116381120041,
+    "importance_stddev": 0.10718209175994471,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.04992115060090434,
+    "importance_stddev": 0.08421062753707928,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.017677982123699466,
+    "importance_stddev": 0.21013838639126037,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.021598695919765376,
+    "importance_stddev": 0.05945704723362546,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.07227777804489044,
+    "importance_stddev": 0.059566912350501995,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "home",
+    "importance": -0.012282392847317424,
+    "importance_stddev": 0.028281992882568524,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 96,
+    "test_week": 13,
+    "train_rows": 993
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.01585284636967401,
+    "importance_stddev": 0.11806381937227908,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.6262458139892623,
+    "importance_stddev": 0.19733794815130842,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.24629496089874295,
+    "importance_stddev": 0.12802744778374886,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.9034025889618966,
+    "importance_stddev": 0.24092476285014466,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.06226159264337028,
+    "importance_stddev": 0.06807315997499082,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.09097582900213937,
+    "importance_stddev": 0.14502541784960582,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.41319831002531443,
+    "importance_stddev": 0.07803356041487479,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.00040958626243536855,
+    "importance_stddev": 0.0778744051054439,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.001296028635728419,
+    "importance_stddev": 0.0026389306829219254,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.3319974532407897,
+    "importance_stddev": 0.4271996977377025,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.532059793982004,
+    "importance_stddev": 0.11148915424809759,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.11279339756607314,
+    "importance_stddev": 0.08772248112822457,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.29461662023296853,
+    "importance_stddev": 0.14596747026330273,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.07231252569605288,
+    "importance_stddev": 0.07184933704778823,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.05219091937162261,
+    "importance_stddev": 0.044342480363116374,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "home",
+    "importance": -0.047733443835921464,
+    "importance_stddev": 0.015157362826361343,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 116,
+    "test_week": 15,
+    "train_rows": 1194
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.011693836087680865,
+    "importance_stddev": 0.08581561894980554,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.0914391729314957,
+    "importance_stddev": 0.12368847198110254,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.2894054726087333,
+    "importance_stddev": 0.14612468945402637,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.6904060408913161,
+    "importance_stddev": 0.20850504734315056,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.03417681471777456,
+    "importance_stddev": 0.04845117478517307,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.23531876035268554,
+    "importance_stddev": 0.07057319075323983,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.5429826484704016,
+    "importance_stddev": 0.16640358208797026,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.1892895229053245,
+    "importance_stddev": 0.06881536113330364,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.0036573467695887986,
+    "importance_stddev": 0.02421554526670383,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.4045801700962428,
+    "importance_stddev": 0.24080922145653924,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.08742133888816213,
+    "importance_stddev": 0.12606658435784138,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.14795759966631222,
+    "importance_stddev": 0.05661617474044834,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.33667407872447586,
+    "importance_stddev": 0.21508372932623868,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.09705962810267935,
+    "importance_stddev": 0.0592236963864963,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.03406840641286664,
+    "importance_stddev": 0.06706890292272401,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "home",
+    "importance": -0.050758741965949386,
+    "importance_stddev": 0.027603350449810403,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 123,
+    "test_week": 17,
+    "train_rows": 1433
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.018140821270544193,
+    "importance_stddev": 0.08956037188967397,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.1498163573349096,
+    "importance_stddev": 0.11056342761423153,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.051449820828086246,
+    "importance_stddev": 0.09419660662207215,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.5115837015838934,
+    "importance_stddev": 0.32841547265528614,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.07182940352305067,
+    "importance_stddev": 0.05254284075854374,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.19816970464470246,
+    "importance_stddev": 0.09915700827569467,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.12458743422263723,
+    "importance_stddev": 0.10387987685804675,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.06320410487787527,
+    "importance_stddev": 0.09193291615233264,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.030726015589239354,
+    "importance_stddev": 0.028908756846494396,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.4050633203569256,
+    "importance_stddev": 0.43306446619398437,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.3881164325340144,
+    "importance_stddev": 0.16547100877719748,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.12045565465462715,
+    "importance_stddev": 0.06294418912698817,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.2912432858012629,
+    "importance_stddev": 0.2284646118846779,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.0603020423644665,
+    "importance_stddev": 0.10356046321249646,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.016964780563695568,
+    "importance_stddev": 0.0839215771991519,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "home",
+    "importance": -0.00826028814494748,
+    "importance_stddev": 0.021751204946058245,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "rushing_yards",
+    "test_rows": 112,
+    "test_week": 18,
+    "train_rows": 1556
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.0021001395981170567,
+    "importance_stddev": 0.0035637266912977787,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": -0.01441664921594299,
+    "importance_stddev": 0.006384759818446095,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": -0.002919978663821654,
+    "importance_stddev": 0.011150073161997606,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.008111359001259765,
+    "importance_stddev": 0.008980362561583988,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.0006660941251630081,
+    "importance_stddev": 0.009235126211432418,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.0031856678865322063,
+    "importance_stddev": 0.0034506522360699507,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.007022882950449061,
+    "importance_stddev": 0.0036188255960727597,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.014604019472897089,
+    "importance_stddev": 0.0034331364415836276,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.011741764279618616,
+    "importance_stddev": 0.005324091282050799,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.019754373435070027,
+    "importance_stddev": 0.024598865174828746,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.021983379294108252,
+    "importance_stddev": 0.014680805272709149,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.009208240741351893,
+    "importance_stddev": 0.0036434774516664807,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.006556626963899826,
+    "importance_stddev": 0.004698519691058335,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.008265513166224103,
+    "importance_stddev": 0.006011005555442427,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.013205008782878247,
+    "importance_stddev": 0.005066916735011123,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "home",
+    "importance": -0.0007038495346952889,
+    "importance_stddev": 0.0019332768915595179,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.0017251525311693604,
+    "importance_stddev": 0.004626466017322314,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.025234414549670924,
+    "importance_stddev": 0.009651259249873015,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": -0.0014658412319420665,
+    "importance_stddev": 0.007643227185825715,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.0328350560592499,
+    "importance_stddev": 0.018381967070820102,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.004937103654387531,
+    "importance_stddev": 0.012990582507454822,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.010301214204260134,
+    "importance_stddev": 0.005266580954934914,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.0015562453530121533,
+    "importance_stddev": 0.0008208914811210698,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.01057717002386709,
+    "importance_stddev": 0.009325326024967896,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.008913798122274441,
+    "importance_stddev": 0.003129023976974192,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.00529408170585226,
+    "importance_stddev": 0.006770701300861832,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.08934267591434693,
+    "importance_stddev": 0.031289745250942386,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0004123594641336048,
+    "importance_stddev": 0.003833021920621867,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.0023725047931601128,
+    "importance_stddev": 0.008556453707812215,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.0036912752680540615,
+    "importance_stddev": 0.004263056790211127,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.0058119947864152975,
+    "importance_stddev": 0.008247448060322028,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "home",
+    "importance": 0.0024637093874893433,
+    "importance_stddev": 0.002655174561992389,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.01326081012016278,
+    "importance_stddev": 0.008409210422479127,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.026800618124225295,
+    "importance_stddev": 0.015026628394805439,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.02881596479584996,
+    "importance_stddev": 0.007539322726159899,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.10257846160973157,
+    "importance_stddev": 0.028133636665102213,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.003457676296216361,
+    "importance_stddev": 0.0073078127313844195,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.0032681883347750683,
+    "importance_stddev": 0.004325904962541639,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.016716877775793337,
+    "importance_stddev": 0.008177561201384872,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.00036999372405266406,
+    "importance_stddev": 0.010990507445750633,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.0029647214460261752,
+    "importance_stddev": 0.0012863102944100236,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.03859648014645769,
+    "importance_stddev": 0.011729031252455115,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.08666837298840564,
+    "importance_stddev": 0.019259861179825154,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.009241818441882366,
+    "importance_stddev": 0.002846363382773406,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.004789126512099484,
+    "importance_stddev": 0.0059438596127413205,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.0026596737911459114,
+    "importance_stddev": 0.006650824093961203,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.0010254889080552943,
+    "importance_stddev": 0.005504449975378479,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "home",
+    "importance": 0.0017077947996581243,
+    "importance_stddev": 0.002796890145376153,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.0030442751191231744,
+    "importance_stddev": 0.0040139393496962305,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.0019955500928281467,
+    "importance_stddev": 0.005839528958984995,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.004180266753794948,
+    "importance_stddev": 0.005592620757653302,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.09208571985931169,
+    "importance_stddev": 0.017392387598887556,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.0019023655773063642,
+    "importance_stddev": 0.005971184590559266,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.00392347010734242,
+    "importance_stddev": 0.00255809405436046,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.007003557097233104,
+    "importance_stddev": 0.005230398292128231,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.007077378663780998,
+    "importance_stddev": 0.002908703865027719,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.00138641327918676,
+    "importance_stddev": 0.0026140580004674536,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.0053567452509043715,
+    "importance_stddev": 0.010210702898316881,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.04143993611546137,
+    "importance_stddev": 0.013690711818242305,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0023473802601678972,
+    "importance_stddev": 0.0034633082954620385,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.00256743238537509,
+    "importance_stddev": 0.004083485404310773,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.005351845066813343,
+    "importance_stddev": 0.005244296521607294,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.000866088417038835,
+    "importance_stddev": 0.0039511270897232605,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "home",
+    "importance": 0.004633070638222136,
+    "importance_stddev": 0.0010879140590535747,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.011206816150888744,
+    "importance_stddev": 0.0097386855688565,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": -0.00254524545111372,
+    "importance_stddev": 0.009060140532267258,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.008726180760164848,
+    "importance_stddev": 0.006634635125082928,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.06155813662670475,
+    "importance_stddev": 0.02827980361748418,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.005972083353830149,
+    "importance_stddev": 0.005669424337243069,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.0123050890225334,
+    "importance_stddev": 0.001312876221092792,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.00047617779155118,
+    "importance_stddev": 0.003410746113166624,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.006564319885704694,
+    "importance_stddev": 0.004998696317313045,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.0009707395396118202,
+    "importance_stddev": 0.0018366825093397473,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.0019220424830010074,
+    "importance_stddev": 0.005025501471491074,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.02602364418524661,
+    "importance_stddev": 0.014285739186664904,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0028471438083623292,
+    "importance_stddev": 0.005027240027653008,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": -0.008975731259638709,
+    "importance_stddev": 0.005565886045368577,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.001458762473745523,
+    "importance_stddev": 0.0042752789973091385,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.006889101858051338,
+    "importance_stddev": 0.003937126125555512,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "home",
+    "importance": -0.003124130387711599,
+    "importance_stddev": 0.0022427687132957194,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.006507087227408137,
+    "importance_stddev": 0.00824670528882889,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.014818808364880365,
+    "importance_stddev": 0.006596263302195771,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": -0.007788519390136983,
+    "importance_stddev": 0.008339542867838232,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.03794100711230315,
+    "importance_stddev": 0.015230421339996275,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.011645301531121888,
+    "importance_stddev": 0.006600723289657034,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.0056621760069227815,
+    "importance_stddev": 0.0016116463975778088,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.00605845613791729,
+    "importance_stddev": 0.006029101270933486,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.005164065965503761,
+    "importance_stddev": 0.003851477206762705,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.0016522452548139554,
+    "importance_stddev": 0.002985146325332947,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.02681067654785214,
+    "importance_stddev": 0.010334982654520554,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.028491764168869206,
+    "importance_stddev": 0.014069705446335427,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.0001840128784435624,
+    "importance_stddev": 0.0012171684809939066,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.010277061261295772,
+    "importance_stddev": 0.00388129499351706,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.003678391925036539,
+    "importance_stddev": 0.004860607649981875,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.0006952839264664945,
+    "importance_stddev": 0.0057629688354866706,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "home",
+    "importance": -0.0006453177687322676,
+    "importance_stddev": 0.002136353647458376,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receptions",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.30887852613873007,
+    "importance_stddev": 0.06179483253820617,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.00633733571789179,
+    "importance_stddev": 0.0547144754009435,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.04286081718249477,
+    "importance_stddev": 0.1056258064407742,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.010535263501669334,
+    "importance_stddev": 0.18903414491268936,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.12566945182637995,
+    "importance_stddev": 0.043962527316887566,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.01894123098316669,
+    "importance_stddev": 0.04391225510995879,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.03132163745965357,
+    "importance_stddev": 0.0544655246602271,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.2839305738564931,
+    "importance_stddev": 0.10302945359220744,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.003033326355494381,
+    "importance_stddev": 0.056414835919603654,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.5461976274594698,
+    "importance_stddev": 0.2892320362069383,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.7723771322147798,
+    "importance_stddev": 0.24427113323916808,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.004773299422055288,
+    "importance_stddev": 0.13008766563054167,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.07834288579854984,
+    "importance_stddev": 0.10024467379877618,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.14132514190721465,
+    "importance_stddev": 0.02331763914562348,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.02492906259459886,
+    "importance_stddev": 0.040049601137283536,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "home",
+    "importance": 0.13231716713878824,
+    "importance_stddev": 0.03047082021674239,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 222,
+    "test_week": 9,
+    "train_rows": 1178
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.06478233176048036,
+    "importance_stddev": 0.04545205149451933,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.43582188079396145,
+    "importance_stddev": 0.22441836581074986,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": -0.10298040853536747,
+    "importance_stddev": 0.16240659089255194,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.24004381102663075,
+    "importance_stddev": 0.21515644829551273,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.04687960834851239,
+    "importance_stddev": 0.059487957831969425,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.20247673707871172,
+    "importance_stddev": 0.11957627159805874,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.046480609051448595,
+    "importance_stddev": 0.040795593420487816,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.07910143993294412,
+    "importance_stddev": 0.08431185211947458,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.02250555445103828,
+    "importance_stddev": 0.037834086307259186,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.48883577010583823,
+    "importance_stddev": 0.33473308940290597,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.5311187431778229,
+    "importance_stddev": 0.23717661978802354,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.15474390076124891,
+    "importance_stddev": 0.08511945420930207,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.07927251136011293,
+    "importance_stddev": 0.12791819731286455,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.034984293180440315,
+    "importance_stddev": 0.12246875532133654,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.11132932222257708,
+    "importance_stddev": 0.03157164179941462,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "home",
+    "importance": 0.18369472238921675,
+    "importance_stddev": 0.09783767084139479,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 214,
+    "test_week": 11,
+    "train_rows": 1613
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.08778543760719941,
+    "importance_stddev": 0.062026099376157134,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.6438001361993223,
+    "importance_stddev": 0.12612852901288069,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.32782003920930974,
+    "importance_stddev": 0.08950951779467138,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 1.2297875767623765,
+    "importance_stddev": 0.24470168007959744,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": -0.033467550386027514,
+    "importance_stddev": 0.11336937339346564,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.731270831825956,
+    "importance_stddev": 0.10726701933907862,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.11906234102373361,
+    "importance_stddev": 0.09958132250250401,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.1131879379428419,
+    "importance_stddev": 0.10185461957427176,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.02034994445938878,
+    "importance_stddev": 0.02218908136842418,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.4418215576425433,
+    "importance_stddev": 0.34858888103985863,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 1.7156995763860359,
+    "importance_stddev": 0.38010932153623833,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.09715200661359731,
+    "importance_stddev": 0.05760785559060522,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.04913383109427372,
+    "importance_stddev": 0.10554660450649264,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": -0.15476532765693776,
+    "importance_stddev": 0.1061880822277256,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.01284655169696478,
+    "importance_stddev": 0.008908669386648032,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "home",
+    "importance": 0.01274494663452046,
+    "importance_stddev": 0.053047792330914924,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 196,
+    "test_week": 13,
+    "train_rows": 2074
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.020292685903485364,
+    "importance_stddev": 0.046772008359114416,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.19924759720557644,
+    "importance_stddev": 0.07600382766478804,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.3844421564736301,
+    "importance_stddev": 0.017039314591797698,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.56392244997269,
+    "importance_stddev": 0.04103569934334164,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.191645601714373,
+    "importance_stddev": 0.13807585550417698,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": 0.1721732589140011,
+    "importance_stddev": 0.18006205838030348,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.07066541752404731,
+    "importance_stddev": 0.051141368950419354,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.006598659527460882,
+    "importance_stddev": 0.07463990046467796,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.020119428987432287,
+    "importance_stddev": 0.018815371989974437,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 1.1496474660187523,
+    "importance_stddev": 0.11648060107503412,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.8103414771360526,
+    "importance_stddev": 0.08356675501179622,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.08936234770568988,
+    "importance_stddev": 0.09953310453061581,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.1740152820180029,
+    "importance_stddev": 0.04595422910975604,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.10164003982058319,
+    "importance_stddev": 0.07800462996977414,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.04065712180080823,
+    "importance_stddev": 0.04355740941826197,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "home",
+    "importance": 0.05054210933538528,
+    "importance_stddev": 0.046549552653456644,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 259,
+    "test_week": 15,
+    "train_rows": 2495
+  },
+  {
+    "feature": "history_games",
+    "importance": 0.07410669142157289,
+    "importance_stddev": 0.05137129422204996,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": 0.094050913072207,
+    "importance_stddev": 0.06745531586182513,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.22661987272193257,
+    "importance_stddev": 0.05577115551443099,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": 0.47990847240592627,
+    "importance_stddev": 0.30168427507986867,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.1602755190754742,
+    "importance_stddev": 0.06908387063849737,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.11732509946896741,
+    "importance_stddev": 0.11367138571252738,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "last_value",
+    "importance": 0.022902956383014584,
+    "importance_stddev": 0.10276850399051621,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": 0.03243464674012202,
+    "importance_stddev": 0.04972529508310515,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "zero_rate",
+    "importance": -0.013952762597140378,
+    "importance_stddev": 0.06026215204533842,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.5915979086782535,
+    "importance_stddev": 0.2636499396220337,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.5018585494298435,
+    "importance_stddev": 0.2818858821431012,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": 0.017619236621029443,
+    "importance_stddev": 0.06512912314430153,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.031131252843578493,
+    "importance_stddev": 0.13103123207633638,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.013312912468314408,
+    "importance_stddev": 0.0413315921923824,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": 0.0243315395129045,
+    "importance_stddev": 0.018869124215031837,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "home",
+    "importance": 0.06352656394837766,
+    "importance_stddev": 0.05076558125120404,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 239,
+    "test_week": 17,
+    "train_rows": 3003
+  },
+  {
+    "feature": "history_games",
+    "importance": -0.10761095261965252,
+    "importance_stddev": 0.07639902475050464,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_mean_3",
+    "importance": -0.06946909757439386,
+    "importance_stddev": 0.08561479961779903,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_mean_5",
+    "importance": 0.3374116996421897,
+    "importance_stddev": 0.16110374322988655,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_mean_all",
+    "importance": -0.0663539771157545,
+    "importance_stddev": 0.22157021022012474,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_std_5",
+    "importance": 0.1523711788248967,
+    "importance_stddev": 0.05621356258207855,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "rolling_std_all",
+    "importance": -0.41063556724508105,
+    "importance_stddev": 0.07445879843619116,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "last_value",
+    "importance": -0.10124278818121368,
+    "importance_stddev": 0.05326763817879438,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "recent_form_delta",
+    "importance": -0.038200407706258946,
+    "importance_stddev": 0.06823014860830774,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "zero_rate",
+    "importance": 0.003953071539577024,
+    "importance_stddev": 0.025392818382838783,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "usage_mean_3",
+    "importance": 0.26012257976822684,
+    "importance_stddev": 0.12189018965015024,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "usage_mean_all",
+    "importance": 0.08058014622217372,
+    "importance_stddev": 0.2422910507317802,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "team_market_mean_5",
+    "importance": -0.07659777850973341,
+    "importance_stddev": 0.09429060148546839,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "opponent_allowed_mean_5",
+    "importance": 0.012105941069170711,
+    "importance_stddev": 0.0635450682376939,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "team_plays_mean_5",
+    "importance": 0.005533642739978006,
+    "importance_stddev": 0.0695591715455028,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "qb_strength_mean_5",
+    "importance": -0.08162903915498702,
+    "importance_stddev": 0.02038043641950817,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "home",
+    "importance": 0.02614480613781254,
+    "importance_stddev": 0.049328712469431414,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "season_week",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "game_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "team_spread",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  },
+  {
+    "feature": "implied_team_total",
+    "importance": 0.0,
+    "importance_stddev": 0.0,
+    "market": "receiving_yards",
+    "test_rows": 234,
+    "test_week": 18,
+    "train_rows": 3242
+  }
+]

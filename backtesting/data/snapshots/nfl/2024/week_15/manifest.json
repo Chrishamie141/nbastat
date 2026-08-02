@@ -13,16 +13,1091 @@
       "records": 16,
       "sha256": "7abca00c570f3d8016d2fc7a8a528211b9de65abaa45d949000e100cf01d489f"
     },
+    "player_prop_model_features": {
+      "generation_timestamp": "2024-12-17T01:30:00Z",
+      "model_version": "nfl_game_baseline_v3",
+      "present": true,
+      "records": 14,
+      "row_count": 14,
+      "seed": 1729,
+      "sha256": "285931479c86ed2a199c774025ac492c9c5cd359ca664a2ee22996f39a339dda",
+      "simulations": 10000,
+      "source": "offline-frozen-nfl-simulation",
+      "status": "complete"
+    },
+    "player_prop_predictions": {
+      "generation_timestamp": "2024-12-17T01:30:00Z",
+      "model_version": "nfl_game_baseline_v3",
+      "present": true,
+      "readiness_by_game": {
+        "espn-401671489": {
+          "NOT_READY_NO_PLAYER_DATA": 360
+        },
+        "espn-401671639": {
+          "NOT_READY_NO_PLAYER_DATA": 380
+        },
+        "espn-401671669": {
+          "NOT_READY_NO_PLAYER_DATA": 312
+        },
+        "espn-401671677": {
+          "NOT_READY_NO_PLAYER_DATA": 386
+        },
+        "espn-401671681": {
+          "NOT_READY_NO_PLAYER_DATA": 376
+        },
+        "espn-401671697": {
+          "NOT_READY_NO_PLAYER_DATA": 372
+        },
+        "espn-401671706": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 24,
+          "NOT_READY_NO_PLAYER_DATA": 178,
+          "READY": 122
+        },
+        "espn-401671731": {
+          "NOT_READY_NO_PLAYER_DATA": 320
+        },
+        "espn-401671737": {
+          "NOT_READY_NO_PLAYER_DATA": 338
+        },
+        "espn-401671762": {
+          "NOT_READY_NO_PLAYER_DATA": 432
+        },
+        "espn-401671766": {
+          "NOT_READY_NO_PLAYER_DATA": 364
+        },
+        "espn-401671796": {
+          "NOT_READY_NO_PLAYER_DATA": 426
+        },
+        "espn-401671818": {
+          "NOT_READY_NO_PLAYER_DATA": 362
+        },
+        "espn-401671825": {
+          "NOT_READY_NO_PLAYER_DATA": 384
+        },
+        "espn-401671854": {
+          "NOT_READY_NO_PLAYER_DATA": 402
+        },
+        "espn-401671860": {
+          "NOT_READY_NO_PLAYER_DATA": 404
+        }
+      },
+      "readiness_by_market": {
+        "passing_tds": {
+          "NOT_READY_NO_PLAYER_DATA": 138
+        },
+        "passing_yards": {
+          "NOT_READY_NO_PLAYER_DATA": 774
+        },
+        "receiving_yards": {
+          "NOT_READY_NO_PLAYER_DATA": 2766,
+          "READY": 94
+        },
+        "receptions": {
+          "NOT_READY_NO_PLAYER_DATA": 760,
+          "READY": 28
+        },
+        "rushing_attempts": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "NOT_READY_NO_PLAYER_DATA": 192
+        },
+        "rushing_yards": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 20,
+          "NOT_READY_NO_PLAYER_DATA": 1166
+        }
+      },
+      "readiness_by_player": {
+        "3128390": {
+          "READY": 18
+        },
+        "4239996": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 14,
+          "READY": 10
+        },
+        "4361372": {
+          "READY": 6
+        },
+        "4427366": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 8
+        },
+        "4430539": {
+          "READY": 18
+        },
+        "4432620": {
+          "READY": 22
+        },
+        "4432773": {
+          "READY": 40
+        },
+        "history:espn-401671489:CHI:caleb williams": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671489:CHI:cole kmet": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "history:espn-401671489:CHI:dandre swift": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671489:CHI:dj moore": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671489:CHI:keenan allen": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671489:CHI:rome odunze": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671489:MIN:cam akers": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "history:espn-401671489:MIN:jalen nailor": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671489:MIN:jordan addison": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671489:MIN:justin jefferson": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671489:MIN:sam darnold": {
+          "NOT_READY_NO_PLAYER_DATA": 44
+        },
+        "history:espn-401671489:MIN:tj hockenson": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671639:BAL:derrick henry": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671639:BAL:isaiah likely": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671639:BAL:justice hill": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671639:BAL:lamar jackson": {
+          "NOT_READY_NO_PLAYER_DATA": 52
+        },
+        "history:espn-401671639:BAL:mark andrews": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671639:BAL:rashod bateman": {
+          "NOT_READY_NO_PLAYER_DATA": 26
+        },
+        "history:espn-401671639:BAL:zay flowers": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671639:NYG:daniel bellinger": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671639:NYG:darius slayton": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671639:NYG:malik nabers": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671639:NYG:tommy devito": {
+          "NOT_READY_NO_PLAYER_DATA": 46
+        },
+        "history:espn-401671639:NYG:tyrone tracy jr": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671639:NYG:wandale robinson": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671669:DEN:adam trautman": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671669:DEN:bo nix": {
+          "NOT_READY_NO_PLAYER_DATA": 44
+        },
+        "history:espn-401671669:DEN:courtland sutton": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671669:DEN:devaughn vele": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671669:DEN:jaleel mclaughlin": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671669:DEN:javonte williams": {
+          "NOT_READY_NO_PLAYER_DATA": 16
+        },
+        "history:espn-401671669:DEN:liljordan humphrey": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "history:espn-401671669:DEN:marvin mims jr": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671669:DEN:troy franklin": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "history:espn-401671669:IND:alec pierce": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671669:IND:jonathan taylor": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671669:IND:josh downs": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671669:IND:kylen granson": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "history:espn-401671669:IND:michael pittman jr": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671677:ARI:james conner": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671677:ARI:kyler murray": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671677:ARI:marvin harrison jr": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671677:ARI:michael wilson": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671677:ARI:trey benson": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671677:ARI:trey mcbride": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671677:NE:antonio gibson": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671677:NE:austin hooper": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "history:espn-401671677:NE:demario douglas": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671677:NE:drake maye": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671677:NE:hunter henry": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671677:NE:kayshon boutte": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671677:NE:kendrick bourne": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671677:NE:rhamondre stevenson": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671681:BUF:dalton kincaid": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671681:BUF:dawson knox": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "history:espn-401671681:BUF:josh allen": {
+          "NOT_READY_NO_PLAYER_DATA": 50
+        },
+        "history:espn-401671681:BUF:keon coleman": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671681:BUF:khalil shakir": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671681:DET:amonra st brown": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671681:DET:david montgomery": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671681:DET:jahmyr gibbs": {
+          "NOT_READY_NO_PLAYER_DATA": 46
+        },
+        "history:espn-401671681:DET:jameson williams": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671681:DET:jared goff": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671681:DET:sam laporta": {
+          "NOT_READY_NO_PLAYER_DATA": 26
+        },
+        "history:espn-401671681:DET:tim patrick": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671697:ATL:bijan robinson": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671697:ATL:darnell mooney": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671697:ATL:drake london": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671697:ATL:kirk cousins": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671697:ATL:rayray mccloud iii": {
+          "NOT_READY_NO_PLAYER_DATA": 26
+        },
+        "history:espn-401671697:ATL:tyler allgeier": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "history:espn-401671697:LV:alexander mattison": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "history:espn-401671697:LV:brock bowers": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671697:LV:desmond ridder": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671697:LV:jakobi meyers": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671697:LV:michael mayer": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671697:LV:sincere mccormick": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671697:LV:tre tucker": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671706:JAX:devin duvernay": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "history:espn-401671706:JAX:mac jones": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671706:JAX:tank bigsby": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671706:NYJ:aaron rodgers": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671706:NYJ:braelon allen": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "history:espn-401671706:NYJ:davante adams": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671706:NYJ:garrett wilson": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671731:CAR:adam thielen": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671731:CAR:bryce young": {
+          "NOT_READY_NO_PLAYER_DATA": 44
+        },
+        "history:espn-401671731:CAR:chuba hubbard": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671731:CAR:david moore": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "history:espn-401671731:CAR:tommy tremble": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671731:CAR:xavier legette": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671731:DAL:brandin cooks": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "history:espn-401671731:DAL:ceedee lamb": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671731:DAL:cooper rush": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671731:DAL:jake ferguson": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671731:DAL:jalen tolbert": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671731:DAL:kavontae turpin": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671731:DAL:luke schoonmaker": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671731:DAL:rico dowdle": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671737:NO:alvin kamara": {
+          "NOT_READY_NO_PLAYER_DATA": 46
+        },
+        "history:espn-401671737:NO:dante pettis": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671737:NO:foster moreau": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "history:espn-401671737:NO:jake haener": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671737:NO:juwan johnson": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671737:NO:kendre miller": {
+          "NOT_READY_NO_PLAYER_DATA": 16
+        },
+        "history:espn-401671737:NO:marquez valdesscantling": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671737:WAS:brian robinson jr": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671737:WAS:dyami brown": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671737:WAS:jayden daniels": {
+          "NOT_READY_NO_PLAYER_DATA": 54
+        },
+        "history:espn-401671737:WAS:jeremy mcnichols": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "history:espn-401671737:WAS:luke mccaffrey": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671737:WAS:olamide zaccheaus": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671737:WAS:terry mclaurin": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671762:LAC:gus edwards": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671762:LAC:joshua palmer": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671762:LAC:justin herbert": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671762:LAC:kimani vidal": {
+          "NOT_READY_NO_PLAYER_DATA": 16
+        },
+        "history:espn-401671762:LAC:ladd mcconkey": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671762:LAC:quentin johnston": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671762:LAC:stone smartt": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671762:TB:baker mayfield": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671762:TB:bucky irving": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671762:TB:cade otton": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671762:TB:jalen mcmillan": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671762:TB:mike evans": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671762:TB:rachaad white": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671762:TB:sterling shepard": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671766:PHI:aj brown": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671766:PHI:devonta smith": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671766:PHI:grant calcaterra": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671766:PHI:jahan dotson": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "history:espn-401671766:PHI:jalen hurts": {
+          "NOT_READY_NO_PLAYER_DATA": 50
+        },
+        "history:espn-401671766:PHI:saquon barkley": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671766:PIT:calvin austin iii": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "history:espn-401671766:PIT:jaylen warren": {
+          "NOT_READY_NO_PLAYER_DATA": 26
+        },
+        "history:espn-401671766:PIT:mike williams": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671766:PIT:najee harris": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671766:PIT:pat freiermuth": {
+          "NOT_READY_NO_PLAYER_DATA": 26
+        },
+        "history:espn-401671766:PIT:russell wilson": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671766:PIT:van jefferson": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671796:GB:christian watson": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671796:GB:dontayvion wicks": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671796:GB:jayden reed": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671796:GB:jordan love": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671796:GB:josh jacobs": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671796:GB:romeo doubs": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671796:GB:tucker kraft": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671796:SEA:dk metcalf": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671796:SEA:geno smith": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671796:SEA:jaxon smithnjigba": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671796:SEA:noah fant": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "history:espn-401671796:SEA:tyler lockett": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "history:espn-401671796:SEA:zach charbonnet": {
+          "NOT_READY_NO_PLAYER_DATA": 52
+        },
+        "history:espn-401671818:LAR:blake corum": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "history:espn-401671818:LAR:colby parkinson": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671818:LAR:cooper kupp": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671818:LAR:demarcus robinson": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671818:LAR:kyren williams": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671818:LAR:matthew stafford": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671818:LAR:puka nacua": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671818:LAR:tutu atwell": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "history:espn-401671818:SF:brock purdy": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671818:SF:deebo samuel": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671818:SF:george kittle": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671818:SF:isaac guerendo": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671818:SF:jauan jennings": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671818:SF:ricky pearsall": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "history:espn-401671825:CIN:andrei iosivas": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671825:CIN:chase brown": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671825:CIN:drew sample": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671825:CIN:jamarr chase": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671825:CIN:joe burrow": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671825:CIN:mike gesicki": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671825:CIN:tanner hudson": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "history:espn-401671825:CIN:tee higgins": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671825:TEN:calvin ridley": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671825:TEN:nick westbrookikhine": {
+          "NOT_READY_NO_PLAYER_DATA": 26
+        },
+        "history:espn-401671825:TEN:tony pollard": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671825:TEN:tyjae spears": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671825:TEN:tyler boyd": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671825:TEN:will levis": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671854:CLE:elijah moore": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671854:CLE:jameis winston": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        },
+        "history:espn-401671854:CLE:jerome ford": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671854:CLE:jerry jeudy": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671854:CLE:jordan akins": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "history:espn-401671854:CLE:michael woods ii": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "history:espn-401671854:CLE:nick chubb": {
+          "NOT_READY_NO_PLAYER_DATA": 24
+        },
+        "history:espn-401671854:KC:deandre hopkins": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671854:KC:isiah pacheco": {
+          "NOT_READY_NO_PLAYER_DATA": 36
+        },
+        "history:espn-401671854:KC:juju smithschuster": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671854:KC:justin watson": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671854:KC:kareem hunt": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "history:espn-401671854:KC:noah gray": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "history:espn-401671854:KC:patrick mahomes": {
+          "NOT_READY_NO_PLAYER_DATA": 44
+        },
+        "history:espn-401671854:KC:samaje perine": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "history:espn-401671854:KC:travis kelce": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671854:KC:xavier worthy": {
+          "NOT_READY_NO_PLAYER_DATA": 30
+        },
+        "history:espn-401671860:HOU:cj stroud": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671860:HOU:dalton schultz": {
+          "NOT_READY_NO_PLAYER_DATA": 28
+        },
+        "history:espn-401671860:HOU:joe mixon": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671860:HOU:john metchie iii": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "history:espn-401671860:HOU:nico collins": {
+          "NOT_READY_NO_PLAYER_DATA": 40
+        },
+        "history:espn-401671860:HOU:tank dell": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671860:MIA:devon achane": {
+          "NOT_READY_NO_PLAYER_DATA": 48
+        },
+        "history:espn-401671860:MIA:jaylen waddle": {
+          "NOT_READY_NO_PLAYER_DATA": 34
+        },
+        "history:espn-401671860:MIA:jonnu smith": {
+          "NOT_READY_NO_PLAYER_DATA": 32
+        },
+        "history:espn-401671860:MIA:malik washington": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "history:espn-401671860:MIA:raheem mostert": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "history:espn-401671860:MIA:tua tagovailoa": {
+          "NOT_READY_NO_PLAYER_DATA": 38
+        },
+        "history:espn-401671860:MIA:tyreek hill": {
+          "NOT_READY_NO_PLAYER_DATA": 42
+        }
+      },
+      "readiness_by_week": {
+        "15": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 24,
+          "NOT_READY_NO_PLAYER_DATA": 5796,
+          "READY": 122
+        }
+      },
+      "readiness_counts": {
+        "NOT_READY_INSUFFICIENT_HISTORY": 24,
+        "NOT_READY_NO_PLAYER_DATA": 5796,
+        "READY": 122
+      },
+      "records": 5942,
+      "row_count": 5942,
+      "seed": 1729,
+      "sha256": "aacc2ffbdb4bc1be2c71581c43b47750fd95891d2bad0b9b041af91f04d6d3a9",
+      "simulations": 10000,
+      "source": "offline-frozen-nfl-simulation",
+      "status": "complete"
+    },
     "player_stats": {
-      "records": 1276,
-      "sha256": "8d74372938ebdb6e2bb64ebc91daa6031f7723e55bb4f0b51c9f9a45285b3124"
+      "records": 423,
+      "sha256": "b5103216efd0fa2cccd80a690b490fa11aaad98003f04f2c879e7cc9ae03c4ca"
     },
     "team_stats": {
       "records": 32,
       "sha256": "773df2565ed3ebc9d12c71a83b761cb7bfc2446e9e32b7887d7424ac5d0d5eb7"
     }
   },
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671818",
+      "evidence": [],
+      "game_id": "espn-401671818",
+      "offensive_players_discovered": 22,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 75,
+      "raw_player_stat_records_inspected": 75,
+      "receiving_rows_emitted": 13,
+      "rejection_reasons": {
+        "unsupported_category": 53
+      },
+      "rows_rejected": 53,
+      "rushing_rows_emitted": 7,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671854",
+      "evidence": [],
+      "game_id": "espn-401671854",
+      "offensive_players_discovered": 31,
+      "passing_rows_emitted": 4,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 89,
+      "raw_player_stat_records_inspected": 89,
+      "receiving_rows_emitted": 17,
+      "rejection_reasons": {
+        "unsupported_category": 58
+      },
+      "rows_rejected": 58,
+      "rushing_rows_emitted": 10,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671825",
+      "evidence": [],
+      "game_id": "espn-401671825",
+      "offensive_players_discovered": 28,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 91,
+      "raw_player_stat_records_inspected": 91,
+      "receiving_rows_emitted": 18,
+      "rejection_reasons": {
+        "unsupported_category": 63
+      },
+      "rows_rejected": 63,
+      "rushing_rows_emitted": 7,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671737",
+      "evidence": [],
+      "game_id": "espn-401671737",
+      "offensive_players_discovered": 29,
+      "passing_rows_emitted": 4,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 86,
+      "raw_player_stat_records_inspected": 86,
+      "receiving_rows_emitted": 17,
+      "rejection_reasons": {
+        "unsupported_category": 57
+      },
+      "rows_rejected": 57,
+      "rushing_rows_emitted": 8,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671639",
+      "evidence": [],
+      "game_id": "espn-401671639",
+      "offensive_players_discovered": 27,
+      "passing_rows_emitted": 4,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 79,
+      "raw_player_stat_records_inspected": 79,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 52
+      },
+      "rows_rejected": 52,
+      "rushing_rows_emitted": 9,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671731",
+      "evidence": [],
+      "game_id": "espn-401671731",
+      "offensive_players_discovered": 25,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 85,
+      "raw_player_stat_records_inspected": 85,
+      "receiving_rows_emitted": 15,
+      "rejection_reasons": {
+        "unsupported_category": 60
+      },
+      "rows_rejected": 60,
+      "rushing_rows_emitted": 8,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671706",
+      "evidence": [],
+      "game_id": "espn-401671706",
+      "offensive_players_discovered": 23,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 73,
+      "raw_player_stat_records_inspected": 73,
+      "receiving_rows_emitted": 13,
+      "rejection_reasons": {
+        "unsupported_category": 50
+      },
+      "rows_rejected": 50,
+      "rushing_rows_emitted": 8,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671860",
+      "evidence": [],
+      "game_id": "espn-401671860",
+      "offensive_players_discovered": 25,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 83,
+      "raw_player_stat_records_inspected": 83,
+      "receiving_rows_emitted": 16,
+      "rejection_reasons": {
+        "unsupported_category": 58
+      },
+      "rows_rejected": 58,
+      "rushing_rows_emitted": 7,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671669",
+      "evidence": [],
+      "game_id": "espn-401671669",
+      "offensive_players_discovered": 33,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 84,
+      "raw_player_stat_records_inspected": 84,
+      "receiving_rows_emitted": 21,
+      "rejection_reasons": {
+        "unsupported_category": 51
+      },
+      "rows_rejected": 51,
+      "rushing_rows_emitted": 10,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671681",
+      "evidence": [],
+      "game_id": "espn-401671681",
+      "offensive_players_discovered": 26,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 74,
+      "raw_player_stat_records_inspected": 74,
+      "receiving_rows_emitted": 17,
+      "rejection_reasons": {
+        "unsupported_category": 48
+      },
+      "rows_rejected": 48,
+      "rushing_rows_emitted": 7,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671766",
+      "evidence": [],
+      "game_id": "espn-401671766",
+      "offensive_players_discovered": 27,
+      "passing_rows_emitted": 2,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 79,
+      "raw_player_stat_records_inspected": 79,
+      "receiving_rows_emitted": 16,
+      "rejection_reasons": {
+        "unsupported_category": 52
+      },
+      "rows_rejected": 52,
+      "rushing_rows_emitted": 9,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671677",
+      "evidence": [],
+      "game_id": "espn-401671677",
+      "offensive_players_discovered": 29,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 86,
+      "raw_player_stat_records_inspected": 86,
+      "receiving_rows_emitted": 17,
+      "rejection_reasons": {
+        "unsupported_category": 57
+      },
+      "rows_rejected": 57,
+      "rushing_rows_emitted": 9,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671762",
+      "evidence": [],
+      "game_id": "espn-401671762",
+      "offensive_players_discovered": 23,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 79,
+      "raw_player_stat_records_inspected": 79,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 56
+      },
+      "rows_rejected": 56,
+      "rushing_rows_emitted": 6,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671796",
+      "evidence": [],
+      "game_id": "espn-401671796",
+      "offensive_players_discovered": 27,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 85,
+      "raw_player_stat_records_inspected": 85,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 58
+      },
+      "rows_rejected": 58,
+      "rushing_rows_emitted": 10,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671489",
+      "evidence": [],
+      "game_id": "espn-401671489",
+      "offensive_players_discovered": 24,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 81,
+      "raw_player_stat_records_inspected": 81,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 57
+      },
+      "rows_rejected": 57,
+      "rushing_rows_emitted": 7,
+      "week": 15
+    },
+    {
+      "classification": "ESPN_PLAYER_STATS_EXTRACTION",
+      "emitted_ids_match_raw_athlete_ids": true,
+      "event_id": "401671697",
+      "evidence": [],
+      "game_id": "espn-401671697",
+      "offensive_players_discovered": 24,
+      "passing_rows_emitted": 3,
+      "provider_ids_missing": 0,
+      "provider_ids_present": 79,
+      "raw_player_stat_records_inspected": 79,
+      "receiving_rows_emitted": 14,
+      "rejection_reasons": {
+        "unsupported_category": 55
+      },
+      "rows_rejected": 55,
+      "rushing_rows_emitted": 7,
+      "week": 15
+    }
+  ],
   "estimated_paid_credits": 0,
   "feature_only": true,
   "leakage_policy": "Only completed games strictly before a prediction cutoff are eligible.",
@@ -31,5 +1106,33 @@
   "provider": "espn",
   "schema_version": 1,
   "season": 2024,
+  "source_lineage": {
+    "player_prop_model_features": {
+      "inputs": [
+        "games",
+        "team_stats",
+        "player_stats",
+        "player_prop_predictions"
+      ],
+      "network_contacted": false,
+      "provider": "offline",
+      "records": 14
+    },
+    "player_prop_predictions": {
+      "inputs": [
+        "games",
+        "team_stats",
+        "player_stats",
+        "player_prop_odds"
+      ],
+      "network_contacted": false,
+      "provider": "offline",
+      "records": 5942
+    }
+  },
+  "source_versions": {
+    "player_prop_model_features": "nfl_game_baseline_v3",
+    "player_prop_predictions": "nfl_game_baseline_v3"
+  },
   "week": 15
 }

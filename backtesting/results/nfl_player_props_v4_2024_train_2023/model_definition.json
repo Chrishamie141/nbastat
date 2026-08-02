@@ -1,0 +1,60 @@
+{
+  "calibration": {
+    "method": "per_market_isotonic_beta_or_platt",
+    "status": "evidence_gated"
+  },
+  "description": "Leakage-safe per-market ensemble mean and learned residual-variance research candidate.",
+  "distribution": {
+    "backends": {
+      "passing_tds": "negative_binomial",
+      "passing_yards": "student_t",
+      "receiving_yards": "student_t",
+      "receptions": "poisson",
+      "rushing_attempts": "negative_binomial",
+      "rushing_yards": "student_t"
+    },
+    "family": "market_specific_walk_forward_selection"
+  },
+  "ensemble": {
+    "combiner": "equal_weight_mean",
+    "members": [
+      "elastic_net",
+      "random_forest",
+      "hist_gradient_boosting"
+    ]
+  },
+  "feature_set": {
+    "features": [
+      "history_games",
+      "rolling_mean_3",
+      "rolling_mean_5",
+      "rolling_mean_all",
+      "rolling_std_5",
+      "rolling_std_all",
+      "last_value",
+      "recent_form_delta",
+      "zero_rate",
+      "usage_mean_3",
+      "usage_mean_all",
+      "team_market_mean_5",
+      "opponent_allowed_mean_5",
+      "team_plays_mean_5",
+      "qb_strength_mean_5",
+      "home",
+      "season_week",
+      "game_total",
+      "team_spread",
+      "implied_team_total"
+    ],
+    "version": "nfl-prop-v4-features-1"
+  },
+  "git_commit": "ff565cfb202315ed802087aa9cd457b5fd9aaed7",
+  "model_id": "nfl_prop_v4_research_v1",
+  "schema_version": 1,
+  "sport": "nfl",
+  "state": "experimental",
+  "target": "player_props",
+  "variance": {
+    "method": "random_forest_oof_squared_residual"
+  }
+}

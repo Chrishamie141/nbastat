@@ -230,6 +230,9 @@ def evaluate_policies(rows: list[dict[str, Any]], *, decision_threshold: float =
                       min_train_rows: int = 100, seed: int = 1729,
                       draws: int = 1000) -> dict[str, Any]:
     settled = [row for row in rows if row.get("grade") in {"WIN", "LOSS"}]
+    evaluation_seasons = sorted({int(row["season"]) for row in settled
+                                 if row.get("season") is not None})
+    season_label = ", ".join(str(season) for season in evaluation_seasons) or "the supplied history"
     enriched, folds = add_walk_forward_residual_probabilities(
         settled, min_train_rows=min_train_rows, seed=seed)
     groups: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
@@ -296,7 +299,8 @@ def evaluate_policies(rows: list[dict[str, Any]], *, decision_threshold: float =
             "promotion_eligible_on_roi": bool(improvement["ci_95"] and improvement["ci_95"][0] > 0
                                                 and absolute and absolute[0] > 0),
         }
-    return {"schema_version": 1, "evaluation_role": "2025_VALIDATION_ONLY",
+    return {"schema_version": 1, "evaluation_role": "HISTORICAL_VALIDATION_ONLY",
+            "evaluation_seasons": evaluation_seasons,
             "selection_allowed": False, "one_side_per_base_contract": True,
             "base_key_fields": ["season", "week", "game_id", "canonical_player_id", "market", "line"],
             "base_opportunities": total_bases, "side_rows": len(enriched),
@@ -309,7 +313,7 @@ def evaluate_policies(rows: list[dict[str, Any]], *, decision_threshold: float =
             "guardrails": [
                 "Every policy selects at most one side per base opportunity.",
                 "The residual model trains only on earlier weeks and uses market probability as its fallback.",
-                "2025 has already been observed and is validation-only; no discovered threshold is promotion evidence.",
+                f"{season_label} has already been observed and is validation-only; no discovered threshold is promotion evidence.",
                 "Promotion requires an untouched forward shadow window whose ROI lower confidence bound exceeds zero.",
             ]}
 

@@ -23,6 +23,9 @@ def test_every_policy_selects_at_most_one_side_and_controls_are_present():
     assert report["base_opportunities"] == 3
     assert report["side_rows"] == 6
     assert report["one_side_per_base_contract"] is True
+    assert report["evaluation_role"] == "HISTORICAL_VALIDATION_ONLY"
+    assert report["evaluation_seasons"] == [2025]
+    assert any("2025 has already been observed" in value for value in report["guardrails"])
     assert report["controls"]["always_over"]["bets"] == 3
     assert report["controls"]["always_under"]["bets"] == 3
     assert report["controls"]["no_bet"]["bets"] == 0
