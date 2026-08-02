@@ -24,6 +24,20 @@ PLAYER_PROP_RETRY_BACKOFF_SECONDS = float(os.getenv("PLAYER_PROP_RETRY_BACKOFF_S
 PLAYER_PROP_CREDITS_PER_REQUEST = 60
 
 
+def validate_paid_authorization(plan: dict[str, Any], *, allow_paid: bool,
+                                max_paid_requests: int | None) -> None:
+    """Require an explicit ceiling for every authorized purchase."""
+    required=int(plan.get("paid_requests_required",0))
+    if not allow_paid: return
+    if max_paid_requests is None:
+        raise PaidBudgetExceeded("--max-paid-requests is required with --allow-paid-fetch")
+    if max_paid_requests < 0:
+        raise PaidBudgetExceeded("--max-paid-requests must be nonnegative")
+    if required > max_paid_requests:
+        raise PaidBudgetExceeded(
+            f"planned paid requests={required} exceed authorized maximum={max_paid_requests}")
+
+
 def _load(path: Path, default: Any) -> Any:
     try: return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError): return default
@@ -265,15 +279,15 @@ def execute(plan: dict[str, Any], root: Path, cache_root: Path, *, season: int,
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__); p.add_argument("--season",type=int,required=True); p.add_argument("--start-week",type=int,required=True); p.add_argument("--end-week",type=int,required=True)
-    p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--cache-root",type=Path); p.add_argument("--plan",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--rebuild-from-cache",action="store_true",help="require validated cache hits and prohibit every network request"); p.add_argument("--validate",action="store_true"); p.add_argument("--allow-paid-fetch",action="store_true"); p.add_argument("--fail-fast",action="store_true")
+    p.add_argument("--snapshot-root",type=Path,default=SNAPSHOTS_DIR); p.add_argument("--cache-root",type=Path); p.add_argument("--plan",action="store_true"); p.add_argument("--resume",action="store_true"); p.add_argument("--rebuild-from-cache",action="store_true",help="require validated cache hits and prohibit every network request"); p.add_argument("--validate",action="store_true"); p.add_argument("--allow-paid-fetch",action="store_true"); p.add_argument("--max-paid-requests",type=int,help="hard operator-reviewed ceiling; required with --allow-paid-fetch"); p.add_argument("--fail-fast",action="store_true")
     a=p.parse_args(argv)
     if a.end_week<a.start_week: p.error("end-week must be >= start-week")
     if a.rebuild_from_cache and a.allow_paid_fetch: p.error("--rebuild-from-cache cannot be combined with --allow-paid-fetch")
-    if a.allow_paid_fetch and (a.start_week!=1 or a.end_week!=1): p.error("first paid pilot is restricted to Week 1")
     cache_root=a.cache_root or a.snapshot_root.parent/"raw_cache"; games=load_registry(a.snapshot_root,a.season,a.start_week,a.end_week)
     plan=plan_acquisition(games,cache_root,season=a.season); print(json.dumps(plan,indent=2,sort_keys=True))
     if a.plan: return 0
     try:
+        validate_paid_authorization(plan,allow_paid=a.allow_paid_fetch,max_paid_requests=a.max_paid_requests)
         result=execute(plan,a.snapshot_root,cache_root,season=a.season,allow_paid=a.allow_paid_fetch,resume=a.resume,validate=a.validate,fail_fast=a.fail_fast)
     except (ProviderUnavailable, PaidBudgetExceeded) as error:
         print(json.dumps({"status":"FATAL_CONFIGURATION","message":str(error),"resume_safe":True},sort_keys=True)); return 3

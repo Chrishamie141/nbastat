@@ -476,7 +476,9 @@ def availability(quotes: Iterable[dict[str, Any]], *, requested_weeks: Iterable[
         status="READY" if weeks and covered >= weeks else "PARTIAL" if covered else "NOT_READY"
         result[market]={"FEATURE_HISTORY_READY":"READY", "OUTCOME_GRADING_READY":"READY",
                         "HISTORICAL_LINE_READY":status, "HISTORICAL_PRICE_READY":status,
-                        "weeks":sorted(covered), "bookmakers":sorted({q["bookmaker"] for q in found})}
+                        "weeks":sorted(covered),
+                        "bookmakers":sorted({str(q.get("bookmaker")) for q in found
+                                              if q.get("bookmaker") not in (None, "")})}
     result["HISTORICAL_SGP_BOOK_PRICE_READY"]="NOT_READY"
     return result
 

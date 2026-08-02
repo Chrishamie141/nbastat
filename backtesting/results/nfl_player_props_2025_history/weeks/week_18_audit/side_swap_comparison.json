@@ -1,0 +1,242 @@
+{
+  "brier_improvement_from_swap": -0.11684116774193543,
+  "current": {
+    "bins": [
+      {
+        "absolute_calibration_error": 0.38368239572192514,
+        "bucket": "0-10%",
+        "count": 374,
+        "observed_win_rate": 0.4037433155080214,
+        "predicted_probability_mean": 0.020060919786096258
+      },
+      {
+        "absolute_calibration_error": 0.3160494623655914,
+        "bucket": "10-20%",
+        "count": 93,
+        "observed_win_rate": 0.46236559139784944,
+        "predicted_probability_mean": 0.14631612903225807
+      },
+      {
+        "absolute_calibration_error": 0.2274262295081967,
+        "bucket": "20-30%",
+        "count": 61,
+        "observed_win_rate": 0.47540983606557374,
+        "predicted_probability_mean": 0.24798360655737706
+      },
+      {
+        "absolute_calibration_error": 0.2981270833333333,
+        "bucket": "30-40%",
+        "count": 48,
+        "observed_win_rate": 0.6458333333333334,
+        "predicted_probability_mean": 0.34770625000000005
+      },
+      {
+        "absolute_calibration_error": 0.0392909090909091,
+        "bucket": "40-50%",
+        "count": 44,
+        "observed_win_rate": 0.5,
+        "predicted_probability_mean": 0.4607090909090909
+      },
+      {
+        "absolute_calibration_error": 0.03929090909090904,
+        "bucket": "50-60%",
+        "count": 44,
+        "observed_win_rate": 0.5,
+        "predicted_probability_mean": 0.539290909090909
+      },
+      {
+        "absolute_calibration_error": 0.2981270833333333,
+        "bucket": "60-70%",
+        "count": 48,
+        "observed_win_rate": 0.3541666666666667,
+        "predicted_probability_mean": 0.65229375
+      },
+      {
+        "absolute_calibration_error": 0.2274262295081967,
+        "bucket": "70-80%",
+        "count": 61,
+        "observed_win_rate": 0.5245901639344263,
+        "predicted_probability_mean": 0.7520163934426229
+      },
+      {
+        "absolute_calibration_error": 0.3205717391304347,
+        "bucket": "80-90%",
+        "count": 92,
+        "observed_win_rate": 0.532608695652174,
+        "predicted_probability_mean": 0.8531804347826086
+      },
+      {
+        "absolute_calibration_error": 0.382392576,
+        "bucket": "90-100%",
+        "count": 375,
+        "observed_win_rate": 0.5973333333333334,
+        "predicted_probability_mean": 0.9797259093333334
+      }
+    ],
+    "brier_score": 0.3582167454517484,
+    "count": 1240,
+    "ece": 0.32709954193548385,
+    "log_loss": 1.86518168920687,
+    "pushes_excluded": 0
+  },
+  "likely_directionality_bug": false,
+  "log_loss_improvement_from_swap": -1.1121389221731306,
+  "one_minus_current": {
+    "bins": [
+      {
+        "absolute_calibration_error": 0.5770592426666667,
+        "bucket": "0-10%",
+        "count": 375,
+        "observed_win_rate": 0.5973333333333334,
+        "predicted_probability_mean": 0.020274090666666664
+      },
+      {
+        "absolute_calibration_error": 0.38578913043478263,
+        "bucket": "10-20%",
+        "count": 92,
+        "observed_win_rate": 0.532608695652174,
+        "predicted_probability_mean": 0.1468195652173913
+      },
+      {
+        "absolute_calibration_error": 0.2766065573770492,
+        "bucket": "20-30%",
+        "count": 61,
+        "observed_win_rate": 0.5245901639344263,
+        "predicted_probability_mean": 0.24798360655737703
+      },
+      {
+        "absolute_calibration_error": 0.006460416666666635,
+        "bucket": "30-40%",
+        "count": 48,
+        "observed_win_rate": 0.3541666666666667,
+        "predicted_probability_mean": 0.34770625000000005
+      },
+      {
+        "absolute_calibration_error": 0.0392909090909091,
+        "bucket": "40-50%",
+        "count": 44,
+        "observed_win_rate": 0.5,
+        "predicted_probability_mean": 0.4607090909090909
+      },
+      {
+        "absolute_calibration_error": 0.03929090909090904,
+        "bucket": "50-60%",
+        "count": 44,
+        "observed_win_rate": 0.5,
+        "predicted_probability_mean": 0.539290909090909
+      },
+      {
+        "absolute_calibration_error": 0.006460416666666635,
+        "bucket": "60-70%",
+        "count": 48,
+        "observed_win_rate": 0.6458333333333334,
+        "predicted_probability_mean": 0.65229375
+      },
+      {
+        "absolute_calibration_error": 0.2766065573770492,
+        "bucket": "70-80%",
+        "count": 61,
+        "observed_win_rate": 0.47540983606557374,
+        "predicted_probability_mean": 0.7520163934426229
+      },
+      {
+        "absolute_calibration_error": 0.3857891304347825,
+        "bucket": "80-90%",
+        "count": 92,
+        "observed_win_rate": 0.4673913043478261,
+        "predicted_probability_mean": 0.8531804347826086
+      },
+      {
+        "absolute_calibration_error": 0.5770592426666667,
+        "bucket": "90-100%",
+        "count": 375,
+        "observed_win_rate": 0.4026666666666667,
+        "predicted_probability_mean": 0.9797259093333334
+      }
+    ],
+    "brier_score": 0.47505791319368385,
+    "count": 1240,
+    "ece": 0.4367769612903227,
+    "log_loss": 2.9773206113800024,
+    "pushes_excluded": 0
+  },
+  "over_under_swapped": {
+    "bins": [
+      {
+        "absolute_calibration_error": 0.5761957647058824,
+        "bucket": "0-10%",
+        "count": 374,
+        "observed_win_rate": 0.5962566844919787,
+        "predicted_probability_mean": 0.020060919786096258
+      },
+      {
+        "absolute_calibration_error": 0.3913182795698924,
+        "bucket": "10-20%",
+        "count": 93,
+        "observed_win_rate": 0.5376344086021505,
+        "predicted_probability_mean": 0.14631612903225807
+      },
+      {
+        "absolute_calibration_error": 0.2766065573770492,
+        "bucket": "20-30%",
+        "count": 61,
+        "observed_win_rate": 0.5245901639344263,
+        "predicted_probability_mean": 0.24798360655737706
+      },
+      {
+        "absolute_calibration_error": 0.006460416666666635,
+        "bucket": "30-40%",
+        "count": 48,
+        "observed_win_rate": 0.3541666666666667,
+        "predicted_probability_mean": 0.34770625000000005
+      },
+      {
+        "absolute_calibration_error": 0.0392909090909091,
+        "bucket": "40-50%",
+        "count": 44,
+        "observed_win_rate": 0.5,
+        "predicted_probability_mean": 0.4607090909090909
+      },
+      {
+        "absolute_calibration_error": 0.03929090909090904,
+        "bucket": "50-60%",
+        "count": 44,
+        "observed_win_rate": 0.5,
+        "predicted_probability_mean": 0.539290909090909
+      },
+      {
+        "absolute_calibration_error": 0.006460416666666635,
+        "bucket": "60-70%",
+        "count": 48,
+        "observed_win_rate": 0.6458333333333334,
+        "predicted_probability_mean": 0.65229375
+      },
+      {
+        "absolute_calibration_error": 0.2766065573770492,
+        "bucket": "70-80%",
+        "count": 61,
+        "observed_win_rate": 0.47540983606557374,
+        "predicted_probability_mean": 0.7520163934426229
+      },
+      {
+        "absolute_calibration_error": 0.3857891304347825,
+        "bucket": "80-90%",
+        "count": 92,
+        "observed_win_rate": 0.4673913043478261,
+        "predicted_probability_mean": 0.8531804347826086
+      },
+      {
+        "absolute_calibration_error": 0.5770592426666667,
+        "bucket": "90-100%",
+        "count": 375,
+        "observed_win_rate": 0.4026666666666667,
+        "predicted_probability_mean": 0.9797259093333334
+      }
+    ],
+    "brier_score": 0.47505791319368385,
+    "count": 1240,
+    "ece": 0.43677696129032256,
+    "log_loss": 2.9773206113800006,
+    "pushes_excluded": 0
+  }
+}

@@ -2,16 +2,6 @@
   {
     "audit_findings": [
       {
-        "code": "MISSING_DISTRIBUTION_SUMMARY",
-        "count": 1082,
-        "recoverable": true
-      },
-      {
-        "code": "MISSING_PUSH_PROBABILITY",
-        "count": 1082,
-        "recoverable": true
-      },
-      {
         "code": "NOT_READY_PREDICTION",
         "count": 1082,
         "recoverable": true
@@ -54,16 +44,6 @@
     "ready_predictions": 1862,
     "reasons": [
       {
-        "code": "MISSING_DISTRIBUTION_SUMMARY",
-        "count": 1082,
-        "recoverable": true
-      },
-      {
-        "code": "MISSING_PUSH_PROBABILITY",
-        "count": 1082,
-        "recoverable": true
-      },
-      {
         "code": "NOT_READY_PREDICTION",
         "count": 1082,
         "recoverable": true
@@ -74,615 +54,1018 @@
         "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
+    "run_action": "REUSED",
     "status": "PARTIAL",
     "week": 1
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 16,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 498,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 307,
+    "exclusions": 1216,
+    "games_present": 16,
+    "gradeable_opportunities": 2198,
+    "gradeable_opportunity_coverage_percentage": 0.7963768115942029,
+    "historical_quote_rows": 7132,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 498,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 307,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 126,
+      "players_with_multiple_category_rows": 114,
+      "quotes_missing_outcomes_after_reconciliation": 20,
+      "raw_outcome_rows": 421,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 421,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 126,
+    "outcome_not_found": 20,
+    "outcome_rows_present": 421,
+    "prediction_missing": 1070,
+    "prediction_rows": 2760,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 480,
+      "NOT_READY_NO_PLAYER_DATA": 18,
+      "READY": 2262
+    },
+    "ready_coverage": 0.8195652173913044,
+    "ready_predictions": 2262,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 498,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1216,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 2
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 16,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 568,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 314,
+    "exclusions": 1562,
+    "games_present": 16,
+    "gradeable_opportunities": 2282,
+    "gradeable_opportunity_coverage_percentage": 0.7783083219645294,
+    "historical_quote_rows": 7878,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 568,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 314,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 190,
+      "players_with_multiple_category_rows": 97,
+      "quotes_missing_outcomes_after_reconciliation": 8,
+      "raw_outcome_rows": 412,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 412,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 190,
+    "outcome_not_found": 8,
+    "outcome_rows_present": 412,
+    "prediction_missing": 1364,
+    "prediction_rows": 2932,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 490,
+      "NOT_READY_NO_PLAYER_DATA": 78,
+      "READY": 2364
+    },
+    "ready_coverage": 0.8062755798090041,
+    "ready_predictions": 2364,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 568,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1562,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 3
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 16,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 522,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 307,
+    "exclusions": 1334,
+    "games_present": 16,
+    "gradeable_opportunities": 2438,
+    "gradeable_opportunity_coverage_percentage": 0.8121252498334444,
+    "historical_quote_rows": 7896,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 522,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 307,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 44,
+      "players_with_multiple_category_rows": 115,
+      "quotes_missing_outcomes_after_reconciliation": 16,
+      "raw_outcome_rows": 423,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 423,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 44,
+    "outcome_not_found": 16,
+    "outcome_rows_present": 423,
+    "prediction_missing": 1274,
+    "prediction_rows": 3002,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 408,
+      "NOT_READY_NO_PLAYER_DATA": 114,
+      "READY": 2480
+    },
+    "ready_coverage": 0.8261159227181879,
+    "ready_predictions": 2480,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 522,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1334,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 4
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 14,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 640,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 281,
+    "exclusions": 1552,
+    "games_present": 14,
+    "gradeable_opportunities": 2152,
+    "gradeable_opportunity_coverage_percentage": 0.7625797306874557,
+    "historical_quote_rows": 7320,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 640,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 281,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 60,
+      "players_with_multiple_category_rows": 100,
+      "quotes_missing_outcomes_after_reconciliation": 6,
+      "raw_outcome_rows": 383,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 383,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 60,
+    "outcome_not_found": 6,
+    "outcome_rows_present": 383,
+    "prediction_missing": 1486,
+    "prediction_rows": 2822,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 416,
+      "NOT_READY_NO_PLAYER_DATA": 224,
+      "READY": 2182
+    },
+    "ready_coverage": 0.7732104890148831,
+    "ready_predictions": 2182,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 640,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1552,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 5
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 15,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 598,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 280,
+    "exclusions": 1574,
+    "games_present": 15,
+    "gradeable_opportunities": 2202,
+    "gradeable_opportunity_coverage_percentage": 0.7683182135380321,
+    "historical_quote_rows": 7418,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 598,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 280,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 106,
+      "players_with_multiple_category_rows": 102,
+      "quotes_missing_outcomes_after_reconciliation": 36,
+      "raw_outcome_rows": 382,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 382,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 106,
+    "outcome_not_found": 36,
+    "outcome_rows_present": 382,
+    "prediction_missing": 1432,
+    "prediction_rows": 2866,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 8,
+      "NOT_READY_INSUFFICIENT_HISTORY": 424,
+      "NOT_READY_NO_PLAYER_DATA": 166,
+      "READY": 2268
+    },
+    "ready_coverage": 0.7913468248429868,
+    "ready_predictions": 2268,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 598,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1574,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 6
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 666,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 298,
+    "exclusions": 1690,
+    "games_present": 15,
+    "gradeable_opportunities": 2064,
+    "gradeable_opportunity_coverage_percentage": 0.7387258410880458,
+    "historical_quote_rows": 7222,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 666,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 298,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 150,
+      "players_with_multiple_category_rows": 99,
+      "quotes_missing_outcomes_after_reconciliation": 22,
+      "raw_outcome_rows": 397,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 397,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 150,
+    "outcome_not_found": 22,
+    "outcome_rows_present": 397,
+    "prediction_missing": 1518,
+    "prediction_rows": 2794,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 444,
+      "NOT_READY_NO_PLAYER_DATA": 222,
+      "READY": 2128
+    },
+    "ready_coverage": 0.7616320687186829,
+    "ready_predictions": 2128,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 666,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1690,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 7
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 570,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 266,
+    "exclusions": 1488,
+    "games_present": 13,
+    "gradeable_opportunities": 1792,
+    "gradeable_opportunity_coverage_percentage": 0.7350287120590648,
+    "historical_quote_rows": 6382,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 570,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 266,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 174,
+      "players_with_multiple_category_rows": 82,
+      "quotes_missing_outcomes_after_reconciliation": 28,
+      "raw_outcome_rows": 349,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 349,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 174,
+    "outcome_not_found": 28,
+    "outcome_rows_present": 349,
+    "prediction_missing": 1286,
+    "prediction_rows": 2438,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 338,
+      "NOT_READY_NO_PLAYER_DATA": 232,
+      "READY": 1868
+    },
+    "ready_coverage": 0.7662018047579984,
+    "ready_predictions": 1868,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 570,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1488,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 8
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 584,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 271,
+    "exclusions": 1556,
+    "games_present": 14,
+    "gradeable_opportunities": 2008,
+    "gradeable_opportunity_coverage_percentage": 0.7526236881559221,
+    "historical_quote_rows": 7194,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 584,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 271,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 158,
+      "players_with_multiple_category_rows": 96,
+      "quotes_missing_outcomes_after_reconciliation": 34,
+      "raw_outcome_rows": 369,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 369,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 158,
+    "outcome_not_found": 34,
+    "outcome_rows_present": 369,
+    "prediction_missing": 1364,
+    "prediction_rows": 2668,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 352,
+      "NOT_READY_NO_PLAYER_DATA": 232,
+      "READY": 2084
+    },
+    "ready_coverage": 0.7811094452773614,
+    "ready_predictions": 2084,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 584,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1556,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 9
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 548,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 275,
+    "exclusions": 1330,
+    "games_present": 14,
+    "gradeable_opportunities": 2012,
+    "gradeable_opportunity_coverage_percentage": 0.7750385208012327,
+    "historical_quote_rows": 6742,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 548,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 275,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 68,
+      "players_with_multiple_category_rows": 91,
+      "quotes_missing_outcomes_after_reconciliation": 22,
+      "raw_outcome_rows": 367,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 367,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 68,
+    "outcome_not_found": 22,
+    "outcome_rows_present": 367,
+    "prediction_missing": 1240,
+    "prediction_rows": 2596,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 324,
+      "NOT_READY_NO_PLAYER_DATA": 224,
+      "READY": 2048
+    },
+    "ready_coverage": 0.7889060092449923,
+    "ready_predictions": 2048,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 548,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1330,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 10
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 524,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 294,
+    "exclusions": 1366,
+    "games_present": 15,
+    "gradeable_opportunities": 2030,
+    "gradeable_opportunity_coverage_percentage": 0.7795698924731183,
+    "historical_quote_rows": 6746,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 524,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 294,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 68,
+      "players_with_multiple_category_rows": 102,
+      "quotes_missing_outcomes_after_reconciliation": 52,
+      "raw_outcome_rows": 400,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 400,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 68,
+    "outcome_not_found": 52,
+    "outcome_rows_present": 400,
+    "prediction_missing": 1246,
+    "prediction_rows": 2604,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 4,
+      "NOT_READY_INSUFFICIENT_HISTORY": 334,
+      "NOT_READY_NO_PLAYER_DATA": 186,
+      "READY": 2080
+    },
+    "ready_coverage": 0.7987711213517665,
+    "ready_predictions": 2080,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 524,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1366,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 11
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 688,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 273,
+    "exclusions": 1750,
+    "games_present": 14,
+    "gradeable_opportunities": 1948,
+    "gradeable_opportunity_coverage_percentage": 0.718819188191882,
+    "historical_quote_rows": 7022,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 688,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 273,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 98,
+      "players_with_multiple_category_rows": 96,
+      "quotes_missing_outcomes_after_reconciliation": 62,
+      "raw_outcome_rows": 370,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 370,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 98,
+    "outcome_not_found": 62,
+    "outcome_rows_present": 370,
+    "prediction_missing": 1590,
+    "prediction_rows": 2710,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 16,
+      "NOT_READY_INSUFFICIENT_HISTORY": 370,
+      "NOT_READY_NO_PLAYER_DATA": 302,
+      "READY": 2022
+    },
+    "ready_coverage": 0.7461254612546125,
+    "ready_predictions": 2022,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 688,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1750,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 12
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 758,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 307,
+    "exclusions": 1876,
+    "games_present": 16,
+    "gradeable_opportunities": 2384,
+    "gradeable_opportunity_coverage_percentage": 0.7478042659974906,
+    "historical_quote_rows": 8292,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 758,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 307,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 52,
+      "players_with_multiple_category_rows": 109,
+      "quotes_missing_outcomes_after_reconciliation": 10,
+      "raw_outcome_rows": 418,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 418,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 52,
+    "outcome_not_found": 10,
+    "outcome_rows_present": 418,
+    "prediction_missing": 1814,
+    "prediction_rows": 3188,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 12,
+      "NOT_READY_INSUFFICIENT_HISTORY": 412,
+      "NOT_READY_NO_PLAYER_DATA": 334,
+      "READY": 2430
+    },
+    "ready_coverage": 0.7622333751568381,
+    "ready_predictions": 2430,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 758,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1876,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 13
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 704,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 291,
+    "exclusions": 1794,
+    "games_present": 14,
+    "gradeable_opportunities": 1904,
+    "gradeable_opportunity_coverage_percentage": 0.7020648967551623,
+    "historical_quote_rows": 7002,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 704,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 291,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 148,
+      "players_with_multiple_category_rows": 90,
+      "quotes_missing_outcomes_after_reconciliation": 62,
+      "raw_outcome_rows": 383,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 383,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 148,
+    "outcome_not_found": 62,
+    "outcome_rows_present": 383,
+    "prediction_missing": 1584,
+    "prediction_rows": 2712,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 400,
+      "NOT_READY_NO_PLAYER_DATA": 304,
+      "READY": 2008
+    },
+    "ready_coverage": 0.7404129793510325,
+    "ready_predictions": 2008,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 704,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1794,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 14
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 718,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 309,
+    "exclusions": 1788,
+    "games_present": 16,
+    "gradeable_opportunities": 2234,
+    "gradeable_opportunity_coverage_percentage": 0.7368073878627969,
+    "historical_quote_rows": 7606,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 718,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 309,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 154,
+      "players_with_multiple_category_rows": 104,
+      "quotes_missing_outcomes_after_reconciliation": 34,
+      "raw_outcome_rows": 413,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 413,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 154,
+    "outcome_not_found": 34,
+    "outcome_rows_present": 413,
+    "prediction_missing": 1600,
+    "prediction_rows": 3032,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 12,
+      "NOT_READY_INSUFFICIENT_HISTORY": 412,
+      "NOT_READY_NO_PLAYER_DATA": 294,
+      "READY": 2314
+    },
+    "ready_coverage": 0.7631926121372031,
+    "ready_predictions": 2314,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 718,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1788,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 15
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 750,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 329,
+    "exclusions": 1906,
+    "games_present": 16,
+    "gradeable_opportunities": 1952,
+    "gradeable_opportunity_coverage_percentage": 0.7031700288184438,
+    "historical_quote_rows": 6796,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 750,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 329,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 180,
+      "players_with_multiple_category_rows": 112,
+      "quotes_missing_outcomes_after_reconciliation": 26,
+      "raw_outcome_rows": 442,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 442,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 180,
+    "outcome_not_found": 26,
+    "outcome_rows_present": 442,
+    "prediction_missing": 1700,
+    "prediction_rows": 2776,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 12,
+      "NOT_READY_INSUFFICIENT_HISTORY": 346,
+      "NOT_READY_NO_PLAYER_DATA": 392,
+      "READY": 2026
+    },
+    "ready_coverage": 0.7298270893371758,
+    "ready_predictions": 2026,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 750,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1906,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 16
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 782,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 324,
+    "exclusions": 1790,
+    "games_present": 16,
+    "gradeable_opportunities": 1914,
+    "gradeable_opportunity_coverage_percentage": 0.6899783705839942,
+    "historical_quote_rows": 6576,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 782,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 324,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 142,
+      "players_with_multiple_category_rows": 101,
+      "quotes_missing_outcomes_after_reconciliation": 22,
+      "raw_outcome_rows": 426,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 426,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 142,
+    "outcome_not_found": 22,
+    "outcome_rows_present": 426,
+    "prediction_missing": 1626,
+    "prediction_rows": 2774,
+    "readiness_reasons": {
+      "NOT_READY_IDENTITY_ONLY": 4,
+      "NOT_READY_INSUFFICIENT_HISTORY": 356,
+      "NOT_READY_NO_PLAYER_DATA": 422,
+      "READY": 1992
+    },
+    "ready_coverage": 0.7180966113914924,
+    "ready_predictions": 1992,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 782,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1790,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 17
   },
   {
-    "audit_findings": [],
-    "canonical_outcome_count": 0,
-    "exclusions": 0,
-    "games_present": 0,
-    "gradeable_opportunities": 0,
-    "gradeable_opportunity_coverage_percentage": 0,
-    "historical_quote_rows": 0,
-    "incomplete_price_pair": 0,
-    "not_ready_predictions": 0,
-    "outcome_identity_reconciliations": {},
-    "outcome_market_missing": 0,
-    "outcome_not_found": 0,
-    "outcome_rows_present": 0,
-    "prediction_missing": 0,
-    "prediction_rows": 0,
-    "readiness_reasons": {},
-    "ready_coverage": 0,
-    "ready_predictions": 0,
-    "reasons": [
+    "audit_findings": [
       {
-        "code": "MISSING_REQUIRED_SNAPSHOT",
-        "files": [
-          "games.json",
-          "player_prop_odds.json",
-          "player_prop_predictions.json",
-          "player_stats.json",
-          "player_identities.json",
-          "manifest.json"
-        ]
+        "code": "NOT_READY_PREDICTION",
+        "count": 504,
+        "recoverable": true
       }
     ],
-    "run_action": "RECOMPUTED",
-    "status": "MISSING_SNAPSHOTS",
+    "canonical_outcome_count": 323,
+    "exclusions": 1050,
+    "games_present": 16,
+    "gradeable_opportunities": 1240,
+    "gradeable_opportunity_coverage_percentage": 0.695067264573991,
+    "historical_quote_rows": 3842,
+    "incomplete_price_pair": 0,
+    "not_ready_predictions": 504,
+    "outcome_identity_reconciliations": {
+      "already_canonical": 0,
+      "ambiguous": 0,
+      "canonical_player_outcomes": 323,
+      "conflicting_fields": 0,
+      "duplicate_fields_merged": 0,
+      "missing_requested_stat_count": 60,
+      "players_with_multiple_category_rows": 116,
+      "quotes_missing_outcomes_after_reconciliation": 0,
+      "raw_outcome_rows": 441,
+      "reconciled_by_alias": 0,
+      "reconciled_by_exact_name_team_game": 441,
+      "reconciled_by_provider_id": 0,
+      "unresolved": 0
+    },
+    "outcome_market_missing": 60,
+    "outcome_not_found": 0,
+    "outcome_rows_present": 441,
+    "prediction_missing": 990,
+    "prediction_rows": 1784,
+    "readiness_reasons": {
+      "NOT_READY_INSUFFICIENT_HISTORY": 226,
+      "NOT_READY_NO_PLAYER_DATA": 278,
+      "READY": 1280
+    },
+    "ready_coverage": 0.7174887892376681,
+    "ready_predictions": 1280,
+    "reasons": [
+      {
+        "code": "NOT_READY_PREDICTION",
+        "count": 504,
+        "recoverable": true
+      },
+      {
+        "code": "RECOVERABLE_EXCLUSIONS",
+        "count": 1050,
+        "recoverable": true
+      }
+    ],
+    "run_action": "REUSED",
+    "status": "PARTIAL",
     "week": 18
   }
 ]

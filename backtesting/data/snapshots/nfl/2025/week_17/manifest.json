@@ -1,0 +1,1158 @@
+{
+  "builder_version": "phase2-leakage-safe",
+  "created_at": "2026-08-02T02:06:26.640997Z",
+  "cutoff_policy": "Every feature timestamp must be strictly before its game's kickoff; outcomes are grading-only.",
+  "datasets": {
+    "games": {
+      "records": 16,
+      "source": "espn",
+      "status": "complete"
+    },
+    "injuries": {
+      "reason": "historical provider unavailable or local export missing",
+      "records": 0,
+      "source": "none",
+      "status": "optional_empty"
+    },
+    "odds": {
+      "records": 1024,
+      "source": "the-odds-api-historical",
+      "status": "complete"
+    },
+    "outcomes": {
+      "records": 16,
+      "source": "espn-scoreboard",
+      "status": "complete"
+    },
+    "player_prop_model_features": {
+      "generation_timestamp": "2025-12-30T01:15:00Z",
+      "model_version": "nfl_game_baseline_v3",
+      "present": true,
+      "records": 486,
+      "row_count": 486,
+      "seed": 1729,
+      "sha256": "42585d321661df54afcdb6bdb3bac519d0e239e96bd362db81731382a3afa3f1",
+      "simulations": 10000,
+      "source": "offline-frozen-nfl-simulation",
+      "status": "complete"
+    },
+    "player_prop_odds": {
+      "bookmakers": [
+        "betmgm",
+        "betonlineag",
+        "betrivers",
+        "bovada",
+        "draftkings",
+        "fanduel",
+        "williamhill_us"
+      ],
+      "markets": [
+        "passing_tds",
+        "passing_yards",
+        "receiving_yards",
+        "receptions",
+        "rushing_attempts",
+        "rushing_yards"
+      ],
+      "present": true,
+      "provider": "the-odds-api",
+      "provider_snapshot_timestamps": [
+        "2025-12-25T17:55:37Z",
+        "2025-12-25T21:25:37Z",
+        "2025-12-26T01:10:37Z",
+        "2025-12-27T21:25:37Z",
+        "2025-12-28T00:55:37Z",
+        "2025-12-28T17:55:37Z",
+        "2025-12-28T21:00:37Z",
+        "2025-12-28T21:20:37Z",
+        "2025-12-29T01:15:37Z",
+        "2025-12-30T01:10:37Z"
+      ],
+      "records": 6576,
+      "requested_snapshot_timestamps": [
+        "2025-12-25T18:00:00Z",
+        "2025-12-25T21:30:00Z",
+        "2025-12-26T01:15:00Z",
+        "2025-12-27T21:30:00Z",
+        "2025-12-28T01:00:00Z",
+        "2025-12-28T18:00:00Z",
+        "2025-12-28T21:05:00Z",
+        "2025-12-28T21:25:00Z",
+        "2025-12-29T01:20:00Z",
+        "2025-12-30T01:15:00Z"
+      ],
+      "row_count": 6576,
+      "sha256": "fd8c229e06b33d8276e7e805f48e8b3a2f0d1ab14a926a51bc3ec9b3fece901a",
+      "source": "the-odds-api-historical",
+      "status": "complete"
+    },
+    "player_prop_predictions": {
+      "generation_timestamp": "2025-12-30T01:15:00Z",
+      "model_version": "nfl_game_baseline_v3",
+      "present": true,
+      "readiness_by_game": {
+        "espn-401772622": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 28,
+          "NOT_READY_NO_PLAYER_DATA": 2,
+          "READY": 174
+        },
+        "espn-401772710": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "NOT_READY_NO_PLAYER_DATA": 22,
+          "READY": 142
+        },
+        "espn-401772711": {
+          "NOT_READY_IDENTITY_ONLY": 4,
+          "NOT_READY_INSUFFICIENT_HISTORY": 14,
+          "NOT_READY_NO_PLAYER_DATA": 26,
+          "READY": 116
+        },
+        "espn-401772807": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 20,
+          "NOT_READY_NO_PLAYER_DATA": 42,
+          "READY": 84
+        },
+        "espn-401772808": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 28,
+          "NOT_READY_NO_PLAYER_DATA": 48,
+          "READY": 96
+        },
+        "espn-401772809": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "NOT_READY_NO_PLAYER_DATA": 48,
+          "READY": 102
+        },
+        "espn-401772825": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 32,
+          "NOT_READY_NO_PLAYER_DATA": 24,
+          "READY": 122
+        },
+        "espn-401772915": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 28,
+          "NOT_READY_NO_PLAYER_DATA": 26,
+          "READY": 100
+        },
+        "espn-401772916": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "NOT_READY_NO_PLAYER_DATA": 42,
+          "READY": 126
+        },
+        "espn-401772917": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "NOT_READY_NO_PLAYER_DATA": 16,
+          "READY": 120
+        },
+        "espn-401772935": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 36,
+          "NOT_READY_NO_PLAYER_DATA": 24,
+          "READY": 134
+        },
+        "espn-401772950": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 20,
+          "NOT_READY_NO_PLAYER_DATA": 28,
+          "READY": 116
+        },
+        "espn-401772951": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 22,
+          "NOT_READY_NO_PLAYER_DATA": 14,
+          "READY": 154
+        },
+        "espn-401772952": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 34,
+          "NOT_READY_NO_PLAYER_DATA": 14,
+          "READY": 120
+        },
+        "espn-401772953": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 16,
+          "NOT_READY_NO_PLAYER_DATA": 22,
+          "READY": 156
+        },
+        "espn-401772954": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 34,
+          "NOT_READY_NO_PLAYER_DATA": 24,
+          "READY": 130
+        }
+      },
+      "readiness_by_market": {
+        "passing_tds": {
+          "NOT_READY_NO_PLAYER_DATA": 20,
+          "READY": 54
+        },
+        "passing_yards": {
+          "NOT_READY_NO_PLAYER_DATA": 88,
+          "READY": 226
+        },
+        "receiving_yards": {
+          "NOT_READY_NO_PLAYER_DATA": 146,
+          "READY": 956
+        },
+        "receptions": {
+          "NOT_READY_NO_PLAYER_DATA": 64,
+          "READY": 412
+        },
+        "rushing_attempts": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 116,
+          "NOT_READY_NO_PLAYER_DATA": 24,
+          "READY": 90
+        },
+        "rushing_yards": {
+          "NOT_READY_IDENTITY_ONLY": 4,
+          "NOT_READY_INSUFFICIENT_HISTORY": 240,
+          "NOT_READY_NO_PLAYER_DATA": 80,
+          "READY": 254
+        }
+      },
+      "readiness_by_player": {
+        "12483": {
+          "READY": 20
+        },
+        "14880": {
+          "READY": 16
+        },
+        "15795": {
+          "READY": 8
+        },
+        "15818": {
+          "READY": 8
+        },
+        "15847": {
+          "READY": 10
+        },
+        "15864": {
+          "READY": 24
+        },
+        "16002": {
+          "READY": 6
+        },
+        "16460": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "16731": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "16737": {
+          "READY": 12
+        },
+        "2468609": {
+          "READY": 10
+        },
+        "2576336": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "2576581": {
+          "READY": 4
+        },
+        "2576925": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "2577327": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "2577417": {
+          "READY": 20
+        },
+        "2578570": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "2973405": {
+          "READY": 6
+        },
+        "2976212": {
+          "READY": 10
+        },
+        "2977187": {
+          "READY": 8
+        },
+        "2998565": {
+          "READY": 4
+        },
+        "3043078": {
+          "READY": 22
+        },
+        "3043116": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "3043275": {
+          "READY": 8
+        },
+        "3045523": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "3046439": {
+          "READY": 8
+        },
+        "3046779": {
+          "READY": 16
+        },
+        "3049698": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "3050481": {
+          "READY": 4
+        },
+        "3051738": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "3051876": {
+          "READY": 12
+        },
+        "3052587": {
+          "READY": 18
+        },
+        "3054212": {
+          "READY": 4
+        },
+        "3059915": {
+          "READY": 14
+        },
+        "3116164": {
+          "READY": 8
+        },
+        "3116365": {
+          "READY": 8
+        },
+        "3116389": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 6
+        },
+        "3117251": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 10
+        },
+        "3117256": {
+          "READY": 8
+        },
+        "3120348": {
+          "READY": 12
+        },
+        "3121023": {
+          "READY": 8
+        },
+        "3121422": {
+          "READY": 8
+        },
+        "3127292": {
+          "READY": 2
+        },
+        "3127306": {
+          "READY": 4
+        },
+        "3127310": {
+          "READY": 4
+        },
+        "3127586": {
+          "READY": 18
+        },
+        "3128429": {
+          "READY": 8
+        },
+        "3128720": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 6,
+          "READY": 2
+        },
+        "3676833": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 8
+        },
+        "3871102": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "3886598": {
+          "READY": 6
+        },
+        "3895856": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "3911853": {
+          "READY": 4
+        },
+        "3912547": {
+          "READY": 16
+        },
+        "3915411": {
+          "READY": 8
+        },
+        "3915416": {
+          "READY": 10
+        },
+        "3915511": {
+          "READY": 14
+        },
+        "3916148": {
+          "READY": 18
+        },
+        "3916433": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "3916945": {
+          "READY": 6
+        },
+        "3918298": {
+          "READY": 20
+        },
+        "3921690": {
+          "READY": 8
+        },
+        "3929630": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 4
+        },
+        "3929645": {
+          "READY": 10
+        },
+        "3930066": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "3930086": {
+          "READY": 8
+        },
+        "4032473": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "4035020": {
+          "READY": 4
+        },
+        "4035222": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "4035538": {
+          "READY": 18
+        },
+        "4035671": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "4035687": {
+          "READY": 6
+        },
+        "4036131": {
+          "READY": 4
+        },
+        "4038815": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 4
+        },
+        "4038941": {
+          "READY": 20
+        },
+        "4039057": {
+          "READY": 8
+        },
+        "4040655": {
+          "READY": 12
+        },
+        "4040715": {
+          "READY": 24
+        },
+        "4040761": {
+          "READY": 8
+        },
+        "4044111": {
+          "READY": 22
+        },
+        "4047365": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 14,
+          "READY": 4
+        },
+        "4047646": {
+          "READY": 12
+        },
+        "4048228": {
+          "READY": 8
+        },
+        "4239993": {
+          "READY": 10
+        },
+        "4239996": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 16,
+          "READY": 6
+        },
+        "4240472": {
+          "READY": 4
+        },
+        "4240603": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "4240657": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 8
+        },
+        "4241389": {
+          "READY": 12
+        },
+        "4241416": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 6,
+          "READY": 10
+        },
+        "4241463": {
+          "READY": 4
+        },
+        "4241474": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 4
+        },
+        "4241476": {
+          "READY": 4
+        },
+        "4241478": {
+          "READY": 10
+        },
+        "4242335": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 6
+        },
+        "4242355": {
+          "READY": 8
+        },
+        "4242433": {
+          "READY": 4
+        },
+        "4242512": {
+          "READY": 26
+        },
+        "4242540": {
+          "READY": 6
+        },
+        "4242557": {
+          "READY": 8
+        },
+        "4243331": {
+          "READY": 8
+        },
+        "4243537": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "4248528": {
+          "READY": 8
+        },
+        "4250764": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "4257364": {
+          "NOT_READY_IDENTITY_ONLY": 4
+        },
+        "4258173": {
+          "READY": 12
+        },
+        "4258595": {
+          "READY": 10
+        },
+        "4259147": {
+          "READY": 6
+        },
+        "4259545": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 8
+        },
+        "4262921": {
+          "READY": 8
+        },
+        "4360078": {
+          "READY": 8
+        },
+        "4360310": {
+          "READY": 18
+        },
+        "4360516": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 4
+        },
+        "4360689": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "4360761": {
+          "READY": 10
+        },
+        "4360939": {
+          "READY": 8
+        },
+        "4361050": {
+          "READY": 8
+        },
+        "4361307": {
+          "READY": 10
+        },
+        "4361370": {
+          "READY": 10
+        },
+        "4361372": {
+          "READY": 6
+        },
+        "4361409": {
+          "READY": 10
+        },
+        "4361411": {
+          "READY": 8
+        },
+        "4361432": {
+          "READY": 10
+        },
+        "4361516": {
+          "READY": 8
+        },
+        "4361529": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 10
+        },
+        "4361579": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 8
+        },
+        "4361741": {
+          "READY": 22
+        },
+        "4361777": {
+          "READY": 12
+        },
+        "4362238": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 8
+        },
+        "4362249": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 6
+        },
+        "4362478": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 4
+        },
+        "4362628": {
+          "READY": 12
+        },
+        "4362748": {
+          "READY": 2
+        },
+        "4367209": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "4368003": {
+          "READY": 8
+        },
+        "4369863": {
+          "READY": 4
+        },
+        "4372016": {
+          "READY": 12
+        },
+        "4372096": {
+          "READY": 4
+        },
+        "4372780": {
+          "READY": 4
+        },
+        "4373626": {
+          "READY": 14
+        },
+        "4373678": {
+          "READY": 8
+        },
+        "4374302": {
+          "READY": 14
+        },
+        "4382466": {
+          "READY": 8
+        },
+        "4383396": {
+          "READY": 4
+        },
+        "4386544": {
+          "READY": 6
+        },
+        "4426338": {
+          "READY": 22
+        },
+        "4426354": {
+          "READY": 12
+        },
+        "4426385": {
+          "READY": 14
+        },
+        "4426388": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 12
+        },
+        "4426485": {
+          "READY": 2
+        },
+        "4426502": {
+          "READY": 12
+        },
+        "4426515": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 12
+        },
+        "4426844": {
+          "READY": 8
+        },
+        "4427095": {
+          "READY": 6
+        },
+        "4427366": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 6
+        },
+        "4428209": {
+          "READY": 4
+        },
+        "4428557": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 8
+        },
+        "4428718": {
+          "READY": 10
+        },
+        "4428811": {
+          "READY": 6
+        },
+        "4428850": {
+          "READY": 4
+        },
+        "4429013": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "4429025": {
+          "READY": 12
+        },
+        "4429059": {
+          "READY": 16
+        },
+        "4429086": {
+          "READY": 8
+        },
+        "4429096": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 4
+        },
+        "4429160": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 8
+        },
+        "4429205": {
+          "READY": 10
+        },
+        "4429435": {
+          "NOT_READY_NO_PLAYER_DATA": 18
+        },
+        "4429615": {
+          "READY": 10
+        },
+        "4429795": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 12,
+          "READY": 10
+        },
+        "4429939": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "4430034": {
+          "READY": 8
+        },
+        "4430539": {
+          "READY": 10
+        },
+        "4430737": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 6
+        },
+        "4430802": {
+          "READY": 8
+        },
+        "4430807": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 8
+        },
+        "4430834": {
+          "READY": 8
+        },
+        "4430871": {
+          "READY": 6
+        },
+        "4430878": {
+          "READY": 10
+        },
+        "4431268": {
+          "READY": 6
+        },
+        "4431280": {
+          "READY": 8
+        },
+        "4431431": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "4431452": {
+          "READY": 18
+        },
+        "4431459": {
+          "READY": 10
+        },
+        "4431611": {
+          "READY": 22
+        },
+        "4432577": {
+          "READY": 20
+        },
+        "4432620": {
+          "READY": 10
+        },
+        "4432708": {
+          "READY": 6
+        },
+        "4432710": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 6
+        },
+        "4432762": {
+          "NOT_READY_NO_PLAYER_DATA": 16
+        },
+        "4432773": {
+          "READY": 10
+        },
+        "4432775": {
+          "READY": 8
+        },
+        "4567048": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 16,
+          "READY": 6
+        },
+        "4567096": {
+          "NOT_READY_NO_PLAYER_DATA": 12
+        },
+        "4567156": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "4567750": {
+          "READY": 16
+        },
+        "4568490": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 14,
+          "READY": 10
+        },
+        "4569173": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 8
+        },
+        "4569371": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "4569587": {
+          "READY": 14
+        },
+        "4569603": {
+          "READY": 10
+        },
+        "4569609": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "4569682": {
+          "NOT_READY_NO_PLAYER_DATA": 14
+        },
+        "4569987": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 8
+        },
+        "4570037": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "4573398": {
+          "NOT_READY_NO_PLAYER_DATA": 22
+        },
+        "4575131": {
+          "READY": 18
+        },
+        "4576297": {
+          "READY": 6
+        },
+        "4586312": {
+          "READY": 4
+        },
+        "4596334": {
+          "READY": 14
+        },
+        "4596448": {
+          "READY": 18
+        },
+        "4596602": {
+          "NOT_READY_NO_PLAYER_DATA": 2
+        },
+        "4597500": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "4601080": {
+          "READY": 10
+        },
+        "4608686": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 6
+        },
+        "4612826": {
+          "READY": 10
+        },
+        "4613104": {
+          "NOT_READY_NO_PLAYER_DATA": 6
+        },
+        "4613202": {
+          "READY": 8
+        },
+        "4682745": {
+          "READY": 4
+        },
+        "4683062": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 8
+        },
+        "4683243": {
+          "NOT_READY_NO_PLAYER_DATA": 4
+        },
+        "4685278": {
+          "READY": 12
+        },
+        "4685382": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 16,
+          "READY": 12
+        },
+        "4685472": {
+          "READY": 8
+        },
+        "4685720": {
+          "READY": 20
+        },
+        "4686422": {
+          "READY": 8
+        },
+        "4686472": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 2,
+          "READY": 10
+        },
+        "4686612": {
+          "READY": 8
+        },
+        "4686728": {
+          "READY": 10
+        },
+        "4688380": {
+          "READY": 18
+        },
+        "4688813": {
+          "READY": 10
+        },
+        "4689114": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "4690013": {
+          "READY": 4
+        },
+        "4690923": {
+          "READY": 8
+        },
+        "4695404": {
+          "READY": 12
+        },
+        "4695883": {
+          "READY": 6
+        },
+        "4697815": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 4,
+          "READY": 6
+        },
+        "4701936": {
+          "READY": 8
+        },
+        "4710855": {
+          "NOT_READY_NO_PLAYER_DATA": 8
+        },
+        "4722893": {
+          "READY": 10
+        },
+        "4723086": {
+          "READY": 8
+        },
+        "4808839": {
+          "READY": 8
+        },
+        "4877706": {
+          "READY": 12
+        },
+        "4883647": {
+          "READY": 8
+        },
+        "4887558": {
+          "READY": 8
+        },
+        "4889929": {
+          "NOT_READY_NO_PLAYER_DATA": 20
+        },
+        "4890973": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 8,
+          "READY": 8
+        },
+        "4911851": {
+          "READY": 2
+        },
+        "5081397": {
+          "NOT_READY_INSUFFICIENT_HISTORY": 10,
+          "READY": 6
+        },
+        "5083076": {
+          "READY": 8
+        },
+        "5123663": {
+          "READY": 6
+        },
+        "5160110": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "5529": {
+          "NOT_READY_NO_PLAYER_DATA": 10
+        },
+        "8439": {
+          "READY": 16
+        }
+      },
+      "readiness_by_week": {
+        "17": {
+          "NOT_READY_IDENTITY_ONLY": 4,
+          "NOT_READY_INSUFFICIENT_HISTORY": 356,
+          "NOT_READY_NO_PLAYER_DATA": 422,
+          "READY": 1992
+        }
+      },
+      "readiness_counts": {
+        "NOT_READY_IDENTITY_ONLY": 4,
+        "NOT_READY_INSUFFICIENT_HISTORY": 356,
+        "NOT_READY_NO_PLAYER_DATA": 422,
+        "READY": 1992
+      },
+      "records": 2774,
+      "row_count": 2774,
+      "seed": 1729,
+      "sha256": "d8982b046239540bd49c1707b284ef7547cc779ff6844cfb0fcc2a54609ed7dc",
+      "simulations": 10000,
+      "source": "offline-frozen-nfl-simulation",
+      "status": "complete"
+    },
+    "player_stats": {
+      "records": 426,
+      "source": "espn",
+      "status": "complete"
+    },
+    "team_stats": {
+      "records": 32,
+      "source": "espn-scoreboard",
+      "status": "complete"
+    },
+    "weather": {
+      "reason": "historical provider unavailable or local export missing",
+      "records": 0,
+      "source": "none",
+      "status": "optional_empty"
+    }
+  },
+  "generated_at": "2026-08-02T02:06:26.640997Z",
+  "league": "nfl",
+  "leakage_checks_passed": false,
+  "normalization_version": "nfl-historical-v1",
+  "prediction_cutoffs": {
+    "espn-401772622": "2025-12-25T01:10:37Z",
+    "espn-401772710": "2025-12-24T17:55:37Z",
+    "espn-401772711": "2025-12-24T21:25:37Z",
+    "espn-401772807": "2025-12-27T17:55:37Z",
+    "espn-401772808": "2025-12-27T17:55:37Z",
+    "espn-401772809": "2025-12-27T17:55:37Z",
+    "espn-401772825": "2025-12-29T01:10:38Z",
+    "espn-401772915": "2025-12-27T17:55:37Z",
+    "espn-401772916": "2025-12-27T17:55:37Z",
+    "espn-401772917": "2025-12-27T21:20:37Z",
+    "espn-401772935": "2025-12-28T01:15:37Z",
+    "espn-401772950": "2025-12-27T21:00:37Z",
+    "espn-401772951": "2025-12-26T21:25:37Z",
+    "espn-401772952": "2025-12-27T17:55:37Z",
+    "espn-401772953": "2025-12-27T00:55:37Z",
+    "espn-401772954": "2025-12-27T17:55:37Z"
+  },
+  "schema_version": 1,
+  "season": 2025,
+  "source_lineage": {
+    "games": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn",
+      "records": 16
+    },
+    "injuries": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "none",
+      "records": 0
+    },
+    "odds": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "the-odds-api-historical",
+      "records": 1024
+    },
+    "outcomes": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn-scoreboard",
+      "records": 16
+    },
+    "player_prop_model_features": {
+      "inputs": [
+        "games",
+        "team_stats",
+        "player_stats",
+        "player_prop_predictions"
+      ],
+      "network_contacted": false,
+      "provider": "offline",
+      "records": 486
+    },
+    "player_prop_odds": {
+      "provider": "the-odds-api",
+      "records": 6576,
+      "timestamp_fields": [
+        "requested_snapshot_timestamp",
+        "provider_snapshot_timestamp",
+        "market_last_update",
+        "captured_at",
+        "data_as_of"
+      ]
+    },
+    "player_prop_predictions": {
+      "inputs": [
+        "games",
+        "team_stats",
+        "player_stats",
+        "player_prop_odds"
+      ],
+      "network_contacted": false,
+      "provider": "offline",
+      "records": 2774
+    },
+    "player_stats": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn",
+      "records": 426
+    },
+    "team_stats": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn-scoreboard",
+      "records": 32
+    },
+    "weather": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "none",
+      "records": 0
+    }
+  },
+  "source_versions": {
+    "games": "espn",
+    "injuries": "none",
+    "odds": "the-odds-api-historical",
+    "outcomes": "espn-scoreboard",
+    "player_prop_model_features": "nfl_game_baseline_v3",
+    "player_prop_odds": "the-odds-api-historical",
+    "player_prop_predictions": "nfl_game_baseline_v3",
+    "player_stats": "espn",
+    "team_stats": "espn-scoreboard",
+    "weather": "none"
+  },
+  "warnings": [
+    "no configured provider supports historical weather"
+  ],
+  "week": 17
+}

@@ -13,155 +13,223 @@
     "week": 1
   },
   {
-    "roi": null,
+    "roi": -0.04985608001215576,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05559600276400122,
+        -0.043713932782658046
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0029426862678896245
     },
     "week": 2
   },
   {
-    "roi": null,
+    "roi": -0.04909822464094902,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.053142822220910116,
+        -0.04512957219398131
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.002058099096986608
     },
     "week": 3
   },
   {
-    "roi": null,
+    "roi": -0.05183466949038963,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05619820348299206,
+        -0.04715923695229976
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0023454345420430662
     },
     "week": 4
   },
   {
-    "roi": null,
+    "roi": -0.049288777812083136,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.05630504567926681,
+        -0.0422867521010259
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.003568571022548471
     },
     "week": 5
   },
   {
-    "roi": null,
+    "roi": -0.046488991432314254,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 15,
+      "confidence_interval_95": [
+        -0.050254709643981585,
+        -0.04284919416943746
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.001933895914631535
     },
     "week": 6
   },
   {
-    "roi": null,
+    "roi": -0.048784462030173024,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 15,
+      "confidence_interval_95": [
+        -0.05359654134364363,
+        -0.0431838415106066
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0026920907096348867
     },
     "week": 7
   },
   {
-    "roi": null,
+    "roi": -0.05095785526078237,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 13,
+      "confidence_interval_95": [
+        -0.05589482755467271,
+        -0.046723810406011076
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0023984587831568953
     },
     "week": 8
   },
   {
-    "roi": null,
+    "roi": -0.052893977819805565,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.057396069902354234,
+        -0.04865763020529688
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0021580933693908463
     },
     "week": 9
   },
   {
-    "roi": null,
+    "roi": -0.049645224910832966,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.054785540928179444,
+        -0.04386913151589607
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0027699349240233677
     },
     "week": 10
   },
   {
-    "roi": null,
+    "roi": -0.05348818203960496,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 15,
+      "confidence_interval_95": [
+        -0.05884596977811396,
+        -0.04762434918610688
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.002864195590467782
     },
     "week": 11
   },
   {
-    "roi": null,
+    "roi": -0.04871012375615214,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.054276849998118805,
+        -0.04163622506945806
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0032130997116841583
     },
     "week": 12
   },
   {
-    "roi": null,
+    "roi": -0.0502630211104513,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.055774419239752834,
+        -0.04535726214374049
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0026800921169550843
     },
     "week": 13
   },
   {
-    "roi": null,
+    "roi": -0.060844723410909025,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 14,
+      "confidence_interval_95": [
+        -0.06579074944068117,
+        -0.055760317705049085
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.00255734413172611
     },
     "week": 14
   },
   {
-    "roi": null,
+    "roi": -0.048595354018048355,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05226055321162274,
+        -0.044789924897752305
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0019105143912866755
     },
     "week": 15
   },
   {
-    "roi": null,
+    "roi": -0.056084313367667726,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05983608353239731,
+        -0.052762452397448346
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0017950280191333969
     },
     "week": 16
   },
   {
-    "roi": null,
+    "roi": -0.05044538115167553,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 16,
+      "confidence_interval_95": [
+        -0.05553766618453122,
+        -0.04501613619936228
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.002666506232090332
     },
     "week": 17
   },
   {
-    "roi": null,
+    "roi": -0.053692562746451886,
     "roi_uncertainty": {
-      "confidence_interval_95": null,
-      "method": "game_cluster_bootstrap",
-      "standard_error": null
+      "clusters": 15,
+      "confidence_interval_95": [
+        -0.0598630541633521,
+        -0.04918311897987335
+      ],
+      "method": "deterministic_2000_draw_game_cluster_bootstrap",
+      "standard_error": 0.0027961526770131097
     },
     "week": 18
   }

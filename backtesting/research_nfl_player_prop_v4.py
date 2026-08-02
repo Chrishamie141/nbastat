@@ -78,6 +78,11 @@ RICH_FEATURE_COVERAGE = {
 }
 
 
+def _stable_model_definition(record: dict[str, Any]) -> dict[str, Any]:
+    """Return the immutable algorithm contract without run-level provenance."""
+    return {key: value for key, value in record.items() if key != "git_commit"}
+
+
 def _number(row: dict[str, Any], *names: str) -> float | None:
     stats_row = row.get("stats") if isinstance(row.get("stats"), dict) else {}
     for name in names:
@@ -639,7 +644,7 @@ def run_v4(*, snapshot_root: Path, season_results_dir: Path, output_dir: Path,
             "evaluated_weeks": sorted({int(row["week"]) for row in predictions}),
             "training_samples": len(samples), "evaluation_opportunities": len(predictions),
             "exclusions": len(exclusions), "calibration_status": calibration["status"],
-            "promotion_status": "RESEARCH_ONLY_INSUFFICIENT_EVALUATION_HISTORY",
+            "promotion_status": "RESEARCH_ONLY_PENDING_PROMOTION_CHECK",
             "baseline_comparison": comparison},
         "training_metrics.json": training_report, "distribution_selection.json": selection,
         "calibration_report.json": calibration, "permutation_importance.json": importance,
@@ -677,7 +682,17 @@ def run_v4(*, snapshot_root: Path, season_results_dir: Path, output_dir: Path,
     _write_json(output_dir / "v4_manifest.json", manifest)
     if register:
         root = registry_root or DEFAULT_ROOT
-        register_model(root, model_definition); register_experiment(root, experiment)
+        try:
+            register_model(root, model_definition)
+        except FileExistsError:
+            # The model ID describes the stable algorithm contract. A rerun from
+            # a later source commit may legitimately differ only in provenance;
+            # the experiment itself retains the exact current commit and hashes.
+            registered_path = root / "models" / f"{MODEL_ID}.json"
+            registered = json.loads(registered_path.read_text(encoding="utf-8"))
+            if _stable_model_definition(registered) != _stable_model_definition(model_definition):
+                raise
+        register_experiment(root, experiment)
     return {**artifacts, "experiment_result.json": experiment, "model_definition.json": model_definition,
             "v4_manifest.json": manifest}
 

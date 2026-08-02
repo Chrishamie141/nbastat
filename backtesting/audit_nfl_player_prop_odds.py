@@ -14,7 +14,7 @@ def _json_files(root: Path):
 
 
 def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> dict[str, Any]:
-    rows=[]; events=set(); books=set(); inspected=[]; invalid=[]; raw_markets=Counter(); raw_by_event={}; funnel={}; identity_audits=[]
+    rows=[]; incomplete_rows=[]; events=set(); books=set(); inspected=[]; invalid=[]; raw_markets=Counter(); raw_by_event={}; funnel={}; identity_audits=[]
     roots=[root]
     raw_root=root.parent/"raw_cache"
     if raw_root.exists() and raw_root.resolve()!=root.resolve(): roots.append(raw_root)
@@ -41,7 +41,15 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
             # Persisted rows without an ID must remain visible to identity
             # diagnostics; they are not silently erased or counted as one null.
             if market and (row.get("game_id") or row.get("provider_snapshot_timestamp") or row.get("snapshot_timestamp")):
-                copy=dict(row); copy["market"]=market; rows.append(copy)
+                copy=dict(row); copy["market"]=market
+                required=(copy.get("game_id"), copy.get("week"), copy.get("line"),
+                          copy.get("selection") or copy.get("side"), copy.get("bookmaker"),
+                          copy.get("decimal_odds") or copy.get("implied_probability"))
+                if any(value in (None, "") for value in required):
+                    incomplete_rows.append({"file":str(path), "game_id":copy.get("game_id"),
+                                            "market":market})
+                    continue
+                rows.append(copy)
         # Raw event endpoints return data as an object; list endpoints return a
         # list.  Treat both shapes identically (the old audit silently skipped
         # the former).
@@ -63,22 +71,36 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
     reconciled=[r for r in filtered if normalize_player_id(r.get("canonical_player_id")) is not None]
     avail=availability(reconciled, requested_weeks=range(start_week,end_week+1))
     from .player_prop_odds import pair_quotes
-    complete=sum(p["complete"] for p in pair_quotes(reconciled))
+    pairs=pair_quotes(reconciled)
+    complete=sum(p["complete"] for p in pairs)
     unmatched=sum(r.get("reconciliation_status") in {"unknown_player","unmatched"} for r in filtered)
     ambiguous=sum(r.get("reconciliation_status") == "ambiguous_player" for r in filtered)
     invalid_ts=sum(not (r.get("provider_snapshot_timestamp") or r.get("snapshot_timestamp")) for r in filtered)
-    line_ready="READY" if reconciled else "NOT_READY"; price_ready="READY" if complete else "NOT_READY"
+    requested=set(range(start_week,end_week+1)); covered_set=set(covered)
+    priced_weeks={int((p["over"] or p["under"])["week"]) for p in pairs if p["complete"]}
+    line_ready="READY" if requested and covered_set >= requested else "PARTIAL" if covered_set else "NOT_READY"
+    price_ready="READY" if requested and priced_weeks >= requested else "PARTIAL" if priced_weeks else "NOT_READY"
     canonical_ids={normalize_player_id(r.get("canonical_player_id")) for r in reconciled}
     provider_names={str(r.get("provider_player_name")) for r in filtered if r.get("provider_player_name") not in (None,"")}
     missing_ids=sum(normalize_player_id(r.get("canonical_player_id")) is None for r in filtered)
     literal_none_ids=sum(str(r.get("canonical_player_id")).strip().casefold() in {"none","null"} for r in filtered if r.get("canonical_player_id") is not None)
     fallback={str(r.get("provider_player_name")).strip().casefold() for r in filtered if normalize_player_id(r.get("canonical_player_id")) is None and r.get("provider_player_name")}
-    identities_by_id={}
+    identities_by_id={}; game_teams_by_id={}
     for r in reconciled:
         if normalize_player_id(r.get("canonical_player_id")):
             name=" ".join("".join(c for c in str(r.get("provider_player_name") or r.get("player_name") or "").casefold() if c.isalnum() or c.isspace()).split())
-            identities_by_id.setdefault(str(r["canonical_player_id"]),set()).add((name,str(r.get("team") or "").casefold()))
-    identity_collisions={key:sorted([list(v) for v in values]) for key,values in identities_by_id.items() if len(values)>1}
+            canonical_id=str(r["canonical_player_id"]); team=str(r.get("team") or "").casefold()
+            identities_by_id.setdefault(canonical_id,set()).add(name)
+            game_teams_by_id.setdefault((canonical_id,str(r.get("game_id"))),set()).add(team)
+    conflicting_ids={key for key,names in identities_by_id.items() if len({n for n in names if n})>1}
+    conflicting_ids.update(key for (key,_game),teams in game_teams_by_id.items()
+                           if len({team for team in teams if team})>1)
+    identity_collisions={key:sorted([list(v) for v in {
+        ("name",name) for name in identities_by_id.get(key,set())
+    } | {
+        (game,team) for (canonical_id,game),teams in game_teams_by_id.items()
+        if canonical_id==key for team in teams
+    }]) for key in sorted(conflicting_ids)}
     collisions=len(identity_collisions)
     match_methods=Counter(str(r.get("reconciliation_method") or r.get("reconciliation_status") or "UNKNOWN") for r in reconciled)
     funnel_ambiguous=sum(int(stages.get("identity_ambiguous",0)) for stages in funnel.values())
@@ -95,6 +117,7 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
             for market,reasons in (data.get("rejections") or {}).items():
                 unknown_by_event_market[f"{event}|{market}"] += int(reasons.get("unknown_player",0))
     return {"network_contacted":False,"files_inspected":len(inspected),"inspected_files":inspected,"invalid_files":invalid,
+            "incomplete_quote_row_count":len(incomplete_rows),"incomplete_quote_rows":incomplete_rows,
             "existing_prop_rows":len(filtered),"reconciled_rows":len(reconciled),"events":len(events),"bookmakers":sorted(books),
             "games":len({r.get("game_id") for r in filtered if r.get("game_id")}),"players":len(canonical_ids | {"fallback:"+n for n in fallback}),
             "unique_canonical_player_ids":len(canonical_ids),"unique_provider_player_names":len(provider_names),
@@ -115,6 +138,8 @@ def audit_cache(root: Path, *, season: int, start_week: int, end_week: int) -> d
             "provider_id_matches":match_methods.get("EXACT_PROVIDER_ID",0),
             "name_team_game_matches":match_methods.get("EXACT_NAME_TEAM_GAME",0),
             "markets":dict(sorted(markets.items())),"weeks_covered":covered,
+            "weeks_missing":sorted(requested-covered_set),"price_weeks_covered":sorted(priced_weeks),
+            "price_weeks_missing":sorted(requested-priced_weeks),
             "missing_markets":sorted(set(CANONICAL_PLAYER_PROP_MARKETS)-set(markets)),"coverage":avail,
             "quote_count":len(filtered),"paired_over_under_count":complete,"gradeable_quote_count":complete*2,
             "unmatched_player_count":unmatched+funnel_unknown,"ambiguous_player_count":ambiguous+funnel_ambiguous,"invalid_timestamp_count":invalid_ts,

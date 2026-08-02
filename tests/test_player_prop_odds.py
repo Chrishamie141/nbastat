@@ -185,6 +185,8 @@ def test_offline_audit_partial_and_plan(tmp_path):
     d=tmp_path/"nfl/2025/week_01"; d.mkdir(parents=True); (d/"odds_player_props.json").write_text(json.dumps(quotes()))
     report=audit_cache(tmp_path,season=2025,start_week=1,end_week=2)
     assert report["network_contacted"] is False and report["coverage"]["passing_yards"]["HISTORICAL_PRICE_READY"] == "PARTIAL"
+    assert report["PLAYER_PROP_LINE_READY"] == report["PLAYER_PROP_PRICE_READY"] == "PARTIAL"
+    assert report["weeks_missing"] == report["price_weeks_missing"] == [2]
     plan=plan_acquisition([{"game_id":"g1","provider_event_id":"e1"}],tmp_path)
     assert plan["network_contacted"] is False and plan["requests_required"] == 1 and plan["estimated_credits"] == 60
 def test_audit_identity_does_not_count_null_as_a_player(tmp_path):
@@ -206,12 +208,44 @@ def test_raw_event_object_market_discovery(tmp_path):
     assert report["raw_provider_coverage"]=={"player_pass_tds":2,"player_pass_yds":2}
     assert report["raw_provider_coverage_by_event"]["e1"]=={"player_pass_tds":2,"player_pass_yds":2}
 
+
+def test_offline_audit_reports_incomplete_cache_rows_without_crashing(tmp_path):
+    d=tmp_path/"raw_cache/odds-api/nfl/2025/week_02"; d.mkdir(parents=True)
+    (d/"plan.json").write_text(json.dumps({"data":[{
+        "game_id":"g2", "week":2, "market":"player_pass_yds",
+        "canonical_player_id":"p2"
+    }]}))
+    report=audit_cache(tmp_path,season=2025,start_week=1,end_week=2)
+    assert report["quote_count"] == 0
+    assert report["incomplete_quote_row_count"] == 1
+    assert report["PLAYER_PROP_PRICE_READY"] == "NOT_READY"
+
 def test_audit_identity_collision_readiness(tmp_path):
     d=tmp_path/"nfl/2025/week_01"; d.mkdir(parents=True)
     rows=quotes()+[{**quotes()[0],"provider_player_name":"Materially Different","team":"MIA"}]
     (d/"player_prop_odds.json").write_text(json.dumps(rows))
     report=audit_cache(tmp_path,season=2025,start_week=1,end_week=1)
     assert report["identity_collision_count"]==1 and report["PLAYER_IDENTITY_READY"]=="NOT_READY"
+
+
+def test_audit_allows_same_player_to_change_teams_between_games(tmp_path):
+    first=quotes()[0]
+    rows=[first,{**first,"game_id":"g2","week":2,"team":"MIA"}]
+    for week in (1,2):
+        d=tmp_path/f"nfl/2025/week_{week:02d}"; d.mkdir(parents=True)
+        (d/"player_prop_odds.json").write_text(json.dumps([rows[week-1]]))
+    report=audit_cache(tmp_path,season=2025,start_week=1,end_week=2)
+    assert report["identity_collision_count"]==0
+    assert report["PLAYER_IDENTITY_READY"]=="READY"
 def test_missing_pricing_and_fair_sgp_label():
     assert availability([],requested_weeks=[1])["passing_yards"]["HISTORICAL_PRICE_READY"] == "NOT_READY"
     fair=simulation_fair_sgp_price(.25); assert fair["simulation_fair_decimal_odds"] == 4 and fair["sportsbook_ev"] is None and "MODEL_FAIR" in fair["price_type"]
+
+
+def test_availability_reports_incomplete_rows_without_crashing():
+    report = availability([
+        {"market": "passing_yards", "week": 1},
+        {"market": "passing_yards", "week": 1, "bookmaker": "book-a"},
+    ], requested_weeks=[1, 2])
+    assert report["passing_yards"]["HISTORICAL_PRICE_READY"] == "PARTIAL"
+    assert report["passing_yards"]["bookmakers"] == ["book-a"]

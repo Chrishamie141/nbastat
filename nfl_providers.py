@@ -173,7 +173,7 @@ def _fetch_json_structured(url: str, headers: dict[str,str]|None=None,
             try:
                 payload=json.loads(body)
             except (json.JSONDecodeError, TypeError, ValueError):
-                preview=body if body else "[empty provider body]"
+                preview=body[:MAX_PROVIDER_ERROR_CHARS] if body else "[empty provider body]"
                 raise StructuredHttpError(status=status, message=preview,
                     classification="INVALID_PROVIDER_RESPONSE", url=url,
                     headers=safe_headers) from None
@@ -227,7 +227,11 @@ def _decode_http_body(raw: bytes, headers: Any) -> str:
     controls = sum(ord(c) < 32 and c not in "\r\n\t" for c in text)
     if "\ufffd" in text or controls > max(2, len(text) // 20):
         return "[binary provider body omitted]"
-    return text[:MAX_PROVIDER_ERROR_CHARS]
+    # Successful JSON responses must be decoded in full before parsing.  The
+    # caller bounds malformed/error previews separately; truncating here turns
+    # every valid provider payload larger than the diagnostic limit into
+    # invalid JSON and can waste paid requests before the cache is written.
+    return text
 
 
 def _sanitize_provider_text(value: str, request_url: str = "") -> str:

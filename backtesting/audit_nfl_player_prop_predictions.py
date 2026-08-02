@@ -165,15 +165,19 @@ def audit(snapshot_root: Path, season: int, start_week: int, end_week: int, *,
                 recoverable=False, observed={"model_probability": probability},
                 expected="model probability is between zero and one inclusive",
                 detail="A model probability is outside its valid range."))
-        if row.get("readiness") != "READY":
+        ready = row.get("readiness") == "READY"
+        if not ready:
             findings.append(_validation_finding(row, "NOT_READY_PREDICTION", severity="WARNING",
                 recoverable=True, observed={"readiness": row.get("readiness")},
                 expected="READY prediction for probability audit", detail="Prediction is not ready for grading."))
-        if row.get("push_probability") is None:
+        # A not-ready row deliberately has no simulated probability payload. Report its
+        # readiness reason once instead of misclassifying the consequential null fields
+        # as independent missing-output defects.
+        if ready and row.get("push_probability") is None:
             findings.append(_validation_finding(row, "MISSING_PUSH_PROBABILITY", severity="WARNING",
                 recoverable=True, observed={"push_probability": None},
                 expected="push probability is recorded", detail="Push probability is unavailable."))
-        if not row.get("distribution_summary"):
+        if ready and not row.get("distribution_summary"):
             findings.append(_validation_finding(row, "MISSING_DISTRIBUTION_SUMMARY", severity="WARNING",
                 recoverable=True, observed={"distribution_summary": "missing"},
                 expected="simulation distribution summary is recorded", detail="Distribution diagnostics are unavailable."))

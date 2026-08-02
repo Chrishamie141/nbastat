@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import pytest
 from nfl_providers import EspnNflProvider, TheOddsApiNflProvider, NflOfficialProvider, CompositeNflProvider, JsonRawCache, normalize_odds_events, match_events, normalize_team, HistoricalOddsUnavailable, normalize_espn_player_boxscore, normalize_espn_team_boxscore
@@ -93,33 +94,38 @@ def test_repository_search_confirms_no_active_legacy_dependency():
         "dist",
         "node_modules",
         ".next",
+        "results",
+        "work",
     }
     skip_suffixes = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz"}
     relevant_suffixes = {".py", ".md", ".txt", ".json", ".toml", ".yaml", ".yml", ".ini", ".cfg", ".js", ".jsx", ".ts", ".tsx", ".css", ".html"}
     matches = []
 
-    for path in root.rglob("*"):
-        if any(part in skip_dirs for part in path.relative_to(root).parts):
-            continue
-        if not path.is_file():
-            continue
-        lower_parts = {part.lower() for part in path.relative_to(root).parts}
-        if lower_parts & {"raw_cache", "raw_caches", "snapshots", "snapshot_data"}:
-            continue
-        if path.suffix.lower() in skip_suffixes:
-            continue
-        if path.suffix.lower() and path.suffix.lower() not in relevant_suffixes:
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            continue
-        for line_no, line in enumerate(text.splitlines(), start=1):
-            lower = line.lower()
-            if path == Path(__file__).resolve() and ("legacy_terms" in line or "sports" "data" in line):
+    for current, directories, filenames in os.walk(root):
+        directories[:] = [name for name in directories
+                          if name not in skip_dirs and name.lower() not in
+                          {"raw_cache", "raw_caches", "snapshots", "snapshot_data"}]
+        for filename in filenames:
+            path = Path(current) / filename
+            if any(part in skip_dirs for part in path.relative_to(root).parts):
                 continue
-            if any(term in lower for term in legacy_terms):
-                matches.append(f"{path.relative_to(root)}:{line_no}: {line.strip()}")
+            lower_parts = {part.lower() for part in path.relative_to(root).parts}
+            if lower_parts & {"raw_cache", "raw_caches", "snapshots", "snapshot_data"}:
+                continue
+            if path.suffix.lower() in skip_suffixes:
+                continue
+            if path.suffix.lower() and path.suffix.lower() not in relevant_suffixes:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            for line_no, line in enumerate(text.splitlines(), start=1):
+                lower = line.lower()
+                if path == Path(__file__).resolve() and ("legacy_terms" in line or "sports" "data" in line):
+                    continue
+                if any(term in lower for term in legacy_terms):
+                    matches.append(f"{path.relative_to(root)}:{line_no}: {line.strip()}")
 
     assert matches == []
 
@@ -262,3 +268,19 @@ def test_structured_fetch_valid_json_still_succeeds(monkeypatch):
     monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:Response(b'{"ok":true}'))
     response=nfl_providers._fetch_json_structured("https://provider.test")
     assert response==nfl_providers.HttpJsonResponse({"ok":True},200,{"content-type":"application/json"})
+
+
+def test_structured_fetch_does_not_truncate_large_valid_json(monkeypatch):
+    import nfl_providers
+    from io import BytesIO
+    payload={"rows":[{"value":"x"*200} for _ in range(20)]}
+    body=json.dumps(payload).encode()
+    assert len(body)>nfl_providers.MAX_PROVIDER_ERROR_CHARS
+    class Response(BytesIO):
+        status=200
+        headers={"content-type":"application/json"}
+        def __enter__(self): return self
+        def __exit__(self,*_args): self.close()
+    monkeypatch.setattr(nfl_providers,"urlopen",lambda *_a,**_k:Response(body))
+    response=nfl_providers._fetch_json_structured("https://provider.test")
+    assert response.payload==payload

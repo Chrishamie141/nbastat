@@ -99,6 +99,28 @@ def test_recoverable_validation_finding_is_artifact_first_and_does_not_raise(tmp
     assert (output / "audit_manifest.json").exists()
 
 
+def test_not_ready_row_does_not_duplicate_consequential_missing_payload_findings(tmp_path):
+    _snapshot(tmp_path)
+    path = tmp_path / "nfl/2025/week_01/player_prop_predictions.json"
+    predictions = json.loads(path.read_text())
+    predictions[0].update({
+        "readiness": "NOT_READY_INSUFFICIENT_HISTORY",
+        "model_probability": None,
+        "over_probability": None,
+        "under_probability": None,
+        "push_probability": None,
+        "distribution_summary": None,
+    })
+    path.write_text(json.dumps(predictions))
+
+    report = audit(tmp_path, 2025, 1, 1, validate=True)
+    codes = [item["code"] for item in report["validation_findings"]]
+
+    assert codes.count("NOT_READY_PREDICTION") == 1
+    assert "MISSING_PUSH_PROBABILITY" not in codes
+    assert "MISSING_DISTRIBUTION_SUMMARY" not in codes
+
+
 def test_fatal_validation_finding_writes_artifacts_then_raises_structured_error(tmp_path):
     _snapshot(tmp_path)
     path = tmp_path / "nfl/2025/week_01/player_prop_predictions.json"

@@ -2,47 +2,47 @@
   "artifacts": {
     "calibration_report.json": {
       "path": "calibration_report.json",
-      "sha256": "b7d5e1d590513effcf05c3bd720c7ff11380138a51f81f03db4f76d5d6f1e80d"
+      "sha256": "aaa6bb64d604d11570901ef0f6629e197abf9b45153735d03f8a9e107e0078c0"
     },
     "distribution_comparison.csv": {
       "path": "distribution_comparison.csv",
-      "sha256": "f651b8e83618ab987f75d6e2e46a4ab418082b96ff1dd76056fcf30c9e2e4f22"
+      "sha256": "97afb4d66ff55fa6944b468b3d636e4a9c09ed219cb3c8a88913318ee25b1d3e"
     },
     "distribution_comparison.json": {
       "path": "distribution_comparison.json",
-      "sha256": "0ce205741f2d6539aceba3eec0fc062f04c86f87e8784a6797edeeefc9428d18"
+      "sha256": "e27771a8726f1afe28da71a0ba62766121cc40e5ec4f7992c6a3406ff79ab635"
     },
     "feature_availability.json": {
       "path": "feature_availability.json",
-      "sha256": "94dca61b5135f99a4e22b9c4ae04e5486baf805d5e73e37eb544a563b348b8e1"
+      "sha256": "2a0e5e403747f962eaa62e71ea9c4850054674eabce0c51b6d623a6ebd9d9132"
     },
     "permutation_importance.csv": {
       "path": "permutation_importance.csv",
-      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6"
+      "sha256": "81b8042fdd2dc91150c0ddd35297c42d5e491bc07da0eb22f8145dc4b6da23d2"
     },
     "permutation_importance.json": {
       "path": "permutation_importance.json",
-      "sha256": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+      "sha256": "3fa0c6639b528b4cd820f6819aa0b6958830090c1618ac955e2f1a56581c8476"
     },
     "reliability_plot.svg": {
       "path": "reliability_plot.svg",
-      "sha256": "43ba5d397d3307b9159856d033f6dedaf6001473a358c9b453773db674ca5149"
+      "sha256": "992abcb84f1b2da171b7dba173e013a46790dfad10fefe5f3697cc3a167de66b"
     },
     "research_summary.json": {
       "path": "research_summary.json",
-      "sha256": "a1e81c9b208dd751d6888201536c72c31fb916f1f6fa1a5a3a5f59af6eca8942"
+      "sha256": "d3ec18a55b8eb15c5fa471e83f655c3b785e01a7c574a0089453371048f78c72"
     },
     "residual_clusters.csv": {
       "path": "residual_clusters.csv",
-      "sha256": "89e8a21ab08b855892cbb828205a8af15ddac9f4c55811a022216624844dad30"
+      "sha256": "54644065e5c857e7ceceb9c84af83365ed2bf4a8653d555c596744a273e64241"
     },
     "residual_clusters.json": {
       "path": "residual_clusters.json",
-      "sha256": "d0cd1d475805e93cd5bb4ce41f5fade5758fe9f1ff556b39991a8345184c937e"
+      "sha256": "c314e5e5ef213131e6a2972bc323722e29e9d69fdeaa437c7bdc35bf870491fb"
     },
     "variance_model_report.json": {
       "path": "variance_model_report.json",
-      "sha256": "b7d5e1d590513effcf05c3bd720c7ff11380138a51f81f03db4f76d5d6f1e80d"
+      "sha256": "0de17d268dc394a7e70319cc9090509c1ac57d9be8023db81a67813ffc1d6f11"
     }
   },
   "baseline_comparison": null,
@@ -61,7 +61,7 @@
   },
   "configuration_hash": "8c7ccdcf8bc740ef13ada2d0dd769404885dc106a2164e7246b4f1d8f4afbaf5",
   "dataset": {
-    "independent_games": 16,
+    "independent_games": 271,
     "input_hashes": {
       "backtesting/data/snapshots/nfl/2025/week_01/games.json": "be38446045a3c5d4a6cdf58265e39f8e78abd5e79d268565c182160bee596057",
       "backtesting/data/snapshots/nfl/2025/week_01/odds.json": "9ed45d48ee5cf3aec40dfdd4d8c26d360666d6a28d585afe4566a8a5357f16a1",
@@ -69,17 +69,114 @@
       "backtesting/data/snapshots/nfl/2025/week_01/player_prop_model_features.json": "9100160077fdfb1753efc25de86d5bae9ac397d3a95ab568eb8f1d0201524760",
       "backtesting/data/snapshots/nfl/2025/week_01/player_prop_predictions.json": "4ebde6400776f00c556d9876e1fe5270b23d54dac650c678f1c024ffde1c2e96",
       "backtesting/data/snapshots/nfl/2025/week_02/games.json": "a5dd2486cd129e67a8e4011314ef4e817dd06a6873f26ba18e063cd4ea1b2dea",
+      "backtesting/data/snapshots/nfl/2025/week_02/odds.json": "b6370b0c0340a8ba236dcb744ef89fa9df5227921adc6d796ca4a1f29f77d53a",
+      "backtesting/data/snapshots/nfl/2025/week_02/player_identities.json": "0a522ee35cba243b97aa42b46002f981eb83c1cd04de80d621952fdded2147a0",
+      "backtesting/data/snapshots/nfl/2025/week_02/player_prop_model_features.json": "cd9d3cfd8495ea83b47c2f4a5665b934b60491a08226d3717d96a4313aab605c",
+      "backtesting/data/snapshots/nfl/2025/week_02/player_prop_predictions.json": "314de90b0d6baa91f50aeb395e2616908736ea345d1b3552c1475d561f3924b6",
       "backtesting/data/snapshots/nfl/2025/week_03/games.json": "05573b2f48c4b20cf2b42bb72447a71280e9d2ad0f25ad712ea0bdb1448fdd13",
+      "backtesting/data/snapshots/nfl/2025/week_03/odds.json": "e4d44b17c4b1f1536b636467391839a567b41a706a07f8bd6cac31267fe7bfe8",
+      "backtesting/data/snapshots/nfl/2025/week_03/player_identities.json": "07f4f4bdbb30148c3f8557e698ea8763d3c7addf424c57abab78048429de630d",
+      "backtesting/data/snapshots/nfl/2025/week_03/player_prop_model_features.json": "cb28add6e987ef5166decf279ce3d55fca08c2946f0f3fa21e7af01b84b5e16a",
+      "backtesting/data/snapshots/nfl/2025/week_03/player_prop_predictions.json": "7c879557ac0555349d1598685c7afec350950e97c0151876ae233077d3d5ea55",
       "backtesting/data/snapshots/nfl/2025/week_04/games.json": "ac0d4805cc1a4ec0b79242385c6b536878d5dce7001374f6f95720a14aa2e0a6",
+      "backtesting/data/snapshots/nfl/2025/week_04/odds.json": "146d6d8ab639497b3e3b35a8c7e6ba3ec84e5e9aaa022fca0186b1c466885c7c",
+      "backtesting/data/snapshots/nfl/2025/week_04/player_identities.json": "eadcaeb7326062f074d26cd791a1ad60898958a4982036af174cd14d927646e2",
+      "backtesting/data/snapshots/nfl/2025/week_04/player_prop_model_features.json": "15e3d66267537d0c9d0dada526170b38f4185f09b9a57e9b6e38004e7dd75254",
+      "backtesting/data/snapshots/nfl/2025/week_04/player_prop_predictions.json": "09fb45c32ef12caabd1794b38580515896ff1bbdd7fbcf075fc962d113ed003e",
       "backtesting/data/snapshots/nfl/2025/week_05/games.json": "da26db664c4f5c7037d15dcb0478f88415f9dda617d9eb6bdaf830d5e1285b08",
+      "backtesting/data/snapshots/nfl/2025/week_05/odds.json": "a39258d1412e2dac2811ae14d3676cb768daeb827b9d1c70258bd7996abbbfb8",
+      "backtesting/data/snapshots/nfl/2025/week_05/player_identities.json": "a3cc52a1066fccb2ffeb859ae4bfb75d80bdc8e1d6f570c5f20141ebe37dd856",
+      "backtesting/data/snapshots/nfl/2025/week_05/player_prop_model_features.json": "f301d7026cf384d5a29dee97b0402aafa5691900f39b824ac378517783453101",
+      "backtesting/data/snapshots/nfl/2025/week_05/player_prop_predictions.json": "64e95d5aea8818e7d27bba8cf70f4223eb97e782b6d0103034a4a2ec974a825a",
       "backtesting/data/snapshots/nfl/2025/week_06/games.json": "ebdba9eb48890c775ad9e83f2fdbbb208881f38858322438078245373f9a0c49",
-      "backtesting/results/nfl_player_props_2025_history/opportunity_rows.csv": "bf99e199c6b2289e49b1cdf1ab998a8f6371aa99aeb6b420a45c2ad246f10444"
+      "backtesting/data/snapshots/nfl/2025/week_06/odds.json": "85894ef9d5d7ad1eb87e93592be0bd37f06b5d8933682e76cb9ddafa66bc56dc",
+      "backtesting/data/snapshots/nfl/2025/week_06/player_identities.json": "b404db2cd81ae914e616e2cbfd47bce2e6b661350caf372877e76b2ac808e4cd",
+      "backtesting/data/snapshots/nfl/2025/week_06/player_prop_model_features.json": "31ca9f1a77adf7398ec5e90015824a96e7eeb416465b1e109796984b0dabea30",
+      "backtesting/data/snapshots/nfl/2025/week_06/player_prop_predictions.json": "8a6e6b2a88b5f6230533669a89fd6266a04ec83a5adace17126a2c87d9adba7c",
+      "backtesting/data/snapshots/nfl/2025/week_07/games.json": "497547334b734bab34633fb71680cfe20fff23d72bca66336baecd74c3ff19a1",
+      "backtesting/data/snapshots/nfl/2025/week_07/odds.json": "423875f1976f0ef68d7844cb70dbee6e0860535b9ba1cb9deef618f9bceba2d1",
+      "backtesting/data/snapshots/nfl/2025/week_07/player_identities.json": "4a223220fda54305c117c8b730ac43c0d4af95f6f2207802646d67de66805685",
+      "backtesting/data/snapshots/nfl/2025/week_07/player_prop_model_features.json": "79462fc93d31be546f487abfff6bf1f77b14e1b59e7b0bef3564d19336a1b40c",
+      "backtesting/data/snapshots/nfl/2025/week_07/player_prop_predictions.json": "1fed750f032b33f72acb8de78322bd93a738443dd4af7f313778911c436d8a78",
+      "backtesting/data/snapshots/nfl/2025/week_08/games.json": "d24f9ba2c006ad228a0c463a5e5fa05b2af7bab90681bbe4ebcd966bb7be1452",
+      "backtesting/data/snapshots/nfl/2025/week_08/odds.json": "3048b80b35efc22e52b1274b12b49b7edc029585e85c6983a6b7a039e52e6f85",
+      "backtesting/data/snapshots/nfl/2025/week_08/player_identities.json": "d3cac2712bccdd1ced0f180ecde44f541707570a47c64342a00df6474338a7f7",
+      "backtesting/data/snapshots/nfl/2025/week_08/player_prop_model_features.json": "5f81db24a73477fc8a1f19f8106753d8f62bb318ceb56df66548db14522cff2d",
+      "backtesting/data/snapshots/nfl/2025/week_08/player_prop_predictions.json": "8d521009170937f5bc98aa92ad523a407c36d28225d317405aeb3be41893d0fe",
+      "backtesting/data/snapshots/nfl/2025/week_09/games.json": "de4692731687f64a12c1d23a3ea192a7ac75f3967fbbfa3a0501416b3b25c4c2",
+      "backtesting/data/snapshots/nfl/2025/week_09/odds.json": "e1ce5069bb3da96fcb9ae8a3f98e8d3030edabf593edfbd81a2367f37089901e",
+      "backtesting/data/snapshots/nfl/2025/week_09/player_identities.json": "42bff88f7f6b10fd09d9a2f6411e466f7a0114159e26a0dfde80e1ecf74f4b91",
+      "backtesting/data/snapshots/nfl/2025/week_09/player_prop_model_features.json": "4bccf608ef8e75057be0aaeeda1a5baaa4d3faa745ec19fb54554e48dbdc5529",
+      "backtesting/data/snapshots/nfl/2025/week_09/player_prop_predictions.json": "3afe756d61d4167ddc0058772f88cfdd22d73e796a750f002c2abd40fd8a0025",
+      "backtesting/data/snapshots/nfl/2025/week_10/games.json": "583e4bb589afcf1c29b147614858e7101730ad030e9e7d6aae6bf8c12c4dbe32",
+      "backtesting/data/snapshots/nfl/2025/week_10/odds.json": "b75bf04f721e36c9599a53dfd07eccb5717e94dd44786c1c682ba35a8dd58778",
+      "backtesting/data/snapshots/nfl/2025/week_10/player_identities.json": "d67ae04e69d2197b384cf2f366161e4e1c33cd60143543fbcbf2ccaa53c90766",
+      "backtesting/data/snapshots/nfl/2025/week_10/player_prop_model_features.json": "3fdb22ca64aa759e84f3284ab69f28f9b0aa1c007e55bd24fa72b55722425a0e",
+      "backtesting/data/snapshots/nfl/2025/week_10/player_prop_predictions.json": "095234801e8b615916cc14d19519e6c5cccbd797e0c12be443c1d342f889920a",
+      "backtesting/data/snapshots/nfl/2025/week_11/games.json": "aed0645a3983372822e498758912a9f2b241f4b0d3ed4cddff0a797bb28a6ed1",
+      "backtesting/data/snapshots/nfl/2025/week_11/odds.json": "df40b58999561143de0d2d498291ca8918df8987dafdfde4ca15a6f0c793aa6f",
+      "backtesting/data/snapshots/nfl/2025/week_11/player_identities.json": "9814e484f162eceb19233292620fe55e8219e3ed7de58a981751c22d95445604",
+      "backtesting/data/snapshots/nfl/2025/week_11/player_prop_model_features.json": "9cb77a15454972cfe257611d7e02ff8184ce89421be805720c099f6e1e8e335b",
+      "backtesting/data/snapshots/nfl/2025/week_11/player_prop_predictions.json": "e4596c7e2353f79e53737e2a4652d662029425f3c6365ff76f17d90bf12c8b43",
+      "backtesting/data/snapshots/nfl/2025/week_12/games.json": "d1aa50a472ce2a59011f3e42e50a851f6a9fe5f7fdaf25b34796e498bcd55c79",
+      "backtesting/data/snapshots/nfl/2025/week_12/odds.json": "88c5e24e36c2496db7bfef314712525e88d494629496bf61ccc2d83bd11d2a38",
+      "backtesting/data/snapshots/nfl/2025/week_12/player_identities.json": "e06102d6f4b8439e740082fcdb43227d6caf52a9245a511500352c31fceae341",
+      "backtesting/data/snapshots/nfl/2025/week_12/player_prop_model_features.json": "f202f25096dc169bf28d6c09df8d64d245b881cb1ba892d4a4d58c4b6c1e67db",
+      "backtesting/data/snapshots/nfl/2025/week_12/player_prop_predictions.json": "16168b39259c6a3813b28699f0bc91d0de1c4a0e82328c8667e83d999a8d412a",
+      "backtesting/data/snapshots/nfl/2025/week_13/games.json": "f1f9e5ddb6ef5999f63695bace660fdefde85dabbacbe2db14bf23d73f17e8ad",
+      "backtesting/data/snapshots/nfl/2025/week_13/odds.json": "9aaf39d0c1045e4a3b345ab0345b5f435ff7cebf4bcb634be1f40565aaeb839c",
+      "backtesting/data/snapshots/nfl/2025/week_13/player_identities.json": "6efba10439fbc33a5aeec7929b7d7dd3ae68d1cb6d71d6f4ffbb2dff5f2ba696",
+      "backtesting/data/snapshots/nfl/2025/week_13/player_prop_model_features.json": "0f657a8289073e14da50b8d836ca3696abc265cbe019b4a135a8a65896ec4666",
+      "backtesting/data/snapshots/nfl/2025/week_13/player_prop_predictions.json": "2425f63b3616c067256ef443a4183091b1afca9a298337c5e4d7410b5f64e23e",
+      "backtesting/data/snapshots/nfl/2025/week_14/games.json": "e597af47316a2d818909064f06c68028abe68354149d6f9b9e3f9c5d25196283",
+      "backtesting/data/snapshots/nfl/2025/week_14/odds.json": "5fd74dbc229fd10cc32c63ccc48e100a1dc27ce60c32946d35af0db7d073fe05",
+      "backtesting/data/snapshots/nfl/2025/week_14/player_identities.json": "26ccf48f9c9e32da0919038523e8a1873b7b83ce77bfe71e6aed47f31ce43bdc",
+      "backtesting/data/snapshots/nfl/2025/week_14/player_prop_model_features.json": "09c82faeaeef511a7dd5ae172f62ea278243e5f93b0e535716b0cc88c6fb60a8",
+      "backtesting/data/snapshots/nfl/2025/week_14/player_prop_predictions.json": "ed3068ac668c1ab857d881565c6b1ed6b52dd2aee7f4f8bd446bba341f73ff27",
+      "backtesting/data/snapshots/nfl/2025/week_15/games.json": "b6a4e5104c5a518defff48c2759bc651ad88a78c496974c4a489c5baad6c850e",
+      "backtesting/data/snapshots/nfl/2025/week_15/odds.json": "ccc000899d826f1bb6e621d46b4e9b643dbe948999234fae78a2a4ef839f6f0a",
+      "backtesting/data/snapshots/nfl/2025/week_15/player_identities.json": "9872ac573f8fb1fe654a2365f4207df9914688f43ee5a6ff68e794fa2d98db0b",
+      "backtesting/data/snapshots/nfl/2025/week_15/player_prop_model_features.json": "fd8464a52d94a266fe4839d8c179db8456d5e61a04fc03fba4d27713f138b148",
+      "backtesting/data/snapshots/nfl/2025/week_15/player_prop_predictions.json": "2dc7a2fac4f2506f5283aab1b10b2203c580015129446305882b896a16cb146c",
+      "backtesting/data/snapshots/nfl/2025/week_16/games.json": "1498da826dfe04c893c056a4b0102b9247f1d5a3e28daf4ab3d2124fdb14de14",
+      "backtesting/data/snapshots/nfl/2025/week_16/odds.json": "30b4480b58cb8e1fcf489e4c1b99d6d1ca598fa99e384ede0a80783803ca5286",
+      "backtesting/data/snapshots/nfl/2025/week_16/player_identities.json": "f8abbb14486d3195d00e691cb7595b1519132c44c6ccda7d022a7e2c24894bb4",
+      "backtesting/data/snapshots/nfl/2025/week_16/player_prop_model_features.json": "afb4c68ea34ccda6c47643775b0570414a8fb52b529e2361741434ffb1993edb",
+      "backtesting/data/snapshots/nfl/2025/week_16/player_prop_predictions.json": "8e448f35b6a0a85420e80c4897f3b370b366318f33285e40538575c619205949",
+      "backtesting/data/snapshots/nfl/2025/week_17/games.json": "aefcf64be5a6389a5f2a73461fc4026581876c095df6053b9c8c4eb842184cd1",
+      "backtesting/data/snapshots/nfl/2025/week_17/odds.json": "8ed02a57943c7198afd79e5e87c6b465658129db5b7b24e5838f026d3d54c211",
+      "backtesting/data/snapshots/nfl/2025/week_17/player_identities.json": "52f32172310857e097443b7b367aa61bc9e547704e4b0d46b7a3d381d031e463",
+      "backtesting/data/snapshots/nfl/2025/week_17/player_prop_model_features.json": "2342800d13824f38e4f649577f96e434604692366753a63c5a6d6bc940227ee1",
+      "backtesting/data/snapshots/nfl/2025/week_17/player_prop_predictions.json": "0fd94f7b9f915ab9b7745f0e1d58e329735d5aae3a4d84366817f1d832231eef",
+      "backtesting/data/snapshots/nfl/2025/week_18/games.json": "67bef2adf25b3a98350f9cec8a2aa99c87eb898de762dfc3983035b96727ca44",
+      "backtesting/data/snapshots/nfl/2025/week_18/odds.json": "cb57536bb929990a9234757a95adbb76453fc510239c30c2460f792eba100cb0",
+      "backtesting/data/snapshots/nfl/2025/week_18/player_identities.json": "dba3b17ea3020a6fbfcb7479c35a870665281325d85452ae8ac59e589241e9e1",
+      "backtesting/data/snapshots/nfl/2025/week_18/player_prop_model_features.json": "66cb9cb68311b8767946343f98385e7024bbfd0eb3b1cf66e5aacf0741511fdc",
+      "backtesting/data/snapshots/nfl/2025/week_18/player_prop_predictions.json": "9a947d8b4d6770db895f4d65f0dc021b99d5c9bc562eac0a2e5f86c6088908a5",
+      "backtesting/results/nfl_player_props_2025_history/opportunity_rows.csv": "21fcbe4f55adefdfecfec00ac5e78b33e9364fcf11aa40d5147ce4612750deed"
     },
-    "opportunities": 1836
+    "opportunities": 36590
   },
   "evaluation_window": {
     "evaluated_weeks": [
-      1
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
     ],
     "requested_weeks": [
       1,
@@ -106,249 +203,266 @@
   "evidence": {
     "leakage_safe": true,
     "out_of_sample": true,
-    "status": "INSUFFICIENT_HISTORY"
+    "status": "PROMOTION_ELIGIBLE_SAMPLE"
   },
-  "experiment_id": "nfl_game_baseline_v3.2025.w01-w18.a4d5378e021f",
-  "git_commit": "47dfab1d594edad6f62a6814fd19ff19269aa418",
+  "experiment_id": "nfl_game_baseline_v3.2025.w01-w18.636acba06a4a",
+  "git_commit": "b460b627caaafd6259cb0c579ead18c43fad5aa7",
   "metrics": {
     "by_confidence_bucket": {
       "0-10%": {
-        "brier_score": 0.4921984660206046,
-        "ece": 0.4947947015306122,
-        "log_loss": 2.962334380898597,
-        "opportunities": 392,
-        "roi": -0.013783457038907182,
-        "settled": 392,
-        "units_profit": -5.403115159251615
+        "bets": 12798,
+        "brier_score": 0.47360375609594485,
+        "ece": 0.4726286293170808,
+        "log_loss": 4.515802145866752,
+        "opportunities": 12798,
+        "roi": -0.07393561651582573,
+        "settled": 12798,
+        "units_profit": -946.2280201695377
       },
       "10-20%": {
-        "brier_score": 0.34936304689655173,
-        "ece": 0.31931862068965516,
-        "log_loss": 0.9771162099043051,
-        "opportunities": 145,
-        "roi": -0.09150808751453078,
-        "settled": 145,
-        "units_profit": -13.268672689606964
+        "bets": 1832,
+        "brier_score": 0.3570578423635371,
+        "ece": 0.3269248362445415,
+        "log_loss": 1.0018510348581107,
+        "opportunities": 1832,
+        "roi": -0.07140964873280688,
+        "settled": 1832,
+        "units_profit": -130.8224764785022
       },
       "20-30%": {
-        "brier_score": 0.3000209169354839,
-        "ece": 0.22032419354838706,
-        "log_loss": 0.8127230947213762,
-        "opportunities": 124,
-        "roi": -0.07898865039059356,
-        "settled": 124,
-        "units_profit": -9.794592648433602
+        "bets": 1415,
+        "brier_score": 0.31983440510954064,
+        "ece": 0.2642084098939929,
+        "log_loss": 0.8558789450084158,
+        "opportunities": 1415,
+        "roi": -0.009544598027333526,
+        "settled": 1415,
+        "units_profit": -13.505606208676939
       },
       "30-40%": {
-        "brier_score": 0.2770992430973451,
-        "ece": 0.15999911504424782,
-        "log_loss": 0.7501384557101138,
-        "opportunities": 113,
-        "roi": 0.02621578759999345,
-        "settled": 113,
-        "units_profit": 2.96238399879926
+        "bets": 1141,
+        "brier_score": 0.27889396314636283,
+        "ece": 0.16654872918492547,
+        "log_loss": 0.7540877570240767,
+        "opportunities": 1141,
+        "roi": -0.014869533230381845,
+        "settled": 1141,
+        "units_profit": -16.966137415865685
       },
       "40-50%": {
-        "brier_score": 0.25477430256944444,
-        "ece": 0.08232569444444443,
-        "log_loss": 0.702816317436583,
-        "opportunities": 144,
-        "roi": 0.03276954862490733,
-        "settled": 144,
-        "units_profit": 4.7188150019866555
+        "bets": 1108,
+        "brier_score": 0.25461374377256313,
+        "ece": 0.06658736462093862,
+        "log_loss": 0.7024892665499946,
+        "opportunities": 1108,
+        "roi": -0.030027951171154005,
+        "settled": 1108,
+        "units_profit": -33.270969897638636
       },
       "50-60%": {
-        "brier_score": 0.25477430256944444,
-        "ece": 0.08232569444444449,
-        "log_loss": 0.702816317436583,
-        "opportunities": 144,
-        "roi": -0.14482644391021846,
-        "settled": 144,
-        "units_profit": -20.855007923071458
+        "bets": 1110,
+        "brier_score": 0.25460543072072067,
+        "ece": 0.06646738738738739,
+        "log_loss": 0.702472433962625,
+        "opportunities": 1110,
+        "roi": -0.07491750216039822,
+        "settled": 1110,
+        "units_profit": -83.15842739804202
       },
       "60-70%": {
-        "brier_score": 0.27876977205357145,
-        "ece": 0.16410625000000006,
-        "log_loss": 0.7536515227795011,
-        "opportunities": 112,
-        "roi": -0.10565878926333597,
-        "settled": 112,
-        "units_profit": -11.833784397493629
+        "bets": 1138,
+        "brier_score": 0.2786889384446397,
+        "ece": 0.1660211775043937,
+        "log_loss": 0.7536463182881203,
+        "opportunities": 1138,
+        "roi": -0.08698855068101424,
+        "settled": 1138,
+        "units_profit": -98.99297067499421
       },
       "70-80%": {
-        "brier_score": 0.29834074959999995,
-        "ece": 0.21616159999999995,
-        "log_loss": 0.809074709515115,
-        "opportunities": 125,
-        "roi": 0.004933527692150255,
-        "settled": 125,
-        "units_profit": 0.6166909615187819
+        "bets": 1415,
+        "brier_score": 0.32050578320141343,
+        "ece": 0.2654098233215548,
+        "log_loss": 0.8573596445834321,
+        "opportunities": 1415,
+        "roi": -0.07650995122228335,
+        "settled": 1415,
+        "units_profit": -108.26158097953095
       },
       "80-90%": {
-        "brier_score": 0.34936304689655173,
-        "ece": 0.3193186206896552,
-        "log_loss": 0.9771162099043051,
-        "opportunities": 145,
-        "roi": 0.0032195271517561808,
-        "settled": 145,
-        "units_profit": 0.46683143700464624
+        "bets": 1832,
+        "brier_score": 0.3562336065556769,
+        "ece": 0.3256693777292575,
+        "log_loss": 0.9996451942207182,
+        "opportunities": 1832,
+        "roi": -0.01858583781826032,
+        "settled": 1832,
+        "units_profit": -34.04925488305291
       },
       "90-100%": {
-        "brier_score": 0.4921984660206046,
-        "ece": 0.4947947015306122,
-        "log_loss": 2.9623343808962526,
-        "opportunities": 392,
-        "roi": -0.09579404319993305,
-        "settled": 392,
-        "units_profit": -37.551264934373755
+        "bets": 12801,
+        "brier_score": 0.4736200976889229,
+        "ece": 0.4726506677603312,
+        "log_loss": 4.515111818874985,
+        "opportunities": 12801,
+        "roi": -0.031211755988354167,
+        "settled": 12801,
+        "units_profit": -399.5416884069217
       }
     },
     "by_market": {
       "passing_tds": {
-        "brier_score": 0.18598850760000002,
-        "ece": 0.14154,
-        "log_loss": 0.5466083731912994,
-        "opportunities": 50,
-        "roi": -0.032042141336240754,
-        "settled": 50,
-        "units_profit": -1.6021070668120378
+        "bets": 968,
+        "brier_score": 0.31598590435950624,
+        "ece": 0.22482045247933885,
+        "log_loss": 0.9947699369747621,
+        "opportunities": 968,
+        "roi": -0.015822210450136466,
+        "settled": 968,
+        "units_profit": -15.315899715732098
       },
       "passing_yards": {
-        "brier_score": 0.4183524390436782,
-        "ece": 0.3825224086956522,
-        "log_loss": 2.474977355934361,
-        "opportunities": 230,
-        "roi": -0.05649919966318364,
-        "settled": 230,
-        "units_profit": -12.994815922532236
+        "bets": 4534,
+        "brier_score": 0.4491203546850551,
+        "ece": 0.43130131451257175,
+        "log_loss": 3.9807043055422944,
+        "opportunities": 4534,
+        "roi": -0.05797625270327493,
+        "settled": 4534,
+        "units_profit": -262.86432975664854
       },
       "receiving_yards": {
-        "brier_score": 0.3866201588487292,
-        "ece": 0.34273336034115137,
-        "log_loss": 1.95989492610476,
-        "opportunities": 938,
-        "roi": -0.05460940448049286,
-        "settled": 938,
-        "units_profit": -51.22362140270231
+        "bets": 18554,
+        "brier_score": 0.46571899396730165,
+        "ece": 0.4548616623908591,
+        "log_loss": 4.68558418540883,
+        "opportunities": 18554,
+        "roi": -0.054770964317825195,
+        "settled": 18554,
+        "units_profit": -1016.2204719529287
       },
       "receptions": {
-        "brier_score": 0.31150962615384614,
-        "ece": 0.22411242603550297,
-        "log_loss": 0.8948684053159147,
-        "opportunities": 338,
-        "roi": -0.03217133584441984,
-        "settled": 338,
-        "units_profit": -10.873911515413907
+        "bets": 7014,
+        "brier_score": 0.3454861908925147,
+        "ece": 0.28402308269175935,
+        "log_loss": 1.2902126708565513,
+        "opportunities": 7014,
+        "roi": -0.04136717713924144,
+        "settled": 7014,
+        "units_profit": -290.14938045463947
       },
       "rushing_attempts": {
-        "brier_score": 0.40273067452380956,
-        "ece": 0.34443571428571423,
-        "log_loss": 1.3880594954254835,
-        "opportunities": 84,
-        "roi": -0.024012618576468532,
-        "settled": 84,
-        "units_profit": -2.0170599604233566
+        "bets": 1506,
+        "brier_score": 0.3953502704648964,
+        "ece": 0.36456060159362547,
+        "log_loss": 2.025570168795199,
+        "opportunities": 1506,
+        "roi": -0.05188742224581674,
+        "settled": 1506,
+        "units_profit": -78.14245790220001
       },
       "rushing_yards": {
-        "brier_score": 0.4607840345918367,
-        "ece": 0.4135295918367347,
-        "log_loss": 1.6597571611005095,
-        "opportunities": 196,
-        "roi": -0.05729694125019304,
-        "settled": 196,
-        "units_profit": -11.230200485037836
+        "bets": 4014,
+        "brier_score": 0.38244624168914154,
+        "ece": 0.35295734578973587,
+        "log_loss": 1.7215949571971405,
+        "opportunities": 4014,
+        "roi": -0.05034992345057652,
+        "settled": 4014,
+        "units_profit": -202.10459273061414
       }
     },
     "calibration_curve": [
       {
-        "absolute_calibration_error": 0.4947947015306122,
+        "absolute_calibration_error": 0.4726286293170808,
         "bucket": "0-10%",
-        "count": 392,
-        "observed_win_rate": 0.5229591836734694,
-        "predicted_probability_mean": 0.02816448214285714
+        "count": 12798,
+        "observed_win_rate": 0.48499765588373184,
+        "predicted_probability_mean": 0.012369026566651039
       },
       {
-        "absolute_calibration_error": 0.31931862068965516,
+        "absolute_calibration_error": 0.3269248362445415,
         "bucket": "10-20%",
-        "count": 145,
-        "observed_win_rate": 0.4689655172413793,
-        "predicted_probability_mean": 0.14964689655172414
+        "count": 1832,
+        "observed_win_rate": 0.47434497816593885,
+        "predicted_probability_mean": 0.14742014192139735
       },
       {
-        "absolute_calibration_error": 0.22032419354838706,
+        "absolute_calibration_error": 0.2642084098939929,
         "bucket": "20-30%",
-        "count": 124,
-        "observed_win_rate": 0.46774193548387094,
-        "predicted_probability_mean": 0.24741774193548388
+        "count": 1415,
+        "observed_win_rate": 0.5102473498233215,
+        "predicted_probability_mean": 0.24603893992932863
       },
       {
-        "absolute_calibration_error": 0.15999911504424785,
+        "absolute_calibration_error": 0.16654872918492547,
         "bucket": "30-40%",
-        "count": 113,
-        "observed_win_rate": 0.5132743362831859,
-        "predicted_probability_mean": 0.353275221238938
+        "count": 1141,
+        "observed_win_rate": 0.516213847502191,
+        "predicted_probability_mean": 0.34966511831726554
       },
       {
-        "absolute_calibration_error": 0.08232569444444443,
+        "absolute_calibration_error": 0.06658736462093862,
         "bucket": "40-50%",
-        "count": 144,
-        "observed_win_rate": 0.5347222222222222,
-        "predicted_probability_mean": 0.4523965277777778
+        "count": 1108,
+        "observed_win_rate": 0.5153429602888087,
+        "predicted_probability_mean": 0.44875559566787004
       },
       {
-        "absolute_calibration_error": 0.08232569444444449,
+        "absolute_calibration_error": 0.06646738738738739,
         "bucket": "50-60%",
-        "count": 144,
-        "observed_win_rate": 0.4652777777777778,
-        "predicted_probability_mean": 0.5476034722222223
+        "count": 1110,
+        "observed_win_rate": 0.4846846846846847,
+        "predicted_probability_mean": 0.5511520720720721
       },
       {
-        "absolute_calibration_error": 0.16410625000000006,
+        "absolute_calibration_error": 0.1660211775043937,
         "bucket": "60-70%",
-        "count": 112,
-        "observed_win_rate": 0.48214285714285715,
-        "predicted_probability_mean": 0.6462491071428572
+        "count": 1138,
+        "observed_win_rate": 0.484182776801406,
+        "predicted_probability_mean": 0.6502039543057997
       },
       {
-        "absolute_calibration_error": 0.21616159999999995,
+        "absolute_calibration_error": 0.2654098233215548,
         "bucket": "70-80%",
-        "count": 125,
-        "observed_win_rate": 0.536,
-        "predicted_probability_mean": 0.7521616
+        "count": 1415,
+        "observed_win_rate": 0.488339222614841,
+        "predicted_probability_mean": 0.7537490459363958
       },
       {
-        "absolute_calibration_error": 0.3193186206896552,
+        "absolute_calibration_error": 0.3256693777292575,
         "bucket": "80-90%",
-        "count": 145,
-        "observed_win_rate": 0.5310344827586206,
-        "predicted_probability_mean": 0.8503531034482759
+        "count": 1832,
+        "observed_win_rate": 0.5267467248908297,
+        "predicted_probability_mean": 0.8524161026200873
       },
       {
-        "absolute_calibration_error": 0.4947947015306122,
+        "absolute_calibration_error": 0.47265066776033116,
         "bucket": "90-100%",
-        "count": 392,
-        "observed_win_rate": 0.4770408163265306,
-        "predicted_probability_mean": 0.9718355178571428
+        "count": 12801,
+        "observed_win_rate": 0.514959768768065,
+        "predicted_probability_mean": 0.9876104365283962
       }
     ],
     "overall": {
-      "brier_score": 0.37995833139441937,
-      "ece": 0.32409120152505444,
-      "log_loss": 1.73166207701468,
-      "opportunities": 1836,
-      "roi": -0.04898786293732117,
+      "bets": 36590,
+      "brier_score": 0.424621839901935,
+      "ece": 0.39821226007105764,
+      "log_loss": 3.415094892106546,
+      "opportunities": 36590,
+      "roi": -0.050964666097643156,
       "roi_uncertainty": {
-        "clusters": 16,
+        "clusters": 271,
         "confidence_interval_95": [
-          -0.05195874325514498,
-          -0.04606318164669288
+          -0.05224093473404938,
+          -0.04977395223831586
         ],
         "draws": 2000,
         "method": "deterministic_game_cluster_bootstrap",
-        "standard_error": 0.001543937195365762
+        "standard_error": 0.0006251869781218018
       },
-      "settled": 1836,
-      "units_profit": -89.94171635292167
+      "settled": 36590,
+      "units_profit": -1864.797132512763
     }
   },
   "model_id": "nfl_game_baseline_v3",

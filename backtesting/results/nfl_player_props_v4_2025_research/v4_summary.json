@@ -1,62 +1,79 @@
 {
   "baseline_comparison": {
     "baseline_metrics": {
-      "brier_score": 0.37995833139441937,
-      "ece": 0.32409120152505444,
-      "log_loss": 1.73166207701468,
-      "roi": -0.07535471720267309
+      "brier_score": 0.424621839901935,
+      "ece": 0.39821226007105764,
+      "log_loss": 3.415094892106546,
+      "roi": -0.04082680939402797
     },
     "baseline_model_id": "nfl_game_baseline_v3",
     "bootstrap_draws": 1000,
     "bootstrap_method": "deterministic_game_cluster_bootstrap",
     "candidate_metrics": {
-      "brier_score": 0.2828168040251467,
-      "ece": 0.17161652816801878,
-      "log_loss": 0.8142339682896527,
-      "roi": 0.008149857808792993
+      "brier_score": 0.31425610109391816,
+      "ece": 0.22432635047056246,
+      "log_loss": 0.9157293786067631,
+      "roi": -0.021295635877992367
     },
     "metric_deltas": {
       "brier_score": {
         "ci_95": [
-          -0.14623431611293147,
-          -0.04415022959841525
+          -0.1257213518529829,
+          -0.09469199759011937
         ],
-        "estimate": -0.09714152736927267
+        "estimate": -0.11036573880801687
       },
       "ece": {
         "ci_95": [
-          -0.2285866791415317,
-          -0.07438673588147976
+          -0.19342034970748936,
+          -0.15218263641905316
         ],
-        "estimate": -0.15247467335703566
+        "estimate": -0.1738859096004952
       },
       "log_loss": {
         "ci_95": [
-          -1.2922241788231017,
-          -0.6117392978807401
+          -2.7114431045462086,
+          -2.3106132708042177
         ],
-        "estimate": -0.9174281087250273
+        "estimate": -2.4993655134997828
       },
       "roi": {
         "ci_95": [
-          -0.08151802284894008,
-          0.22948892898341755
+          -0.0192674397885377,
+          0.055250549876671044
         ],
-        "estimate": 0.08350457501146608
+        "estimate": 0.019531173516035602
       }
     },
     "paired_opportunities": true
   },
-  "calibration_status": "INSUFFICIENT_HISTORY",
+  "calibration_status": "COMPLETE",
   "evaluated_weeks": [
-    1
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
   ],
-  "evaluation_opportunities": 1836,
+  "evaluation_opportunities": 36590,
   "evaluation_season": 2025,
   "exclusions": 0,
   "model_id": "nfl_prop_v4_research_v1",
   "network_contacted": false,
-  "promotion_status": "RESEARCH_ONLY_INSUFFICIENT_EVALUATION_HISTORY",
+  "promotion_status": "RESEARCH_ONLY_PENDING_PROMOTION_CHECK",
   "schema_version": 1,
   "training_samples": 11880,
   "training_seasons": [

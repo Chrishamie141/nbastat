@@ -4,7 +4,7 @@ import pytest
 
 from backtesting.research_nfl_player_prop_v4 import (
     DISTRIBUTIONS, FEATURES, _cross_fit_variance, _kelly, _probabilities, _walk_forward_calibration_v4,
-    build_training_samples,
+    _stable_model_definition, build_training_samples,
 )
 
 
@@ -67,3 +67,12 @@ def test_variance_is_cross_fitted_only_from_earlier_residual_folds():
     _cross_fit_variance(rows,1729,min_train_rows=20)
     assert all("predicted_variance" not in row for row in rows if row["test_week"] in {9,11})
     assert all(row["predicted_variance"] >= .25 for row in rows if row["test_week"] == 13)
+
+
+def test_model_registration_contract_ignores_only_source_commit():
+    previous = {"model_id": "m", "state": "experimental", "git_commit": "old"}
+    current = {"model_id": "m", "state": "experimental", "git_commit": "new"}
+    stable_previous = _stable_model_definition(previous)
+    stable_current = _stable_model_definition(current)
+    assert stable_previous == stable_current
+    assert stable_previous != {"model_id": "m", "state": "candidate"}

@@ -1,0 +1,118 @@
+{
+  "builder_version": "phase2-leakage-safe",
+  "created_at": "2026-08-02T02:06:19.977887Z",
+  "cutoff_policy": "Every feature timestamp must be strictly before its game's kickoff; outcomes are grading-only.",
+  "datasets": {
+    "games": {
+      "records": 16,
+      "source": "espn",
+      "status": "complete"
+    },
+    "injuries": {
+      "reason": "historical provider unavailable or local export missing",
+      "records": 0,
+      "source": "none",
+      "status": "optional_empty"
+    },
+    "odds": {
+      "records": 1026,
+      "source": "the-odds-api-historical",
+      "status": "complete"
+    },
+    "outcomes": {
+      "records": 16,
+      "source": "espn-scoreboard",
+      "status": "complete"
+    },
+    "player_stats": {
+      "records": 442,
+      "source": "espn",
+      "status": "complete"
+    },
+    "team_stats": {
+      "records": 32,
+      "source": "espn-scoreboard",
+      "status": "complete"
+    },
+    "weather": {
+      "reason": "historical provider unavailable or local export missing",
+      "records": 0,
+      "source": "none",
+      "status": "optional_empty"
+    }
+  },
+  "generated_at": "2026-08-02T02:06:19.977887Z",
+  "league": "nfl",
+  "leakage_checks_passed": false,
+  "normalization_version": "nfl-historical-v1",
+  "prediction_cutoffs": {
+    "espn-401772612": "2025-12-19T21:55:37Z",
+    "espn-401772613": "2025-12-20T01:15:37Z",
+    "espn-401772801": "2025-12-20T17:55:37Z",
+    "espn-401772802": "2025-12-20T17:55:37Z",
+    "espn-401772803": "2025-12-20T17:55:37Z",
+    "espn-401772804": "2025-12-21T01:15:37Z",
+    "espn-401772805": "2025-12-20T21:20:37Z",
+    "espn-401772806": "2025-12-20T21:20:37Z",
+    "espn-401772824": "2025-12-22T01:10:37Z",
+    "espn-401772910": "2025-12-20T17:55:37Z",
+    "espn-401772911": "2025-12-20T17:55:37Z",
+    "espn-401772912": "2025-12-20T17:55:37Z",
+    "espn-401772913": "2025-12-20T21:00:39Z",
+    "espn-401772914": "2025-12-20T21:00:39Z",
+    "espn-401772934": "2025-12-20T17:55:37Z",
+    "espn-401772949": "2025-12-18T01:10:38Z"
+  },
+  "schema_version": 1,
+  "season": 2025,
+  "source_lineage": {
+    "games": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn",
+      "records": 16
+    },
+    "injuries": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "none",
+      "records": 0
+    },
+    "odds": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "the-odds-api-historical",
+      "records": 1026
+    },
+    "outcomes": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn-scoreboard",
+      "records": 16
+    },
+    "player_stats": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn",
+      "records": 442
+    },
+    "team_stats": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "espn-scoreboard",
+      "records": 32
+    },
+    "weather": {
+      "original_event_timestamp_field": "captured_at/data_as_of",
+      "provider": "none",
+      "records": 0
+    }
+  },
+  "source_versions": {
+    "games": "espn",
+    "injuries": "none",
+    "odds": "the-odds-api-historical",
+    "outcomes": "espn-scoreboard",
+    "player_stats": "espn",
+    "team_stats": "espn-scoreboard",
+    "weather": "none"
+  },
+  "warnings": [
+    "no configured provider supports historical weather"
+  ],
+  "week": 16
+}

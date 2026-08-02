@@ -33,6 +33,7 @@ ARTIFACTS = ("season_summary.json", "weekly_metrics.json", "market_metrics.json"
              "probability_direction_audit.json", "distribution_diagnostics.json",
              "systemic_findings.json", "failed_weeks.json",
              "audit_validation_findings.json", "edge_bucket_metrics.json")
+RESUME_SCHEMA_VERSION = 2
 
 
 def _json(path: Path, default: Any) -> Any:
@@ -187,7 +188,8 @@ def run(*, season: int, start_week: int, end_week: int, snapshot_root: Path,
         validate: bool = False, resume: bool = False) -> dict[str, Any]:
     if start_week > end_week: raise ValueError("start week must not exceed end week")
     output_dir.mkdir(parents=True, exist_ok=True)
-    config = {"season":season,"model_version":model_version,"simulations":simulations,"seed":seed,
+    config = {"resume_schema_version":RESUME_SCHEMA_VERSION,
+              "season":season,"model_version":model_version,"simulations":simulations,"seed":seed,
               "build_missing_predictions":build_missing_predictions,
               "overwrite_predictions":overwrite_predictions,"strict_outcomes":strict_outcomes,
               "market":market,"bookmaker":bookmaker,"validate":validate}

@@ -4,7 +4,8 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 from backtesting import build_nfl_player_props
-from backtesting.build_nfl_player_props import PaidBudgetExceeded, execute, persist_week
+from backtesting.build_nfl_player_props import (PaidBudgetExceeded, execute, persist_week,
+                                                 validate_paid_authorization)
 from backtesting.player_prop_acquisition import cache_path, plan_acquisition
 from backtesting.player_prop_odds import (deduplicate_quotes, evaluate_persisted_quotes,
                                           validate_player_prop_rows)
@@ -101,6 +102,16 @@ def test_plan_is_multimarket_exact_and_read_only(tmp_path,monkeypatch):
     assert list(tmp_path.rglob("*"))==before
     assert plan["provider_requests"]==plan["paid_requests_required"]==1
     assert plan["estimated_credits"]==60 and len(plan["markets_requested"])==6
+
+
+def test_paid_authorization_requires_and_enforces_reviewed_ceiling():
+    plan={"paid_requests_required":256}
+    with pytest.raises(PaidBudgetExceeded,match="required"):
+        validate_paid_authorization(plan,allow_paid=True,max_paid_requests=None)
+    with pytest.raises(PaidBudgetExceeded,match="exceed authorized"):
+        validate_paid_authorization(plan,allow_paid=True,max_paid_requests=255)
+    validate_paid_authorization(plan,allow_paid=True,max_paid_requests=256)
+    validate_paid_authorization(plan,allow_paid=False,max_paid_requests=None)
 
 
 def test_valid_and_malformed_cache_accounting(tmp_path):
