@@ -1,0 +1,227 @@
+[
+  {
+    "market": "passing_yards",
+    "over": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    },
+    "selected_side": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    },
+    "under": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    }
+  },
+  {
+    "market": "passing_tds",
+    "over": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    },
+    "selected_side": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    },
+    "under": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    }
+  },
+  {
+    "market": "rushing_attempts",
+    "over": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    },
+    "selected_side": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    },
+    "under": {
+      "average_interval_width": null,
+      "average_probability": null,
+      "average_stability_score": null,
+      "brier_score": null,
+      "calibration_error": null,
+      "empirical_hit_rate": null,
+      "forecasts": 0,
+      "hit_rate_ci_95": null
+    }
+  },
+  {
+    "market": "rushing_yards",
+    "over": {
+      "average_interval_width": 60.86287154189469,
+      "average_probability": 0.44744979793908585,
+      "average_stability_score": 52.790803233215556,
+      "brier_score": 0.2667955407280736,
+      "calibration_error": 0.030994206025235282,
+      "empirical_hit_rate": 0.47844400396432113,
+      "forecasts": 12108,
+      "hit_rate_ci_95": [
+        0.4695545461039491,
+        0.48734713546323805
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 60.86287154189469,
+      "average_probability": 0.6574163743733558,
+      "average_stability_score": 52.790803233215556,
+      "brier_score": 0.2667955407280736,
+      "calibration_error": -0.11281776188574422,
+      "empirical_hit_rate": 0.5445986124876115,
+      "forecasts": 12108,
+      "hit_rate_ci_95": [
+        0.5357153787184171,
+        0.5534535559701615
+      ]
+    },
+    "under": {
+      "average_interval_width": 60.86287154189469,
+      "average_probability": 0.5525502020609141,
+      "average_stability_score": 52.790803233215556,
+      "brier_score": 0.2667955407280736,
+      "calibration_error": -0.03099420602523517,
+      "empirical_hit_rate": 0.5215559960356789,
+      "forecasts": 12108,
+      "hit_rate_ci_95": [
+        0.5126528645367621,
+        0.530445453896051
+      ]
+    }
+  },
+  {
+    "market": "receptions",
+    "over": {
+      "average_interval_width": 4.9124336234742145,
+      "average_probability": 0.4591430410069969,
+      "average_stability_score": 57.694781086856366,
+      "brier_score": 0.24709956891214868,
+      "calibration_error": 0.023112565350503655,
+      "empirical_hit_rate": 0.48225560635750053,
+      "forecasts": 9186,
+      "hit_rate_ci_95": [
+        0.47204679655821363,
+        0.4924792508757065
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 4.9124336234742145,
+      "average_probability": 0.6553115817396474,
+      "average_stability_score": 57.694781086856366,
+      "brier_score": 0.24709956891214868,
+      "calibration_error": -0.07235926299372974,
+      "empirical_hit_rate": 0.5829523187459177,
+      "forecasts": 9186,
+      "hit_rate_ci_95": [
+        0.5728365878254295,
+        0.5929986996307234
+      ]
+    },
+    "under": {
+      "average_interval_width": 4.9124336234742145,
+      "average_probability": 0.5408569589930031,
+      "average_stability_score": 57.694781086856366,
+      "brier_score": 0.24709956891214868,
+      "calibration_error": -0.023112565350503655,
+      "empirical_hit_rate": 0.5177443936424995,
+      "forecasts": 9186,
+      "hit_rate_ci_95": [
+        0.5075207491242936,
+        0.5279532034417863
+      ]
+    }
+  },
+  {
+    "market": "receiving_yards",
+    "over": {
+      "average_interval_width": 70.88228041851877,
+      "average_probability": 0.46853573990047176,
+      "average_stability_score": 50.51644495426926,
+      "brier_score": 0.2561035220544279,
+      "calibration_error": 0.014147612835267498,
+      "empirical_hit_rate": 0.48268335273573926,
+      "forecasts": 27488,
+      "hit_rate_ci_95": [
+        0.4767789270690673,
+        0.4885926177426553
+      ]
+    },
+    "selected_side": {
+      "average_interval_width": 70.88228041851877,
+      "average_probability": 0.6388798633562941,
+      "average_stability_score": 50.51644495426926,
+      "brier_score": 0.2561035220544279,
+      "calibration_error": -0.08329197045757464,
+      "empirical_hit_rate": 0.5555878928987195,
+      "forecasts": 27488,
+      "hit_rate_ci_95": [
+        0.5497063698074475,
+        0.5614538813011406
+      ]
+    },
+    "under": {
+      "average_interval_width": 70.88228041851877,
+      "average_probability": 0.5314642600995283,
+      "average_stability_score": 50.51644495426926,
+      "brier_score": 0.2561035220544279,
+      "calibration_error": -0.014147612835267553,
+      "empirical_hit_rate": 0.5173166472642607,
+      "forecasts": 27488,
+      "hit_rate_ci_95": [
+        0.5114073822573447,
+        0.5232210729309327
+      ]
+    }
+  }
+]

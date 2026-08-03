@@ -34,6 +34,7 @@ from .research_nfl_player_prop_v4 import _distribution, _market_values, _usage_v
 
 
 MODEL_ID = "nfl_player_stat_distribution_research_v1"
+SYSTEM_A_MODEL_ID = "nfl_player_stat_distribution_system_a_research_v1"
 SCHEMA_VERSION = 1
 QUANTILES = (0.10, 0.25, 0.50, 0.75, 0.90)
 PARAMETRIC_FAMILIES = (
@@ -56,6 +57,9 @@ RICH_FEATURES = BASIC_FEATURES + (
     "recent_participation_rate", "target_share_proxy",
     "rush_attempt_share_proxy", "reception_share_proxy",
     "receiving_yard_share_proxy", "rushing_yard_share_proxy",
+    "targets_per_team_dropback_proxy", "system_a_reception_rate",
+    "system_a_receiving_yards_per_target", "system_a_rush_attempt_share",
+    "system_a_rushing_yards_per_attempt",
     "projected_game_total", "projected_margin", "projected_team_points",
     "projected_opponent_points",
 )
@@ -165,6 +169,7 @@ class DistributionFeatureState:
         self.team_passing: dict[str, list[float]] = defaultdict(list)
         self.market_values: dict[str, list[float]] = defaultdict(list)
         self.league_team_market: dict[str, list[float]] = defaultdict(list)
+        self.system_a_opportunity: dict[tuple[str, str], list[float]] = defaultdict(list)
 
     def features(self, row: dict[str, Any], market: str) -> dict[str, float | None]:
         player_id, team, opponent = row["player_id"], row["team"], row["opponent"]
@@ -197,6 +202,12 @@ class DistributionFeatureState:
             "qb_strength_mean_5": _mean(self.team_passing[team][-5:]),
             "home": row.get("home"), "season_week": float((season - 2020) * 20 + week),
         }
+        for name in (
+            "targets_per_team_dropback_proxy", "system_a_reception_rate",
+            "system_a_receiving_yards_per_target", "system_a_rush_attempt_share",
+            "system_a_rushing_yards_per_attempt",
+        ):
+            result[name] = _mean(self.system_a_opportunity[(player_id, name)][-5:])
         market_average = _mean(self.league_team_market[market])
         result["opponent_strength_numeric"] = (
             None if result["opponent_allowed_mean_5"] is None or not market_average
@@ -223,6 +234,9 @@ class DistributionFeatureState:
                     denominator = team_usage[(row["team"], usage[0])]
                     if denominator > 0:
                         self.usage[(row["player_id"], market)].append(float(usage[1]) / denominator)
+            for name, value in (row.get("system_a_opportunity") or {}).items():
+                if value is not None:
+                    self.system_a_opportunity[(row["player_id"], name)].append(float(value))
         for team in sorted({row["team"] for row in game_rows}):
             opponent = next((row["opponent"] for row in game_rows if row["team"] == team), "UNKNOWN")
             for market in PLAYER_MARKETS:
@@ -335,9 +349,90 @@ def _load_resolved_history(root: Path, seasons: Sequence[int]) -> tuple[list[dic
     return rows, sorted(set(inputs)), dict(sorted(audit.items()))
 
 
-def build_distribution_samples(root: Path, seasons: Sequence[int], min_history: int = 2) -> tuple[list[dict[str, Any]], list[Path], dict[str, int]]:
+def _load_system_a_history(snapshot_root: Path, system_a_dir: Path,
+                           seasons: Sequence[int]) -> tuple[list[dict[str, Any]], list[Path], dict[str, int]]:
+    """Build launch-market history exclusively from accepted System A ledgers."""
+    metadata_rows, snapshot_inputs, identity_audit = _load_resolved_history(snapshot_root, seasons)
+    metadata = {(row["game_id"], row["player_id"]): row for row in metadata_rows}
+    required = {
+        "receiving": system_a_dir / "player_game_target_reception_ledger.json",
+        "rushing": system_a_dir / "player_game_rushing_ledger.json",
+        "dropbacks": system_a_dir / "team_game_dropback_ledger.json",
+        "rushes": system_a_dir / "team_game_rush_partition_ledger.json",
+        "reconciliation": system_a_dir / "reconciliation_summary.json",
+    }
+    missing = [path for path in required.values() if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"System A artifacts are incomplete: {[path.as_posix() for path in missing]}")
+    receiving = json.loads(required["receiving"].read_text(encoding="utf-8"))
+    rushing = json.loads(required["rushing"].read_text(encoding="utf-8"))
+    dropbacks = json.loads(required["dropbacks"].read_text(encoding="utf-8"))
+    team_rushes = json.loads(required["rushes"].read_text(encoding="utf-8"))
+    reconciliation = json.loads(required["reconciliation"].read_text(encoding="utf-8"))
+    if not reconciliation.get("milestone_1_acceptance"):
+        raise ValueError("System A Milestone 1 acceptance is required for modeling")
+    dropback_index = {(row["canonical_game_id"], normalize_team(row["canonical_offense_team_id"])):
+                      float(row["dropbacks"]) for row in dropbacks}
+    rush_index = {(row["canonical_game_id"], normalize_team(row["canonical_offense_team_id"])):
+                  float(row["total_official_team_rush_attempts"]) for row in team_rushes}
+    combined: dict[tuple[str, str], dict[str, Any]] = {}
+    audit = Counter(identity_audit)
+
+    def holder(game_id: str, player_id: str) -> dict[str, Any] | None:
+        key = (str(game_id), str(player_id))
+        source = metadata.get(key)
+        if source is None:
+            audit["system_a_rows_missing_snapshot_metadata"] += 1
+            return None
+        if int(source["season"]) not in seasons:
+            return None
+        return combined.setdefault(key, {**source, "values": {}, "usage": {}, "system_a_opportunity": {}})
+
+    for row in receiving:
+        item = holder(row["canonical_game_id"], row["canonical_player_id"])
+        if item is None:
+            continue
+        targets = float(row["targets"]); receptions = float(row["receptions"]); yards = float(row["receiving_yards"])
+        item["values"].update({"receptions": receptions, "receiving_yards": yards})
+        item["usage"].update({"receptions": ("targets", targets), "receiving_yards": ("targets", targets)})
+        team_dropbacks = dropback_index.get((item["game_id"], item["team"]))
+        item["system_a_opportunity"].update({
+            "targets_per_team_dropback_proxy": targets / team_dropbacks if team_dropbacks else None,
+            "system_a_reception_rate": receptions / targets if targets else None,
+            "system_a_receiving_yards_per_target": yards / targets if targets else None,
+        })
+        audit["system_a_receiving_player_games"] += 1
+    for row in rushing:
+        item = holder(row["canonical_game_id"], row["canonical_player_id"])
+        if item is None:
+            continue
+        attempts = float(row["rush_attempts"]); yards = float(row["rushing_yards"])
+        item["values"]["rushing_yards"] = yards
+        item["usage"]["rushing_yards"] = ("rush_attempts", attempts)
+        team_attempts = rush_index.get((item["game_id"], item["team"]))
+        item["system_a_opportunity"].update({
+            "system_a_rush_attempt_share": attempts / team_attempts if team_attempts else None,
+            "system_a_rushing_yards_per_attempt": yards / attempts if attempts else None,
+        })
+        audit["system_a_rushing_player_games"] += 1
+    rows = sorted(combined.values(), key=lambda row: (
+        row["season"], row["week"], row["kickoff"], row["game_id"], row["player_id"],
+    ))
+    audit["system_a_accepted_player_games"] = len(rows)
+    audit["system_a_accepted_games"] = len({row["game_id"] for row in rows})
+    audit["system_a_excluded_games"] = int(
+        reconciliation.get("historical_outcome_reconciliation", {}).get("excluded_games") or 0
+    )
+    return rows, sorted(set(snapshot_inputs + list(required.values()))), dict(sorted(audit.items()))
+
+
+def build_distribution_samples(root: Path, seasons: Sequence[int], min_history: int = 2,
+                               system_a_dir: Path | None = None) -> tuple[list[dict[str, Any]], list[Path], dict[str, int]]:
     """Build one pregame feature row per realized player/game/market outcome."""
-    history, inputs, identity_audit = _load_resolved_history(root, tuple(seasons))
+    history, inputs, identity_audit = (
+        _load_system_a_history(root, system_a_dir, tuple(seasons))
+        if system_a_dir is not None else _load_resolved_history(root, tuple(seasons))
+    )
     persisted, persisted_inputs = _load_persisted_features(root, seasons)
     state = DistributionFeatureState()
     samples: list[dict[str, Any]] = []
@@ -1181,13 +1276,15 @@ def _promotion_assessment(projections: Sequence[dict[str, Any]], threshold_rows:
     }
 
 
-def _model_definition(folds: Sequence[dict[str, Any]]) -> dict[str, Any]:
+def _model_definition(folds: Sequence[dict[str, Any]], *, model_id: str = MODEL_ID,
+                      feature_source: str = "SNAPSHOT_OUTCOMES") -> dict[str, Any]:
     selected = Counter(row.get("selected_configuration") for row in folds if row.get("selected_configuration"))
     return {
-        "schema_version": 1, "model_id": MODEL_ID, "sport": "nfl",
+        "schema_version": 1, "model_id": model_id, "sport": "nfl",
         "target": "player_stat_distribution", "state": "experimental", "git_commit": git_commit(),
         "description": "Matchup-specific independent player-stat distribution with nested expanding walk-forward selection.",
-        "feature_set": {"version": "nfl-player-stat-distribution-features-1", "features": list(RICH_FEATURES),
+        "feature_set": {"version": "nfl-player-stat-distribution-features-2", "features": list(RICH_FEATURES),
+                        "source": feature_source,
                         "missingness_policy": "IMPUTE_PRESENT_TRAINING_VALUES; NEVER_TREAT_MISSING_AS_ZERO",
                         "known_gaps": FEATURE_GAPS},
         "distribution": {"selection": "PRIOR_OUTER_FOLD_CRPS_ONLY", "quantiles": list(QUANTILES),
@@ -1209,8 +1306,14 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
                  min_history: int = 2, min_train_rows: int = 150,
                  min_selection_rows: int = 100, seed: int = 1729,
                  probability_threshold: float = .70, register: bool = False,
-                 registry_root: Path = DEFAULT_ROOT) -> dict[str, Any]:
-    samples, inputs, identity_audit = build_distribution_samples(snapshot_root, seasons, min_history)
+                 registry_root: Path = DEFAULT_ROOT,
+                 system_a_dir: Path | None = None) -> dict[str, Any]:
+    model_id = SYSTEM_A_MODEL_ID if system_a_dir is not None else MODEL_ID
+    feature_source = "SYSTEM_A_ACCEPTED_CANONICAL_LEDGERS" if system_a_dir is not None else "SNAPSHOT_OUTCOMES"
+    samples, inputs, identity_audit = build_distribution_samples(
+        snapshot_root, seasons, min_history, system_a_dir=system_a_dir,
+    )
+    modeled_markets = sorted({row["market"] for row in samples})
     projections, folds = nested_walk_forward(
         samples, evaluation_seasons=evaluation_seasons, min_train_rows=min_train_rows,
         min_selection_rows=min_selection_rows, seed=seed,
@@ -1226,7 +1329,7 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
     interval_report = {
         "overall": _interval_metrics(projections),
         "by_market": [{"market": market, **_interval_metrics([row for row in projections if row["market"] == market])}
-                      for market in PLAYER_MARKETS],
+                      for market in modeled_markets],
     }
     diagnostics = mean_variance_diagnostics(projections)
     dependencies = parlay_dependency_diagnostics(projections)
@@ -1240,9 +1343,10 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
     for row in projections:
         row["history_depth_bucket"] = _history_bucket(int(row["history_depth"]))
     summary = {
-        "schema_version": SCHEMA_VERSION, "model_id": MODEL_ID, "research_only": True,
+        "schema_version": SCHEMA_VERSION, "model_id": model_id, "research_only": True,
         "network_contacted": False, "training_target": "REALIZED_PLAYER_STAT_OUTPUT",
         "sportsbook_role": "POST_PROJECTION_THRESHOLD_ONLY", "seasons": list(seasons),
+        "feature_source": feature_source, "modeled_markets": modeled_markets,
         "evaluation_seasons": list(evaluation_seasons), "samples": len(samples),
         "identity_resolution_audit": identity_audit,
         "outer_fold_projections": len(projections), "threshold_forecasts": len(threshold_rows),
@@ -1270,24 +1374,25 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
             "Parlay marginal probabilities must not be multiplied unless dependency diagnostics verify independence.",
         ],
     }
-    model_definition = _model_definition(folds)
+    model_definition = _model_definition(folds, model_id=model_id, feature_source=feature_source)
     experiment = {
-        "schema_version": 1, "model_id": MODEL_ID, "status": "RESEARCH_ONLY",
+        "schema_version": 1, "model_id": model_id, "status": "RESEARCH_ONLY",
         "configuration": {"seasons": list(seasons), "evaluation_seasons": list(evaluation_seasons),
                           "min_history": min_history, "min_train_rows": min_train_rows,
                           "min_selection_rows": min_selection_rows, "seed": seed,
-                          "probability_threshold": probability_threshold},
+                          "probability_threshold": probability_threshold,
+                          "system_a_dir": system_a_dir.as_posix() if system_a_dir is not None else None},
         "folds": folds, "promotion_assessment": promotion,
         "best_supported_architecture_by_market": {
             market: Counter(row["configuration"] for row in projections if row["market"] == market).most_common(1)[0][0]
-            if any(row["market"] == market for row in projections) else None for market in PLAYER_MARKETS
+            if any(row["market"] == market for row in projections) else None for market in modeled_markets
         },
         "best_full_coverage_center_by_market": {
             market: min(
                 [row for row in baselines if row["market"] == market and row["baseline"] not in {"current_v3", "current_v4"}
                  and row["rows"] == max(item["rows"] for item in baselines if item["market"] == market)],
                 key=lambda row: (float(row["mae"]), row["baseline"]),
-            )["baseline"] for market in PLAYER_MARKETS
+            )["baseline"] for market in modeled_markets
         },
         "reproducibility": {"network_contacted": False, "seed": seed, "deterministic_estimators": True},
     }
@@ -1328,7 +1433,7 @@ def run_research(*, snapshot_root: Path, output_dir: Path,
     all_inputs = sorted(set(inputs + threshold_inputs + v3_inputs + v4_inputs))
     artifact_paths = [output_dir / name for name in (*artifacts, *csvs)]
     manifest = {
-        "schema_version": 1, "model_id": MODEL_ID, "network_contacted": False,
+        "schema_version": 1, "model_id": model_id, "network_contacted": False,
         "inputs": {path.as_posix(): _hash(path) for path in all_inputs},
         "artifacts": {path.name: _hash(path) for path in sorted(artifact_paths, key=lambda item: item.name)},
         "determinism": {"seed": seed, "sorted_inputs": True, "single_threaded_estimators": True},
@@ -1354,6 +1459,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--probability-threshold", type=float, default=.70)
     parser.add_argument("--register", action="store_true")
     parser.add_argument("--registry-root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--system-a-dir", type=Path)
     args = parser.parse_args(argv)
     args.seasons = tuple(int(value) for value in args.seasons.split(","))
     args.evaluation_seasons = tuple(int(value) for value in args.evaluation_seasons.split(","))

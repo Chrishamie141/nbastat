@@ -1,0 +1,152 @@
+{
+  "classes": [
+    {
+      "average_interval_width": 37.26481329177426,
+      "average_probability": 0.9833076523839044,
+      "average_stability_score": 82.19567976372376,
+      "brier_score": 0.9671506354383709,
+      "calibration_error": -0.9833076523839044,
+      "empirical_hit_rate": 0.0,
+      "forecasts": 10,
+      "hit_rate_ci_95": [
+        0.0,
+        0.2775327998628892
+      ],
+      "stability_class": "ELITE_STABILITY"
+    },
+    {
+      "average_interval_width": 47.249747347538886,
+      "average_probability": 0.6901264236149505,
+      "average_stability_score": 70.9437899046123,
+      "brier_score": 0.2769061181805934,
+      "calibration_error": -0.13793787142639824,
+      "empirical_hit_rate": 0.5521885521885522,
+      "forecasts": 2970,
+      "hit_rate_ci_95": [
+        0.5342487090760841,
+        0.5699935662074589
+      ],
+      "stability_class": "HIGH_STABILITY"
+    },
+    {
+      "average_interval_width": 59.909862070931794,
+      "average_probability": 0.6453945338836732,
+      "average_stability_score": 58.509986843254005,
+      "brier_score": 0.2540673370371136,
+      "calibration_error": -0.08138278196191195,
+      "empirical_hit_rate": 0.5640117519217612,
+      "forecasts": 24847,
+      "hit_rate_ci_95": [
+        0.5578364809210642,
+        0.5701672329681057
+      ],
+      "stability_class": "MODERATE_STABILITY"
+    },
+    {
+      "average_interval_width": 53.20998795048699,
+      "average_probability": 0.6394189223397208,
+      "average_stability_score": 42.567431056445024,
+      "brier_score": 0.25561649075952025,
+      "calibration_error": -0.08639665298659249,
+      "empirical_hit_rate": 0.5530222693531283,
+      "forecasts": 18860,
+      "hit_rate_ci_95": [
+        0.5459165473264448,
+        0.5601063963229677
+      ],
+      "stability_class": "HIGH_VARIANCE"
+    },
+    {
+      "average_interval_width": 46.6063363537012,
+      "average_probability": 0.6616476951388098,
+      "average_stability_score": 42.78135459731215,
+      "brier_score": 0.274066751770008,
+      "calibration_error": -0.11892693141565946,
+      "empirical_hit_rate": 0.5427207637231504,
+      "forecasts": 2095,
+      "hit_rate_ci_95": [
+        0.5213297902822794,
+        0.5639553556003339
+      ],
+      "stability_class": "INSUFFICIENT_EVIDENCE"
+    }
+  ],
+  "critical_probability_groups": [
+    {
+      "average_interval_width": 43.68629282320878,
+      "average_probability": 0.7000982111056192,
+      "average_stability_score": 70.6189689385336,
+      "brier_score": 0.26190629235626073,
+      "calibration_error": -0.127771167080462,
+      "empirical_hit_rate": 0.5723270440251572,
+      "failure_count_by_market": {
+        "receiving_yards": 35,
+        "receptions": 43,
+        "rushing_yards": 58
+      },
+      "forecasts": 318,
+      "hit_rate_ci_95": [
+        0.5174056907577985,
+        0.6255218244497053
+      ],
+      "target_probability": 0.7
+    },
+    {
+      "average_interval_width": 46.36269788664161,
+      "average_probability": 0.753303706014928,
+      "average_stability_score": 70.7314205498994,
+      "brier_score": 0.24076378606156174,
+      "calibration_error": -0.105303706014928,
+      "empirical_hit_rate": 0.648,
+      "failure_count_by_market": {
+        "receiving_yards": 25,
+        "receptions": 28,
+        "rushing_yards": 35
+      },
+      "forecasts": 250,
+      "hit_rate_ci_95": [
+        0.5869651913984794,
+        0.704555351950869
+      ],
+      "target_probability": 0.75
+    },
+    {
+      "average_interval_width": 43.78209255577846,
+      "average_probability": 0.7994784951527382,
+      "average_stability_score": 71.06563783691988,
+      "brier_score": 0.293209965981146,
+      "calibration_error": -0.22189228825618645,
+      "empirical_hit_rate": 0.5775862068965517,
+      "failure_count_by_market": {
+        "receiving_yards": 39,
+        "receptions": 27,
+        "rushing_yards": 32
+      },
+      "forecasts": 232,
+      "hit_rate_ci_95": [
+        0.513269899982095,
+        0.6393750174129
+      ],
+      "target_probability": 0.8
+    },
+    {
+      "average_interval_width": 45.90808191190969,
+      "average_probability": 0.850982945546996,
+      "average_stability_score": 71.09242092131021,
+      "brier_score": 0.3202193116254803,
+      "calibration_error": -0.2740598686239192,
+      "empirical_hit_rate": 0.5769230769230769,
+      "failure_count_by_market": {
+        "receiving_yards": 34,
+        "receptions": 11,
+        "rushing_yards": 21
+      },
+      "forecasts": 156,
+      "hit_rate_ci_95": [
+        0.49846209447801304,
+        0.6516866853008462
+      ],
+      "target_probability": 0.85
+    }
+  ]
+}

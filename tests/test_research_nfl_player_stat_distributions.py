@@ -74,6 +74,40 @@ def test_feature_builder_does_not_use_current_week_outcome(tmp_path: Path) -> No
     assert identity_audit["completed_stat_rows"] == 3
 
 
+def test_system_a_features_use_only_prior_accepted_opportunities(tmp_path: Path) -> None:
+    for week, actual in ((1, 10.0), (2, 20.0), (3, 1000.0)):
+        _write_week(tmp_path, 2023, week, actual)
+    system_a = tmp_path / "system-a"; system_a.mkdir()
+    receiving = []
+    dropbacks = []
+    rush_partitions = []
+    for week, targets, receptions, yards in ((1, 5, 3, 10), (2, 10, 8, 20), (3, 20, 20, 1000)):
+        game = f"game-2023-{week}"
+        receiving.append({"canonical_game_id": game, "canonical_player_id": "player-1",
+                          "targets": targets, "receptions": receptions, "receiving_yards": yards})
+        dropbacks.append({"canonical_game_id": game, "canonical_offense_team_id": "BUF", "dropbacks": 20})
+        rush_partitions.append({"canonical_game_id": game, "canonical_offense_team_id": "BUF",
+                                "total_official_team_rush_attempts": 10})
+    artifacts = {
+        "player_game_target_reception_ledger.json": receiving,
+        "player_game_rushing_ledger.json": [],
+        "team_game_dropback_ledger.json": dropbacks,
+        "team_game_rush_partition_ledger.json": rush_partitions,
+        "reconciliation_summary.json": {"milestone_1_acceptance": True,
+            "historical_outcome_reconciliation": {"excluded_games": 0}},
+    }
+    for name, value in artifacts.items():
+        (system_a / name).write_text(json.dumps(value), encoding="utf-8")
+    samples, _inputs, audit = build_distribution_samples(
+        tmp_path, (2023,), min_history=2, system_a_dir=system_a,
+    )
+    week_three = next(row for row in samples if row["week"] == 3 and row["market"] == "receiving_yards")
+    assert week_three["actual"] == 1000
+    assert week_three["features"]["targets_per_team_dropback_proxy"] == pytest.approx(.375)
+    assert week_three["features"]["system_a_reception_rate"] == pytest.approx(.70)
+    assert audit["system_a_accepted_games"] == 3
+
+
 def test_configuration_selection_uses_only_supplied_prior_oof_rows() -> None:
     prior = [{
         "market": "receiving_yards",

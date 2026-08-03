@@ -1,0 +1,110 @@
+{
+  "assessment": {
+    "crps_improved": false,
+    "decision": "RETAIN_RESEARCH_ONLY",
+    "mae_improved": false,
+    "promotion_supported": false
+  },
+  "comparison": "SYSTEM_A_LEDGER_FEATURES_VS_FROZEN_DISTRIBUTION_RESEARCH",
+  "inputs": {
+    "baseline": {
+      "artifact": "player_projection_rows.json",
+      "sha256": "f93f087d71e28e8fecc3e817ae5eb1bd65d57dc4dc62b69009c58c8ce0c18281"
+    },
+    "candidate": {
+      "artifact": "player_projection_rows.json",
+      "sha256": "e6e210d1a5974f69aba74980a5f2e78a8c0086906277164c7d069e16219a7c16"
+    }
+  },
+  "markets": [
+    {
+      "baseline": {
+        "crps": 9.05336638754088,
+        "mae": 11.816386081713892,
+        "rmse": 20.181912491367854,
+        "rows": 18071
+      },
+      "candidate": {
+        "crps": 9.10936189639701,
+        "mae": 11.821513646871013,
+        "rmse": 20.220688792054855,
+        "rows": 18071
+      },
+      "delta_candidate_minus_baseline": {
+        "crps": 0.055995508856129916,
+        "mae": 0.0051275651571209835,
+        "rmse": 0.038776300687001
+      },
+      "market": "ALL"
+    },
+    {
+      "baseline": {
+        "crps": 1.0785145734518553,
+        "mae": 1.3903875096351759,
+        "rmse": 1.847263003232101,
+        "rows": 7197
+      },
+      "candidate": {
+        "crps": 1.0889929789420336,
+        "mae": 1.3985132383483534,
+        "rmse": 1.8612224544162177,
+        "rows": 7197
+      },
+      "delta_candidate_minus_baseline": {
+        "crps": 0.01047840549017831,
+        "mae": 0.008125728713177516,
+        "rmse": 0.013959451184116789
+      },
+      "market": "receptions"
+    },
+    {
+      "baseline": {
+        "crps": 14.446828085948932,
+        "mae": 18.909002289409077,
+        "rmse": 25.728551934563807,
+        "rows": 7197
+      },
+      "candidate": {
+        "crps": 14.540820042738323,
+        "mae": 18.917647579080548,
+        "rmse": 25.82019235780943,
+        "rows": 7197
+      },
+      "delta_candidate_minus_baseline": {
+        "crps": 0.09399195678939165,
+        "mae": 0.00864528967147038,
+        "rmse": 0.0916404232456216
+      },
+      "market": "receiving_yards"
+    },
+    {
+      "baseline": {
+        "crps": 14.10592680705569,
+        "mae": 18.34082254526252,
+        "rmse": 26.446811560856275,
+        "rows": 3677
+      },
+      "candidate": {
+        "crps": 14.17664251094828,
+        "mae": 18.333196548700098,
+        "rmse": 26.415636487139444,
+        "rows": 3677
+      },
+      "delta_candidate_minus_baseline": {
+        "crps": 0.0707157038925903,
+        "mae": -0.007625996562421022,
+        "rmse": -0.031175073716831037
+      },
+      "market": "rushing_yards"
+    }
+  ],
+  "matched_rows": 18071,
+  "pairing_key": [
+    "season",
+    "week",
+    "game_id",
+    "canonical_player_id",
+    "market"
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,656 @@
+{
+  "critical_low_variance_calibration": [
+    {
+      "average_interval_width": 43.68629282320878,
+      "average_probability": 0.7000982111056192,
+      "average_stability_score": 70.6189689385336,
+      "brier_score": 0.26190629235626073,
+      "calibration_error": -0.127771167080462,
+      "empirical_hit_rate": 0.5723270440251572,
+      "failure_count_by_market": {
+        "receiving_yards": 35,
+        "receptions": 43,
+        "rushing_yards": 58
+      },
+      "forecasts": 318,
+      "hit_rate_ci_95": [
+        0.5174056907577985,
+        0.6255218244497053
+      ],
+      "target_probability": 0.7
+    },
+    {
+      "average_interval_width": 46.36269788664161,
+      "average_probability": 0.753303706014928,
+      "average_stability_score": 70.7314205498994,
+      "brier_score": 0.24076378606156174,
+      "calibration_error": -0.105303706014928,
+      "empirical_hit_rate": 0.648,
+      "failure_count_by_market": {
+        "receiving_yards": 25,
+        "receptions": 28,
+        "rushing_yards": 35
+      },
+      "forecasts": 250,
+      "hit_rate_ci_95": [
+        0.5869651913984794,
+        0.704555351950869
+      ],
+      "target_probability": 0.75
+    },
+    {
+      "average_interval_width": 43.78209255577846,
+      "average_probability": 0.7994784951527382,
+      "average_stability_score": 71.06563783691988,
+      "brier_score": 0.293209965981146,
+      "calibration_error": -0.22189228825618645,
+      "empirical_hit_rate": 0.5775862068965517,
+      "failure_count_by_market": {
+        "receiving_yards": 39,
+        "receptions": 27,
+        "rushing_yards": 32
+      },
+      "forecasts": 232,
+      "hit_rate_ci_95": [
+        0.513269899982095,
+        0.6393750174129
+      ],
+      "target_probability": 0.8
+    },
+    {
+      "average_interval_width": 45.90808191190969,
+      "average_probability": 0.850982945546996,
+      "average_stability_score": 71.09242092131021,
+      "brier_score": 0.3202193116254803,
+      "calibration_error": -0.2740598686239192,
+      "empirical_hit_rate": 0.5769230769230769,
+      "failure_count_by_market": {
+        "receiving_yards": 34,
+        "receptions": 11,
+        "rushing_yards": 21
+      },
+      "forecasts": 156,
+      "hit_rate_ci_95": [
+        0.49846209447801304,
+        0.6516866853008462
+      ],
+      "target_probability": 0.85
+    }
+  ],
+  "evaluation_seasons": [
+    2024,
+    2025
+  ],
+  "feature_source": "SYSTEM_A_ACCEPTED_CANONICAL_LEDGERS",
+  "identity_resolution_audit": {
+    "completed_stat_rows": 21733,
+    "identity_resolved_stat_rows": 6796,
+    "resolved_supported_stat_rows": 21733,
+    "system_a_accepted_games": 748,
+    "system_a_accepted_player_games": 14462,
+    "system_a_excluded_games": 68,
+    "system_a_receiving_player_games": 11837,
+    "system_a_rows_missing_snapshot_metadata": 34,
+    "system_a_rushing_player_games": 6209
+  },
+  "macro_weekly_metrics": {
+    "crps": 9.125979565186816,
+    "mae": 11.838174483734328,
+    "rmse": 20.21321115060688,
+    "weeks": 36
+  },
+  "metrics_by_archetype": [
+    {
+      "archetype": "HIGH_VOLUME_RECEIVER",
+      "crps": 12.022424649832818,
+      "mae": 15.51264077277641,
+      "median_absolute_error": 4.205846103769783,
+      "p10_p90_average_width": 48.29648985075169,
+      "p10_p90_coverage": 0.8004933703361086,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 21.679934099798018,
+      "p25_p75_coverage": 0.4588344125809436,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 3.0485704459628438,
+        "p25": 5.428196984810945,
+        "p50": 7.467568178353751,
+        "p75": 6.620313075094079,
+        "p90": 4.049773598886285
+      },
+      "rmse": 25.975973744788295,
+      "rows": 3243,
+      "sharpness_p10_p90": 1.6479908326195274
+    },
+    {
+      "archetype": "HIGH_VOLUME_RUSHER",
+      "crps": 23.907875180203277,
+      "mae": 30.762236229437185,
+      "median_absolute_error": 25.644368339367304,
+      "p10_p90_average_width": 75.42139322053718,
+      "p10_p90_coverage": 0.7022397891963109,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 39.87578694295258,
+      "p25_p75_coverage": 0.42028985507246375,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 5.53091997200484,
+        "p25": 10.92532807643745,
+        "p50": 14.885246496292776,
+        "p75": 13.034928587571107,
+        "p90": 8.466241564080574
+      },
+      "rmse": 39.29891112722154,
+      "rows": 759,
+      "sharpness_p10_p90": 1.2998167157757552
+    },
+    {
+      "archetype": "SECONDARY_RECEIVER",
+      "crps": 6.591251114485312,
+      "mae": 8.600835384891212,
+      "median_absolute_error": 2.5408371951575845,
+      "p10_p90_average_width": 24.981047940269423,
+      "p10_p90_coverage": 0.8049502286790422,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 12.532538760969995,
+      "p25_p75_coverage": 0.5066810151555914,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.2655349191479015,
+        "p25": 2.7398860006758174,
+        "p50": 4.109711387399539,
+        "p75": 3.8909685689765388,
+        "p90": 2.506487547702345
+      },
+      "rmse": 15.371599714881413,
+      "rows": 11151,
+      "sharpness_p10_p90": 2.4381536927507583
+    },
+    {
+      "archetype": "SECONDARY_RUSHER",
+      "crps": 11.645454849548504,
+      "mae": 15.100283211592679,
+      "median_absolute_error": 10.840009698370029,
+      "p10_p90_average_width": 39.315317251623455,
+      "p10_p90_coverage": 0.726525017135024,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 20.154388994868608,
+      "p25_p75_coverage": 0.4225496915695682,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.260987707356125,
+        "p25": 4.7483800867547075,
+        "p50": 7.203913648464724,
+        "p75": 6.9943605586962665,
+        "p90": 4.521084274150892
+      },
+      "rmse": 21.853424914041245,
+      "rows": 2918,
+      "sharpness_p10_p90": 3.0704855642323783
+    }
+  ],
+  "metrics_by_history_depth": [
+    {
+      "crps": 9.86748186559346,
+      "history_depth_bucket": "17-32",
+      "mae": 12.805032920243695,
+      "median_absolute_error": 4.967375660849401,
+      "p10_p90_average_width": 36.84410943038568,
+      "p10_p90_coverage": 0.7995256522281863,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 18.29534374425976,
+      "p25_p75_coverage": 0.48583198102608915,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.107011208451782,
+        "p25": 4.227694424331071,
+        "p50": 6.145377415411374,
+        "p75": 5.69076243489865,
+        "p90": 3.5857490653961652
+      },
+      "rmse": 21.719031896295522,
+      "rows": 8011,
+      "sharpness_p10_p90": 2.15679929224285
+    },
+    {
+      "crps": 7.034287426299899,
+      "history_depth_bucket": "2-4",
+      "mae": 9.155384324223125,
+      "median_absolute_error": 3.938347708778047,
+      "p10_p90_average_width": 24.419955980082438,
+      "p10_p90_coverage": 0.757114493712773,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 11.910357566267093,
+      "p25_p75_coverage": 0.4824619457313038,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.3305550899477208,
+        "p25": 2.868069173086021,
+        "p50": 4.313050502533913,
+        "p75": 4.230777890564484,
+        "p90": 2.8785506721373557
+      },
+      "rmse": 16.057195752892394,
+      "rows": 1511,
+      "sharpness_p10_p90": 3.0000923604928036
+    },
+    {
+      "crps": 10.999480518874112,
+      "history_depth_bucket": "33+",
+      "mae": 14.201993080376445,
+      "median_absolute_error": 5.929504857009324,
+      "p10_p90_average_width": 43.76222992647617,
+      "p10_p90_coverage": 0.8175344904316867,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 20.911934319140613,
+      "p25_p75_coverage": 0.5002225189141077,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.4918243203399304,
+        "p25": 4.827410612763663,
+        "p50": 6.871052175312464,
+        "p75": 6.167646998735026,
+        "p90": 3.948410898617279
+      },
+      "rmse": 23.75439897805451,
+      "rows": 2247,
+      "sharpness_p10_p90": 1.9697123771280227
+    },
+    {
+      "crps": 6.875245435977278,
+      "history_depth_bucket": "5-8",
+      "mae": 9.15780869698436,
+      "median_absolute_error": 4.448692854466014,
+      "p10_p90_average_width": 26.083678891443526,
+      "p10_p90_coverage": 0.7766788131181677,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 12.755231031229352,
+      "p25_p75_coverage": 0.4789172306090578,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.3264996143150998,
+        "p25": 2.811131029244332,
+        "p50": 4.255981884221414,
+        "p75": 4.122631514242961,
+        "p90": 2.6648363141928892
+      },
+      "rmse": 15.331301907802835,
+      "rows": 1921,
+      "sharpness_p10_p90": 2.8271613229980006
+    },
+    {
+      "crps": 8.448960076457324,
+      "history_depth_bucket": "9-16",
+      "mae": 10.889668960538657,
+      "median_absolute_error": 4.595325684790149,
+      "p10_p90_average_width": 28.910961751786765,
+      "p10_p90_coverage": 0.7639808262953663,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 14.399025597341689,
+      "p25_p75_coverage": 0.4622232367039489,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.7705897488635554,
+        "p25": 3.6190645538773545,
+        "p50": 5.250172147567692,
+        "p75": 4.88501244460062,
+        "p90": 3.1124181710752654
+      },
+      "rmse": 18.50895949883437,
+      "rows": 4381,
+      "sharpness_p10_p90": 2.4675518288073017
+    }
+  ],
+  "metrics_by_home_away": [
+    {
+      "crps": 9.066556125562075,
+      "home_away": "AWAY",
+      "mae": 11.818881405394519,
+      "median_absolute_error": 4.776149976132011,
+      "p10_p90_average_width": 33.53573694146666,
+      "p10_p90_coverage": 0.7884551586862767,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 16.519835595136364,
+      "p25_p75_coverage": 0.48003980979763355,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.8997757850718648,
+        "p25": 3.819540194306779,
+        "p50": 5.612398995794406,
+        "p75": 5.303008610324187,
+        "p90": 3.420396752928603
+      },
+      "rmse": 20.34033092941127,
+      "rows": 9043,
+      "sharpness_p10_p90": 2.3717340632437436
+    },
+    {
+      "crps": 9.152238788915875,
+      "home_away": "HOME",
+      "mae": 11.824150261810304,
+      "median_absolute_error": 4.746921585785479,
+      "p10_p90_average_width": 33.66110392123106,
+      "p10_p90_coverage": 0.7858883473637572,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 16.58681015719217,
+      "p25_p75_coverage": 0.481723526805494,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.9510801732485294,
+        "p25": 3.9614650798989803,
+        "p50": 5.716738289901523,
+        "p75": 5.228822979648652,
+        "p90": 3.29763090917071
+      },
+      "rmse": 20.10013395988051,
+      "rows": 9028,
+      "sharpness_p10_p90": 2.329522898520108
+    }
+  ],
+  "metrics_by_market": [
+    {
+      "crps": 14.540820042738323,
+      "mae": 18.91764757908055,
+      "market": "receiving_yards",
+      "median_absolute_error": 13.970590383365742,
+      "p10_p90_average_width": 56.29479018006047,
+      "p10_p90_coverage": 0.8125607892177296,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 27.063946673084605,
+      "p25_p75_coverage": 0.44351813255523137,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 3.085833653079452,
+        "p25": 6.207180045727674,
+        "p50": 9.052982477034993,
+        "p75": 8.40017576201461,
+        "p90": 5.3356494974288715
+      },
+      "rmse": 25.820192357809425,
+      "rows": 7197,
+      "sharpness_p10_p90": 2.678245034724263
+    },
+    {
+      "crps": 1.0889929789420336,
+      "mae": 1.3985132383483534,
+      "market": "receptions",
+      "median_absolute_error": 1.1029494886855464,
+      "p10_p90_average_width": 4.173346844801569,
+      "p10_p90_coverage": 0.795331388078366,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 2.1229876063681377,
+      "p25_p75_coverage": 0.5482840072252327,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 0.24867987195538918,
+        "p25": 0.4839567633980639,
+        "p50": 0.6795054044841774,
+        "p75": 0.6116160700247782,
+        "p90": 0.37273711166062
+      },
+      "rmse": 1.8612224544162177,
+      "rows": 7197,
+      "sharpness_p10_p90": 1.84201147466143
+    },
+    {
+      "crps": 14.17664251094828,
+      "mae": 18.333196548700094,
+      "market": "rushing_yards",
+      "median_absolute_error": 12.753060603397437,
+      "p10_p90_average_width": 46.76827119788549,
+      "p10_p90_coverage": 0.7215121022572749,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 24.225245955052383,
+      "p25_p75_coverage": 0.42208322001631765,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.9359614873040107,
+        "p25": 6.02341504029542,
+        "p50": 8.789481130515714,
+        "p75": 8.241244195877666,
+        "p90": 5.335436839572874
+      },
+      "rmse": 26.41563648713944,
+      "rows": 3677,
+      "sharpness_p10_p90": 2.7049871535773398
+    }
+  ],
+  "metrics_by_opponent_strength": [
+    {
+      "crps": 8.52379363477504,
+      "mae": 11.059159016143138,
+      "median_absolute_error": 3.8022457894437096,
+      "opponent_strength": "AVERAGE",
+      "p10_p90_average_width": 31.684256699139162,
+      "p10_p90_coverage": 0.7911541907632158,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 15.624929879930708,
+      "p25_p75_coverage": 0.48578642990958704,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.814221133933962,
+        "p25": 3.6507256299625728,
+        "p50": 5.302368702825299,
+        "p75": 4.9181781385826735,
+        "p90": 3.121039192661255
+      },
+      "rmse": 19.36509070983024,
+      "rows": 12277,
+      "sharpness_p10_p90": 2.3003818022915765
+    },
+    {
+      "crps": 9.34799841436594,
+      "mae": 12.079868687498392,
+      "median_absolute_error": 5.8808899631554095,
+      "opponent_strength": "STRONG",
+      "p10_p90_average_width": 35.268504937653475,
+      "p10_p90_coverage": 0.7877373171490819,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 17.273041705970776,
+      "p25_p75_coverage": 0.48428260192966077,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.9431636097507534,
+        "p25": 3.967996904447569,
+        "p50": 5.811204991557042,
+        "p75": 5.456849550555838,
+        "p90": 3.4092207483350365
+      },
+      "rmse": 19.994005523031344,
+      "rows": 3213,
+      "sharpness_p10_p90": 2.4399942824154555
+    },
+    {
+      "crps": 11.597654192289596,
+      "mae": 15.126175814988136,
+      "median_absolute_error": 8.605481802721531,
+      "opponent_strength": "WEAK",
+      "p10_p90_average_width": 40.62409511915727,
+      "p10_p90_coverage": 0.7675319643549012,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 20.073246125050602,
+      "p25_p75_coverage": 0.45331266950794263,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.4321761677861975,
+        "p25": 4.934163543356703,
+        "p50": 7.20459325755164,
+        "p75": 6.682522320850161,
+        "p90": 4.42883969470121
+      },
+      "rmse": 24.110807244173184,
+      "rows": 2581,
+      "sharpness_p10_p90": 2.4785102075235055
+    }
+  ],
+  "metrics_by_stability": [
+    {
+      "crps": 78.61893894839012,
+      "mae": 83.70732781229806,
+      "median_absolute_error": 83.70732781229806,
+      "p10_p90_average_width": 37.26481329177426,
+      "p10_p90_coverage": 0.0,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 18.34822293619891,
+      "p25_p75_coverage": 0.0,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 58.56742904976984,
+        "p25": 55.89991225814896,
+        "p50": 41.85366390614903,
+        "p75": 23.22035982009938,
+        "p90": 10.233973445818517
+      },
+      "rmse": 83.70732781229806,
+      "rows": 1,
+      "sharpness_p10_p90": 0.42008720373840414,
+      "stability_class": "ELITE_STABILITY"
+    },
+    {
+      "crps": 10.20954190217288,
+      "mae": 12.870865559787763,
+      "median_absolute_error": 3.18569455687208,
+      "p10_p90_average_width": 27.979332802480357,
+      "p10_p90_coverage": 0.6943972835314092,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 15.051270497977898,
+      "p25_p75_coverage": 0.43463497453310695,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.7887392219866953,
+        "p25": 5.026215748748202,
+        "p50": 6.313143316042598,
+        "p75": 5.232081836127355,
+        "p90": 3.262879643125187
+      },
+      "rmse": 23.65147504850717,
+      "rows": 589,
+      "sharpness_p10_p90": 1.0855749056013502,
+      "stability_class": "HIGH_STABILITY"
+    },
+    {
+      "crps": 9.20855357555822,
+      "mae": 12.087986242540412,
+      "median_absolute_error": 7.717325276578769,
+      "p10_p90_average_width": 35.14303418153976,
+      "p10_p90_coverage": 0.7990441258197177,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 17.492014703626953,
+      "p25_p75_coverage": 0.47871512726464377,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.7607156779311233,
+        "p25": 3.7905588109930894,
+        "p50": 5.734284826371662,
+        "p75": 5.489220508365366,
+        "p90": 3.4912091188512924
+      },
+      "rmse": 18.911184167220476,
+      "rows": 8997,
+      "sharpness_p10_p90": 2.8709270501424142,
+      "stability_class": "HIGH_VARIANCE"
+    },
+    {
+      "crps": 7.034287426299899,
+      "mae": 9.155384324223125,
+      "median_absolute_error": 3.938347708778047,
+      "p10_p90_average_width": 24.419955980082438,
+      "p10_p90_coverage": 0.757114493712773,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 11.910357566267093,
+      "p25_p75_coverage": 0.4824619457313038,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.3305550899477208,
+        "p25": 2.868069173086021,
+        "p50": 4.313050502533913,
+        "p75": 4.230777890564484,
+        "p90": 2.8785506721373557
+      },
+      "rmse": 16.057195752892394,
+      "rows": 1511,
+      "sharpness_p10_p90": 3.0000923604928036,
+      "stability_class": "INSUFFICIENT_EVIDENCE"
+    },
+    {
+      "crps": 9.328133499214928,
+      "mae": 11.956478994986599,
+      "median_absolute_error": 2.562483450703752,
+      "p10_p90_average_width": 34.06834813012857,
+      "p10_p90_coverage": 0.7863186576796214,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 16.474808872586053,
+      "p25_p75_coverage": 0.4873081887279507,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 2.185753865256754,
+        "p25": 4.137467028127858,
+        "p50": 5.807394583529317,
+        "p75": 5.202464055030033,
+        "p90": 3.299826630370766
+      },
+      "rmse": 22.227537627834092,
+      "rows": 6973,
+      "sharpness_p10_p90": 1.6457521767264955,
+      "stability_class": "MODERATE_STABILITY"
+    }
+  ],
+  "metrics_by_weather": [
+    {
+      "crps": 9.10936189639701,
+      "mae": 11.821513646871013,
+      "median_absolute_error": 4.758651123899066,
+      "p10_p90_average_width": 33.59836840034071,
+      "p10_p90_coverage": 0.7871728183277074,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 16.5532950797382,
+      "p25_p75_coverage": 0.4808809695091583,
+      "p25_p75_nominal": 0.5,
+      "pinball": {
+        "p10": 1.9254066863202146,
+        "p25": 3.8904437340736093,
+        "p50": 5.664525338951899,
+        "p75": 5.265946584219449,
+        "p90": 3.3590647825093534
+      },
+      "rmse": 20.220688792054855,
+      "rows": 18071,
+      "sharpness_p10_p90": 2.350645999764967,
+      "weather_bucket": "UNAVAILABLE"
+    }
+  ],
+  "micro_metrics": {
+    "crps": 9.10936189639701,
+    "mae": 11.821513646871013,
+    "median_absolute_error": 4.758651123899066,
+    "pinball": {
+      "p10": 1.9254066863202146,
+      "p25": 3.8904437340736093,
+      "p50": 5.664525338951899,
+      "p75": 5.265946584219449,
+      "p90": 3.3590647825093534
+    },
+    "rmse": 20.220688792054855,
+    "rows": 18071
+  },
+  "model_id": "nfl_player_stat_distribution_system_a_research_v1",
+  "modeled_markets": [
+    "receiving_yards",
+    "receptions",
+    "rushing_yards"
+  ],
+  "network_contacted": false,
+  "outer_fold_projections": 18071,
+  "qualified_legs": 0,
+  "research_only": true,
+  "samples": 26174,
+  "schema_version": 1,
+  "seasons": [
+    2023,
+    2024,
+    2025
+  ],
+  "sportsbook_role": "POST_PROJECTION_THRESHOLD_ONLY",
+  "threshold_forecasts": 48782,
+  "training_target": "REALIZED_PLAYER_STAT_OUTPUT"
+}

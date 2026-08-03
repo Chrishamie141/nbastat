@@ -1,0 +1,305 @@
+{
+  "by_market": [
+    {
+      "crps": null,
+      "mae": null,
+      "market": "passing_yards",
+      "median_absolute_error": null,
+      "pinball": {
+        "p10": null,
+        "p25": null,
+        "p50": null,
+        "p75": null,
+        "p90": null
+      },
+      "pit": {
+        "mean": null,
+        "uniform_reference_mean": 0.5,
+        "uniform_reference_variance": 0.08333333333333333,
+        "variance": null
+      },
+      "quantile_calibration": {
+        "p10": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.1
+        },
+        "p25": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.25
+        },
+        "p50": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.5
+        },
+        "p75": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.75
+        },
+        "p90": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.9
+        }
+      },
+      "rmse": null,
+      "rows": 0
+    },
+    {
+      "crps": null,
+      "mae": null,
+      "market": "passing_tds",
+      "median_absolute_error": null,
+      "pinball": {
+        "p10": null,
+        "p25": null,
+        "p50": null,
+        "p75": null,
+        "p90": null
+      },
+      "pit": {
+        "mean": null,
+        "uniform_reference_mean": 0.5,
+        "uniform_reference_variance": 0.08333333333333333,
+        "variance": null
+      },
+      "quantile_calibration": {
+        "p10": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.1
+        },
+        "p25": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.25
+        },
+        "p50": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.5
+        },
+        "p75": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.75
+        },
+        "p90": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.9
+        }
+      },
+      "rmse": null,
+      "rows": 0
+    },
+    {
+      "crps": null,
+      "mae": null,
+      "market": "rushing_attempts",
+      "median_absolute_error": null,
+      "pinball": {
+        "p10": null,
+        "p25": null,
+        "p50": null,
+        "p75": null,
+        "p90": null
+      },
+      "pit": {
+        "mean": null,
+        "uniform_reference_mean": 0.5,
+        "uniform_reference_variance": 0.08333333333333333,
+        "variance": null
+      },
+      "quantile_calibration": {
+        "p10": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.1
+        },
+        "p25": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.25
+        },
+        "p50": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.5
+        },
+        "p75": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.75
+        },
+        "p90": {
+          "empirical_below_or_equal": null,
+          "nominal": 0.9
+        }
+      },
+      "rmse": null,
+      "rows": 0
+    },
+    {
+      "crps": 14.17664251094828,
+      "mae": 18.333196548700094,
+      "market": "rushing_yards",
+      "median_absolute_error": 12.753060603397437,
+      "pinball": {
+        "p10": 2.9359614873040107,
+        "p25": 6.02341504029542,
+        "p50": 8.789481130515714,
+        "p75": 8.241244195877666,
+        "p90": 5.335436839572874
+      },
+      "pit": {
+        "mean": 0.4840174340418948,
+        "uniform_reference_mean": 0.5,
+        "uniform_reference_variance": 0.08333333333333333,
+        "variance": 0.10384163129026665
+      },
+      "quantile_calibration": {
+        "p10": {
+          "empirical_below_or_equal": 0.15746532499320098,
+          "nominal": 0.1
+        },
+        "p25": {
+          "empirical_below_or_equal": 0.3037802556431874,
+          "nominal": 0.25
+        },
+        "p50": {
+          "empirical_below_or_equal": 0.5180853957030188,
+          "nominal": 0.5
+        },
+        "p75": {
+          "empirical_below_or_equal": 0.7225999456078325,
+          "nominal": 0.75
+        },
+        "p90": {
+          "empirical_below_or_equal": 0.8680989937449007,
+          "nominal": 0.9
+        }
+      },
+      "rmse": 26.41563648713944,
+      "rows": 3677
+    },
+    {
+      "crps": 1.0889929789420336,
+      "mae": 1.3985132383483534,
+      "market": "receptions",
+      "median_absolute_error": 1.1029494886855464,
+      "pinball": {
+        "p10": 0.24867987195538918,
+        "p25": 0.4839567633980639,
+        "p50": 0.6795054044841774,
+        "p75": 0.6116160700247782,
+        "p90": 0.37273711166062
+      },
+      "pit": {
+        "mean": 0.4902475908575733,
+        "uniform_reference_mean": 0.5,
+        "uniform_reference_variance": 0.08333333333333333,
+        "variance": 0.08876238159964234
+      },
+      "quantile_calibration": {
+        "p10": {
+          "empirical_below_or_equal": 0.18716131721550647,
+          "nominal": 0.1
+        },
+        "p25": {
+          "empirical_below_or_equal": 0.33402806725024314,
+          "nominal": 0.25
+        },
+        "p50": {
+          "empirical_below_or_equal": 0.5542587189106573,
+          "nominal": 0.5
+        },
+        "p75": {
+          "empirical_below_or_equal": 0.755592608031124,
+          "nominal": 0.75
+        },
+        "p90": {
+          "empirical_below_or_equal": 0.8930109767958871,
+          "nominal": 0.9
+        }
+      },
+      "rmse": 1.8612224544162177,
+      "rows": 7197
+    },
+    {
+      "crps": 14.540820042738323,
+      "mae": 18.91764757908055,
+      "market": "receiving_yards",
+      "median_absolute_error": 13.970590383365742,
+      "pinball": {
+        "p10": 3.085833653079452,
+        "p25": 6.207180045727674,
+        "p50": 9.052982477034993,
+        "p75": 8.40017576201461,
+        "p90": 5.3356494974288715
+      },
+      "pit": {
+        "mean": 0.49397443706326416,
+        "uniform_reference_mean": 0.5,
+        "uniform_reference_variance": 0.08333333333333333,
+        "variance": 0.09190158693269741
+      },
+      "quantile_calibration": {
+        "p10": {
+          "empirical_below_or_equal": 0.13866888981520079,
+          "nominal": 0.1
+        },
+        "p25": {
+          "empirical_below_or_equal": 0.28970404335139643,
+          "nominal": 0.25
+        },
+        "p50": {
+          "empirical_below_or_equal": 0.516048353480617,
+          "nominal": 0.5
+        },
+        "p75": {
+          "empirical_below_or_equal": 0.7326663887730999,
+          "nominal": 0.75
+        },
+        "p90": {
+          "empirical_below_or_equal": 0.8756426288731416,
+          "nominal": 0.9
+        }
+      },
+      "rmse": 25.820192357809425,
+      "rows": 7197
+    }
+  ],
+  "crps_method": "FIVE_QUANTILE_PINBALL_INTEGRAL_APPROXIMATION",
+  "overall": {
+    "crps": 9.10936189639701,
+    "mae": 11.821513646871013,
+    "median_absolute_error": 4.758651123899066,
+    "pinball": {
+      "p10": 1.9254066863202146,
+      "p25": 3.8904437340736093,
+      "p50": 5.664525338951899,
+      "p75": 5.265946584219449,
+      "p90": 3.3590647825093534
+    },
+    "pit": {
+      "mean": 0.49046417131970094,
+      "uniform_reference_mean": 0.5,
+      "uniform_reference_variance": 0.08333333333333333,
+      "variance": 0.09309424471408614
+    },
+    "quantile_calibration": {
+      "p10": {
+        "empirical_below_or_equal": 0.16180620884289745,
+        "nominal": 0.1
+      },
+      "p25": {
+        "empirical_below_or_equal": 0.31022079575009687,
+        "nominal": 0.25
+      },
+      "p50": {
+        "empirical_below_or_equal": 0.5316805932156494,
+        "nominal": 0.5
+      },
+      "p75": {
+        "empirical_below_or_equal": 0.7397487687455039,
+        "nominal": 0.75
+      },
+      "p90": {
+        "empirical_below_or_equal": 0.881024846439046,
+        "nominal": 0.9
+      }
+    },
+    "rmse": 20.220688792054855,
+    "rows": 18071
+  }
+}

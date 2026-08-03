@@ -1,0 +1,200 @@
+{
+  "feature_gaps": {
+    "defensive_front_and_coverage": "NOT_AVAILABLE",
+    "depth_chart": "NOT_AVAILABLE",
+    "game_script": "PROXY_ONLY_PREGAME_TOTAL_AND_MARGIN_WHEN_AVAILABLE",
+    "goal_line_usage": "NOT_AVAILABLE",
+    "injury_status": "NOT_AVAILABLE",
+    "neutral_situation_pace": "PROXY_ONLY_TEAM_PLAYS",
+    "offensive_line_context": "NOT_AVAILABLE",
+    "quarterback_changes": "NOT_AVAILABLE",
+    "red_zone_usage": "NOT_AVAILABLE",
+    "rest": "NOT_AVAILABLE",
+    "route_participation": "NOT_AVAILABLE",
+    "snap_share": "NOT_AVAILABLE",
+    "travel": "NOT_AVAILABLE",
+    "weather": "NOT_AVAILABLE"
+  },
+  "findings": [
+    "Sportsbook prices and implied probabilities were excluded from model features and targets.",
+    "Missing injury, weather, depth-chart, snap, route, and trench inputs limit evidence strength.",
+    "Parlay marginal probabilities must not be multiplied unless dependency diagnostics verify independence."
+  ],
+  "low_variance_calibration": [
+    {
+      "average_interval_width": 43.68629282320878,
+      "average_probability": 0.7000982111056192,
+      "average_stability_score": 70.6189689385336,
+      "brier_score": 0.26190629235626073,
+      "calibration_error": -0.127771167080462,
+      "empirical_hit_rate": 0.5723270440251572,
+      "failure_count_by_market": {
+        "receiving_yards": 35,
+        "receptions": 43,
+        "rushing_yards": 58
+      },
+      "forecasts": 318,
+      "hit_rate_ci_95": [
+        0.5174056907577985,
+        0.6255218244497053
+      ],
+      "target_probability": 0.7
+    },
+    {
+      "average_interval_width": 46.36269788664161,
+      "average_probability": 0.753303706014928,
+      "average_stability_score": 70.7314205498994,
+      "brier_score": 0.24076378606156174,
+      "calibration_error": -0.105303706014928,
+      "empirical_hit_rate": 0.648,
+      "failure_count_by_market": {
+        "receiving_yards": 25,
+        "receptions": 28,
+        "rushing_yards": 35
+      },
+      "forecasts": 250,
+      "hit_rate_ci_95": [
+        0.5869651913984794,
+        0.704555351950869
+      ],
+      "target_probability": 0.75
+    },
+    {
+      "average_interval_width": 43.78209255577846,
+      "average_probability": 0.7994784951527382,
+      "average_stability_score": 71.06563783691988,
+      "brier_score": 0.293209965981146,
+      "calibration_error": -0.22189228825618645,
+      "empirical_hit_rate": 0.5775862068965517,
+      "failure_count_by_market": {
+        "receiving_yards": 39,
+        "receptions": 27,
+        "rushing_yards": 32
+      },
+      "forecasts": 232,
+      "hit_rate_ci_95": [
+        0.513269899982095,
+        0.6393750174129
+      ],
+      "target_probability": 0.8
+    },
+    {
+      "average_interval_width": 45.90808191190969,
+      "average_probability": 0.850982945546996,
+      "average_stability_score": 71.09242092131021,
+      "brier_score": 0.3202193116254803,
+      "calibration_error": -0.2740598686239192,
+      "empirical_hit_rate": 0.5769230769230769,
+      "failure_count_by_market": {
+        "receiving_yards": 34,
+        "receptions": 11,
+        "rushing_yards": 21
+      },
+      "forecasts": 156,
+      "hit_rate_ci_95": [
+        0.49846209447801304,
+        0.6516866853008462
+      ],
+      "target_probability": 0.85
+    }
+  ],
+  "promotion": {
+    "candidate": {
+      "crps": 9.10936189639701,
+      "mae": 11.821513646871013,
+      "median_absolute_error": 4.758651123899066,
+      "pinball": {
+        "p10": 1.9254066863202146,
+        "p25": 3.8904437340736093,
+        "p50": 5.664525338951899,
+        "p75": 5.265946584219449,
+        "p90": 3.3590647825093534
+      },
+      "rmse": 20.220688792054855,
+      "rows": 18071
+    },
+    "combined_high_stability_calibration": {
+      "average_interval_width": 47.21624085741887,
+      "average_probability": 0.6911102532416921,
+      "average_stability_score": 70.98154792427374,
+      "brier_score": 0.2792223749499148,
+      "calibration_error": -0.14077468277189342,
+      "empirical_hit_rate": 0.5503355704697986,
+      "forecasts": 2980,
+      "hit_rate_ci_95": [
+        0.5324214694167682,
+        0.5681200654268992
+      ]
+    },
+    "frozen_center_baseline": {
+      "baseline": "current_v4",
+      "candidate_mae_on_same_rows": null,
+      "candidate_rmse_on_same_rows": null,
+      "mae": null,
+      "market": "ALL",
+      "median_absolute_error": null,
+      "paired_mae_delta": null,
+      "paired_rmse_delta": null,
+      "rmse": null,
+      "rows": 0
+    },
+    "gates": {
+      "controlled_interval_width": true,
+      "crps_improved_vs_simple_quantile_baseline": true,
+      "interval_coverage_non_inferior": true,
+      "mae_improved_vs_frozen_baseline": false,
+      "no_fatal_leakage_or_integrity_finding": true,
+      "not_dominated_by_one_segment": true,
+      "reproducible_offline": true,
+      "stability_reliable_multiple_weeks": false,
+      "sufficient_games": true,
+      "sufficient_opportunities": true,
+      "sufficient_weeks": true,
+      "threshold_probabilities_calibrated": false
+    },
+    "policy": "RESEARCH_ONLY_EVEN_IF_GATES_PASS; NO_PRODUCTION_WAGERING",
+    "promotion_eligible": false,
+    "segment_concentrations": {
+      "canonical_player_id": 0.005478390791876487,
+      "market": 0.3982624093852028,
+      "team": 0.03962149299983399,
+      "week": 0.06413590836146311
+    },
+    "simple_quantile_baseline": {
+      "crps": 9.514982153726965,
+      "p10_p90_average_width": 30.703065685352225,
+      "p10_p90_coverage": 0.7088152288196558,
+      "rows": 18071
+    }
+  },
+  "weak_markets_by_center_bias": [
+    {
+      "bias": -0.649894151263146,
+      "diagnoses": [
+        "INSUFFICIENT_VARIANCE",
+        "INCORRECT_SKEW_RISK",
+        "UNSTABLE_ROLE_ASSUMPTIONS"
+      ],
+      "market": "receiving_yards"
+    },
+    {
+      "bias": -0.4580121644272073,
+      "diagnoses": [
+        "INSUFFICIENT_VARIANCE",
+        "INCORRECT_SKEW_RISK",
+        "UNSTABLE_ROLE_ASSUMPTIONS",
+        "INSUFFICIENT_HISTORY"
+      ],
+      "market": "rushing_yards"
+    },
+    {
+      "bias": -0.041632399885569986,
+      "diagnoses": [
+        "INSUFFICIENT_VARIANCE",
+        "INCORRECT_SKEW_RISK",
+        "UNSTABLE_ROLE_ASSUMPTIONS"
+      ],
+      "market": "receptions"
+    }
+  ]
+}

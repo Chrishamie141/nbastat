@@ -1,0 +1,47 @@
+{
+  "by_market": [
+    {
+      "market": "receiving_yards",
+      "p10_p90_average_width": 56.29479018006047,
+      "p10_p90_coverage": 0.8125607892177296,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 27.063946673084605,
+      "p25_p75_coverage": 0.44351813255523137,
+      "p25_p75_nominal": 0.5,
+      "rows": 7197,
+      "sharpness_p10_p90": 2.678245034724263
+    },
+    {
+      "market": "receptions",
+      "p10_p90_average_width": 4.173346844801569,
+      "p10_p90_coverage": 0.795331388078366,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 2.1229876063681377,
+      "p25_p75_coverage": 0.5482840072252327,
+      "p25_p75_nominal": 0.5,
+      "rows": 7197,
+      "sharpness_p10_p90": 1.84201147466143
+    },
+    {
+      "market": "rushing_yards",
+      "p10_p90_average_width": 46.76827119788549,
+      "p10_p90_coverage": 0.7215121022572749,
+      "p10_p90_nominal": 0.8,
+      "p25_p75_average_width": 24.225245955052383,
+      "p25_p75_coverage": 0.42208322001631765,
+      "p25_p75_nominal": 0.5,
+      "rows": 3677,
+      "sharpness_p10_p90": 2.7049871535773398
+    }
+  ],
+  "overall": {
+    "p10_p90_average_width": 33.59836840034071,
+    "p10_p90_coverage": 0.7871728183277074,
+    "p10_p90_nominal": 0.8,
+    "p25_p75_average_width": 16.5532950797382,
+    "p25_p75_coverage": 0.4808809695091583,
+    "p25_p75_nominal": 0.5,
+    "rows": 18071,
+    "sharpness_p10_p90": 2.350645999764967
+  }
+}
