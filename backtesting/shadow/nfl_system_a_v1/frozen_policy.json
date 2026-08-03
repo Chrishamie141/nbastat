@@ -1,0 +1,61 @@
+{
+  "configuration": "residual_half_life_9",
+  "guardrails": [
+    "No historical result authorizes real wagering.",
+    "Every shadow decision must be locked no later than its prediction cutoff.",
+    "Policy changes require a new policy id and cannot rewrite existing ledger entries."
+  ],
+  "inputs": {
+    "backtesting/results/nfl_distribution_probability_calibration_2024_2025/manifest.json": "7efd77052b29e9d7afc858c32949f350234fb12d5d1f92f36e69013c4b4d15fb",
+    "backtesting/results/nfl_system_a_calibrated_price_policy_2024_2025/nested_policy_evaluation.json": "91f0307ed8e8b733cf0d0458f2b638ee523f80c02f442dcc9c3d310944d7e420"
+  },
+  "minimum_expected_value": 0.05,
+  "policy_fingerprint": "41ccfacd9eeb8cc16adb91d190b14d51f124a77f0c9bd607c79781f338bdf276",
+  "policy_id": "nfl_system_a_forward_shadow_v1",
+  "price_contract": "BEST_FROZEN_PREGAME_EXECUTION_PRICE_AND_COMPLETE_NO_VIG_PAIR",
+  "probability_contract": "PRICE_BLIND_SYSTEM_A_CALIBRATION_THEN_FROZEN_MARKET_RESIDUAL",
+  "production_wagering_authorized": false,
+  "schema_version": 1,
+  "selection_contract": "AT_MOST_ONE_SIDE_PER_PLAYER_GAME_MARKET_LINE_ELSE_PASS",
+  "source_fold": {
+    "inner_periods": [
+      [
+        2025,
+        10
+      ],
+      [
+        2025,
+        11
+      ],
+      [
+        2025,
+        12
+      ],
+      [
+        2025,
+        13
+      ],
+      [
+        2025,
+        14
+      ],
+      [
+        2025,
+        15
+      ],
+      [
+        2025,
+        16
+      ],
+      [
+        2025,
+        17
+      ]
+    ],
+    "selection_timing": "SELECTED_FROM_INNER_PERIODS_BEFORE_SOURCE_TEST_OUTCOMES",
+    "test_season": 2025,
+    "test_week": 18
+  },
+  "stake_units": 1.0,
+  "state": "FROZEN_SHADOW_ONLY"
+}
