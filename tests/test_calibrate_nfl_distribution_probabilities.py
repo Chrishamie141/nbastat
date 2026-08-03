@@ -70,11 +70,15 @@ def test_repeated_runs_are_byte_deterministic(tmp_path: Path) -> None:
     input_path = tmp_path / "thresholds.csv"
     fields = [
         "season", "week", "game_id", "canonical_player_id", "player_name", "team", "opponent",
-        "market", "line", "side", "probability", "result", "stability_class", "stability_score", "decision",
+        "market", "line", "side", "probability", "over_probability", "under_probability", "actual",
+        "result", "stability_class", "stability_score", "decision",
     ]
     lines = [",".join(fields)]
     for row in _rows(weeks=5, rows_per_week=20):
-        values = [row.get("raw_probability") if field == "probability" else row.get("raw_decision")
+        values = [row.get("raw_probability") if field in {"probability", "over_probability"}
+                  else 1 - row["raw_probability"] if field == "under_probability"
+                  else 51 if field == "actual" and row["result"] == "WIN"
+                  else 49 if field == "actual" else row.get("raw_decision")
                   if field == "decision" else row.get(field, "") for field in fields]
         lines.append(",".join(str(value) for value in values))
     input_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

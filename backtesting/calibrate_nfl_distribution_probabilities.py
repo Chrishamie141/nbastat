@@ -36,23 +36,28 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def load_threshold_rows(path: Path) -> list[dict[str, Any]]:
-    """Load the frozen threshold CSV without evaluating Python-like columns."""
+    """Expand each frozen line into OVER and UNDER probability forecasts."""
     rows: list[dict[str, Any]] = []
     with path.open(encoding="utf-8", newline="") as handle:
         for raw in csv.DictReader(handle):
             if raw.get("result") not in {"WIN", "LOSS", "PUSH"}:
                 continue
-            rows.append({
-                "season": int(raw["season"]), "week": int(raw["week"]),
-                "game_id": raw["game_id"], "canonical_player_id": raw["canonical_player_id"],
-                "player_name": raw.get("player_name"), "team": raw.get("team"),
-                "opponent": raw.get("opponent"), "market": raw["market"],
-                "line": float(raw["line"]), "side": raw["side"],
-                "raw_probability": float(raw["probability"]), "result": raw["result"],
-                "stability_class": raw.get("stability_class"),
-                "stability_score": float(raw["stability_score"]),
-                "raw_decision": raw.get("decision"),
-            })
+            actual, line = float(raw["actual"]), float(raw["line"])
+            for side in ("OVER", "UNDER"):
+                result = "PUSH" if actual == line else "WIN" if (
+                    (side == "OVER" and actual > line) or (side == "UNDER" and actual < line)
+                ) else "LOSS"
+                rows.append({
+                    "season": int(raw["season"]), "week": int(raw["week"]),
+                    "game_id": raw["game_id"], "canonical_player_id": raw["canonical_player_id"],
+                    "player_name": raw.get("player_name"), "team": raw.get("team"),
+                    "opponent": raw.get("opponent"), "market": raw["market"],
+                    "line": line, "side": side, "actual": actual,
+                    "raw_probability": float(raw[f"{side.lower()}_probability"]), "result": result,
+                    "stability_class": raw.get("stability_class"),
+                    "stability_score": float(raw["stability_score"]),
+                    "raw_decision": raw.get("decision"),
+                })
     return sorted(rows, key=lambda row: (_period(row), row["game_id"], row["canonical_player_id"],
                                          row["market"], row["line"], row["side"]))
 

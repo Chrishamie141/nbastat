@@ -1,0 +1,19 @@
+{
+  "inputs": [
+    {
+      "path": "backtesting\\results\\nfl_distribution_probability_calibration_2024_2025\\calibration_rows.json",
+      "sha256": "89db86fcfd212e07fb82800fca7e67e26fa5a3d3f132498087c9fc8dda6b698d"
+    },
+    {
+      "path": "backtesting\\results\\nfl_player_props_2024_history\\opportunity_rows.csv",
+      "sha256": "254646bad279b018b184bc7484f7ecc66923d056374307aaeffd93b72e914de9"
+    },
+    {
+      "path": "backtesting\\results\\nfl_player_props_2025_history\\opportunity_rows.csv",
+      "sha256": "2eaf024e9d064e2f289402a7363092c9e1c4fc9dae3a8702f82900ae82840d62"
+    }
+  ],
+  "network_contacted": false,
+  "promotion_eligible": false,
+  "schema_version": 1
+}
