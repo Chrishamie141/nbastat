@@ -145,6 +145,52 @@ def materialize_identities(*, snapshot_root: Path, season: int, week: int) -> di
             "network_contacted": False, "paid_credits_used": 0}
 
 
+def plan_season_capture(*, snapshot_root: Path, season: int, start_week: int,
+                        end_week: int, as_of: str,
+                        window_hours: float = 72.0) -> dict[str, Any]:
+    """Aggregate weekly offline plans and identify the next capture window."""
+    now = parse_dt(as_of)
+    if now is None:
+        raise ValueError("--as-of must be an ISO-8601 timestamp")
+    if start_week < 1 or end_week < start_week:
+        raise ValueError("week range must satisfy 1 <= start-week <= end-week")
+    weeks = [plan_capture(snapshot_root=snapshot_root, season=season, week=week,
+                          as_of=as_of, window_hours=window_hours)
+             for week in range(start_week, end_week + 1)]
+    future = []
+    for plan in weeks:
+        for game in plan["games"]:
+            kickoff = parse_dt(game.get("kickoff_time"))
+            if kickoff and kickoff > now:
+                opens = kickoff.timestamp() - window_hours * 3600
+                future.append((opens, kickoff, plan["week"], game))
+    next_window = None
+    if future:
+        opens, kickoff, week, game = min(future, key=lambda item: (item[0], item[1], item[3]["game_id"]))
+        opens_at = datetime.fromtimestamp(opens, tz=timezone.utc)
+        next_window = {
+            "week": week, "game_id": game["game_id"],
+            "capture_window_opens": _iso(opens_at), "kickoff_time": _iso(kickoff),
+            "hours_until_window": round(max(0.0, (opens_at - now).total_seconds() / 3600), 6),
+        }
+    status_counts: dict[str, int] = {}
+    for plan in weeks:
+        status_counts[plan["status"]] = status_counts.get(plan["status"], 0) + 1
+    current_maximum = sum(int(plan["maximum_paid_credits"]) for plan in weeks)
+    return {
+        "schema_version": 1, "season": season, "start_week": start_week,
+        "end_week": end_week, "as_of": _iso(now), "window_hours": window_hours,
+        "status": "READY" if current_maximum else "WAITING_FOR_NEXT_CAPTURE_WINDOW",
+        "weeks": weeks, "week_status_counts": dict(sorted(status_counts.items())),
+        "weeks_with_identities": [plan["week"] for plan in weeks if plan["identity_records"]],
+        "games_discovered": sum(plan["games_discovered"] for plan in weeks),
+        "games_ready": sum(plan["games_ready"] for plan in weeks),
+        "current_maximum_paid_credits": current_maximum,
+        "next_capture_window": next_window, "network_contacted": False,
+        "paid_credits_used": 0, "production_wagering_authorized": False,
+    }
+
+
 def validate_authorization(plan: dict[str, Any], *, allow_paid_fetch: bool,
                            max_paid_credits: int | None) -> None:
     required = int(plan["maximum_paid_credits"])
@@ -354,6 +400,14 @@ def main(argv: list[str] | None = None) -> int:
     identities.add_argument("--season", type=int, required=True)
     identities.add_argument("--week", type=int, required=True)
     identities.add_argument("--output", type=Path)
+    season_plan = subparsers.add_parser("season-plan")
+    season_plan.add_argument("--snapshot-root", type=Path, required=True)
+    season_plan.add_argument("--season", type=int, required=True)
+    season_plan.add_argument("--start-week", type=int, default=1)
+    season_plan.add_argument("--end-week", type=int, default=18)
+    season_plan.add_argument("--as-of", required=True)
+    season_plan.add_argument("--window-hours", type=float, default=72.0)
+    season_plan.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     values = {key: value for key, value in vars(args).items()
               if key not in {"command", "output"}}
@@ -361,8 +415,10 @@ def main(argv: list[str] | None = None) -> int:
         report = plan_capture(**values)
     elif args.command == "capture":
         report = capture(**values)
-    else:
+    elif args.command == "identities":
         report = materialize_identities(**values)
+    else:
+        report = plan_season_capture(**values)
     if args.output:
         _write_json(args.output, report)
     print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))

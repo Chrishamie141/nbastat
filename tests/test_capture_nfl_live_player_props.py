@@ -188,3 +188,26 @@ def test_stale_as_of_is_rejected_before_network(tmp_path, monkeypatch):
                      season=2026, week=1, as_of="2026-09-09T00:00:00Z",
                      allow_paid_fetch=True, max_paid_credits=3,
                      _now=datetime(2026, 9, 9, 0, 6, tzinfo=timezone.utc))
+
+
+def test_season_plan_is_offline_and_reports_next_window(tmp_path, monkeypatch):
+    _week(tmp_path)
+    second = tmp_path / "snapshots" / "nfl" / "2026" / "week_02"
+    second.mkdir(parents=True)
+    game = {**GAME, "game_id": "espn-402", "week": 2,
+            "kickoff_time": "2026-09-17T00:00:00Z"}
+    (second / "games.json").write_text(json.dumps([game]), encoding="utf-8")
+    monkeypatch.setattr(live, "_fetch_json_structured",
+                        lambda *_: pytest.fail("network called"))
+    report = live.plan_season_capture(
+        snapshot_root=tmp_path / "snapshots", season=2026, start_week=1, end_week=2,
+        as_of="2026-08-02T00:00:00Z", window_hours=72)
+    assert report["games_discovered"] == 2 and report["games_ready"] == 0
+    assert report["weeks_with_identities"] == [1]
+    assert report["current_maximum_paid_credits"] == report["paid_credits_used"] == 0
+    assert report["next_capture_window"] == {
+        "week": 1, "game_id": "espn-401",
+        "capture_window_opens": "2026-09-07T00:00:00Z",
+        "kickoff_time": "2026-09-10T00:00:00Z", "hours_until_window": 864.0,
+    }
+    assert report["network_contacted"] is False
