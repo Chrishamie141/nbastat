@@ -169,12 +169,13 @@ def _http_failure(error: StructuredHttpError, request: dict[str, Any]) -> dict[s
 
 
 def acquire_roster_identities(plan: dict[str, Any], *, allow_network: bool=False,
+                              refresh: bool=False,
                               fetcher: Callable[..., Any]=_fetch_json_structured) -> tuple[list[dict[str, Any]],dict[str,Any]]:
     """Resume request-by-request; a provider error cannot discard prior cache writes."""
-    rows=[]; rejected=[]; failed=[]; written=[]; cached=[]; succeeded=[]; network=False
+    rows=[]; rejected=[]; failed=[]; written=[]; cached=[]; refreshed=[]; succeeded=[]; network=False
     for request in plan["per_game_team_requests"]:
         path=Path(request["cache_path"]); cache=JsonRawCache(path.parents[4])
-        if request["cache_state"] == "cached": cached.append(request["team"])
+        if request["cache_state"] == "cached" and not refresh: cached.append(request["team"])
         else:
             if not allow_network:
                 rejected.append({**request,"reason":"network_opt_in_required"}); continue
@@ -188,8 +189,11 @@ def acquire_roster_identities(plan: dict[str, Any], *, allow_network: bool=False
             try:
                 cache.get_or_fetch(PROVIDER,"nfl",request["season"],request["week"],ENDPOINT,
                     roster_params(request["team"],request["season"]),lambda:fetcher(url),
-                    overwrite=request["cache_state"]=="invalid",replacement_reason="invalid roster cache replacement")
+                    overwrite=refresh or request["cache_state"]=="invalid",
+                    replacement_reason=("explicit contemporaneous roster refresh" if refresh else
+                                        "invalid roster cache replacement"))
                 written.append(str(path)); succeeded.append(request["team"])
+                if refresh and request["cache_state"] == "cached": refreshed.append(request["team"])
             except StructuredHttpError as error:
                 failed.append(_http_failure(error,request)); continue
         try:
@@ -204,7 +208,8 @@ def acquire_roster_identities(plan: dict[str, Any], *, allow_network: bool=False
     report={"provider":PROVIDER,"historical_acquisition_supported":bool(plan.get("historical_acquisition_supported")),
         "unsupported_reason":None if plan.get("historical_acquisition_supported") else UNSUPPORTED_REASON,
         "network_contacted":network,"raw_cache_files_written":written,"succeeded":succeeded,"failed":failed,
-        "rejected":rejected,"cached":cached,"counts":{"succeeded":len(succeeded),"failed":len(failed),
+        "rejected":rejected,"cached":cached,"refreshed":refreshed,
+        "counts":{"succeeded":len(succeeded),"failed":len(failed),
         "rejected":len(rejected),"cached":len(cached)},"identities_acquired":len(result),
         "identities_with_provider_id":sum(bool(r.get("provider_player_id")) for r in result),
         "teams_weeks_covered":sorted({f"{r['season']}|{r['week']}|{r['team']}" for r in result}),
@@ -246,6 +251,8 @@ def main(argv=None)->int:
     parser.add_argument("--snapshot-root",type=Path,default=Path("backtesting/data/snapshots"))
     parser.add_argument("--cache-root",type=Path,default=Path("backtesting/data/raw_cache"))
     parser.add_argument("--plan",action="store_true"); parser.add_argument("--allow-network",action="store_true")
+    parser.add_argument("--refresh",action="store_true",
+                        help="replace valid cached rosters with a new contemporaneous capture")
     parser.add_argument("--verify-team",help="make one uncached ESPN roster request for this team")
     args=parser.parse_args(argv); directory=args.snapshot_root/"nfl"/str(args.season)/f"week_{args.week:02d}"
     try: games=json.loads((directory/"games.json").read_text())
@@ -256,7 +263,7 @@ def main(argv=None)->int:
         if not matches: parser.error("verification team is not present in the requested week")
         print(json.dumps(verify_single_request(matches[0]),indent=2,sort_keys=True)); return 0
     if args.plan: print(json.dumps(plan,indent=2,sort_keys=True)); return 0
-    rows,report=acquire_roster_identities(plan,allow_network=args.allow_network)
+    rows,report=acquire_roster_identities(plan,allow_network=args.allow_network,refresh=args.refresh)
     _write(directory/"roster_identities.json",rows); print(json.dumps(report,indent=2,sort_keys=True))
     return 0 if not report["rejected_coverage"] else 2
 

@@ -1,6 +1,9 @@
 import json
+from pathlib import Path
 
 import pytest
+
+from nfl_providers import HttpJsonResponse
 
 from backtesting.historical_roster_acquisition import (acquire_roster_identities,
     normalize_cached_roster, plan_roster_acquisition, roster_cache_path, roster_url)
@@ -47,6 +50,22 @@ def test_cached_historical_roster_normalizes_and_reconciles_without_stats(tmp_pa
     assert roster["canonical_player_id"]=="42" and roster["has_stats"] is False
     assert not ({"attempts","receptions","yards","passing_yards"} & roster.keys())
     assert reconcile_player({"description":"Roster Only","team":"BUF"},identities,game_id="g1").canonical_player_id=="42"
+
+
+def test_explicit_refresh_replaces_cached_roster(tmp_path):
+    _cached(tmp_path); _cached(tmp_path,team="MIA",name="Other Player",player_id="9")
+    plan=plan_roster_acquisition([GAME],tmp_path,season=2025)
+    plan["historical_acquisition_supported"]=True
+    calls=[]
+    payload={"athletes":[{"items":[{"id":"77","displayName":"Refreshed Player",
+                                      "position":{"abbreviation":"RB"}}]}]}
+    _rows,report=acquire_roster_identities(
+        plan,allow_network=True,refresh=True,
+        fetcher=lambda url: calls.append(url) or HttpJsonResponse(payload,200,{}))
+    assert len(calls)==2 and len(report["refreshed"])==2
+    assert report["cached"]==[]
+    assert all("Refreshed Player" in Path(record).read_text(encoding="utf-8")
+               for record in report["raw_cache_files_written"])
 
 
 def test_future_capture_and_wrong_scope_are_rejected(tmp_path):
