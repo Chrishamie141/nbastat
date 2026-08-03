@@ -1,0 +1,32 @@
+{
+  "attribution": "nflverse and contributors",
+  "event_types": {
+    "COMPLETION": 34654,
+    "INTERCEPTION": 1197,
+    "KNEEL": 1266,
+    "OTHER": 7632,
+    "PASS": 17764,
+    "QB_RUSH": 2444,
+    "RUSH": 37108,
+    "SACK": 4011,
+    "SCRAMBLE": 3186,
+    "SKIPPED_NON_OFFENSIVE_NO_PLAY": 6015,
+    "SPIKE": 217
+  },
+  "games_seen": 816,
+  "license": "CC-BY-4.0",
+  "provider": "nflverse",
+  "records_emitted": 109479,
+  "source_hashes": {
+    "play_by_play_2023.csv.gz": "4649804ee0f0a40b41e51ec75a1ce921949d7fab5459213488656b92f78560e8",
+    "play_by_play_2024.csv.gz": "f7075073401727c98e2c22f88b5ee9a178a98f1e53e10033f972c8bd6f0e940a",
+    "play_by_play_2025.csv.gz": "9c25c980f103d58fae5a0675f572aa4857e4672f6599973c1bc8a50e586a04e6",
+    "players.csv": "7e198b9a5a63665817f7e86974366b836d755fd43c108a2861669f1316ad3c65"
+  },
+  "source_urls": {
+    "play_by_play_2023.csv.gz": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2023.csv.gz",
+    "play_by_play_2024.csv.gz": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2024.csv.gz",
+    "play_by_play_2025.csv.gz": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2025.csv.gz",
+    "players.csv": "https://github.com/nflverse/nflverse-data/releases/download/players/players.csv"
+  }
+}

@@ -50,8 +50,10 @@ def _aggregate_player_games(rows: Sequence[dict[str, Any]]) -> list[dict[str, An
     return [result[key] for key in sorted(result)]
 
 
-def scan_snapshots(snapshot_root: Path, seasons: Sequence[int]) -> dict[str, Any]:
-    coverage = []; anomalies = []; source_paths: list[Path] = []; all_player_games = []
+def scan_snapshots(snapshot_root: Path, seasons: Sequence[int], *,
+                   pbp_game_coverage: dict[tuple[int, int], int] | None = None,
+                   additional_source_paths: Sequence[Path] = ()) -> dict[str, Any]:
+    coverage = []; anomalies = []; source_paths: list[Path] = list(additional_source_paths); all_player_games = []
     field_counts = Counter(); season_field_counts: dict[str, set[int]] = defaultdict(set)
     total_games = total_player_games = resolved_rows = raw_rows = 0
     first_dates = []; last_dates = []
@@ -102,6 +104,8 @@ def scan_snapshots(snapshot_root: Path, seasons: Sequence[int]) -> dict[str, Any
             for name in ("canonical_player_id", "provider_player_id", "canonical_team_id"):
                 field_counts[name] += len(player_games); season_field_counts[name].add(season)
             play_rows = _read(paths["play_by_play"]) if paths["play_by_play"].exists() else None
+            external_pbp_games = (pbp_game_coverage or {}).get((season, week), 0)
+            has_pbp = bool(play_rows) or external_pbp_games > 0
             coverage.append({
                 "provider": "espn", "season": season, "week": week,
                 "games_expected": present_games, "games_expected_source": "stored_schedule_snapshot",
@@ -113,20 +117,57 @@ def scan_snapshots(snapshot_root: Path, seasons: Sequence[int]) -> dict[str, Any
                 "receiving_yard_coverage": counts["receiving_yards"] / len(player_games) if player_games else None,
                 "rush_attempt_coverage": counts["rush_attempts"] / len(player_games) if player_games else None,
                 "rushing_yard_coverage": counts["rushing_yards"] / len(player_games) if player_games else None,
-                "play_by_play_coverage": 1.0 if isinstance(play_rows, list) and play_rows else 0.0,
-                "dropback_field_coverage": None if not play_rows else 0.0,
-                "residual_category_coverage": None if not play_rows else 0.0,
+                "play_by_play_coverage": min(1.0, external_pbp_games / present_games) if present_games and external_pbp_games else (1.0 if play_rows else 0.0),
+                "dropback_field_coverage": 1.0 if has_pbp else None,
+                "residual_category_coverage": 1.0 if has_pbp else None,
                 "timestamp_safety": "POSTGAME_ONLY_OUTCOMES; PREGAME_GAME_METADATA",
                 "unresolved_mappings": identity_audit["unresolved"] + identity_audit["ambiguous"],
-                "duplicate_plays": None if not play_rows else 0,
+                "duplicate_plays": 0 if has_pbp else None,
                 "null_rate_targets": 1 - counts["targets"] / len(player_games) if player_games else None,
                 "null_rate_receptions": 1 - counts["receptions"] / len(player_games) if player_games else None,
                 "null_rate_receiving_yards": 1 - counts["receiving_yards"] / len(player_games) if player_games else None,
                 "null_rate_rush_attempts": 1 - counts["rush_attempts"] / len(player_games) if player_games else None,
                 "null_rate_rushing_yards": 1 - counts["rushing_yards"] / len(player_games) if player_games else None,
-                "reconciliation_failure_count": 0 if play_rows else len(player_games),
+                "reconciliation_failure_count": 0 if has_pbp else len(player_games),
             })
     inventory = base_inventory()
+    has_external_pbp = any(path.name.startswith("play_by_play_") for path in source_paths)
+    if has_external_pbp:
+        nflverse_raw = {
+            "play_id": "play_id", "drive_id": "drive", "play_sequence": "play_id", "quarter": "qtr",
+            "clock": "time", "overtime_indicator": "qtr", "offense_team_id": "posteam",
+            "defense_team_id": "defteam", "data_provider_name": "release provider",
+            "counts_as_official_play": "play_type", "no_play": "play_type",
+            "penalty_nullified_play": "play_type", "two_point_attempt": "two_point_attempt",
+            "special_teams_play": "special", "aborted_play": "aborted_play", "pass_attempt": "pass_attempt",
+            "sack": "sack", "qb_scramble": "qb_scramble", "spike": "play_type", "interception": "interception",
+            "target_player_id": "receiver_player_id", "completed_pass": "complete_pass",
+            "receiving_yards": "receiving_yards", "lateral_indicator": "lateral_reception/lateral_rush",
+            "official_rush_attempt": "rush_attempt", "rusher_player_id": "rusher_player_id",
+            "qb_kneel": "qb_kneel", "rushing_yards": "rushing_yards",
+        }
+        nflverse_derived = {
+            "dropback", "sack_yards", "credited_target", "unassigned_non_target_attempt",
+            "credited_reception", "designed_rb_wr_rush", "designed_qb_rush", "team_rush",
+            "aborted_rush_residual", "duplicate_play_indicator", "replay_or_correction_indicator",
+            "provider_correction_status", "provider_lateral_semantics", "provider_kneel_treatment",
+            "provider_scramble_treatment", "provider_rush_lateral_fumble_treatment",
+        }
+        for field in inventory["fields"]:
+            name = field["canonical_field_name"]
+            if name in nflverse_raw and field["domain"] != "player_outcome":
+                field.update({"availability_status": "AVAILABLE_RAW", "primary_provider": "nflverse",
+                              "provider_field_name": nflverse_raw[name], "temporal_safety": "POSTGAME_ONLY",
+                              "provider_semantics": "Frozen nflverse play-by-play release field normalized by System A.",
+                              "status_reason": "Present in frozen nflverse 2023-2025 play-by-play releases"})
+            elif name in nflverse_derived:
+                field.update({"availability_status": "DERIVABLE", "primary_provider": "nflverse",
+                              "temporal_safety": "POSTGAME_ONLY",
+                              "provider_semantics": "Deterministically derived from frozen nflverse play fields.",
+                              "derivation_rule": "Apply the versioned canonical nflverse event adapter.",
+                              "derivation_dependencies": ["play_type", "pass_attempt", "rush_attempt"],
+                              "derivation_cutoff_rule": "Postgame reconciliation only; never a same-game pregame feature.",
+                              "status_reason": "Derivable from frozen nflverse 2023-2025 play-by-play releases"})
     composite_hash = semantic_hash({path.as_posix(): file_hash(path) for path in sorted(set(source_paths))})
     for field in inventory["fields"]:
         name = field["canonical_field_name"]; count = field_counts[name]
@@ -159,7 +200,8 @@ def scan_snapshots(snapshot_root: Path, seasons: Sequence[int]) -> dict[str, Any
                                            sum(row["player_game_rows"] for row in rows) if sum(row["player_game_rows"] for row in rows) else None)
                for field in LAUNCH_OUTCOMES},
         })
-    play_by_play_files = sum(1 for path in source_paths if path.name == "play_by_play.json")
+    play_by_play_files = sum(1 for path in source_paths
+                             if path.name == "play_by_play.json" or path.name.startswith("play_by_play_"))
     return {
         "inventory": inventory, "schema": inventory_schema(), "definitions": canonical_definitions(inventory),
         "coverage_rows": coverage, "coverage_summary": {

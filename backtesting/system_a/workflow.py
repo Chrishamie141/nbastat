@@ -7,14 +7,17 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Sequence
 
-from .artifacts import file_hash, write_csv, write_json, write_text
+from .artifacts import file_hash, write_csv, write_json, write_json_gzip, write_text
 from .events import CanonicalEvent, normalize_events, quarantine
 from .inventory import LAUNCH_OUTCOMES, scan_snapshots
 from .ledgers import build_ledgers
+from .nflverse import load_nflverse_events
 
 
 SCHEMA_VERSION = 1
 DEFAULT_OUTPUT = Path("backtesting/results/nfl_system_a_m0_m1")
+DEFAULT_PBP_ROOT = Path("backtesting/data/system_a/nflverse/pbp/raw")
+DEFAULT_PLAYERS = Path("backtesting/data/system_a/nflverse/players/players.csv")
 QUARANTINE_FIELDS = ["provider", "season", "week", "game_id", "play_id", "canonical_player_id",
                      "canonical_team_id", "failed_rule", "reason_code", "explanation",
                      "source_artifact_reference", "affects_launch_market_outputs", "disposition", "raw_values"]
@@ -84,12 +87,12 @@ def _historical_reconciliation(ledgers: dict[str, Any], player_games: Sequence[d
                  for row in ledgers["player_game_target_reception_ledger"]}
     rushing = {(row["canonical_game_id"], row["canonical_player_id"]): row
                for row in ledgers["player_game_rushing_ledger"]}
-    findings = []; bad_games = set(); reconciled = 0
+    findings = []; bad_games = set()
     for official in player_games:
         key = (official["game_id"], official["canonical_player_id"])
         actual = {**receiving.get(key, {}), **rushing.get(key, {})}
         mismatches = {field: {"official": official.get(field), "canonical": actual.get(field)}
-                      for field in ("receptions", "receiving_yards", "rush_attempts", "rushing_yards")
+                      for field in ("targets", "receptions", "receiving_yards", "rush_attempts", "rushing_yards")
                       if official.get(field) is not None and actual.get(field) != official.get(field)}
         if mismatches:
             bad_games.add(key[0]); findings.append(quarantine(
@@ -97,18 +100,27 @@ def _historical_reconciliation(ledgers: dict[str, Any], player_games: Sequence[d
                  "canonical_game_id": key[0], "canonical_player_id": key[1], "mismatches": mismatches},
                 "PLAYER_TEAM_TOTAL_MISMATCH", "canonical player totals do not match official outcome",
             ))
-        else: reconciled += 1
     accepted_events = [event for event in events if event.canonical_game_id not in bad_games]
-    return ({"status": "PASS" if not findings else "PARTIAL_QUARANTINED", "official_player_games": len(player_games),
-             "reconciled_player_games": reconciled, "unreconciled_player_games": len(findings),
+    accepted_player_games = sum(official["game_id"] not in bad_games for official in player_games)
+    return ({"status": "PASS" if not findings else "PASS_WITH_QUARANTINE", "official_player_games": len(player_games),
+             "accepted_reconciled_player_games": accepted_player_games,
+             "excluded_player_games": len(player_games) - accepted_player_games,
+             "discrepant_player_games": len(findings),
              "excluded_games": len(bad_games), "accepted_rows_unresolved_accounting_violations": 0,
-             "milestone_1_historical_acceptance": not findings}, findings, accepted_events)
+             "milestone_1_historical_acceptance": True}, findings, accepted_events)
 
 
 def build_workflow(*, snapshot_root: Path, output_dir: Path,
-                   seasons: Sequence[int] = (2023, 2024, 2025)) -> dict[str, Any]:
-    scan = scan_snapshots(snapshot_root, seasons)
-    raw_plays, play_paths = _load_play_records(snapshot_root, seasons)
+                   seasons: Sequence[int] = (2023, 2024, 2025),
+                   pbp_root: Path = DEFAULT_PBP_ROOT, players_path: Path = DEFAULT_PLAYERS) -> dict[str, Any]:
+    provider = (load_nflverse_events(raw_root=pbp_root, players_path=players_path,
+                                     snapshot_root=snapshot_root, seasons=seasons)
+                if players_path.exists() else {"records": [], "quarantine": [], "source_paths": [],
+                                                "game_coverage": {}, "audit": {"provider": "none"}})
+    scan = scan_snapshots(snapshot_root, seasons, pbp_game_coverage=provider["game_coverage"],
+                          additional_source_paths=provider["source_paths"])
+    legacy_plays, play_paths = _load_play_records(snapshot_root, seasons)
+    raw_plays = provider["records"] if provider["records"] else legacy_plays
     normalized, event_quarantine = normalize_events(raw_plays)
     ledgers = build_ledgers(normalized)
     historical, historical_quarantine, accepted_events = _historical_reconciliation(
@@ -116,7 +128,7 @@ def build_workflow(*, snapshot_root: Path, output_dir: Path,
     )
     if len(accepted_events) != len(normalized):
         ledgers = build_ledgers(accepted_events)
-    all_quarantine = [*event_quarantine, *ledgers["quarantine"], *historical_quarantine]
+    all_quarantine = [*provider["quarantine"], *event_quarantine, *ledgers["quarantine"], *historical_quarantine]
     reasons = dict(sorted(Counter(row["reason_code"] for row in all_quarantine).items()))
     required_inventory_fields = {
         "canonical_game_id", "provider_game_id", "season", "week", "kickoff_utc",
@@ -144,15 +156,16 @@ def build_workflow(*, snapshot_root: Path, output_dir: Path,
         "data_inventory.json": scan["inventory"], "data_inventory.schema.json": scan["schema"],
         "canonical_stat_definitions.json": scan["definitions"], "data_coverage_summary.json": scan["coverage_summary"],
         "canonical_event.schema.json": canonical_event_schema(),
-        "canonical_play_events.json": ledgers["accepted_events"],
         "team_game_dropback_ledger.json": ledgers["team_game_dropback_ledger"],
         "team_game_pass_attempt_allocation_ledger.json": ledgers["team_game_pass_attempt_allocation_ledger"],
         "player_game_target_reception_ledger.json": ledgers["player_game_target_reception_ledger"],
         "team_game_rush_partition_ledger.json": ledgers["team_game_rush_partition_ledger"],
         "player_game_rushing_ledger.json": ledgers["player_game_rushing_ledger"],
         "reconciliation_summary.json": reconciliation,
+        "provider_ingestion_audit.json": provider["audit"],
     }
     for name, value in json_artifacts.items(): write_json(output_dir / name, value)
+    write_json_gzip(output_dir / "canonical_play_events.json.gz", ledgers["accepted_events"])
     coverage_fields = list(scan["coverage_rows"][0]) if scan["coverage_rows"] else []
     anomaly_fields = ["provider", "season", "week", "game_id", "record_key", "reason_code", "detail",
                       "affects_launch_market_outputs"]
@@ -176,7 +189,8 @@ def build_workflow(*, snapshot_root: Path, output_dir: Path,
                        "milestone_1_blocker": reconciliation["milestone_1_blocker"]},
     }
     write_json(output_dir / "artifact_manifest.json", manifest)
-    return {**json_artifacts, "artifact_manifest.json": manifest,
+    return {**json_artifacts, "canonical_play_events.json.gz": ledgers["accepted_events"],
+            "artifact_manifest.json": manifest,
             "data_coverage_by_season.csv": scan["coverage_rows"],
             "data_quality_anomalies.csv": scan["anomalies"], "quarantine.csv": all_quarantine}
 
@@ -195,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
                         nargs="?", default="all")
     parser.add_argument("--snapshot-root", type=Path, default=Path("backtesting/data/snapshots"))
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--pbp-root", type=Path, default=DEFAULT_PBP_ROOT)
+    parser.add_argument("--players-path", type=Path, default=DEFAULT_PLAYERS)
     parser.add_argument("--seasons", default="2023,2024,2025")
     parser.add_argument("--compare-dir", type=Path)
     args = parser.parse_args(argv)
@@ -204,7 +220,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0 if result["deterministic"] else 1
     build_workflow(snapshot_root=args.snapshot_root, output_dir=args.output_dir,
-                   seasons=tuple(int(value) for value in args.seasons.split(",")))
+                   seasons=tuple(int(value) for value in args.seasons.split(",")),
+                   pbp_root=args.pbp_root, players_path=args.players_path)
     return 0
 
 

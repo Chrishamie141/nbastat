@@ -41,12 +41,16 @@
     "rushing_yards": {},
     "sack_yards": {},
     "schema_version": {},
+    "season": {},
     "source_artifact_hash": {},
     "target_player_id": {},
-    "team_rush_residual_count": {}
+    "team_rush_residual_count": {},
+    "week": {}
   },
   "required": [
     "schema_version",
+    "season",
+    "week",
     "canonical_game_id",
     "provider_game_id",
     "play_id",

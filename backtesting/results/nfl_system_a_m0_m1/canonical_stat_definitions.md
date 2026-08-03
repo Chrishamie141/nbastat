@@ -4,7 +4,7 @@ Provider behavior is normalized explicitly; these definitions do not claim unive
 
 ## `aborted_play`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -17,7 +17,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `aborted_rush_residual`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -95,7 +95,7 @@ ESPN scoreboard/game or box-score identifier retained in frozen snapshots.
 
 ## `clock`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -108,7 +108,7 @@ Requires play-by-play source not stored.
 
 ## `completed_pass`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -121,7 +121,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `counts_as_official_play`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -134,7 +134,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `credited_reception`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -147,7 +147,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `credited_target`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -160,7 +160,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `data_provider_name`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -186,7 +186,7 @@ Requires play-by-play source not stored.
 
 ## `defense_team_id`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -225,7 +225,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `designed_qb_rush`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -238,7 +238,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `designed_rb_wr_rush`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -251,7 +251,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `drive_id`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -264,7 +264,7 @@ Requires play-by-play source not stored.
 
 ## `dropback`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -277,7 +277,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `duplicate_play_indicator`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -342,7 +342,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `interception`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -381,7 +381,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `lateral_indicator`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -394,7 +394,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `no_play`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -407,7 +407,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `offense_team_id`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -420,7 +420,7 @@ Requires play-by-play source not stored.
 
 ## `official_rush_attempt`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -433,7 +433,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `overtime_indicator`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -446,7 +446,7 @@ Requires play-by-play source not stored.
 
 ## `pass_attempt`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -459,7 +459,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `penalty_nullified_play`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -472,7 +472,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `play_id`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -485,7 +485,7 @@ Requires play-by-play source not stored.
 
 ## `play_sequence`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -511,7 +511,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `provider_correction_status`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -537,7 +537,7 @@ ESPN scoreboard/game or box-score identifier retained in frozen snapshots.
 
 ## `provider_kneel_treatment`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -550,7 +550,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `provider_lateral_semantics`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -576,7 +576,7 @@ ESPN scoreboard/game or box-score identifier retained in frozen snapshots.
 
 ## `provider_rush_lateral_fumble_treatment`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -589,7 +589,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `provider_scramble_treatment`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -602,7 +602,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `qb_kneel`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -615,7 +615,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `qb_scramble`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -628,7 +628,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `quarter`
 
-Requires play-by-play source not stored.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -667,7 +667,7 @@ Official player box-score outcome for the completed game.
 
 ## `replay_or_correction_indicator`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -732,7 +732,7 @@ Official player box-score outcome for the completed game.
 
 ## `rusher_player_id`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -758,7 +758,7 @@ Official player box-score outcome for the completed game.
 
 ## `sack`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -771,7 +771,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `sack_yards`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -810,7 +810,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `special_teams_play`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -823,7 +823,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `spike`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -862,7 +862,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `target_player_id`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -901,7 +901,7 @@ A target-frequency proxy. It is explicitly not route share.
 
 ## `team_rush`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -953,7 +953,7 @@ Unavailable in stored historical snapshots or lacks verified historical publicat
 
 ## `two_point_attempt`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Frozen nflverse play-by-play release field normalized by System A.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.
@@ -966,7 +966,7 @@ Canonical play-event field; current repository has no stored play-by-play provid
 
 ## `unassigned_non_target_attempt`
 
-Canonical play-event field; current repository has no stored play-by-play provider export.
+Deterministically derived from frozen nflverse play fields.
 
 - Inclusion: Include only records within the field domain that pass identity and validity gates.
 - Exclusion: Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.

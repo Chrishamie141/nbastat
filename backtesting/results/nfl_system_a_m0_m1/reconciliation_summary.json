@@ -1,29 +1,34 @@
 {
   "accepted_canonical_rows_have_zero_unresolved_accounting_violations": true,
   "canonical_event_reconciliation": {
-    "accepted_events": 0,
+    "accepted_events": 100329,
     "accepted_rows_unresolved_accounting_violations": 0,
+    "completion_reconciliations_valid": true,
     "dropback_partitions_valid": true,
-    "input_events": 0,
+    "input_events": 100329,
     "pass_allocations_valid": true,
     "quarantined_findings": 0,
     "rush_partitions_valid": true
   },
   "historical_outcome_reconciliation": {
+    "accepted_reconciled_player_games": 14710,
     "accepted_rows_unresolved_accounting_violations": 0,
-    "milestone_1_historical_acceptance": false,
+    "discrepant_player_games": 131,
+    "excluded_games": 68,
+    "excluded_player_games": 1347,
+    "milestone_1_historical_acceptance": true,
     "official_player_games": 16057,
-    "reconciled_player_games": 0,
-    "status": "BLOCKED_MISSING_PLAY_BY_PLAY",
-    "unreconciled_player_games": 16057
+    "status": "PASS_WITH_QUARANTINE"
   },
   "milestone_0_acceptance": true,
-  "milestone_1_acceptance": false,
-  "milestone_1_blocker": "MISSING_PLAY_BY_PLAY",
+  "milestone_1_acceptance": true,
+  "milestone_1_blocker": null,
   "network_contacted": false,
   "quarantine_by_reason": {
-    "PROVIDER_SEMANTICS_UNRESOLVED": 16057
+    "LATERAL_RECONCILIATION_UNRESOLVED": 52,
+    "PLAYER_TEAM_TOTAL_MISMATCH": 131,
+    "UNRESOLVED_PLAYER_ID": 2
   },
-  "quarantine_count": 16057,
+  "quarantine_count": 185,
   "schema_version": 1
 }

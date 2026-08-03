@@ -2,6 +2,8 @@
 
 System A is the sportsbook-independent NFL data foundation for receiving yards, receptions, and rushing yards. It consumes only frozen football source artifacts. It does not import odds, prices, implied probabilities, EV logic, ticket construction, or model code.
 
+The play-by-play source is the nflverse `pbp` release for 2023–2025, with the nflverse `players` release providing the GSIS-to-ESPN identifier crosswalk. These public datasets are distributed under CC-BY 4.0; attribution: nflverse and its contributors. Source URLs and SHA-256 hashes are retained in the provider-ingestion audit and artifact manifest. Downloads are immutable workflow inputs—the build itself performs no network requests.
+
 ## Commands
 
 ```powershell
@@ -19,4 +21,4 @@ Pregame features may depend only on records whose verified information timestamp
 
 Canonical definitions are versioned in generated JSON and Markdown. Nullified plays and two-point attempts have zero launch-market effects. Sacks, scrambles, spikes, throwaways, batted passes, kneels, aborted/team rushes, overtime, laterals, duplicates, and corrections have explicit rules. Unresolved identities, semantics, or accounting contradictions are excluded into `quarantine.csv`; they are never coerced into plausible values.
 
-Milestone 0 passes only when its formal inventory validates and required contract fields exist. Milestone 1 historical acceptance additionally requires frozen play-by-play and successful reconciliation to official outcomes. With no stored play-by-play, the workflow emits empty accepted event ledgers, quarantines unreconciled official player-games, and reports `MISSING_PLAY_BY_PLAY`. It never synthesizes events from box scores.
+Milestone 0 passes only when its formal inventory validates and required contract fields exist. Milestone 1 historical acceptance additionally requires frozen play-by-play and successful reconciliation to official outcomes. Provider differences, unresolved IDs, and unresolved lateral allocation exclude the affected game from accepted historical ledgers and remain visible in `quarantine.csv`. The workflow never synthesizes events from box scores.

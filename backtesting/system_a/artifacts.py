@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import gzip
 import hashlib
 import json
 import os
@@ -27,6 +28,17 @@ def write_json(path: Path, value: Any) -> None:
     payload = canonical_bytes(value)
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
         handle.write(payload)
+        temporary = Path(handle.name)
+    os.replace(temporary, path)
+
+
+def write_json_gzip(path: Path, value: Any) -> None:
+    """Write deterministic gzip-compressed canonical JSON (mtime and name excluded)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = canonical_bytes(value)
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+        with gzip.GzipFile(filename="", mode="wb", fileobj=handle, mtime=0) as compressed:
+            compressed.write(payload)
         temporary = Path(handle.name)
     os.replace(temporary, path)
 

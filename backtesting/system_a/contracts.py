@@ -5,7 +5,7 @@ from typing import Any
 
 
 SCHEMA_VERSION = 1
-PROVIDERS = {"espn", "espn-scoreboard", "espn-box-score", "none", "canonical-derived"}
+PROVIDERS = {"espn", "espn-scoreboard", "espn-box-score", "nflverse", "none", "canonical-derived"}
 AVAILABILITY = {"AVAILABLE_RAW", "DERIVABLE", "MISSING", "INSUFFICIENT_COVERAGE"}
 TEMPORAL = {"PREGAME_SAFE", "POSTGAME_ONLY", "TIMESTAMP_UNVERIFIED", "NOT_APPLICABLE"}
 ROLES = {"FEATURE_CANDIDATE", "TRAINING_TARGET", "IDENTIFIER", "RECONCILIATION_FIELD", "CONTEXT_METADATA"}

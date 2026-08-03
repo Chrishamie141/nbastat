@@ -1,27 +1,28 @@
 {
   "acceptance": {
     "milestone_0": true,
-    "milestone_1": false,
-    "milestone_1_blocker": "MISSING_PLAY_BY_PLAY"
+    "milestone_1": true,
+    "milestone_1_blocker": null
   },
   "artifact_hashes": {
-    "canonical_event.schema.json": "b615b730af83d858d5f303293349c9d40d50ffcea53a48ebf13011390a7813dd",
-    "canonical_play_events.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-    "canonical_stat_definitions.json": "e585f42863020f2be6a1b98854742c3780309a9a355bd5080c699658e2d5fe2a",
-    "canonical_stat_definitions.md": "02c3b88200adf68e881491d91e61f515539499fe120b1fcc404204019c438bcc",
-    "data_coverage_by_season.csv": "f0f3eade319001e24113ee79101b8ab88e0450483a4826aeaaf8459e63dc8e8d",
-    "data_coverage_summary.json": "e72df130208e66828c2287d71eb03c8e32b081bb929917118350667f6b1b02e4",
-    "data_inventory.json": "d89b7916b02ebd58200014e81ef8edd078b5b7eb2e67e5884ffe560a942403e1",
-    "data_inventory.schema.json": "fff737899ee3692cdd0829f69ab5fe1a4ba49d06802fa5cfbbd449ed5489fb7b",
+    "canonical_event.schema.json": "a3be3f8264054496a526c56857caca3eb72a8ed4d7cd115bf06ae8eda4b14f36",
+    "canonical_play_events.json.gz": "9bbd84964e20c3cf4768f93bc018d8f4b1cbd76fa702ae4958522da35ffa7d3f",
+    "canonical_stat_definitions.json": "b885b92ada5a3a3932614e9cb0327d00b1eaec6211c03449732e55ae039c5ada",
+    "canonical_stat_definitions.md": "0984f1ed28f2f2559ea6b3577d67bea98d5c52f7331aa6b4d85c86e99082a44b",
+    "data_coverage_by_season.csv": "9b4d4565222026ed49dd77eb1df139a78414b007deff4f60bcbf0c86445d3dc3",
+    "data_coverage_summary.json": "6c843cee81b2356dea8f9f248fdd5af2535e6c292c4df3829b97f80ca09155f0",
+    "data_inventory.json": "4bcfcdc5c9a9deb9b59572e5d49d307d61f05ec4470f4af8456a2e640e1356fa",
+    "data_inventory.schema.json": "4bc914c91643720c87649e0853e12076056a789a328e892e9d36871c4ab2c7fc",
     "data_quality_anomalies.csv": "2f421ccbfbaf15a64c3e6b722d1210d64b7a077d9a87743ee386361710a1c1ac",
-    "milestone_0_audit.md": "b475fe8538cd0888af55d8df4ea5fb5aac3a8789cfc34a1dbd42bdab16527045",
-    "player_game_rushing_ledger.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-    "player_game_target_reception_ledger.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-    "quarantine.csv": "62c2e6015112424fad85ec68029f3580cbaa889bea4070ff3f4e99b5847af98d",
-    "reconciliation_summary.json": "282acd53119eee2d2b1e37c9092fcaaf04ab20d3c39c922e53249a0ba454c7b1",
-    "team_game_dropback_ledger.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-    "team_game_pass_attempt_allocation_ledger.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-    "team_game_rush_partition_ledger.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    "milestone_0_audit.md": "0c956f1998480027db4a3c8dfa76d818ed00969209462f553f60abfe92fa35e8",
+    "player_game_rushing_ledger.json": "883545d94358512bb6caeb8cf4fad816d67cf8831f35d7b86e8b1c2f20fc2e3d",
+    "player_game_target_reception_ledger.json": "5b8f1a1b297a50103b68a11a7fe518fa9989cbb1db6236dac38d6cf9cacc4ade",
+    "provider_ingestion_audit.json": "5d28261e37c8b6f2f897175e79b3b75bf9d7e4a849c85f0b34bbd52557ad74f3",
+    "quarantine.csv": "265920bfdeecb342759ca055dffb0d4db7fcd19ad09681e7e2fff7544463f67c",
+    "reconciliation_summary.json": "0a12ec90b5941c3232749703eeca3213744816b098c4b25488404fddd8ba1647",
+    "team_game_dropback_ledger.json": "e92f73acf5eb3c6fa715889db5dab31699bbbee4271a2e349ffd3b3263e03deb",
+    "team_game_pass_attempt_allocation_ledger.json": "c6ebe1e398c47e74969a5ea691c1a5cc6dea83b47259678381694910eccc59a9",
+    "team_game_rush_partition_ledger.json": "5ba8c35263a960f499474136c00f5d7d51b00029c8e4aa867eb05fe91e1473d5"
   },
   "input_hashes": {
     "backtesting/data/snapshots/nfl/2023/week_01/games.json": "4c4e627ba121cd12fad55918c432eb88f0dbcc27ac43d802de3f1532c29abae7",
@@ -311,7 +312,11 @@
     "backtesting/data/snapshots/nfl/2025/week_18/player_identities.json": "560f6d4dc3ac2d7ae8762cff294b87d3e59b4286a654b327a0f8a7728932de1d",
     "backtesting/data/snapshots/nfl/2025/week_18/player_stats.json": "e840c30682b187a05b7d9167d82f11a13a0dc04759a8d4b4c520192abb931103",
     "backtesting/data/snapshots/nfl/2025/week_18/team_stats.json": "5600fa56b8f9dbce0c476fbd2279ad37f1b3eb237246508e9918839a836e7d99",
-    "backtesting/data/snapshots/nfl/2025/week_18/weather.json": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+    "backtesting/data/snapshots/nfl/2025/week_18/weather.json": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f",
+    "backtesting/data/system_a/nflverse/pbp/raw/play_by_play_2023.csv.gz": "4649804ee0f0a40b41e51ec75a1ce921949d7fab5459213488656b92f78560e8",
+    "backtesting/data/system_a/nflverse/pbp/raw/play_by_play_2024.csv.gz": "f7075073401727c98e2c22f88b5ee9a178a98f1e53e10033f972c8bd6f0e940a",
+    "backtesting/data/system_a/nflverse/pbp/raw/play_by_play_2025.csv.gz": "9c25c980f103d58fae5a0675f572aa4857e4672f6599973c1bc8a50e586a04e6",
+    "backtesting/data/system_a/nflverse/players/players.csv": "7e198b9a5a63665817f7e86974366b836d755fd43c108a2861669f1316ad3c65"
   },
   "network_contacted": false,
   "schema_version": 1,

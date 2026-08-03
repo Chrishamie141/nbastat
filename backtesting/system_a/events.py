@@ -18,6 +18,8 @@ RUSH_CATEGORIES = {None, "DESIGNED_RB_WR_RUSH", "DESIGNED_QB_RUSH", "QB_SCRAMBLE
 @dataclass(frozen=True)
 class CanonicalEvent:
     schema_version: int
+    season: int
+    week: int
     canonical_game_id: str
     provider_game_id: str
     play_id: str
@@ -164,7 +166,8 @@ def normalize_event(raw: dict[str, Any]) -> tuple[CanonicalEvent | None, dict[st
         receiving_yards = rushing_yards = sack_yards = 0.0
     quarter = int(raw.get("quarter") or 0)
     event = CanonicalEvent(
-        schema_version=SCHEMA_VERSION, canonical_game_id=str(raw["canonical_game_id"]),
+        schema_version=SCHEMA_VERSION, season=int(raw.get("season") or 0), week=int(raw.get("week") or 0),
+        canonical_game_id=str(raw["canonical_game_id"]),
         provider_game_id=str(raw.get("provider_game_id") or raw["canonical_game_id"]),
         play_id=str(raw.get("play_id") or raw["provider_play_id"]), provider_play_id=str(raw["provider_play_id"]),
         provider_name=str(raw["provider_name"]), source_artifact_hash=raw.get("source_artifact_hash"),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import gzip
 
 from backtesting.system_a.workflow import build_workflow, verify_directories
 from backtesting.system_a.inventory import scan_snapshots
@@ -10,13 +11,15 @@ from pathlib import Path
 def test_empty_frozen_source_blocks_historical_m1_without_fabrication(tmp_path):
     snapshots = tmp_path / "snapshots"
     first = tmp_path / "first"; second = tmp_path / "second"
-    build_workflow(snapshot_root=snapshots, output_dir=first, seasons=(2025,))
-    build_workflow(snapshot_root=snapshots, output_dir=second, seasons=(2025,))
+    missing_players = tmp_path / "missing-players.csv"
+    build_workflow(snapshot_root=snapshots, output_dir=first, seasons=(2025,), players_path=missing_players)
+    build_workflow(snapshot_root=snapshots, output_dir=second, seasons=(2025,), players_path=missing_players)
     summary = json.loads((first / "reconciliation_summary.json").read_text())
     assert summary["network_contacted"] is False
     assert summary["milestone_1_acceptance"] is False
     assert summary["milestone_1_blocker"] == "MISSING_PLAY_BY_PLAY"
-    assert json.loads((first / "canonical_play_events.json").read_text()) == []
+    with gzip.open(first / "canonical_play_events.json.gz", "rt", encoding="utf-8") as handle:
+        assert json.load(handle) == []
     assert verify_directories(first, second)["deterministic"] is True
 
 

@@ -6,7 +6,7 @@
       "canonical_field_name": "aborted_play",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -15,9 +15,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "aborted_play",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -35,7 +35,7 @@
       "canonical_field_name": "aborted_rush_residual",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -45,8 +45,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -209,7 +209,7 @@
       "canonical_field_name": "clock",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -218,9 +218,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "clock",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "time",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -238,7 +238,7 @@
       "canonical_field_name": "completed_pass",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -247,9 +247,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "complete_pass",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -267,7 +267,7 @@
       "canonical_field_name": "counts_as_official_play",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -276,9 +276,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "play_type",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -296,7 +296,7 @@
       "canonical_field_name": "credited_reception",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -306,8 +306,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -325,7 +325,7 @@
       "canonical_field_name": "credited_target",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -335,8 +335,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -354,7 +354,7 @@
       "canonical_field_name": "data_provider_name",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -363,9 +363,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "data_provider_name",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "release provider",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -412,7 +412,7 @@
       "canonical_field_name": "defense_team_id",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -421,9 +421,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "defense_team_id",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "defteam",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -499,7 +499,7 @@
       "canonical_field_name": "designed_qb_rush",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -509,8 +509,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -528,7 +528,7 @@
       "canonical_field_name": "designed_rb_wr_rush",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -538,8 +538,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -557,7 +557,7 @@
       "canonical_field_name": "drive_id",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -566,9 +566,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "drive_id",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "drive",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -586,7 +586,7 @@
       "canonical_field_name": "dropback",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -596,8 +596,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -615,7 +615,7 @@
       "canonical_field_name": "duplicate_play_indicator",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -625,8 +625,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -760,7 +760,7 @@
       "canonical_field_name": "interception",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -769,9 +769,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "interception",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -847,7 +847,7 @@
       "canonical_field_name": "lateral_indicator",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -856,9 +856,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "lateral_reception/lateral_rush",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -876,7 +876,7 @@
       "canonical_field_name": "no_play",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -885,9 +885,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "play_type",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -905,7 +905,7 @@
       "canonical_field_name": "offense_team_id",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -914,9 +914,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "offense_team_id",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "posteam",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -934,7 +934,7 @@
       "canonical_field_name": "official_rush_attempt",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -943,9 +943,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "rush_attempt",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -963,7 +963,7 @@
       "canonical_field_name": "overtime_indicator",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -972,9 +972,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "overtime_indicator",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "qtr",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -992,7 +992,7 @@
       "canonical_field_name": "pass_attempt",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1001,9 +1001,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "pass_attempt",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1021,7 +1021,7 @@
       "canonical_field_name": "penalty_nullified_play",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1030,9 +1030,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "play_type",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1050,7 +1050,7 @@
       "canonical_field_name": "play_id",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1060,8 +1060,8 @@
       "provider_mappings": [
         {
           "field": "play_id",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -1079,7 +1079,7 @@
       "canonical_field_name": "play_sequence",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1088,9 +1088,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "play_sequence",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "play_id",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -1137,7 +1137,7 @@
       "canonical_field_name": "provider_correction_status",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1147,8 +1147,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1195,7 +1195,7 @@
       "canonical_field_name": "provider_kneel_treatment",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1205,8 +1205,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1224,7 +1224,7 @@
       "canonical_field_name": "provider_lateral_semantics",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1234,8 +1234,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1282,7 +1282,7 @@
       "canonical_field_name": "provider_rush_lateral_fumble_treatment",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1292,8 +1292,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1311,7 +1311,7 @@
       "canonical_field_name": "provider_scramble_treatment",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1321,8 +1321,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1340,7 +1340,7 @@
       "canonical_field_name": "qb_kneel",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1349,9 +1349,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "qb_kneel",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1369,7 +1369,7 @@
       "canonical_field_name": "qb_scramble",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1378,9 +1378,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "qb_scramble",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1398,7 +1398,7 @@
       "canonical_field_name": "quarter",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Requires play-by-play source not stored.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1407,9 +1407,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": "quarter",
-          "provider": "none",
-          "semantics": "Requires play-by-play source not stored."
+          "field": "qtr",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Exact canonical registry join; ambiguous mappings are quarantined.",
@@ -1485,7 +1485,7 @@
       "canonical_field_name": "replay_or_correction_indicator",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1495,8 +1495,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1630,7 +1630,7 @@
       "canonical_field_name": "rusher_player_id",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1639,9 +1639,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "rusher_player_id",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1688,7 +1688,7 @@
       "canonical_field_name": "sack",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1697,9 +1697,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "sack",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1717,7 +1717,7 @@
       "canonical_field_name": "sack_yards",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1727,8 +1727,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1804,7 +1804,7 @@
       "canonical_field_name": "special_teams_play",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1813,9 +1813,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "special",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1833,7 +1833,7 @@
       "canonical_field_name": "spike",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1842,9 +1842,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "play_type",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -1920,7 +1920,7 @@
       "canonical_field_name": "target_player_id",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -1929,9 +1929,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "receiver_player_id",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -2007,7 +2007,7 @@
       "canonical_field_name": "team_rush",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -2017,8 +2017,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -2123,7 +2123,7 @@
       "canonical_field_name": "two_point_attempt",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Frozen nflverse play-by-play release field normalized by System A.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -2132,9 +2132,9 @@
       "provider_corrections": "Latest unambiguous correction wins by deterministic version ordering.",
       "provider_mappings": [
         {
-          "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "field": "two_point_attempt",
+          "provider": "nflverse",
+          "semantics": "Frozen nflverse play-by-play release field normalized by System A."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",
@@ -2152,7 +2152,7 @@
       "canonical_field_name": "unassigned_non_target_attempt",
       "corrections_and_deduplication": "Use the deterministic accepted correction; quarantine unresolved duplicate versions.",
       "exclusion_rules": "Exclude no-play, nullified, duplicate-loser, malformed, unresolved-identity, and out-of-scope records.",
-      "football_meaning": "Canonical play-event field; current repository has no stored play-by-play provider export.",
+      "football_meaning": "Deterministically derived from frozen nflverse play fields.",
       "inclusion_rules": "Include only records within the field domain that pass identity and validity gates.",
       "kneels": "One KNEEL event; canonical policy follows provider-normalized official rushing totals.",
       "laterals": "Quarantined when provider receiving/rushing allocation cannot be resolved.",
@@ -2162,8 +2162,8 @@
       "provider_mappings": [
         {
           "field": null,
-          "provider": "none",
-          "semantics": "Canonical play-event field; current repository has no stored play-by-play provider export."
+          "provider": "nflverse",
+          "semantics": "Deterministically derived from frozen nflverse play fields."
         }
       ],
       "reconciliation_expectation": "Aggregated canonical events must reconcile to official box-score totals.",

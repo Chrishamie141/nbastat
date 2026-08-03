@@ -106,9 +106,12 @@ def build_ledgers(events: Iterable[CanonicalEvent]) -> dict[str, Any]:
                                 "quarterback_scrambles": scrambles,
                                 "partition_valid": dropbacks == attempts + sacks + scrambles})
         targets = int(_sum(rows, "increments_target")); residual = int(_sum(rows, "non_target_attempt_count"))
+        completions = int(_sum(rows, "increments_completion")); receptions = int(_sum(rows, "increments_reception"))
         pass_ledger.append({"canonical_game_id": game, "canonical_offense_team_id": team,
                             "pass_attempts": attempts, "credited_player_targets": targets,
                             "unassigned_non_target_attempts": residual,
+                            "team_completions": completions, "credited_player_receptions": receptions,
+                            "completion_reconciliation_valid": completions == receptions,
                             "allocation_valid": attempts == targets + residual})
         counts = {category: sum(row.rush_category == category and row.increments_official_rush_attempt for row in rows)
                   for category in ("DESIGNED_RB_WR_RUSH", "DESIGNED_QB_RUSH", "QB_SCRAMBLE", "QB_KNEEL",
@@ -162,6 +165,7 @@ def build_ledgers(events: Iterable[CanonicalEvent]) -> dict[str, Any]:
             "accepted_rows_unresolved_accounting_violations": 0,
             "dropback_partitions_valid": all(row["partition_valid"] for row in dropback_ledger),
             "pass_allocations_valid": all(row["allocation_valid"] for row in pass_ledger),
+            "completion_reconciliations_valid": all(row["completion_reconciliation_valid"] for row in pass_ledger),
             "rush_partitions_valid": all(row["partition_valid"] for row in rush_ledger),
         },
     }
