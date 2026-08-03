@@ -1,0 +1,206 @@
+{
+  "calibrated": [
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.0,
+      "rows": 0,
+      "upper": 0.1
+    },
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.1,
+      "rows": 0,
+      "upper": 0.2
+    },
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.2,
+      "rows": 0,
+      "upper": 0.3
+    },
+    {
+      "average_probability": 0.3820253756067313,
+      "brier": 0.2967408291958008,
+      "calibration_error": 0.2650334479226805,
+      "hit_rate": 0.6470588235294118,
+      "log_loss": 0.7885757654655056,
+      "lower": 0.3,
+      "rows": 17,
+      "upper": 0.4
+    },
+    {
+      "average_probability": 0.47919030825474057,
+      "brier": 0.2525732954665121,
+      "calibration_error": 0.03288698643124982,
+      "hit_rate": 0.5120772946859904,
+      "log_loss": 0.6983394889082998,
+      "lower": 0.4,
+      "rows": 207,
+      "upper": 0.5
+    },
+    {
+      "average_probability": 0.5402011963259532,
+      "brier": 0.24851696545032695,
+      "calibration_error": -0.006569977976236152,
+      "hit_rate": 0.533631218349717,
+      "log_loss": 0.6901768513140187,
+      "lower": 0.5,
+      "rows": 33570,
+      "upper": 0.6
+    },
+    {
+      "average_probability": 0.6403471100938838,
+      "brier": 0.23738111073136423,
+      "calibration_error": -0.026944512691286393,
+      "hit_rate": 0.6134025974025974,
+      "log_loss": 0.6677815333241879,
+      "lower": 0.6,
+      "rows": 9625,
+      "upper": 0.7
+    },
+    {
+      "average_probability": 0.7457995903808892,
+      "brier": 0.2535768358964532,
+      "calibration_error": -0.12666203923200658,
+      "hit_rate": 0.6191375511488826,
+      "log_loss": 0.7085945787526807,
+      "lower": 0.7,
+      "rows": 3177,
+      "upper": 0.8
+    },
+    {
+      "average_probability": 0.8421106209179675,
+      "brier": 0.2886940589137609,
+      "calibration_error": -0.22615788827394978,
+      "hit_rate": 0.6159527326440177,
+      "log_loss": 0.8226232915578757,
+      "lower": 0.8,
+      "rows": 1354,
+      "upper": 0.9
+    },
+    {
+      "average_probability": 0.9518989461009747,
+      "brier": 0.37858956980715597,
+      "calibration_error": -0.3689662537932824,
+      "hit_rate": 0.5829326923076923,
+      "log_loss": 1.7626750017887216,
+      "lower": 0.9,
+      "rows": 832,
+      "upper": 1.0
+    }
+  ],
+  "raw": [
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.0,
+      "rows": 0,
+      "upper": 0.1
+    },
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.1,
+      "rows": 0,
+      "upper": 0.2
+    },
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.2,
+      "rows": 0,
+      "upper": 0.3
+    },
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.3,
+      "rows": 0,
+      "upper": 0.4
+    },
+    {
+      "average_probability": null,
+      "brier": null,
+      "calibration_error": null,
+      "hit_rate": null,
+      "log_loss": null,
+      "lower": 0.4,
+      "rows": 0,
+      "upper": 0.5
+    },
+    {
+      "average_probability": 0.5487256313438905,
+      "brier": 0.2512951527542939,
+      "calibration_error": -0.03264846092588414,
+      "hit_rate": 0.5160771704180064,
+      "log_loss": 0.6957832714499327,
+      "lower": 0.5,
+      "rows": 20526,
+      "upper": 0.6
+    },
+    {
+      "average_probability": 0.6445734613779626,
+      "brier": 0.25406376698165667,
+      "calibration_error": -0.08696881985289007,
+      "hit_rate": 0.5576046415250725,
+      "log_loss": 0.7023043856632583,
+      "lower": 0.6,
+      "rows": 14478,
+      "upper": 0.7
+    },
+    {
+      "average_probability": 0.7492681362085424,
+      "brier": 0.2606099939620724,
+      "calibration_error": -0.14442116840788244,
+      "hit_rate": 0.6048469678006599,
+      "log_loss": 0.7240848341852014,
+      "lower": 0.7,
+      "rows": 8789,
+      "upper": 0.8
+    },
+    {
+      "average_probability": 0.8384895917512903,
+      "brier": 0.2582341144119319,
+      "calibration_error": -0.18012049303884403,
+      "hit_rate": 0.6583690987124463,
+      "log_loss": 0.745191871091899,
+      "lower": 0.8,
+      "rows": 3495,
+      "upper": 0.9
+    },
+    {
+      "average_probability": 0.9572311349453346,
+      "brier": 0.34172787201979377,
+      "calibration_error": -0.329386422763273,
+      "hit_rate": 0.6278447121820616,
+      "log_loss": 2.0180712485223404,
+      "lower": 0.9,
+      "rows": 1494,
+      "upper": 1.0
+    }
+  ]
+}

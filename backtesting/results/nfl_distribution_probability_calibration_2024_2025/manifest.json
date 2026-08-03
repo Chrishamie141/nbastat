@@ -1,0 +1,20 @@
+{
+  "artifacts": {
+    "calibration_buckets.json": "706c55c586ab9f8729971b8a1bb47a60190998b3413abe6b4017646d966f8713",
+    "calibration_folds.json": "b8a22323c43f425bcec5e134752be3abcfa7e3cc3f7fd98135b2f9abc6cfe957",
+    "calibration_rows.json": "12be2eacd28792ce7a1dd545d16d6be43941073e17f70e41a4abf66b15a16a12",
+    "calibration_summary.json": "fdb9c67cac615dcf3ac31b3c8641e0a4377350002acecd5d357a6500dd2dfa9a"
+  },
+  "configuration": {
+    "min_fit_rows": 250,
+    "min_validation_rows": 100,
+    "validation_periods": 4
+  },
+  "input": {
+    "backtesting/results/nfl_player_stat_distributions_system_a_2024_2025/parlay_leg_candidates.csv": "8ad1b992ec1dd8faa7beaae8895acbd16ace221156b36ec4e7bb548bc38e8744"
+  },
+  "leakage_control": "CALIBRATOR_SELECTION_AND_FIT_PRECEDE_EACH_TEST_PERIOD",
+  "model_id": "nfl_distribution_probability_calibration_research_v1",
+  "network_contacted": false,
+  "schema_version": 1
+}
