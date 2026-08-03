@@ -1,0 +1,59 @@
+{
+  "league": "nfl",
+  "season": 2026,
+  "status": "partial",
+  "weeks": [
+    {
+      "games": 16,
+      "games_with_odds": 0,
+      "games_without_odds": [
+        "espn-401872656",
+        "espn-401872657",
+        "espn-401872658",
+        "espn-401872659",
+        "espn-401872660",
+        "espn-401872661",
+        "espn-401872922",
+        "espn-401872923",
+        "espn-401872924",
+        "espn-401872925",
+        "espn-401872926",
+        "espn-401872927",
+        "espn-401872928",
+        "espn-401872929",
+        "espn-401872930",
+        "espn-401872931"
+      ],
+      "issues": [
+        "Missing outcomes file for NFL 2026 Week 1: backtesting\\data\\snapshots\\nfl\\2026\\week_01\\outcomes.json",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872656",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872657",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872658",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872659",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872660",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872661",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872922",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872923",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872924",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872925",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872926",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872927",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872928",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872929",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872930",
+        "Game without matching outcome for NFL 2026 Week 1: espn-401872931",
+        "Optional dataset odds missing for NFL 2026 Week 1: backtesting\\data\\snapshots\\nfl\\2026\\week_01\\odds.json",
+        "Optional dataset weather missing for NFL 2026 Week 1: backtesting\\data\\snapshots\\nfl\\2026\\week_01\\weather.json",
+        "Optional dataset injuries missing for NFL 2026 Week 1: backtesting\\data\\snapshots\\nfl\\2026\\week_01\\injuries.json",
+        "Optional dataset player_stats missing for NFL 2026 Week 1: backtesting\\data\\snapshots\\nfl\\2026\\week_01\\player_stats.json",
+        "Optional dataset team_stats missing for NFL 2026 Week 1: backtesting\\data\\snapshots\\nfl\\2026\\week_01\\team_stats.json"
+      ],
+      "odds": 0,
+      "outcomes": 0,
+      "player_stats": 0,
+      "team_history": 0,
+      "validation_status": "invalid",
+      "week": 1
+    }
+  ]
+}

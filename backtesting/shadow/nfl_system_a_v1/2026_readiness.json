@@ -5,7 +5,14 @@
   "season": 2026,
   "snapshot_root": "backtesting/data/snapshots",
   "status": "WAITING_FOR_PREGAME_GAMES_AND_QUOTES",
-  "weeks": [],
-  "weeks_discovered": 0,
+  "weeks": [
+    {
+      "games_present": true,
+      "quotes_present": false,
+      "ready_for_generation": false,
+      "week_directory": "week_01"
+    }
+  ],
+  "weeks_discovered": 1,
   "weeks_ready": 0
 }

@@ -1,0 +1,21 @@
+{
+  "games": {
+    "present": true,
+    "sha256": "4aee4d71d70077e3bf3207e0ea3f51eed8fa3901d8af06893f79ec18a2a648df"
+  },
+  "missing": [
+    "player_prop_odds.json"
+  ],
+  "network_contacted": false,
+  "paid_credits_used": 0,
+  "production_wagering_authorized": false,
+  "quotes": {
+    "present": false,
+    "sha256": null
+  },
+  "schema_version": 1,
+  "season": 2026,
+  "snapshot_directory": "backtesting/data/snapshots/nfl/2026/week_01",
+  "status": "WAITING_FOR_PREGAME_DATA",
+  "week": 1
+}

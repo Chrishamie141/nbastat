@@ -311,7 +311,12 @@ def generate_candidates(*, snapshot_root: Path, system_a_dir: Path, config_path:
             })
     output.sort(key=lambda row: (row["season"], row["week"], row["game_id"], row["canonical_player_id"],
                                  row["market"], row["line"], row["side"]))
-    _write_json(output_path, output)
+    content = json.dumps(output, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    if output_path.exists() and output_path.read_text(encoding="utf-8") != content:
+        raise ValueError("candidate artifact already exists with different content")
+    if not output_path.exists():
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(content, encoding="utf-8")
     manifest = {
         "schema_version": 1, "configuration_fingerprint": config["configuration_fingerprint"],
         "generated_at": generated_at, "candidate_rows": len(output), "complete_bases": len(output) // 2,
@@ -321,7 +326,12 @@ def generate_candidates(*, snapshot_root: Path, system_a_dir: Path, config_path:
         "output": {output_path.as_posix(): _file_hash(output_path)}, "network_contacted": False,
         "outcome_fields_present": False, "production_wagering_authorized": False,
     }
-    _write_json(output_path.with_name(output_path.stem + "_manifest.json"), manifest)
+    manifest_path = output_path.with_name(output_path.stem + "_manifest.json")
+    manifest_content = json.dumps(manifest, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    if manifest_path.exists() and manifest_path.read_text(encoding="utf-8") != manifest_content:
+        raise ValueError("candidate manifest already exists with different content")
+    if not manifest_path.exists():
+        manifest_path.write_text(manifest_content, encoding="utf-8")
     return {"candidates": output, "manifest": manifest}
 
 
