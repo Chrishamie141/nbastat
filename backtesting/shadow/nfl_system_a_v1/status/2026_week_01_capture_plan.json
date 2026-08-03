@@ -1,0 +1,156 @@
+{
+  "as_of": "2026-08-02T12:00:00Z",
+  "games": [
+    {
+      "game_id": "espn-401872656",
+      "hours_to_kickoff": 924.333333,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-10T00:20:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872657",
+      "hours_to_kickoff": 948.583333,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-11T00:35:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872658",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872659",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872660",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872661",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872922",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872923",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872924",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872925",
+      "hours_to_kickoff": 1013.0,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T17:00:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872926",
+      "hours_to_kickoff": 1016.416667,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T20:25:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872927",
+      "hours_to_kickoff": 1016.416667,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T20:25:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872928",
+      "hours_to_kickoff": 1016.416667,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T20:25:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872929",
+      "hours_to_kickoff": 1016.416667,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-13T20:25:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872930",
+      "hours_to_kickoff": 1020.333333,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-14T00:20:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    },
+    {
+      "game_id": "espn-401872931",
+      "hours_to_kickoff": 1044.25,
+      "identity_count": 0,
+      "kickoff_time": "2026-09-15T00:15:00Z",
+      "maximum_paid_credits": 0,
+      "status": "OUTSIDE_CAPTURE_WINDOW"
+    }
+  ],
+  "games_discovered": 16,
+  "games_inside_window": 0,
+  "games_ready": 0,
+  "identity_records": 0,
+  "identity_source": "derived_from_local_identity_evidence",
+  "markets": [
+    "player_receptions",
+    "player_reception_yds",
+    "player_rush_yds"
+  ],
+  "maximum_credits_per_event": 3,
+  "maximum_paid_credits": 0,
+  "network_contacted": false,
+  "paid_credits_used": 0,
+  "production_wagering_authorized": false,
+  "regions": [
+    "us"
+  ],
+  "schema_version": 1,
+  "season": 2026,
+  "status": "WAIT_OUTSIDE_CAPTURE_WINDOW",
+  "week": 1,
+  "window_hours": 72.0
+}
