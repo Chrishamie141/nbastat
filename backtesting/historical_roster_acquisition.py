@@ -37,8 +37,11 @@ def roster_params(team: str, season: int) -> dict[str, Any]:
 
 
 def roster_url(team: str, season: int) -> str:
-    # ESPN accepts its canonical team abbreviation here (for example BUF -> buf).
-    return f"{ESPN_ROSTER}/{normalize_team(team).lower()}/roster?" + urlencode({"season": int(season)})
+    # Most ESPN slugs equal our canonical abbreviation. Washington is the
+    # provider-specific exception: ESPN rejects ``was`` and accepts ``wsh``.
+    canonical = normalize_team(team)
+    provider_slug = {"WAS": "wsh"}.get(canonical, canonical.lower())
+    return f"{ESPN_ROSTER}/{provider_slug}/roster?" + urlencode({"season": int(season)})
 
 
 def roster_cache_path(cache_root: Path, season: int, week: int, team: str) -> Path:

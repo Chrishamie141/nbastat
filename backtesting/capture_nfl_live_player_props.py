@@ -121,6 +121,30 @@ def plan_capture(*, snapshot_root: Path, season: int, week: int, as_of: str,
     }
 
 
+def materialize_identities(*, snapshot_root: Path, season: int, week: int) -> dict[str, Any]:
+    """Build the canonical registry from local evidence without network access."""
+    directory = snapshot_week_dir(snapshot_root, "nfl", season, week)
+    games = _load(directory / "games.json", [])
+    if not games:
+        raise ValueError("games.json is required before materializing player identities")
+    rows = build_identity_registry(directory, games, season=season, week=week)
+    if not rows:
+        return {"schema_version": 1, "season": season, "week": week,
+                "status": "IDENTITIES_MISSING", "identity_records": 0,
+                "network_contacted": False, "paid_credits_used": 0}
+    target = directory / "player_identities.json"
+    _write_json(target, rows)
+    roster_path = directory / "roster_identities.json"
+    return {"schema_version": 1, "season": season, "week": week,
+            "status": "IDENTITIES_MATERIALIZED", "identity_records": len(rows),
+            "artifact": {"path": target.as_posix(),
+                         "sha256": hashlib.sha256(target.read_bytes()).hexdigest()},
+            "source_artifacts": ([{"path": roster_path.as_posix(),
+                                    "sha256": hashlib.sha256(roster_path.read_bytes()).hexdigest()}]
+                                 if roster_path.exists() else []),
+            "network_contacted": False, "paid_credits_used": 0}
+
+
 def validate_authorization(plan: dict[str, Any], *, allow_paid_fetch: bool,
                            max_paid_credits: int | None) -> None:
     required = int(plan["maximum_paid_credits"])
@@ -325,10 +349,20 @@ def main(argv: list[str] | None = None) -> int:
             target.add_argument("--cache-root", type=Path, required=True)
             target.add_argument("--allow-paid-fetch", action="store_true")
             target.add_argument("--max-paid-credits", type=int)
+    identities = subparsers.add_parser("identities")
+    identities.add_argument("--snapshot-root", type=Path, required=True)
+    identities.add_argument("--season", type=int, required=True)
+    identities.add_argument("--week", type=int, required=True)
+    identities.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     values = {key: value for key, value in vars(args).items()
               if key not in {"command", "output"}}
-    report = plan_capture(**values) if args.command == "plan" else capture(**values)
+    if args.command == "plan":
+        report = plan_capture(**values)
+    elif args.command == "capture":
+        report = capture(**values)
+    else:
+        report = materialize_identities(**values)
     if args.output:
         _write_json(args.output, report)
     print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))

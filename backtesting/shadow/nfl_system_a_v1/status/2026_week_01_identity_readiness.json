@@ -1,0 +1,19 @@
+{
+  "artifact": {
+    "path": "backtesting/data/snapshots/nfl/2026/week_01/player_identities.json",
+    "sha256": "abc66576feb54fc0d899f54aa8a641bdc7b2d923b913f461947a09958df613ec"
+  },
+  "identity_records": 2945,
+  "network_contacted": false,
+  "paid_credits_used": 0,
+  "schema_version": 1,
+  "season": 2026,
+  "source_artifacts": [
+    {
+      "path": "backtesting/data/snapshots/nfl/2026/week_01/roster_identities.json",
+      "sha256": "48aba53c721e10daa46cad1e9f668522f83659d30dbfd821acb303d91ab73090"
+    }
+  ],
+  "status": "IDENTITIES_MATERIALIZED",
+  "week": 1
+}

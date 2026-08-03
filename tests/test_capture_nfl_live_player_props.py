@@ -82,6 +82,13 @@ def test_plan_derives_identity_readiness_from_local_roster_evidence(tmp_path, mo
     assert plan["status"] == "READY" and plan["identity_records"] == 1
     assert plan["identity_source"] == "derived_from_local_identity_evidence"
     assert not (directory / "player_identities.json").exists()
+    report = live.materialize_identities(snapshot_root=tmp_path / "snapshots",
+                                         season=2026, week=1)
+    assert report["status"] == "IDENTITIES_MATERIALIZED"
+    assert report["identity_records"] == 1
+    assert len(report["artifact"]["sha256"]) == 64
+    assert len(report["source_artifacts"]) == 1
+    assert (directory / "player_identities.json").exists()
 
 
 def test_live_capture_discovers_normalizes_pairs_caches_and_redacts(tmp_path, monkeypatch):

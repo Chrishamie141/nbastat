@@ -3,13 +3,18 @@ import json
 import pytest
 
 from backtesting.historical_roster_acquisition import (acquire_roster_identities,
-    normalize_cached_roster, plan_roster_acquisition, roster_cache_path)
+    normalize_cached_roster, plan_roster_acquisition, roster_cache_path, roster_url)
 from backtesting.player_identity_registry import build_identity_registry
 from backtesting.player_prop_odds import reconcile_player
 
 
 GAME={"game_id":"g1","home_team":"BUF","away_team":"MIA","season":2025,"week":1,
       "kickoff_time":"2025-09-05T00:00:00Z","prediction_cutoff":"2025-09-04T20:00:00Z"}
+
+
+def test_roster_url_uses_espn_washington_slug():
+    assert "/teams/wsh/roster?" in roster_url("WAS", 2026)
+    assert "/teams/buf/roster?" in roster_url("BUF", 2026)
 
 
 def _cached(tmp_path, *, team="BUF", captured="2025-09-04T19:00:00Z", name="Roster Only", player_id="42"):
