@@ -23,3 +23,12 @@ test('analyze page uses custom risk and team selector defaults', () => {
   assert.match(page, /TeamSelector/);
   assert.doesNotMatch(page, /Optional team abbreviation|<select/);
 });
+
+test('production API requests use the same-origin Vercel backend rewrite', () => {
+  const api = fs.readFileSync('lib/api.js','utf8');
+  const config = fs.readFileSync('next.config.mjs','utf8');
+  assert.match(api, /NEXT_PUBLIC_API_URL\|\|''/);
+  assert.doesNotMatch(api, /localhost:8000/);
+  assert.match(config, /source: '\/api\/:path\*'/);
+  assert.match(config, /smartbetsports-api\.vercel\.app/);
+});

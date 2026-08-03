@@ -1,0 +1,13 @@
+.git/
+.pytest_cache/
+__pycache__/
+backtesting/
+docs/
+frontend/
+output/
+reports/
+tests/
+tmp/
+work/
+*.db
+*.patch

@@ -42,8 +42,11 @@ def register_user(name: str, email: str, password: str):
     initialize_auth_database(); email = normalize_email(email); now = _now(); hashed = generate_password_hash(password, method="scrypt")
     try:
         with get_db_connection() as conn:
-            cur = conn.execute('INSERT INTO users(name,email,password_hash,created_at,updated_at,is_active) VALUES(?,?,?,?,?,1)', (name.strip(), email, hashed, now, now))
-            conn.commit(); row = conn.execute('SELECT * FROM users WHERE id=?', (cur.lastrowid,)).fetchone()
+            inserted = conn.execute(
+                'INSERT INTO users(name,email,password_hash,created_at,updated_at,is_active) VALUES(?,?,?,?,?,1) RETURNING id',
+                (name.strip(), email, hashed, now, now),
+            ).fetchone()
+            conn.commit(); row = conn.execute('SELECT * FROM users WHERE id=?', (inserted['id'],)).fetchone()
             return row
     except Exception as exc:
         if 'UNIQUE' in str(exc).upper(): raise HTTPException(status_code=409, detail='Email is already registered.')

@@ -397,13 +397,17 @@ def _evaluate_candidate(player_name, stat_type, line_info, recent_stats, injurie
         if edge_score <= 0:
             rejection_reasons.append("edge_below_minimum")
 
+        offered_side = str(cleaned_line.get("side") or "").strip().upper()
+        projected_side = "OVER" if projection >= float(cleaned_line["line"]) else "UNDER"
+        if offered_side in {"OVER", "UNDER"} and offered_side != projected_side:
+            rejection_reasons.append("side_projection_mismatch")
+
     status = "eligible" if not rejection_reasons else "rejected"
     candidate = None
     if status == "eligible":
         line = cleaned_line.get("line")
-        side = "over" if line is None or projection >= float(line) else "under"
-        if cleaned_line.get("side") and not _line_is_over(cleaned_line):
-            side = "under"
+        offered_side = str(cleaned_line.get("side") or "").strip().lower()
+        side = offered_side if offered_side in {"over", "under"} else ("over" if line is None or projection >= float(line) else "under")
         team = recent_stats_after_merge.get("team")
         line_text = f" {side} {float(line):g}" if line is not None else " projected"
         data_label = " Sample/offline fallback data." if _is_sample_line(cleaned_line) else ""
@@ -494,6 +498,16 @@ def build_nfl_parlay(difficulty, team=None):
                 evaluations.append(_evaluate_candidate(player_name, stat_type, line_info, recent_stats, injuries, weather, rules))
 
     candidates = [evaluation.candidate for evaluation in evaluations if evaluation.candidate]
+
+    # Sportsbooks expose OVER and UNDER as separate quote rows. Keep one
+    # correctly priced side for each player/market/line before ranking legs.
+    unique_candidates = {}
+    for candidate in candidates:
+        key = (candidate["player"], candidate["stat_type"], candidate.get("line"))
+        current = unique_candidates.get(key)
+        if current is None or _selection_score(candidate, difficulty) > _selection_score(current, difficulty):
+            unique_candidates[key] = candidate
+    candidates = list(unique_candidates.values())
 
     _print_candidate_evaluations(evaluations)
 

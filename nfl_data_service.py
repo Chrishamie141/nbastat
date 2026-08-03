@@ -17,12 +17,24 @@ from __future__ import annotations
 import json
 import os
 from datetime import date
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 NFL_SPORT_KEY = "americanfootball_nfl"
+RUNTIME_STATS_PATH = Path(__file__).resolve().parent / "data" / "nfl_recent_player_stats.json"
+NFL_TEAM_ABBREVIATIONS = {
+    "Arizona Cardinals":"ARI","Atlanta Falcons":"ATL","Baltimore Ravens":"BAL","Buffalo Bills":"BUF",
+    "Carolina Panthers":"CAR","Chicago Bears":"CHI","Cincinnati Bengals":"CIN","Cleveland Browns":"CLE",
+    "Dallas Cowboys":"DAL","Denver Broncos":"DEN","Detroit Lions":"DET","Green Bay Packers":"GB",
+    "Houston Texans":"HOU","Indianapolis Colts":"IND","Jacksonville Jaguars":"JAX","Kansas City Chiefs":"KC",
+    "Las Vegas Raiders":"LV","Los Angeles Chargers":"LAC","Los Angeles Rams":"LAR","Miami Dolphins":"MIA",
+    "Minnesota Vikings":"MIN","New England Patriots":"NE","New Orleans Saints":"NO","New York Giants":"NYG",
+    "New York Jets":"NYJ","Philadelphia Eagles":"PHI","Pittsburgh Steelers":"PIT","San Francisco 49ers":"SF",
+    "Seattle Seahawks":"SEA","Tampa Bay Buccaneers":"TB","Tennessee Titans":"TEN","Washington Commanders":"WSH",
+}
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 OPENWEATHER_BASE = "https://api.openweathermap.org/data/2.5/weather"
 REQUEST_TIMEOUT = 10
@@ -131,6 +143,25 @@ def _sample_player_props(team: str | None = None) -> dict[str, dict[str, list[di
     return {player: stats for player, stats in NFL_SAMPLE_LINES.items() if allowed is None or player in allowed}
 
 
+def _team_abbreviation(value: Any) -> str:
+    text = str(value or "").strip()
+    return NFL_TEAM_ABBREVIATIONS.get(text, text.upper())
+
+
+def _runtime_recent_stats(player: str | None = None, team: str | None = None) -> dict[str, dict[str, Any]]:
+    if not RUNTIME_STATS_PATH.exists():
+        return {}
+    payload = json.loads(RUNTIME_STATS_PATH.read_text(encoding="utf-8"))
+    rows = payload.get("players", {})
+    player_key = str(player or "").strip().casefold()
+    team_key = _team_abbreviation(team) if team else None
+    return {
+        name: row for name, row in rows.items()
+        if (not player_key or player_key in name.casefold())
+        and (not team_key or _team_abbreviation(row.get("team")) == team_key)
+    }
+
+
 def get_nfl_games() -> list[dict[str, Any]]:
     def fetch():
         key = _odds_key()
@@ -156,14 +187,14 @@ def get_nfl_player_props(team: str | None = None) -> dict[str, dict[str, list[di
             raise ValueError("no NFL games available for player prop lookup")
 
         props: dict[str, dict[str, list[dict[str, Any]]]] = {}
-        team_key = str(team).strip().upper() if team else None
+        team_key = _team_abbreviation(team) if team else None
         params = urlencode({"apiKey": key, "regions": "us", "markets": ",".join(PROP_MARKETS), "oddsFormat": "american"})
 
         for game in games:
             event_id = game.get("game_id") or game.get("id")
             if not event_id:
                 continue
-            if team_key and team_key not in {str(game.get("home_team", "")).upper(), str(game.get("away_team", "")).upper()}:
+            if team_key and team_key not in {_team_abbreviation(game.get("home_team")), _team_abbreviation(game.get("away_team"))}:
                 continue
 
             event = _fetch_json(f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/events/{event_id}/odds?{params}")
@@ -197,10 +228,10 @@ def get_nfl_team_lines(team: str | None = None) -> list[dict[str, Any]]:
             raise ValueError("THE_ODDS_API_KEY is not set")
         params = urlencode({"apiKey": key, "regions": "us", "markets": ",".join(TEAM_MARKETS), "oddsFormat": "american"})
         rows = _fetch_json(f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/odds/?{params}")
-        team_key = str(team).strip().upper() if team else None
+        team_key = _team_abbreviation(team) if team else None
         lines = []
         for game in rows:
-            teams = {str(game.get("home_team", "")).upper(), str(game.get("away_team", "")).upper()}
+            teams = {_team_abbreviation(game.get("home_team")), _team_abbreviation(game.get("away_team"))}
             if team_key and team_key not in teams:
                 continue
             for bookmaker in game.get("bookmakers", []):
@@ -238,6 +269,9 @@ def get_nfl_player_recent_stats(player: str | None = None, team: str | None = No
                     normalized[name].setdefault(key.upper(), []).append(value)
         return normalized
     def sample():
+        runtime = _runtime_recent_stats(player=player, team=team)
+        if runtime:
+            return runtime
         rows = {name: data for name, data in NFL_SAMPLE_RECENT_STATS.items() if (not player or player.lower() in name.lower())}
         if team:
             rows = {name: data for name, data in rows.items() if data.get("team") == team.upper()}

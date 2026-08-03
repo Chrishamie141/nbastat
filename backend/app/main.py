@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+import logging
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -16,17 +17,22 @@ from backend.app.services.auth_service import current_user
 from backend.app.services.sports_mode_service import get_sports_mode
 from backend.app.services.schedule_service import upcoming_games
 from backend.app.services.team_metadata import teams_for_league
+from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
+from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
 from nfl_parlay_builder import build_nfl_parlay
 from nfl_performance_report import print_nfl_performance_report
-from prediction_storage import load_parlay_history, grade_recommendations, summarize_graded_bets, get_connection, initialize_database, ensure_user_columns
+from prediction_storage import grade_recommendations, summarize_graded_bets, initialize_database, ensure_user_columns
 from app import run_prediction, default_context, prediction_rows_from_result, run_roster_predictions, run_best_bets_mode, run_auto_parlay_mode
 from roster_service import get_roster_with_cache
 from team_utils import normalize_team_abbreviation
 
 print_config_status()
+logger = logging.getLogger(__name__)
 app = FastAPI(title="SmartBetSports API", version="2.0.0")
+NFL_WEB_MODEL_VERSION = "nfl_player_prop_matchup_v2"
+NFL_RESEARCH_POLICY_ID = "nfl_system_a_forward_shadow_v1"
 frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 app.add_middleware(CORSMiddleware, allow_origins=[frontend_origin], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(auth_router)
@@ -38,7 +44,7 @@ def provider_status():
     configured=[k for k,v in providers.items() if v == "Loaded"]
     return {"configuredProviders": configured, "status": "live" if configured else "sample"}
 def mode(): return "live" if provider_status()["configuredProviders"] else "sample"
-def envelope(sport, action, **extra): return {"sport":sport,"action":action,"generatedAt":now(),"dataMode":mode(),"providerStatus":provider_status(),"saveStatus":extra.pop("saveStatus","not saved"),**extra}
+def envelope(sport, action, **extra): return {"sport":sport,"action":action,"generatedAt":now(),"dataMode":extra.pop("dataMode",mode()),"providerStatus":provider_status(),"saveStatus":extra.pop("saveStatus","not saved"),**extra}
 def safe_error(sport, action, exc): return envelope(sport, action, error=str(exc), providerStatus=provider_status())
 
 @app.get("/api/health")
@@ -70,17 +76,19 @@ def api_featured_game():
 
 @app.get("/api/dashboard")
 def dashboard(request: Request, user=Depends(require_full_access)):
-    user=current_user(request); initialize_database(); ensure_user_columns();
+    user=current_user(request)
+    if not using_postgres():
+        initialize_database(); ensure_user_columns()
     definitions={"savedAnalyses":"Account-owned saved analysis records, excluding legacy rows without user_id.","individualPredictions":"Account-owned rows in predictions; parlay legs are counted separately only when saved as predictions.","gradedPredictions":"Account-owned graded_bets rows.","savedParlays":"Account-owned saved rows in parlay_history.","overallAccuracy":"Hit rate across account-owned graded predictions; hidden until at least five graded rows exist."}
     recent=[]
-    with get_connection() as conn:
+    with get_db_connection() as conn:
         uid=user['id']
-        pred=conn.execute("SELECT COUNT(*) c FROM predictions WHERE user_id=?",(uid,)).fetchone()["c"]
-        graded_row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets WHERE user_id=?",(uid,)).fetchone()
-        parlays=conn.execute("SELECT COUNT(*) c FROM parlay_history WHERE user_id=?",(uid,)).fetchone()["c"] if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='parlay_history'").fetchone() else 0
+        pred=conn.execute("SELECT COUNT(*) c FROM predictions WHERE user_id=?",(uid,)).fetchone()["c"] if table_exists(conn,"predictions") else 0
+        graded_row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets WHERE user_id=?",(uid,)).fetchone() if table_exists(conn,"graded_bets") else {"c":0,"h":0}
+        parlays=conn.execute("SELECT COUNT(*) c FROM parlay_history WHERE user_id=?",(uid,)).fetchone()["c"] if table_exists(conn,"parlay_history") else 0
         acc=round((graded_row['h'] or 0)*100/graded_row['c'],1) if graded_row['c'] and graded_row['c']>=5 else None
         metrics=DashboardMetrics(savedAnalyses=pred+parlays,individualPredictions=pred,gradedPredictions=graded_row['c'],savedParlays=parlays,overallAccuracy=acc,definitions=definitions)
-        rows=conn.execute("SELECT created_at, player, stat_type FROM predictions WHERE user_id=? ORDER BY created_at DESC LIMIT 5",(uid,)).fetchall()
+        rows=conn.execute("SELECT created_at, player, stat_type FROM predictions WHERE user_id=? ORDER BY created_at DESC LIMIT 5",(uid,)).fetchall() if table_exists(conn,"predictions") else []
         recent=[{"summary":f"Prediction: {r['player']} {r['stat_type']}"} for r in rows]
     sm=get_sports_mode(); errors={}; games=[]
     if sm.activeLeagues:
@@ -102,14 +110,21 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
         legs=[leg.__dict__ for leg in result.parlay.legs]
         save="not saved"
         if legs:
-            from prediction_storage import save_parlay_result
-            save=f"saved #{save_parlay_result(result)}"
+            try:
+                save=f"saved #{save_web_parlay(result,user_id=int(user['id']),model_version=NFL_WEB_MODEL_VERSION)}"
+            except Exception:
+                logger.exception("NFL prediction generated but parlay history persistence failed")
+                save="prediction generated; history save unavailable"
         sm=get_sports_mode(); phase=sm.phaseByLeague.get("nfl","regular_season")
-        return envelope("NFL","NFL Parlay Builder",league="nfl",seasonPhase=phase,confidenceContext=("NFL preseason projections carry extra playing-time and roster uncertainty; prop coverage may be limited." if phase=="preseason" else "Regular-season confidence context from established prediction engine."),legs=legs,combinedConfidence=result.combined_probability,estimatedOdds=result.estimated_odds,message=result.notes,saveStatus=save)
+        sample_legs=sum("sample/offline" in str(leg.get("notes","")).lower() for leg in legs)
+        result_mode=("unavailable" if not legs else "sample" if sample_legs==len(legs) else "partial_live" if sample_legs else "live")
+        return envelope("NFL","NFL Parlay Builder",league="nfl",seasonPhase=phase,confidenceContext=("NFL preseason projections carry extra playing-time and roster uncertainty; prop coverage may be limited." if phase=="preseason" else "Regular-season confidence context from established prediction engine."),legs=legs,combinedConfidence=result.combined_probability,estimatedOdds=result.estimated_odds,message=result.notes,saveStatus=save,dataMode=result_mode,modelVersion=NFL_WEB_MODEL_VERSION,modelStatus={"serving":"LATEST_DEPLOYABLE","researchPolicyId":NFL_RESEARCH_POLICY_ID,"researchPolicyState":"FROZEN_SHADOW_ONLY","productionWageringAuthorized":False})
     except HTTPException: raise
-    except Exception as exc: return safe_error("NFL","NFL Parlay Builder",exc)
+    except Exception as exc:
+        logger.exception("NFL parlay generation failed")
+        raise HTTPException(503,"Prediction data is temporarily unavailable.") from exc
 @app.get("/api/analyze/nfl/history")
-def nfl_history(difficulty: str|None=None, user=Depends(require_full_access)): return envelope("NFL","View Parlay History",items=_history_rows("NFL", difficulty))
+def nfl_history(difficulty: str|None=None, user=Depends(require_full_access)): return envelope("NFL","View Parlay History",items=_history_rows("NFL", difficulty, int(user["id"])))
 @app.post("/api/analyze/nfl/grade")
 def nfl_grade(payload: dict, user=Depends(require_full_access)): return envelope("NFL","Grade NFL Parlays",message="Select an ungraded parlay in the CLI for full grading. API grading adapter is available for submitted results.",items=[])
 @app.get("/api/analyze/nfl/performance")
@@ -159,7 +174,7 @@ def nba_perf(user=Depends(require_full_access)): return performance()
 
 @app.get("/api/history")
 def history(tab: str=Query("All"), user=Depends(require_full_access)):
-    rows=_history_rows(None,None)
+    rows=_history_rows(None,None,int(user["id"]))
     t=tab.lower()
     if t in {"nfl","nba"}: rows=[r for r in rows if r["sport"].lower()==t]
     if t=="graded": rows=[r for r in rows if r["resultStatus"]!="pending"]
@@ -170,8 +185,8 @@ def history(tab: str=Query("All"), user=Depends(require_full_access)):
 @app.get("/api/performance")
 def performance(user=Depends(require_full_access)): return {"metrics":_metrics(),"series":[]}
 
-def _history_rows(sport=None,difficulty=None):
-    rows=load_parlay_history(sport=sport,difficulty=difficulty)
+def _history_rows(sport=None,difficulty=None,user_id=None):
+    rows=load_web_parlays(sport=sport,difficulty=difficulty,user_id=user_id)
     out=[]
     for r in rows:
         legs=json.loads(r.get("legs_json") or "[]")
@@ -179,8 +194,9 @@ def _history_rows(sport=None,difficulty=None):
     return out
 
 def _metrics():
-    initialize_database(); m={}
-    with get_connection() as conn:
-        row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets").fetchone()
+    if not using_postgres(): initialize_database()
+    m={}
+    with get_db_connection() as conn:
+        row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets").fetchone() if table_exists(conn,"graded_bets") else {"c":0,"h":0}
         if row["c"]: m["Overall graded prediction accuracy"]=f"{round((row['h'] or 0)*100/row['c'],1)}%"
     return m
