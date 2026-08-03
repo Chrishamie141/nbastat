@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+import asyncio
 
 from models import DifficultyLevel, SportType
 
@@ -74,3 +75,22 @@ def test_postgres_adapter_translates_placeholders_and_sanitizes_url():
     assert _postgres_url("postgres://u:p@example/db?sslmode=require&supa=pool") == (
         "postgresql://u:p@example/db?sslmode=require"
     )
+
+
+def test_vercel_asgi_adapter_restores_public_path_and_query(monkeypatch):
+    import api.index as entrypoint
+
+    observed = {}
+
+    async def fake_app(scope, receive, send):
+        observed.update(scope)
+
+    monkeypatch.setattr(entrypoint, "fastapi_app", fake_app)
+    scope = {"type": "http", "path": "/api/index", "raw_path": b"/api/index",
+             "query_string": b"__path=api%2Fteams&league=nfl"}
+
+    asyncio.run(entrypoint.app(scope, None, None))
+
+    assert observed["path"] == "/api/teams"
+    assert observed["raw_path"] == b"/api/teams"
+    assert observed["query_string"] == b"league=nfl"
