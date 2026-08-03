@@ -5,9 +5,17 @@
     "path": "backtesting/shadow/nfl_system_a_v1/frozen_policy.json",
     "sha256": "43d864a27123a4b7de71a5f5266b13dd389c27b5620509b6e01b50612372cb41"
   },
+  "frozen_prediction_config": {
+    "path": "backtesting/shadow/nfl_system_a_v1/frozen_prediction_config.json",
+    "sha256": "55028f226af6d0888413c32098ce01a7c98599246bf27ca7de2054698ee00bb4"
+  },
   "grades": {},
   "network_contacted": false,
   "production_wagering_authorized": false,
+  "readiness": {
+    "path": "backtesting/shadow/nfl_system_a_v1/2026_readiness.json",
+    "sha256": "1e5e600ea11b9c237f55e563c76c769788c1f81d99c65bc4e0e4870bacc89554"
+  },
   "schema_version": 1,
   "summary": {
     "path": "backtesting/shadow/nfl_system_a_v1/shadow_summary.json",

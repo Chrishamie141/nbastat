@@ -1,0 +1,324 @@
+{
+  "calibration_by_market_side": {
+    "receiving_yards:OVER": {
+      "evidence": {
+        "fit_rows": 25787,
+        "prior_rows": 27488,
+        "scores": {
+          "identity": 0.25774089612101975,
+          "isotonic": 0.24972499135604628,
+          "shrink_25": 0.24895673714431074,
+          "shrink_50": 0.2498991324085473,
+          "shrink_75": 0.2528271857927098
+        },
+        "status": "PRIOR_INNER_BRIER_SELECTED",
+        "validation_periods": [
+          [
+            2025,
+            15
+          ],
+          [
+            2025,
+            16
+          ],
+          [
+            2025,
+            17
+          ],
+          [
+            2025,
+            18
+          ]
+        ],
+        "validation_rows": 1701
+      },
+      "fit_rows": 27488,
+      "method": "shrink_25"
+    },
+    "receiving_yards:UNDER": {
+      "evidence": {
+        "fit_rows": 25787,
+        "prior_rows": 27488,
+        "scores": {
+          "identity": 0.25774089612101975,
+          "isotonic": 0.24972499135604623,
+          "shrink_25": 0.24895673714431074,
+          "shrink_50": 0.2498991324085473,
+          "shrink_75": 0.2528271857927098
+        },
+        "status": "PRIOR_INNER_BRIER_SELECTED",
+        "validation_periods": [
+          [
+            2025,
+            15
+          ],
+          [
+            2025,
+            16
+          ],
+          [
+            2025,
+            17
+          ],
+          [
+            2025,
+            18
+          ]
+        ],
+        "validation_rows": 1701
+      },
+      "fit_rows": 27488,
+      "method": "shrink_25"
+    },
+    "receptions:OVER": {
+      "evidence": {
+        "fit_rows": 8497,
+        "prior_rows": 9186,
+        "scores": {
+          "identity": 0.2480338101340005,
+          "isotonic": 0.24061826247455095,
+          "shrink_25": 0.244016264771835,
+          "shrink_50": 0.241693988535239,
+          "shrink_75": 0.24303317129021187
+        },
+        "status": "PRIOR_INNER_BRIER_SELECTED",
+        "validation_periods": [
+          [
+            2025,
+            15
+          ],
+          [
+            2025,
+            16
+          ],
+          [
+            2025,
+            17
+          ],
+          [
+            2025,
+            18
+          ]
+        ],
+        "validation_rows": 689
+      },
+      "fit_rows": 9186,
+      "method": "isotonic"
+    },
+    "receptions:UNDER": {
+      "evidence": {
+        "fit_rows": 8497,
+        "prior_rows": 9186,
+        "scores": {
+          "identity": 0.2480338101340005,
+          "isotonic": 0.24061826247455093,
+          "shrink_25": 0.244016264771835,
+          "shrink_50": 0.241693988535239,
+          "shrink_75": 0.24303317129021187
+        },
+        "status": "PRIOR_INNER_BRIER_SELECTED",
+        "validation_periods": [
+          [
+            2025,
+            15
+          ],
+          [
+            2025,
+            16
+          ],
+          [
+            2025,
+            17
+          ],
+          [
+            2025,
+            18
+          ]
+        ],
+        "validation_rows": 689
+      },
+      "fit_rows": 9186,
+      "method": "isotonic"
+    },
+    "rushing_yards:OVER": {
+      "evidence": {
+        "fit_rows": 11212,
+        "prior_rows": 12108,
+        "scores": {
+          "identity": 0.2583855360523999,
+          "isotonic": 0.24754940094838207,
+          "shrink_25": 0.24776267683099887,
+          "shrink_50": 0.24841449178339814,
+          "shrink_75": 0.25195544485719773
+        },
+        "status": "PRIOR_INNER_BRIER_SELECTED",
+        "validation_periods": [
+          [
+            2025,
+            15
+          ],
+          [
+            2025,
+            16
+          ],
+          [
+            2025,
+            17
+          ],
+          [
+            2025,
+            18
+          ]
+        ],
+        "validation_rows": 896
+      },
+      "fit_rows": 12108,
+      "method": "isotonic"
+    },
+    "rushing_yards:UNDER": {
+      "evidence": {
+        "fit_rows": 11212,
+        "prior_rows": 12108,
+        "scores": {
+          "identity": 0.2583855360523999,
+          "isotonic": 0.24754940094838207,
+          "shrink_25": 0.24776267683099887,
+          "shrink_50": 0.2484144917833981,
+          "shrink_75": 0.25195544485719773
+        },
+        "status": "PRIOR_INNER_BRIER_SELECTED",
+        "validation_periods": [
+          [
+            2025,
+            15
+          ],
+          [
+            2025,
+            16
+          ],
+          [
+            2025,
+            17
+          ],
+          [
+            2025,
+            18
+          ]
+        ],
+        "validation_rows": 896
+      },
+      "fit_rows": 12108,
+      "method": "isotonic"
+    }
+  },
+  "config_id": "nfl_system_a_shadow_prediction_config_v1",
+  "configuration_fingerprint": "9ebc69c706d180df392154cf1d9c3dab6c22963ab7dcce1884899430b96c1b3e",
+  "distribution_configuration_by_market": {
+    "receiving_yards": "quantile_direct_rich",
+    "receptions": "parametric_rich_poisson",
+    "rushing_yards": "quantile_direct_rich"
+  },
+  "distribution_source_folds": {
+    "receiving_yards": {
+      "selection": {
+        "prior_rows": 7025,
+        "scores": {
+          "parametric_basic_gamma": 15.750059202647876,
+          "parametric_basic_lognormal": 15.867589576202194,
+          "parametric_basic_negative_binomial": 15.744726868327403,
+          "parametric_basic_normal": 15.810832105941728,
+          "parametric_basic_poisson": 17.461061387900358,
+          "parametric_basic_student_t": 16.09199388121766,
+          "parametric_basic_zero_inflated_negative_binomial": 15.611516014234875,
+          "parametric_basic_zero_inflated_poisson": 17.267847864768683,
+          "parametric_rich_gamma": 15.583101926982872,
+          "parametric_rich_lognormal": 15.701495346722158,
+          "parametric_rich_negative_binomial": 15.582645017793595,
+          "parametric_rich_normal": 15.643850538433462,
+          "parametric_rich_poisson": 17.307036476868326,
+          "parametric_rich_student_t": 15.922301802490349,
+          "parametric_rich_zero_inflated_negative_binomial": 15.448484875444839,
+          "parametric_rich_zero_inflated_poisson": 17.11517793594306,
+          "quantile_direct_rich": 14.536210540643884
+        },
+        "status": "PRIOR_OOF_CRPS_SELECTED"
+      },
+      "test_season": 2025,
+      "test_week": 18
+    },
+    "receptions": {
+      "selection": {
+        "prior_rows": 7025,
+        "scores": {
+          "parametric_basic_gamma": 1.1265810416157314,
+          "parametric_basic_lognormal": 1.1338884401923341,
+          "parametric_basic_negative_binomial": 1.0970631672597864,
+          "parametric_basic_normal": 1.1320560323232631,
+          "parametric_basic_poisson": 1.0970818505338078,
+          "parametric_basic_student_t": 1.146799371491396,
+          "parametric_basic_zero_inflated_negative_binomial": 1.1078896797153026,
+          "parametric_basic_zero_inflated_poisson": 1.107482206405694,
+          "parametric_rich_gamma": 1.1188683254284684,
+          "parametric_rich_lognormal": 1.1260420408653942,
+          "parametric_rich_negative_binomial": 1.0903781138790036,
+          "parametric_rich_normal": 1.1237090886931973,
+          "parametric_rich_poisson": 1.0900836298932384,
+          "parametric_rich_student_t": 1.1385103649215007,
+          "parametric_rich_zero_inflated_negative_binomial": 1.1017749110320285,
+          "parametric_rich_zero_inflated_poisson": 1.1010516014234875,
+          "quantile_direct_rich": 1.0901731728664648
+        },
+        "status": "PRIOR_OOF_CRPS_SELECTED"
+      },
+      "test_season": 2025,
+      "test_week": 18
+    },
+    "rushing_yards": {
+      "selection": {
+        "prior_rows": 3582,
+        "scores": {
+          "parametric_basic_gamma": 15.425336670911665,
+          "parametric_basic_lognormal": 15.531319027541013,
+          "parametric_basic_negative_binomial": 15.424500977107762,
+          "parametric_basic_normal": 15.47410596126095,
+          "parametric_basic_poisson": 16.958066373534336,
+          "parametric_basic_student_t": 15.736151299583263,
+          "parametric_basic_zero_inflated_negative_binomial": 15.396067141261865,
+          "parametric_basic_zero_inflated_poisson": 16.928681602456727,
+          "parametric_rich_gamma": 15.14865888824774,
+          "parametric_rich_lognormal": 15.250677122937148,
+          "parametric_rich_negative_binomial": 15.146815675600221,
+          "parametric_rich_normal": 15.193008731907817,
+          "parametric_rich_poisson": 16.685352107761027,
+          "parametric_rich_student_t": 15.456020841339704,
+          "parametric_rich_zero_inflated_negative_binomial": 15.119917294807369,
+          "parametric_rich_zero_inflated_poisson": 16.65420854271357,
+          "quantile_direct_rich": 14.056845070030116
+        },
+        "status": "PRIOR_OOF_CRPS_SELECTED"
+      },
+      "test_season": 2025,
+      "test_week": 18
+    }
+  },
+  "inputs": {
+    "backtesting/results/nfl_distribution_probability_calibration_2024_2025/calibration_rows.json": "89db86fcfd212e07fb82800fca7e67e26fa5a3d3f132498087c9fc8dda6b698d",
+    "backtesting/results/nfl_player_stat_distributions_system_a_2024_2025/experiment_result.json": "78583ef1057de099b0fb4e7204e70929eb3d3d54a8260923b13466b9213a5c58",
+    "backtesting/results/nfl_system_a_calibrated_price_policy_2024_2025/price_policy_input_rows.json": "037f70aba8376b1f6b014679be20a77effe5ba2db85d3c22fa2217c578419194",
+    "backtesting/shadow/nfl_system_a_v1/frozen_policy.json": "43d864a27123a4b7de71a5f5266b13dd389c27b5620509b6e01b50612372cb41"
+  },
+  "min_history": 2,
+  "minimum_expected_value": 0.05,
+  "policy_fingerprint": "41ccfacd9eeb8cc16adb91d190b14d51f124a77f0c9bd607c79781f338bdf276",
+  "production_wagering_authorized": false,
+  "residual_configuration": "residual_half_life_9",
+  "schema_version": 1,
+  "seed": 1729,
+  "state": "FROZEN_SHADOW_ONLY",
+  "temporal_contract": "FULL_HISTORY_FIT_ENDS_BEFORE_EACH_FUTURE_PREDICTION_CUTOFF",
+  "training_seasons": [
+    2023,
+    2024,
+    2025
+  ]
+}

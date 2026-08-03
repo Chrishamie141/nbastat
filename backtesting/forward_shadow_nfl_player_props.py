@@ -300,11 +300,17 @@ def write_summary(ledger_dir: Path, output_path: Path) -> dict[str, Any]:
     value = summarize(ledger_dir)
     _write_json(output_path, value)
     frozen = ledger_dir / "frozen_policy.json"
+    prediction = ledger_dir / "frozen_prediction_config.json"
+    readiness = ledger_dir / "2026_readiness.json"
     entry_paths = sorted((ledger_dir / "entries").glob("*.json"))
     grade_paths = sorted((ledger_dir / "grades").glob("*.json"))
     manifest = {
         "schema_version": SCHEMA_VERSION, "network_contacted": False,
         "frozen_policy": None if not frozen.exists() else {"path": frozen.as_posix(), "sha256": _file_hash(frozen)},
+        "frozen_prediction_config": None if not prediction.exists() else {
+            "path": prediction.as_posix(), "sha256": _file_hash(prediction)},
+        "readiness": None if not readiness.exists() else {
+            "path": readiness.as_posix(), "sha256": _file_hash(readiness)},
         "entries": {path.name: _file_hash(path) for path in entry_paths},
         "grades": {path.name: _file_hash(path) for path in grade_paths},
         "summary": {"path": output_path.as_posix(), "sha256": _file_hash(output_path)},
