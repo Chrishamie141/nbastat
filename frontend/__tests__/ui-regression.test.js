@@ -32,3 +32,15 @@ test('production API requests use the same-origin Vercel backend rewrite', () =>
   assert.match(config, /source: '\/api\/:path\*'/);
   assert.match(config, /smartbetsports-api\.vercel\.app/);
 });
+
+test('fantasy builder submits league settings and renders a dedicated draft board', () => {
+  const page = fs.readFileSync('app/analyze/page.jsx','utf8');
+  const api = fs.readFileSync('lib/api.js','utf8');
+  const result = fs.readFileSync('components/results/AnalysisResult.jsx','utf8');
+  assert.match(page, /scoring:'PPR'.*position:'ALL'.*limit:25/);
+  assert.match(page, /Build Draft Board/);
+  assert.match(page, /api\.nfl\.fantasy\(opts\)/);
+  assert.match(api, /fantasy:\(body\).*method:'POST'/);
+  assert.match(result, /FantasyResult/);
+  assert.match(result, /2025 PPG/);
+});

@@ -22,6 +22,7 @@ from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
 from nfl_parlay_builder import build_nfl_parlay
+from nfl_fantasy_service import build_fantasy_rankings
 from nfl_performance_report import print_nfl_performance_report
 from prediction_storage import grade_recommendations, summarize_graded_bets, initialize_database, ensure_user_columns
 from app import run_prediction, default_context, prediction_rows_from_result, run_roster_predictions, run_best_bets_mode, run_auto_parlay_mode
@@ -131,11 +132,24 @@ def nfl_grade(payload: dict, user=Depends(require_full_access)): return envelope
 def nfl_perf(user=Depends(require_full_access)):
     try: return envelope("NFL","View NFL Performance Report",items=[print_nfl_performance_report()])
     except Exception as exc: return safe_error("NFL","View NFL Performance Report",exc)
+def _nfl_fantasy_response(payload: dict):
+    try:
+        report=build_fantasy_rankings(payload.get("scoring") or "PPR",payload.get("position") or "ALL",payload.get("limit") or 25)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(400,str(exc)) from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.exception("NFL fantasy ranking data could not be loaded")
+        raise HTTPException(503,"Fantasy ranking data is temporarily unavailable.") from exc
+    sm=get_sports_mode(); phase=sm.phaseByLeague.get("nfl","regular_season")
+    return envelope("NFL","Fantasy Draft Builder",league="nfl",seasonPhase=phase,dataMode="historical_research",modelVersion="nfl_fantasy_prior_season_v1",confidenceContext=("2026 preseason board: verify late injury, depth-chart, suspension, and role news before drafting." if phase=="preseason" else "Rankings use prior-season production and the latest checked expert context."),message="Draft board built from 2025 game production and current 2026 research context.",**report)
+
 @app.get("/api/analyze/nfl/fantasy")
 def nfl_fantasy(user=Depends(require_full_access)):
-    options=["Rankings", "Start/Sit Helper", "Waiver Suggestions", "Player Projection Comparison"]
-    sm=get_sports_mode(); phase=sm.phaseByLeague.get("nfl","regular_season")
-    return envelope("NFL","Fantasy Football Tools",league="nfl",seasonPhase=phase,confidenceContext=("NFL preseason context: depth-chart uncertainty and coach announcements matter when available." if phase=="preseason" else "Regular-season context."),items=[{"summary":x} for x in options],message="These are the current fantasy actions exposed by the Python CLI; placeholder helper details remain unchanged.")
+    return _nfl_fantasy_response({})
+
+@app.post("/api/analyze/nfl/fantasy")
+def nfl_fantasy_build(payload: dict, user=Depends(require_full_access)):
+    return _nfl_fantasy_response(payload)
 
 @app.post("/api/analyze/nba/player")
 def nba_player(payload: dict, user=Depends(require_full_access)):
