@@ -1,14 +1,18 @@
 from datetime import datetime, timedelta, timezone
+from contextlib import asynccontextmanager
 from pathlib import Path
 import json
 import logging
 import requests
+import time
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(BASE_DIR / ".env")
 
 from fastapi import FastAPI, HTTPException, Query, Request, Depends
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import get_config_status, print_config_status
 from backend.app.api.auth import router as auth_router
@@ -24,6 +28,8 @@ from backend.app.services.nfl_game_service import (
     refresh_nfl_game_detail,
 )
 from backend.app.services.team_metadata import teams_for_league
+from backend.app.services.readiness_service import readiness_report, startup_self_check
+from backend.app.services.search_service import search_catalog
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
@@ -38,13 +44,41 @@ from team_utils import normalize_team_abbreviation
 
 print_config_status()
 logger = logging.getLogger(__name__)
-app = FastAPI(title="SmartBetSports API", version="2.0.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    startup_self_check()
+    yield
+
+app = FastAPI(title="SmartBetSports API", version="2.0.0", lifespan=lifespan)
 NFL_WEB_MODEL_VERSION = "nfl_player_prop_matchup_v2"
 NFL_RESEARCH_POLICY_ID = "nfl_system_a_forward_shadow_v1"
 frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 app.add_middleware(CORSMiddleware, allow_origins=[frontend_origin], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(auth_router)
 app.include_router(billing_router)
+
+@app.middleware("http")
+async def endpoint_observability(request: Request, call_next):
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("endpoint_unhandled_error", extra={"method": request.method, "path": request.url.path})
+        raise
+    logger.info("endpoint_complete %s", json.dumps({"method": request.method, "path": request.url.path, "status": response.status_code, "latencyMs": round((time.perf_counter() - started) * 1000, 1)}, sort_keys=True))
+    return response
+
+@app.exception_handler(HTTPException)
+async def normalized_http_error(_request: Request, exc: HTTPException):
+    code = {400: "BAD_REQUEST", 401: "AUTHENTICATION_REQUIRED", 403: "ACCESS_DENIED", 404: "NOT_FOUND", 409: "STATE_CONFLICT", 422: "VALIDATION_ERROR", 503: "DEPENDENCY_UNAVAILABLE"}.get(exc.status_code, "REQUEST_FAILED")
+    message = str(exc.detail) if not isinstance(exc.detail, dict) else str(exc.detail.get("message") or "Request failed.")
+    return JSONResponse(status_code=exc.status_code, content={"error": {"code": code, "message": message, "retryable": exc.status_code in {409, 429, 503}}, "detail": message})
+
+@app.exception_handler(RequestValidationError)
+async def normalized_validation_error(_request: Request, _exc: RequestValidationError):
+    message = "The request did not match the expected schema."
+    return JSONResponse(status_code=422, content={"error": {"code": "VALIDATION_ERROR", "message": message, "retryable": False}, "detail": message})
 
 def now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 def provider_status():
@@ -56,7 +90,16 @@ def envelope(sport, action, **extra): return {"sport":sport,"action":action,"gen
 def safe_error(sport, action, exc): return envelope(sport, action, error=str(exc), providerStatus=provider_status())
 
 @app.get("/api/health")
-def health(): return {"ok": True, "generatedAt": now(), "dataMode": mode(), "providerStatus": provider_status()}
+def health():
+    report = readiness_report()
+    return {"ok": report["status"] != "unhealthy", "generatedAt": now(), "dataMode": mode(), "providerStatus": provider_status(), **report}
+
+@app.get("/api/readiness")
+def readiness():
+    report = readiness_report()
+    if report["status"] == "unhealthy":
+        return JSONResponse(status_code=503, content=report)
+    return report
 @app.get("/api/config/status")
 def config_status(): return {"providers": get_config_status(), "dataMode": mode(), "providerStatus": provider_status()}
 
@@ -68,6 +111,20 @@ def sports_mode():
 @app.get("/api/teams")
 def api_teams(league: str=Query(..., pattern="^(nfl|nba)$")):
     return {"teams":[t.model_dump(mode="json") for t in teams_for_league(league)]}
+
+@app.get("/api/search")
+def api_search(q: str=Query(..., min_length=2, max_length=80)):
+    errors = {}
+    games = []
+    try:
+        sm = get_sports_mode()
+        games = upcoming_games(sm.activeLeagues, limit=20, start=datetime.now(timezone.utc)-timedelta(days=7), include_completed=True) if sm.activeLeagues else []
+    except Exception:
+        logger.exception("search_game_source_unavailable", extra={"queryLength": len(q)})
+        errors["games"] = {"code": "GAME_SEARCH_UNAVAILABLE", "message": "Game search is temporarily unavailable."}
+    result = search_catalog(q, games)
+    result["errors"] = errors
+    return result
 
 @app.get("/api/games/upcoming")
 def api_upcoming_games(league: str|None=None, limit: int=Query(8, ge=1, le=20), include_completed: bool=False):

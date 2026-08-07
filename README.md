@@ -76,6 +76,22 @@ npm run build
 
 Binary/local runtime files are intentionally excluded. Do not commit PNG, JPG, GIF, WEBP, ICO, video, audio, font binaries, ZIPs, compiled files, SQLite databases, or downloaded fonts. Visual effects should be built with CSS gradients, Tailwind, JSX, inline SVG, Lucide icons, Framer Motion, Lenis, and Recharts.
 
+## Production operations
+
+The API exposes `GET /api/health` and `GET /api/readiness`. Both perform a real database connection/read/schema check and validate the latest prediction and historical-context artifacts without exposing connection strings. Readiness is `503` only when a required dependency prevents meaningful operation; optional artifact gaps are reported as degraded.
+
+Run non-destructive operator checks from the repository root:
+
+```bash
+py -3.14 tools/production_readiness.py app-health
+py -3.14 tools/production_readiness.py audit-endpoints
+py -3.14 tools/production_readiness.py audit-actions
+py -3.14 tools/production_readiness.py audit-stale-games
+py -3.14 tools/production_readiness.py audit-data-fallbacks
+```
+
+The endpoint and action audits write machine-readable JSON under `reports/`. Game detail uses current regular-season context only after both teams meet the centralized three-game minimum. Otherwise it uses the prior completed regular season with explicit provenance; preseason results are never blended into that baseline and never populate upcoming-game actuals.
+
 
 ## Frontend workflow and development authentication
 

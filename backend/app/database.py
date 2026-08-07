@@ -117,10 +117,11 @@ def get_db_connection():
             _postgres_url(database_url()),
             row_factory=dict_row,
             prepare_threshold=None,
+            connect_timeout=5,
         )
         return PostgresConnection(connection)
 
-    connection = sqlite3.connect(database_path())
+    connection = sqlite3.connect(database_path(), timeout=5)
     connection.row_factory = sqlite3.Row
     return connection
 

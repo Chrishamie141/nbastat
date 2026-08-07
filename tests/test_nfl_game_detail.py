@@ -157,14 +157,37 @@ def test_live_game_can_expose_partial_player_stats_without_becoming_final():
     assert detail["comparison"]["available"] is False
 
 
-def test_unresolved_context_and_missing_stats_are_reported_not_fabricated():
+def test_prior_season_context_fallback_and_missing_stats_are_reported_honestly():
     payload = json.loads(json.dumps(FIXTURE))
     payload["_smartbetFixture"].pop("teamContext")
     payload["boxscore"] = {}
     detail = get_nfl_game_detail("401000001", fetcher=lambda _: payload)
-    assert detail["teamContext"]["available"] is False
+    assert detail["teamContext"]["available"] is True
+    assert detail["teamContext"]["requestedSeason"] == 2026
+    assert detail["teamContext"]["contextSeasonUsed"] == 2025
+    assert detail["teamContext"]["fallbackUsed"] is True
+    assert detail["teamContext"]["fallbackReason"] == "INSUFFICIENT_CURRENT_SEASON_SAMPLE"
     assert detail["actuals"]["available"] is False
-    assert detail["dataAvailability"]["contextAvailable"] is False
+    assert detail["dataAvailability"]["contextAvailable"] is True
+
+
+def test_upcoming_empty_provider_boxscore_templates_are_not_actual_results():
+    upcoming = json.loads(json.dumps(FIXTURE))
+    competition = upcoming["header"]["competitions"][0]
+    competition["date"] = "2026-08-20T00:00:00Z"
+    competition["status"]["type"] = {"name": "STATUS_SCHEDULED", "detail": "Scheduled", "completed": False}
+    for competitor in competition["competitors"]:
+        competitor.pop("score", None)
+    upcoming["boxscore"]["teams"] = [
+        {"team": {"abbreviation": "NE"}, "statistics": []},
+        {"team": {"abbreviation": "NYG"}, "statistics": []},
+    ]
+    upcoming["boxscore"]["players"] = []
+    detail = get_nfl_game_detail("401000001", fetcher=lambda _: upcoming)
+    assert detail["game"]["status"] == "scheduled"
+    assert detail["actuals"]["available"] is False
+    assert detail["actuals"]["teamStats"] == []
+    assert detail["actuals"]["providerDataAvailable"] is False
 
 
 def test_failed_forced_refresh_preserves_last_known_good_cache():

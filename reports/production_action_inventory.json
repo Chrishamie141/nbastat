@@ -1,0 +1,396 @@
+{
+  "actions": [
+    {
+      "component": "frontend\\app\\page.jsx",
+      "element": "Link",
+      "label": "Get Started \u2014 $4.99/month",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\page.jsx",
+      "element": "Link",
+      "label": "Log In",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\page.jsx",
+      "element": "Link",
+      "label": "Join SmartBetSports",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\analyze\\RiskLevelSelector.jsx",
+      "element": "button",
+      "label": "key(e,i)} onClick=",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\analyze\\TeamSelector.jsx",
+      "element": "button",
+      "label": "choose(null)} className=\"rounded-full px-2 py-1 text-sm tex",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\analyze\\TeamSelector.jsx",
+      "element": "button",
+      "label": "choose(null)} className=\"w-full rounded-xl px-3 py-2 text-l",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\analyze\\TeamSelector.jsx",
+      "element": "button",
+      "label": "setActive(index)} onClick=",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\games\\NflGameBreakdown.jsx",
+      "element": "button",
+      "label": "load()}>Try again",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\games\\NflGameBreakdown.jsx",
+      "element": "Link",
+      "label": "Back to dashboard",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\games\\NflGameBreakdown.jsx",
+      "element": "Link",
+      "label": "\u2190 Back to dashboard",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\games\\NflGameBreakdown.jsx",
+      "element": "button",
+      "label": "load(",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\layout\\PremiumNavbar.jsx",
+      "element": "Link",
+      "label": "Back to Home",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\layout\\PremiumNavbar.jsx",
+      "element": "Link",
+      "label": "How It Works",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\layout\\PremiumNavbar.jsx",
+      "element": "Link",
+      "label": "Log In",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\layout\\PremiumNavbar.jsx",
+      "element": "Link",
+      "label": "Get Started",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\parlays\\ParlayLeg.jsx",
+      "element": "button",
+      "label": "onRemove?.(leg.id)}>",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\predictions\\PredictionCard.jsx",
+      "element": "button",
+      "label": "onAdd?.(prediction)}>Add to parlay",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\predictions\\PredictionCard.jsx",
+      "element": "button",
+      "label": "setOpen(!open)} aria-expanded=",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\results\\AnalysisResult.jsx",
+      "element": "button",
+      "label": "Start Another Analysis",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\components\\results\\AnalysisResult.jsx",
+      "element": "Link",
+      "label": "Return to Dashboard",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\account\\page.jsx",
+      "element": "button",
+      "label": "Manage Billing",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\account\\page.jsx",
+      "element": "button",
+      "label": "Logout",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\analyze\\page.jsx",
+      "element": "Link",
+      "label": "Cancel",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\analyze\\page.jsx",
+      "element": "Link",
+      "label": "View History",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\analyze\\page.jsx",
+      "element": "Link",
+      "label": "View Performance",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\analyze\\page.jsx",
+      "element": "button",
+      "label": "setStep(1)} className=\"btn btn-glass mt-5\">Back",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\analyze\\page.jsx",
+      "element": "button",
+      "label": "setStep(2)} className=\"btn btn-glass\">Back",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\analyze\\page.jsx",
+      "element": "button",
+      "label": "onChange(key)} className=",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "Link",
+      "label": "Start New Analysis",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "button",
+      "label": "location.reload()} className=\"ml-2 underline\">Retry",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "button",
+      "label": "location.reload()} className=\"underline\">Retry",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "button",
+      "label": "setFilter(item)} aria-pressed=",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "button",
+      "label": "location.reload()} className=\"underline\">Retry",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "Link",
+      "label": "Start New Analysis",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "Link",
+      "label": "View History",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\dashboard\\page.jsx",
+      "element": "Link",
+      "label": "View Performance",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\history\\page.jsx",
+      "element": "button",
+      "label": "setTab(item)} className=",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\login\\page.jsx",
+      "element": "button",
+      "label": "setShow(!show)}>",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\login\\page.jsx",
+      "element": "Link",
+      "label": "Create Account",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\register\\page.jsx",
+      "element": "button",
+      "label": "setShow(!show)}>",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\register\\page.jsx",
+      "element": "Link",
+      "label": "Log In",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\subscribe\\page.jsx",
+      "element": "Link",
+      "label": "Go to Dashboard",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\subscribe\\page.jsx",
+      "element": "button",
+      "label": "Start Membership",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\subscribe\\page.jsx",
+      "element": "Link",
+      "label": "Create Account",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\subscribe\\page.jsx",
+      "element": "button",
+      "label": "Already subscribed? Refresh access",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\nfl\\games\\[gameId]\\error.jsx",
+      "element": "button",
+      "label": "Try again",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\nfl\\games\\[gameId]\\not-found.jsx",
+      "element": "Link",
+      "label": "Back to dashboard",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\billing\\success\\page.jsx",
+      "element": "button",
+      "label": "Retry confirmation",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    },
+    {
+      "component": "frontend\\app\\billing\\success\\page.jsx",
+      "element": "Link",
+      "label": "Account",
+      "href": null,
+      "accessibility": "native button/link semantics",
+      "inventorySource": "static JSX audit"
+    }
+  ]
+}

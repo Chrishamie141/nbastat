@@ -1,5 +1,33 @@
 // Production uses the same-origin Vercel rewrite. A public override remains
 // available for local development against a separately running API.
 const API=process.env.NEXT_PUBLIC_API_BASE_URL||process.env.NEXT_PUBLIC_API_URL||'';
-async function request(path,{method='GET',body}={}){let r;try{r=await fetch(`${API}${path}`,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store',credentials:'include'});}catch{throw new Error('Unable to connect to the server.')}const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.detail||data.error||r.statusText);return data}
-export const api={auth:{me:()=>request('/api/auth/me'),register:(body)=>request('/api/auth/register',{method:'POST',body}),login:(body)=>request('/api/auth/login',{method:'POST',body}),logout:()=>request('/api/auth/logout',{method:'POST'})},health:()=>request('/api/health'),config:()=>request('/api/config/status'),dashboard:()=>request('/api/dashboard'),refreshGames:()=>request('/api/games/refresh',{method:'POST'}),sportsMode:()=>request('/api/sports-mode'),teams:(league)=>request(`/api/teams?league=${league}`),upcomingGames:()=>request('/api/games/upcoming'),featuredGame:()=>request('/api/games/featured'),history:(q='')=>request(`/api/history${q}`),performance:()=>request('/api/performance'),billing:{entitlements:()=>request('/api/billing/entitlements'),subscription:()=>request('/api/billing/subscription'),checkout:()=>request('/api/billing/create-checkout-session',{method:'POST'}),portal:()=>request('/api/billing/create-portal-session',{method:'POST'}),refresh:()=>request('/api/billing/refresh',{method:'POST'})},nfl:{game:(gameId)=>request(`/api/nfl/games/${encodeURIComponent(gameId)}`),refreshGame:(gameId)=>request(`/api/nfl/games/${encodeURIComponent(gameId)}/refresh`,{method:'POST'}),parlay:(body)=>request('/api/analyze/nfl/parlay',{method:'POST',body}),fantasy:(body)=>request('/api/analyze/nfl/fantasy',{method:'POST',body}),history:(q='')=>request(`/api/analyze/nfl/history${q}`),grade:(body)=>request('/api/analyze/nfl/grade',{method:'POST',body}),performance:()=>request('/api/analyze/nfl/performance')},nba:{player:(body)=>request('/api/analyze/nba/player',{method:'POST',body}),roster:(body)=>request('/api/analyze/nba/roster',{method:'POST',body}),team:(body)=>request('/api/analyze/nba/team',{method:'POST',body}),bestBets:()=>request('/api/analyze/nba/best-bets'),parlay:(body)=>request('/api/analyze/nba/parlay',{method:'POST',body}),grade:(body)=>request('/api/analyze/nba/grade',{method:'POST',body}),history:()=>request('/api/analyze/nba/history'),performance:()=>request('/api/analyze/nba/performance')}};
+const REQUEST_TIMEOUT_MS = 12000;
+
+async function request(path, { method = 'GET', body, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+  try {
+    response = await fetch(`${API}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store',
+      credentials: 'include',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('The server took too long to respond. Please try again.');
+    throw new Error('Unable to connect to the server.');
+  } finally {
+    clearTimeout(timeout);
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data?.error?.message || data?.detail || (typeof data?.error === 'string' ? data.error : '') || response.statusText;
+    throw new Error(message || `Request failed (${response.status}).`);
+  }
+  return data;
+}
+
+export const api={auth:{me:()=>request('/api/auth/me'),register:(body)=>request('/api/auth/register',{method:'POST',body}),login:(body)=>request('/api/auth/login',{method:'POST',body}),logout:()=>request('/api/auth/logout',{method:'POST'})},health:()=>request('/api/health'),readiness:()=>request('/api/readiness'),config:()=>request('/api/config/status'),search:(query)=>request(`/api/search?q=${encodeURIComponent(query)}`),dashboard:()=>request('/api/dashboard'),refreshGames:()=>request('/api/games/refresh',{method:'POST'}),sportsMode:()=>request('/api/sports-mode'),teams:(league)=>request(`/api/teams?league=${league}`),upcomingGames:()=>request('/api/games/upcoming'),featuredGame:()=>request('/api/games/featured'),history:(q='')=>request(`/api/history${q}`),performance:()=>request('/api/performance'),billing:{entitlements:()=>request('/api/billing/entitlements'),subscription:()=>request('/api/billing/subscription'),checkout:()=>request('/api/billing/create-checkout-session',{method:'POST'}),portal:()=>request('/api/billing/create-portal-session',{method:'POST'}),refresh:()=>request('/api/billing/refresh',{method:'POST'})},nfl:{game:(gameId)=>request(`/api/nfl/games/${encodeURIComponent(gameId)}`),refreshGame:(gameId)=>request(`/api/nfl/games/${encodeURIComponent(gameId)}/refresh`,{method:'POST'}),parlay:(body)=>request('/api/analyze/nfl/parlay',{method:'POST',body}),fantasy:(body)=>request('/api/analyze/nfl/fantasy',{method:'POST',body}),history:(q='')=>request(`/api/analyze/nfl/history${q}`),grade:(body)=>request('/api/analyze/nfl/grade',{method:'POST',body}),performance:()=>request('/api/analyze/nfl/performance')},nba:{player:(body)=>request('/api/analyze/nba/player',{method:'POST',body}),roster:(body)=>request('/api/analyze/nba/roster',{method:'POST',body}),team:(body)=>request('/api/analyze/nba/team',{method:'POST',body}),bestBets:()=>request('/api/analyze/nba/best-bets'),parlay:(body)=>request('/api/analyze/nba/parlay',{method:'POST',body}),grade:(body)=>request('/api/analyze/nba/grade',{method:'POST',body}),history:()=>request('/api/analyze/nba/history'),performance:()=>request('/api/analyze/nba/performance')}};

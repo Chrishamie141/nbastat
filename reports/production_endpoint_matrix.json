@@ -1,0 +1,1544 @@
+{
+  "generatedBy": "tools/production_readiness.py audit-endpoints",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/analyze/nba/best-bets",
+      "purpose": "Nba Best",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 914.7,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nba/grade",
+      "purpose": "Nba Grade",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 966.7,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/nba/history",
+      "purpose": "Nba History",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 983.5,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nba/parlay",
+      "purpose": "Nba Parlay",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 985.3,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/nba/performance",
+      "purpose": "Nba Perf",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1015.1,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nba/player",
+      "purpose": "Nba Player",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 977.2,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nba/roster",
+      "purpose": "Nba Roster",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1004.6,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nba/team",
+      "purpose": "Nba Team",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 952.6,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/nfl/fantasy",
+      "purpose": "Nfl Fantasy",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1004.9,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nfl/fantasy",
+      "purpose": "Nfl Fantasy Build",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1072.3,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nfl/grade",
+      "purpose": "Nfl Grade",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 963.4,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/nfl/history",
+      "purpose": "Nfl History",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [
+        {
+          "name": "difficulty",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 909.8,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze/nfl/parlay",
+      "purpose": "Nfl Parlay",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "additionalProperties": true,
+              "type": "object",
+              "title": "Payload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 943.2,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/nfl/performance",
+      "purpose": "Nfl Perf",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 965.5,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "purpose": "Login",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LoginRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 968.8,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "purpose": "Logout",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1077.3,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "purpose": "Me",
+      "authenticationRequirement": "public",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 987.1,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "purpose": "Register",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RegisterRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 976.7,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/create-checkout-session",
+      "purpose": "Create Checkout Session",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 986.3,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/create-portal-session",
+      "purpose": "Portal",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 955.9,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing/entitlements",
+      "purpose": "Entitlements",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1011.8,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/refresh",
+      "purpose": "Refresh",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 938.4,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing/subscription",
+      "purpose": "Subscription",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 963.6,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing/webhook",
+      "purpose": "Webhook",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 967.8,
+      "classification": "UNUSED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/config/status",
+      "purpose": "Config Status",
+      "authenticationRequirement": "public",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 474.8,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/dashboard",
+      "purpose": "Dashboard",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1006.3,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/games/featured",
+      "purpose": "Api Featured Game",
+      "authenticationRequirement": "public",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": true,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 1698.1,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/games/refresh",
+      "purpose": "Api Refresh Games",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": true,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 973.2,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/games/upcoming",
+      "purpose": "Api Upcoming Games",
+      "authenticationRequirement": "public",
+      "requestSchema": [
+        {
+          "name": "league",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "League"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 20,
+            "minimum": 1,
+            "default": 8,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "include_completed",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Include Completed"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": true,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 930.7,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "purpose": "Health",
+      "authenticationRequirement": "public",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 501.0,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/history",
+      "purpose": "History",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [
+        {
+          "name": "tab",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "default": "All",
+            "title": "Tab"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 955.7,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/nfl/games/{game_id}",
+      "purpose": "Api Nfl Game Detail",
+      "authenticationRequirement": "public",
+      "requestSchema": [
+        {
+          "name": "game_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Game Id"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": true,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 872.6,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/nfl/games/{game_id}/refresh",
+      "purpose": "Api Refresh Nfl Game",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [
+        {
+          "name": "game_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Game Id"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [],
+      "databaseDependency": false,
+      "externalDataDependency": true,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": null,
+      "latencyMs": 1009.2,
+      "classification": "UNUSED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/performance",
+      "purpose": "Performance",
+      "authenticationRequirement": "subscription/session",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": true,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": null,
+      "latencyMs": 977.6,
+      "classification": "DEGRADED",
+      "failureReason": null,
+      "auditNote": "Mutation or authenticated route inventoried but not invoked by the non-destructive audit."
+    },
+    {
+      "method": "GET",
+      "path": "/api/readiness",
+      "purpose": "Readiness",
+      "authenticationRequirement": "public",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 522.7,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "purpose": "Api Search",
+      "authenticationRequirement": "public",
+      "requestSchema": [
+        {
+          "name": "q",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80,
+            "title": "Q"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": true,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 964.5,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/sports-mode",
+      "purpose": "Sports Mode",
+      "authenticationRequirement": "public",
+      "requestSchema": [],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 447.4,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/teams",
+      "purpose": "Api Teams",
+      "authenticationRequirement": "public",
+      "requestSchema": [
+        {
+          "name": "league",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^(nfl|nba)$",
+            "title": "League"
+          }
+        }
+      ],
+      "responseSchema": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "frontendConsumer": [
+        "frontend\\lib\\api.js"
+      ],
+      "databaseDependency": false,
+      "externalDataDependency": false,
+      "expectedStatusCodes": [
+        "200",
+        "422"
+      ],
+      "observedStatus": 200,
+      "latencyMs": 485.3,
+      "classification": "HEALTHY",
+      "failureReason": null,
+      "auditNote": null
+    }
+  ]
+}

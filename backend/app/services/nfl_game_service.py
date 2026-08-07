@@ -21,6 +21,7 @@ from backend.app.services.game_status_service import (
     parse_provider_timestamp,
 )
 from backend.app.services.schedule_service import _score, _team
+from backend.app.services.nfl_context_service import build_team_context
 
 logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parents[3]
@@ -159,12 +160,16 @@ def _actuals(payload: dict[str, Any], game: dict[str, Any]) -> dict[str, Any]:
     team_stats = []
     for row in boxscore.get("teams") or []:
         team = row.get("team") or {}
+        statistics = [
+            {"name": stat.get("label") or stat.get("name"), "value": _stat_value(stat.get("displayValue") or stat.get("value"))}
+            for stat in row.get("statistics") or []
+            if stat.get("label") or stat.get("name")
+        ]
+        if not statistics:
+            continue
         team_stats.append({
             "team": team.get("abbreviation"),
-            "statistics": [
-                {"name": stat.get("label") or stat.get("name"), "value": _stat_value(stat.get("displayValue") or stat.get("value"))}
-                for stat in row.get("statistics") or []
-            ],
+            "statistics": statistics,
         })
     groups: dict[str, list[dict[str, Any]]] = {key: [] for key in MARKET_GROUPS}
     for team_row in boxscore.get("players") or []:
@@ -185,9 +190,10 @@ def _actuals(payload: dict[str, Any], game: dict[str, Any]) -> dict[str, Any]:
                     "team": team,
                     "stats": {str(label): _stat_value(values[index] if index < len(values) else None) for index, label in enumerate(labels)},
                 })
-    available = bool(team_stats or any(groups.values()))
+    has_stats = bool(team_stats or any(groups.values()))
+    available = game.get("status") in ({"live", "halftime"} | FINAL_STATUSES) and has_stats
     score_available = game.get("awayScore") is not None and game.get("homeScore") is not None
-    return {"available": available, "scoreAvailable": score_available, "teamStats": team_stats, "playerGroups": [{"group": key, "items": value} for key, value in groups.items()]}
+    return {"available": available, "providerDataAvailable": has_stats, "scoreAvailable": score_available, "teamStats": team_stats, "playerGroups": [{"group": key, "items": value} for key, value in groups.items()]}
 
 
 def _prediction_snapshot(game_id: str, season: int, week: int | None, phase: str) -> dict[str, Any]:
@@ -271,7 +277,7 @@ def _stale_audit(game: dict[str, Any], previous: dict[str, Any] | None, checked_
     scores_available = game.get("awayScore") is not None and game.get("homeScore") is not None
     if game.get("status") not in FINAL_STATUSES and scores_available and now_dt > kickoff + timedelta(hours=4):
         reasons.append("FINAL_SCORE_WITH_NONFINAL_STATUS")
-    if game.get("status") not in FINAL_STATUSES and actuals.get("available") and now_dt > kickoff + timedelta(hours=4):
+    if game.get("status") not in FINAL_STATUSES and actuals.get("providerDataAvailable") and now_dt > kickoff + timedelta(hours=4):
         reasons.append("STATS_WITH_NONFINAL_STATUS")
     if game.get("status") in FINAL_STATUSES and not actuals.get("available"):
         reasons.append("MISSING_FINAL_BOX_SCORE")
@@ -290,19 +296,14 @@ def _assemble(game_id: str, payload: dict[str, Any], previous_response: dict[str
     actuals = _actuals(payload, game)
     predictions = _prediction_snapshot(game_id, game["season"], game.get("week"), game["seasonPhase"])
     fixture = payload.get("_smartbetFixture") or {}
-    team_context = fixture.get("teamContext") or {
-        "available": False,
-        "label": "PREGAME CONTEXT",
-        "source": "unavailable",
-        "reason": "Pregame-only team averages are not available from the authoritative game feed.",
-        "teams": [],
-    }
+    team_context = fixture.get("teamContext") or build_team_context(game)
     if fixture.get("predictions"):
         predictions = fixture["predictions"]
     audit = _stale_audit(game, previous_game, checked_at, actuals)
     deterministic_final = {"FINAL_SCORE_WITH_NONFINAL_STATUS", "STATS_WITH_NONFINAL_STATUS"}.issubset(audit["reasonCodes"])
     if deterministic_final:
         game["status"] = "final"
+        actuals["available"] = actuals.get("providerDataAvailable", False)
         audit.update({"repaired": True, "repairAction": "ADVANCE_TO_FINAL_FROM_SCORE_AND_BOX_SCORE"})
     source_updated = game.get("statusUpdatedAt")
     source_age = max(0, int((parse_provider_timestamp(checked_at) - parse_provider_timestamp(source_updated)).total_seconds())) if source_updated else None

@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import GlowCard from '@/components/ui/GlowCard';
 import UpcomingGameCard from '@/components/games/UpcomingGameCard';
 import { api } from '@/lib/api';
+import CatalogSearch from '@/components/search/CatalogSearch';
 
 const GAME_FILTERS = ['All', 'Upcoming', 'Live', 'Final'];
 const LIVE = new Set(['live', 'halftime']);
@@ -74,6 +75,7 @@ function DashboardInner() {
 
   return <main className="mx-auto min-h-screen max-w-7xl px-6 pt-12 md:pt-16">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-4xl font-black tracking-[-.06em] md:text-5xl">Welcome back, {user?.name}</h1><p className="mt-2 text-slate-300">Account-scoped activity excludes legacy records without ownership.</p></div><Link href="/analyze" className="btn btn-primary">Start New Analysis</Link></div>
+    <CatalogSearch />
     {error ? <GlowCard className="mt-6 p-4 text-red-100">Dashboard metrics unavailable. <button onClick={() => location.reload()} className="ml-2 underline">Retry</button></GlowCard> : null}
     <div className="mt-8 grid gap-4 md:grid-cols-5">{[['Saved analyses', summary.savedAnalyses || 0], ['Individual predictions', summary.individualPredictions || 0], ['Graded predictions', summary.gradedPredictions || 0], ['Saved parlays', summary.savedParlays || 0], ['Accuracy', summary.overallAccuracy == null ? 'Not enough data' : `${summary.overallAccuracy}%`]].map(([label, value]) => <GlowCard key={label} className="p-5"><p className="text-sm text-slate-400">{label}</p><p className="mt-2 text-3xl font-black">{value}</p></GlowCard>)}</div>
     <section className="mt-6 grid items-start gap-4 lg:grid-cols-[.9fr_1.1fr]">

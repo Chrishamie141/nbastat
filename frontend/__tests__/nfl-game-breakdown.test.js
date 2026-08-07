@@ -32,7 +32,26 @@ test('game detail separates pregame context, actual result, and final comparison
 });
 
 test('canonical NFL route includes loading and error boundaries', () => {
-  for (const file of ['app/nfl/games/[gameId]/page.jsx', 'app/nfl/games/[gameId]/loading.jsx', 'app/nfl/games/[gameId]/error.jsx']) {
+  for (const file of ['app/nfl/games/[gameId]/page.jsx', 'app/nfl/games/[gameId]/loading.jsx', 'app/nfl/games/[gameId]/error.jsx', 'app/nfl/games/[gameId]/not-found.jsx']) {
     assert.ok(fs.existsSync(path.join(root, file)), `${file} should exist`);
   }
+});
+
+test('game UI labels prior-season context and client requests are bounded', () => {
+  assert.match(read('components/games/NflGameBreakdown.jsx'), /game results are never backfilled/);
+  assert.match(read('lib/api.js'), /AbortController/);
+  assert.match(read('lib/api.js'), /error\?\.message/);
+});
+
+test('search and history failures do not masquerade as empty results', () => {
+  assert.match(read('components/analyze/TeamSelector.jsx'), /Team search service unavailable/);
+  assert.match(read('components/search/CatalogSearch.jsx'), /This is not a zero-result search/);
+  assert.match(read('app/history/page.jsx'), /History service unavailable/);
+});
+
+test('analysis action is contextual and duplicate restart control is removed', () => {
+  const source = read('app/analyze/page.jsx');
+  assert.match(source, /Analysis running…/);
+  assert.match(source, /Retry Analysis/);
+  assert.doesNotMatch(source, />Restart<\/button>/);
 });

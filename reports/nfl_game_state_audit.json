@@ -1,0 +1,51 @@
+{
+  "games": [
+    {
+      "checkedAt": "2026-08-07T18:44:06Z",
+      "gameId": "401873271",
+      "kickoff": "2026-08-07T00:00:00Z",
+      "lastLocalRefresh": "2026-08-07T18:44:06Z",
+      "phaseWeekKey": "2026:preseason:w1",
+      "playerStatsAvailable": true,
+      "providerStatus": "Final",
+      "providerUpdatedAt": null,
+      "reasonCodes": [],
+      "repairAction": null,
+      "repaired": false,
+      "result": "OK",
+      "scoreAvailable": true,
+      "stale": false,
+      "status": "final",
+      "suspectedIssue": [],
+      "teams": {
+        "away": "CAR",
+        "home": "ARI"
+      }
+    },
+    {
+      "checkedAt": "2026-08-07T18:44:06Z",
+      "gameId": "401873272",
+      "kickoff": "2026-08-13T23:00:00Z",
+      "lastLocalRefresh": "2026-08-07T18:44:06Z",
+      "phaseWeekKey": "2026:preseason:w2",
+      "playerStatsAvailable": false,
+      "providerStatus": "Thu, August 13th at 7:00 PM EDT",
+      "providerUpdatedAt": null,
+      "reasonCodes": [],
+      "repairAction": null,
+      "repaired": false,
+      "result": "OK",
+      "scoreAvailable": false,
+      "stale": false,
+      "status": "scheduled",
+      "suspectedIssue": [],
+      "teams": {
+        "away": "DET",
+        "home": "CIN"
+      }
+    }
+  ],
+  "generatedAt": "2026-08-07T18:44:06Z",
+  "paidProviderContacted": false,
+  "source": "espn_summary"
+}
