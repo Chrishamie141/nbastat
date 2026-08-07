@@ -1,7 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
 import logging
+import requests
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -15,7 +16,13 @@ from backend.app.api.billing import router as billing_router
 from backend.app.services.entitlement_service import require_full_access
 from backend.app.services.auth_service import current_user
 from backend.app.services.sports_mode_service import get_sports_mode
-from backend.app.services.schedule_service import upcoming_games
+from backend.app.services.schedule_service import refresh_games, upcoming_games
+from backend.app.services.nfl_game_service import (
+    GameNotFoundError,
+    InvalidGameIdError,
+    get_nfl_game_detail,
+    refresh_nfl_game_detail,
+)
 from backend.app.services.team_metadata import teams_for_league
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
 from backend.app.database import get_db_connection, table_exists, using_postgres
@@ -63,17 +70,53 @@ def api_teams(league: str=Query(..., pattern="^(nfl|nba)$")):
     return {"teams":[t.model_dump(mode="json") for t in teams_for_league(league)]}
 
 @app.get("/api/games/upcoming")
-def api_upcoming_games(league: str|None=None, limit: int=Query(8, ge=1, le=20)):
+def api_upcoming_games(league: str|None=None, limit: int=Query(8, ge=1, le=20), include_completed: bool=False):
     sm=get_sports_mode(); leagues=[league.lower()] if league else sm.activeLeagues
     leagues=[l for l in leagues if l in sm.activeLeagues and l in {"nfl","nba"}]
-    games=upcoming_games(leagues, limit=limit) if leagues else []
+    start=datetime.now(timezone.utc)-timedelta(days=7) if include_completed else None
+    games=upcoming_games(leagues, limit=limit, start=start, include_completed=include_completed) if leagues else []
     return {"items":[g.model_dump(mode="json") for g in games],"sportsMode":sm.model_dump(mode="json"),"lastUpdated":now(),"source": games[0].dataProvider if games else sm.source}
 
 @app.get("/api/games/featured")
 def api_featured_game():
     sm=get_sports_mode(); games=upcoming_games(sm.activeLeagues, limit=20) if sm.activeLeagues else []
-    featured=max(games, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
+    featured_pool=[game for game in games if game.status not in {'final','final-OT','canceled','postponed'}]
+    featured=max(featured_pool, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
     return FeaturedGame(game=featured, reason="Highest deterministic watch-interest score from upcoming schedule signals." if featured else "No upcoming supported games are available.").model_dump(mode="json")
+
+@app.post("/api/games/refresh")
+def api_refresh_games(user=Depends(require_full_access)):
+    sm=get_sports_mode()
+    try:
+        games,coalesced=refresh_games(sm.activeLeagues,limit=20) if sm.activeLeagues else ([],False)
+        return {"items":[game.model_dump(mode="json") for game in games],"lastUpdated":now(),"coalesced":coalesced,"paidProviderContacted":False}
+    except requests.RequestException as exc:
+        logger.exception("Dashboard schedule refresh failed",extra={"user_id":user.get("id")})
+        raise HTTPException(503,"Game schedule refresh is temporarily unavailable.") from exc
+
+@app.get("/api/nfl/games/{game_id}")
+def api_nfl_game_detail(game_id: str):
+    try:
+        return get_nfl_game_detail(game_id)
+    except InvalidGameIdError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except GameNotFoundError as exc:
+        raise HTTPException(404, "NFL game was not found.") from exc
+    except requests.RequestException as exc:
+        logger.exception("NFL game provider request failed", extra={"game_id": game_id})
+        raise HTTPException(503, "NFL game data is temporarily unavailable.") from exc
+
+@app.post("/api/nfl/games/{game_id}/refresh")
+def api_refresh_nfl_game(game_id: str, user=Depends(require_full_access)):
+    try:
+        return refresh_nfl_game_detail(game_id)
+    except InvalidGameIdError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except GameNotFoundError as exc:
+        raise HTTPException(404, "NFL game was not found.") from exc
+    except requests.RequestException as exc:
+        logger.exception("NFL game manual refresh failed", extra={"game_id": game_id, "user_id": user.get("id")})
+        raise HTTPException(503, "NFL game refresh is temporarily unavailable.") from exc
 
 @app.get("/api/dashboard")
 def dashboard(request: Request, user=Depends(require_full_access)):
@@ -94,13 +137,14 @@ def dashboard(request: Request, user=Depends(require_full_access)):
     sm=get_sports_mode(); errors={}; games=[]
     if sm.activeLeagues:
         try:
-            games=upcoming_games(sm.activeLeagues, limit=8)
+            games=upcoming_games(sm.activeLeagues, limit=20, start=datetime.now(timezone.utc)-timedelta(days=7), include_completed=True)
         except Exception:
             errors['upcomingGames']='Upcoming schedule unavailable'
-    featured=max(games, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
+    featured_pool=[game for game in games if game.status not in {'final','final-OT','canceled','postponed'}]
+    featured=max(featured_pool, key=lambda g:(g.watchScore, -g.startTimeUtc.timestamp()), default=None)
     if sm.activeLeagues and not featured and errors.get('upcomingGames'):
         errors['featuredGame']='Featured game unavailable'
-    return {"summary":metrics.model_dump(mode="json"),"sportsMode":sm.model_dump(mode="json"),"featuredGame":featured.model_dump(mode="json") if featured else None,"upcomingGames":[g.model_dump(mode="json") for g in games],"errors":errors,"recent":recent,"series":[]}
+    return {"summary":metrics.model_dump(mode="json"),"sportsMode":sm.model_dump(mode="json"),"featuredGame":featured.model_dump(mode="json") if featured else None,"upcomingGames":[g.model_dump(mode="json") for g in games],"errors":errors,"recent":recent,"series":[],"lastUpdated":now()}
 
 @app.post("/api/analyze/nfl/parlay")
 def nfl_parlay(payload: dict, user=Depends(require_full_access)):

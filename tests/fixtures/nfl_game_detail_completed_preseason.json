@@ -1,0 +1,52 @@
+{
+  "header": {
+    "season": {"year": 2026, "type": {"id": 1, "name": "Preseason"}},
+    "week": {"number": 1},
+    "competitions": [{
+      "date": "2026-08-05T00:00:00Z",
+      "status": {"lastUpdated": "2026-08-05T03:10:00Z", "type": {"name": "STATUS_SCHEDULED", "detail": "Scheduled", "completed": false}},
+      "venue": {"fullName": "Fixture Field", "address": {"city": "Canton", "state": "OH"}},
+      "competitors": [
+        {"homeAway": "home", "score": "24", "team": {"id": "2", "abbreviation": "BUF", "displayName": "Buffalo Bills"}},
+        {"homeAway": "away", "score": "17", "team": {"id": "15", "abbreviation": "MIA", "displayName": "Miami Dolphins"}}
+      ],
+      "broadcasts": [{"names": ["NFL Network"]}]
+    }]
+  },
+  "boxscore": {
+    "teams": [
+      {"team": {"abbreviation": "MIA"}, "statistics": [{"name": "totalYards", "label": "Total Yards", "displayValue": "301"}]},
+      {"team": {"abbreviation": "BUF"}, "statistics": [{"name": "totalYards", "label": "Total Yards", "displayValue": "356"}]}
+    ],
+    "players": [
+      {"team": {"abbreviation": "MIA"}, "statistics": [{"name": "receiving", "labels": ["REC", "YDS", "TD", "TGTS"], "athletes": [{"athlete": {"id": "9001", "displayName": "Fixture Receiver", "position": {"abbreviation": "WR"}}, "stats": ["4", "62", "1", "6"]}]}]},
+      {"team": {"abbreviation": "BUF"}, "statistics": []}
+    ]
+  },
+  "_smartbetFixture": {
+    "teamContext": {
+      "available": true,
+      "label": "PREGAME CONTEXT",
+      "source": "deterministic test fixture prior-games rollup",
+      "reason": null,
+      "teams": [
+        {"team": "MIA", "games": 3, "metrics": {"pointsPerGame": 20.3, "yardsPerGame": 319.0}},
+        {"team": "BUF", "games": 3, "metrics": {"pointsPerGame": 23.0, "yardsPerGame": 341.7}}
+      ]
+    },
+    "predictions": {
+      "available": true,
+      "frozen": true,
+      "modelVersion": "fixture-system-a-frozen-v1",
+      "predictionCutoff": "2026-08-04T23:55:00Z",
+      "generatedAt": "2026-08-04T22:00:00Z",
+      "researchPolicyId": "nfl_system_a_forward_shadow_v1",
+      "groups": [
+        {"group": "receiving", "items": [{"playerId": "9001", "playerName": "Fixture Receiver", "team": "MIA", "market": "receiving_yards", "line": 55.5, "mean": 58.0, "variance": 144.0, "quantiles": {"p10": 39, "p25": 47, "p50": 58, "p75": 69, "p90": 77}, "historyDepth": 8, "stability": {"available": true, "class": "MEDIUM_STABILITY", "score": 68.0}, "unresolvedFlags": [], "probabilities": {"over": 0.57, "under": 0.43}}]},
+        {"group": "passing", "items": []},
+        {"group": "rushing", "items": []},
+        {"group": "receptions", "items": []}
+      ]
+    }
+  }
+}

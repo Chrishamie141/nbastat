@@ -33,7 +33,15 @@ class UpcomingGame(CamelModel):
     homeTeam: TeamSummary
     startTimeUtc: datetime
     status: str = 'scheduled'
+    statusDetail: str | None = None
+    statusUpdatedAt: datetime | None = None
+    awayScore: int | None = None
+    homeScore: int | None = None
+    season: int | None = None
+    week: int | None = None
+    phaseWeekKey: str | None = None
     venue: str | None = None
+    city: str | None = None
     broadcast: list[str] = Field(default_factory=list)
     nationalBroadcast: bool = False
     watchScore: int = 0

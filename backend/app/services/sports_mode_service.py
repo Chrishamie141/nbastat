@@ -35,7 +35,7 @@ def get_sports_mode(now=None):
         look=int(os.getenv('SCHEDULE_LOOKAHEAD_DAYS','30'))
         games=upcoming_games(['nfl','nba'], limit=50, start=datetime.now(timezone.utc)-timedelta(days=2), end=datetime.now(timezone.utc)+timedelta(days=look))
         source='schedule'
-        active=sorted(set(g.league for g in games if g.status not in {'postponed','cancelled'}))
+        active=sorted(set(g.league for g in games if g.status not in {'postponed','canceled'}))
     except Exception:
         active=[]
     if not active:

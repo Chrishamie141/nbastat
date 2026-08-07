@@ -1,0 +1,37 @@
+{
+  "games": [
+    {
+      "checkedAt": "2026-08-07T17:22:05Z",
+      "gameId": "401000001",
+      "kickoff": "2026-08-05T00:00:00Z",
+      "lastLocalRefresh": "2026-08-07T17:22:05Z",
+      "phaseWeekKey": "2026:preseason:w1",
+      "playerStatsAvailable": true,
+      "providerStatus": "Scheduled",
+      "providerUpdatedAt": "2026-08-05T03:10:00Z",
+      "reasonCodes": [
+        "STALE_SCHEDULE_STATUS",
+        "FINAL_SCORE_WITH_NONFINAL_STATUS",
+        "STATS_WITH_NONFINAL_STATUS"
+      ],
+      "repairAction": "ADVANCE_TO_FINAL_FROM_SCORE_AND_BOX_SCORE",
+      "repaired": true,
+      "result": "REPAIRED",
+      "scoreAvailable": true,
+      "stale": true,
+      "status": "final",
+      "suspectedIssue": [
+        "STALE_SCHEDULE_STATUS",
+        "FINAL_SCORE_WITH_NONFINAL_STATUS",
+        "STATS_WITH_NONFINAL_STATUS"
+      ],
+      "teams": {
+        "away": "MIA",
+        "home": "BUF"
+      }
+    }
+  ],
+  "generatedAt": "2026-08-07T17:22:05Z",
+  "paidProviderContacted": false,
+  "source": "fixture"
+}
