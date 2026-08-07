@@ -32,7 +32,15 @@ _LIBPQ_QUERY_PARAMETERS = {
 
 
 def database_url() -> str:
-    return os.getenv("DATABASE_URL", "sqlite:///./predictions.db").strip()
+    # Vercel's Supabase integration provisions POSTGRES_URL.  Keep
+    # DATABASE_URL as the explicit override used by local and non-Vercel
+    # deployments, but consume the integration value automatically when it
+    # is available so production never falls back to ephemeral SQLite.
+    return (
+        os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or "sqlite:///./predictions.db"
+    ).strip()
 
 
 def using_postgres() -> bool:
