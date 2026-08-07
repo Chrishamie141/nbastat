@@ -15,7 +15,12 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 def _player_index() -> tuple[list[dict[str, Any]], int | None]:
     paths = sorted((BASE_DIR / "backtesting" / "data" / "snapshots" / "nfl").glob("*/week_*/player_identities.json"), reverse=True)
     if not paths:
-        return [], None
+        runtime_path = BASE_DIR / "data" / "nfl_player_search_index.json"
+        if not runtime_path.exists():
+            return [], None
+        rows = json.loads(runtime_path.read_text(encoding="utf-8"))
+        season = max((int(row.get("season") or 0) for row in rows), default=0) or None
+        return [{"type": "player", "id": str(row["id"]), "name": row["name"], "team": row.get("team"), "position": row.get("position"), "contextSeasonUsed": season, "fallbackUsed": bool(season and season < datetime.now(timezone.utc).year)} for row in rows], season
     path = paths[0]
     rows = json.loads(path.read_text(encoding="utf-8"))
     season = int(path.parents[1].name)

@@ -39,3 +39,20 @@ def test_normalized_validation_error_contract():
     response = TestClient(app).get("/api/search?q=x")
     assert response.status_code == 422
     assert response.json()["error"] == {"code": "VALIDATION_ERROR", "message": "The request did not match the expected schema.", "retryable": False}
+
+
+def test_compact_runtime_catalogs_work_when_research_snapshots_are_not_deployed(tmp_path, monkeypatch):
+    import json
+    from backend.app.services import nfl_context_service, search_service
+
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "nfl_team_context_history.json").write_text(json.dumps([{"game_id": "espn-1", "team": "DET", "season": 2025, "record_role": "completed_game_history", "points_for": 24, "points_against": 17}]))
+    (data / "nfl_player_search_index.json").write_text(json.dumps([{"id": "3139477", "name": "Patrick Mahomes", "team": "KC", "position": "QB", "season": 2026}]))
+    monkeypatch.setattr(nfl_context_service, "BASE_DIR", tmp_path)
+    monkeypatch.setattr(search_service, "BASE_DIR", tmp_path)
+    search_service._player_index.cache_clear()
+    rows, source = nfl_context_service._season_rows(2025)
+    assert rows[0]["team"] == "DET" and source.name == "nfl_team_context_history.json"
+    assert any(item["name"] == "Patrick Mahomes" for item in search_service.search_catalog("mahom")["items"])
+    search_service._player_index.cache_clear()

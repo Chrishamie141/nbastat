@@ -60,6 +60,15 @@ def prediction_store_health() -> dict[str, Any]:
                 readable += 1
         except (OSError, json.JSONDecodeError):
             continue
+    if not readable:
+        runtime_path = BASE_DIR / "data" / "nfl_recent_player_stats.json"
+        try:
+            payload = json.loads(runtime_path.read_text(encoding="utf-8"))
+            if isinstance(payload.get("players"), dict) and payload["players"]:
+                readable = 1
+                latest = runtime_path
+        except (OSError, json.JSONDecodeError, AttributeError):
+            pass
     return {
         "status": "healthy" if readable else "degraded",
         "readableArtifacts": readable,
@@ -76,13 +85,21 @@ def readiness_report() -> dict[str, Any]:
     status = "healthy" if required_ok and predictions["status"] == "healthy" else "degraded" if required_ok else "unhealthy"
     snapshots = sorted((BASE_DIR / "backtesting" / "data" / "snapshots" / "nfl").glob("*/week_*/team_stats.json"))
     seasons = sorted({int(path.parents[1].name) for path in snapshots if path.parents[1].name.isdigit()})
+    context_count = len(snapshots)
+    if not snapshots:
+        try:
+            runtime_rows = json.loads((BASE_DIR / "data" / "nfl_team_context_history.json").read_text(encoding="utf-8"))
+            seasons = sorted({int(row["season"]) for row in runtime_rows})
+            context_count = len(runtime_rows)
+        except (OSError, json.JSONDecodeError, KeyError, ValueError):
+            pass
     return {
         "status": status,
         "generatedAt": _utc_now(),
         "version": "2.0.0",
         "database": database,
         "predictionStore": predictions,
-        "historicalContextStore": {"status": "healthy" if snapshots else "degraded", "seasons": seasons, "artifactCount": len(snapshots)},
+        "historicalContextStore": {"status": "healthy" if context_count else "degraded", "seasons": seasons, "artifactCount": context_count},
         "gameStatusSource": {"status": "configured", "provider": "ESPN free scoreboard/summary", "liveProbePerformed": False},
         "dependencyPolicy": {"database": "REQUIRED", "predictionStore": "DEGRADED_ALLOWED", "historicalContextStore": "DEGRADED_ALLOWED", "weather": "OPTIONAL"},
     }

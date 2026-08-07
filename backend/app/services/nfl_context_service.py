@@ -26,7 +26,18 @@ def _season_rows(season: int) -> tuple[list[dict[str, Any]], Path | None]:
                 key = (str(row.get("game_id") or ""), str(row.get("team") or ""))
                 if all(key):
                     combined[key] = row
-    return list(combined.values()), root if combined else None
+    if combined:
+        return list(combined.values()), root
+    runtime_path = BASE_DIR / "data" / "nfl_team_context_history.json"
+    if runtime_path.exists():
+        try:
+            rows = json.loads(runtime_path.read_text(encoding="utf-8"))
+            selected = [row for row in rows if int(row.get("season") or 0) == season]
+            if selected:
+                return selected, runtime_path
+        except (OSError, json.JSONDecodeError, ValueError):
+            logger.exception("nfl_runtime_context_unreadable", extra={"season": season})
+    return [], None
 
 
 def _team_summary(rows: list[dict[str, Any]], team: str, game_id: str) -> dict[str, Any] | None:
