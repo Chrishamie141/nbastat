@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/index.py": {
-      "includeFiles": "data/*.json"
+      "includeFiles": "{data/*.json,backtesting/data/snapshots/nfl/**/team_stats.json,backtesting/data/snapshots/nfl/**/player_prop_predictions.json,backtesting/data/snapshots/nfl/2026/week_01/player_identities.json,backtesting/data/snapshots/nfl/2025/week_18/player_identities.json}"
     }
   },
   "rewrites": [
