@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 
@@ -28,6 +29,52 @@ def test_weekly_profiles_keep_every_game_and_only_change_recommendation(monkeypa
     assert safe["items"][0]["winner"] == aggressive["items"][0]["winner"]
     assert safe["items"][0]["winProbability"] == aggressive["items"][0]["winProbability"]
     assert int(aggressive["items"][0]["recommended"]) >= int(safe["items"][0]["recommended"])
+
+
+def test_schedule_uses_espn_cdn_when_scoreboard_is_blocked(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    event = {
+        "id": "401-test",
+        "date": "2026-09-13T17:00Z",
+        "competitions": [{
+            "venue": {"fullName": "Test Stadium"},
+            "broadcasts": [{"names": ["CBS"]}],
+            "competitors": [
+                {"homeAway": "home", "score": "0", "team": {"abbreviation": "BUF", "displayName": "Buffalo Bills"}},
+                {"homeAway": "away", "score": "0", "team": {"abbreviation": "MIA", "displayName": "Miami Dolphins"}},
+            ],
+        }],
+        "status": {"type": {"state": "pre", "completed": False}},
+    }
+    payload = {"content": {"schedule": {"20260913": {"games": [event]}}}}
+    requested = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(payload).encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        requested.append(request.full_url)
+        if request.full_url.startswith(service.ESPN_SCOREBOARD):
+            raise OSError("scoreboard blocked")
+        return Response()
+
+    service._schedule.cache_clear()
+    monkeypatch.setattr(service, "urlopen", fake_urlopen)
+    games = service._schedule(2026, 1)
+
+    assert len(requested) == 2
+    assert requested[1].startswith(service.ESPN_SCHEDULE_CDN)
+    assert games[0]["home_team"] == "BUF"
+    assert games[0]["away_team"] == "MIA"
+    assert games[0]["status"] == "scheduled"
 
 
 def test_historical_games_never_reconstruct_missing_pregame_prediction(monkeypatch, tmp_path):

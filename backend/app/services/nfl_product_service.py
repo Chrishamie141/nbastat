@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 HISTORY_PATH = ROOT / "data/nfl_team_game_history.json"
 ROSTER_PATH = ROOT / "data/nfl_roster_2026.json"
 ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+ESPN_SCHEDULE_CDN = "https://cdn.espn.com/core/nfl/schedule"
 PROFILE_MINIMUM = {"SAFE": 0.62, "BALANCED": 0.57, "AGGRESSIVE": 0.52}
 DEPTH_SLOTS = ["QB", "RB", "WR1", "WR2", "WR3", "TE", "LT", "LG", "C", "RG", "RT",
                "EDGE1", "DT1", "DT2", "EDGE2", "LB1", "LB2", "CB1", "CB2", "S1", "S2", "FLEX"]
@@ -36,11 +37,26 @@ def _abbr(value: str | None) -> str:
 @lru_cache(maxsize=64)
 def _schedule(season: int, week: int) -> list[dict]:
     query = urlencode({"dates": season, "seasontype": 2, "week": week, "limit": 100})
-    request = Request(f"{ESPN_SCOREBOARD}?{query}", headers={"User-Agent": "Mozilla/5.0 SmartBetSports/2.0", "Accept": "application/json"})
-    with urlopen(request, timeout=12) as response:  # nosec - fixed ESPN endpoint
-        payload = json.loads(response.read().decode("utf-8"))
+    cdn_query = urlencode({"xhr": 1, "year": season, "week": week, "seasontype": 2})
+    payload = None
+    last_error = None
+    for url in (f"{ESPN_SCOREBOARD}?{query}", f"{ESPN_SCHEDULE_CDN}?{cdn_query}"):
+        request = Request(url, headers={"User-Agent": "Mozilla/5.0 SmartBetSports/2.0", "Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=12) as response:  # nosec - fixed ESPN endpoints
+                payload = json.loads(response.read().decode("utf-8"))
+            break
+        except Exception as exc:
+            last_error = exc
+    if payload is None:
+        raise RuntimeError("All verified NFL schedule providers failed") from last_error
+
+    events = payload.get("events")
+    if events is None:
+        schedule = payload.get("content", {}).get("schedule", {})
+        events = [game for day in schedule.values() for game in day.get("games", [])]
     games = []
-    for event in payload.get("events", []):
+    for event in events:
         competition = (event.get("competitions") or [{}])[0]
         teams = {row.get("homeAway"): row for row in competition.get("competitors", [])}
         if not teams.get("home") or not teams.get("away"):
