@@ -10,7 +10,7 @@ os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_placeholder")
 os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_test")
 os.environ.setdefault("STRIPE_FOUNDING_MONTHLY_PRICE_ID", "price_founder")
 
-from backend.app.database import get_db_connection, initialize_billing_database
+from backend.app.database import database_url, get_db_connection, initialize_billing_database
 from backend.app.services.auth_service import create_token
 from backend.app.services.entitlement_service import current_entitlement_for_user_id, require_full_access
 from backend.app.api import billing
@@ -39,6 +39,19 @@ def isolated_billing_database(tmp_path, monkeypatch):
 def test_checkout_requires_authentication():
     with pytest.raises(Exception) as exc: billing.create_checkout_session(Req())
     assert exc.value.status_code == 401
+
+
+def test_database_url_uses_vercel_postgres_fallback(monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("POSTGRES_URL", "postgresql://pooled.example/app")
+    monkeypatch.setenv("POSTGRES_URL_NON_POOLING", "postgresql://direct.example/app")
+    assert database_url() == "postgresql://pooled.example/app"
+
+
+def test_database_url_prefers_explicit_database_url(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///explicit.db")
+    monkeypatch.setenv("POSTGRES_URL", "postgresql://pooled.example/app")
+    assert database_url() == "sqlite:///explicit.db"
 
 def test_checkout_uses_authenticated_user_and_enables_promo(monkeypatch):
     calls={}

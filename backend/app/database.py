@@ -39,6 +39,7 @@ def database_url() -> str:
     return (
         os.getenv("DATABASE_URL")
         or os.getenv("POSTGRES_URL")
+        or os.getenv("POSTGRES_URL_NON_POOLING")
         or "sqlite:///./predictions.db"
     ).strip()
 
