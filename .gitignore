@@ -49,3 +49,5 @@ backtesting/data/provider_exports/
 # Temporary patch files
 codex.patch
 codex-cleaned.patch
+.vercel/
+.env.local
