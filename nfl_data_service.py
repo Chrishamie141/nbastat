@@ -176,7 +176,7 @@ def get_nfl_games() -> list[dict[str, Any]]:
     return _provider_get(fetch, lambda: list(NFL_SAMPLE_GAMES), "NFL games")
 
 
-def get_nfl_player_props(team: str | None = None) -> dict[str, dict[str, list[dict[str, Any]]]]:
+def get_nfl_player_props(team: str | None = None, game_teams: tuple[str, str] | None = None) -> dict[str, dict[str, list[dict[str, Any]]]]:
     def fetch():
         key = _odds_key()
         if not key:
@@ -196,6 +196,11 @@ def get_nfl_player_props(team: str | None = None) -> dict[str, dict[str, list[di
                 continue
             if team_key and team_key not in {_team_abbreviation(game.get("home_team")), _team_abbreviation(game.get("away_team"))}:
                 continue
+            if game_teams:
+                requested = {_team_abbreviation(value) for value in game_teams}
+                actual = {_team_abbreviation(game.get("home_team")), _team_abbreviation(game.get("away_team"))}
+                if requested != actual:
+                    continue
 
             event = _fetch_json(f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/events/{event_id}/odds?{params}")
             for bookmaker in event.get("bookmakers", []):
@@ -237,7 +242,11 @@ def get_nfl_team_lines(team: str | None = None) -> list[dict[str, Any]]:
             for bookmaker in game.get("bookmakers", []):
                 for market in bookmaker.get("markets", []):
                     for outcome in market.get("outcomes", []):
-                        lines.append({"game_id": game.get("id"), "market": market.get("key"), "team": outcome.get("name"), "line": outcome.get("point"), "odds": outcome.get("price"), "bookmaker": bookmaker.get("title"), "provider": "the-odds-api"})
+                        lines.append({"game_id": game.get("id"), "home_team": game.get("home_team"),
+                                      "away_team": game.get("away_team"), "commence_time": game.get("commence_time"),
+                                      "market": market.get("key"), "team": outcome.get("name"),
+                                      "line": outcome.get("point"), "odds": outcome.get("price"),
+                                      "bookmaker": bookmaker.get("title"), "provider": "the-odds-api"})
         return lines
     return _provider_get(fetch, lambda: get_team_market_placeholders(team or "NFL"), "NFL team lines")
 
