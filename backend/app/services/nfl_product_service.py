@@ -158,7 +158,10 @@ def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | 
             winner = game["home_team"] if home_probability >= 0.5 else game["away_team"]
             probability = home_probability if winner == game["home_team"] else 1 - home_probability
             implied = market["homeImpliedProbability"] if winner == game["home_team"] else market["awayImpliedProbability"]
+            home_probability_display = round(home_probability, 4)
             prediction = {"winner": winner, "winProbability": round(probability, 4),
+                          "homeWinProbability": home_probability_display,
+                          "awayWinProbability": round(1 - home_probability_display, 4),
                           "confidence": round(projection.confidence, 1),
                           "projectedHomeScore": round(projection.home_points, 1),
                           "projectedAwayScore": round(projection.away_points, 1),

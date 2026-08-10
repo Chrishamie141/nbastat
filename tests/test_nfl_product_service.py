@@ -28,6 +28,9 @@ def test_weekly_profiles_keep_every_game_and_only_change_recommendation(monkeypa
     assert safe["items"][0]["predictionStatus"] == "available"
     assert safe["items"][0]["winner"] == aggressive["items"][0]["winner"]
     assert safe["items"][0]["winProbability"] == aggressive["items"][0]["winProbability"]
+    assert 0 <= safe["items"][0]["homeWinProbability"] <= 1
+    assert 0 <= safe["items"][0]["awayWinProbability"] <= 1
+    assert safe["items"][0]["homeWinProbability"] + safe["items"][0]["awayWinProbability"] == 1
     assert int(aggressive["items"][0]["recommended"]) >= int(safe["items"][0]["recommended"])
 
 
