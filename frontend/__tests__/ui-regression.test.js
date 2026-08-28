@@ -1,23 +1,23 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("fs");
 
-test('dashboard hides public mode/disclaimer/watch score UI', () => {
-  const page = fs.readFileSync('app/dashboard/page.jsx','utf8');
+test("dashboard hides public mode/disclaimer/watch score UI", () => {
+  const page = fs.readFileSync("app/dashboard/page.jsx", "utf8");
   assert.doesNotMatch(page, /modeLabel|Editorial watchability|Watch \{/);
   assert.match(page, /NFL game board/);
   assert.match(page, /NflMatchup/);
 });
 
-test('game card does not duplicate abbreviation before full team name or watch score', () => {
-  const card = fs.readFileSync('components/games/UpcomingGameCard.jsx','utf8');
+test("game card does not duplicate abbreviation before full team name or watch score", () => {
+  const card = fs.readFileSync("components/games/UpcomingGameCard.jsx", "utf8");
   assert.doesNotMatch(card, /Watch \{/);
   assert.doesNotMatch(card, /team\?\.abbreviation.*team\?\.name/);
   assert.match(card, /National broadcast/);
 });
 
-test('analyze page routes NFL winner choices and keeps the NBA team selector', () => {
-  const page = fs.readFileSync('app/analyze/page.jsx','utf8');
+test("analyze page routes NFL winner choices and keeps the NBA team selector", () => {
+  const page = fs.readFileSync("app/analyze/page.jsx", "utf8");
   assert.match(page, /Game Winners/);
   assert.match(page, /WinnerViewChoice/);
   assert.match(page, /All Weekly Picks/);
@@ -25,30 +25,42 @@ test('analyze page routes NFL winner choices and keeps the NBA team selector', (
   assert.doesNotMatch(page, /Optional team abbreviation|<select/);
 });
 
-test('production API requests use the same-origin Vercel backend rewrite', () => {
-  const api = fs.readFileSync('lib/api.js','utf8');
-  const config = fs.readFileSync('next.config.mjs','utf8');
-  assert.match(api, /NEXT_PUBLIC_API_URL\|\|''/);
+test("production API requests use the same-origin Vercel backend rewrite", () => {
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  const config = fs.readFileSync("next.config.mjs", "utf8");
+  assert.match(api, /NEXT_PUBLIC_API_URL\s*\|\|\s*["']{2}/);
   assert.doesNotMatch(api, /localhost:8000/);
   assert.match(config, /source: '\/api\/:path\*'/);
   assert.match(config, /smartbetsports-api\.vercel\.app/);
 });
 
-test('fantasy builder loads and persists a dedicated depth chart', () => {
-  const page = fs.readFileSync('app/fantasy/page.jsx','utf8');
-  const api = fs.readFileSync('lib/api.js','utf8');
+test("local browser automation fails closed instead of targeting production", () => {
+  const config = fs.readFileSync("next.config.mjs", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  assert.match(config, /http:\/\/127\.0\.0\.1:8000/);
+  assert.match(config, /ALLOW_LOCAL_PRODUCTION_MUTATIONS/);
+  assert.match(
+    config,
+    /Local development is configured for the production API/,
+  );
+  assert.doesNotMatch(api, /season = 2026/);
+});
+
+test("fantasy builder loads and persists a dedicated depth chart", () => {
+  const page = fs.readFileSync("app/fantasy/page.jsx", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
   assert.match(page, /Build your depth chart/);
   assert.match(page, /complete 2025 game production/);
   assert.match(page, /api\.nfl\.depthCharts/);
   assert.match(page, /api\.nfl\.saveDepthChart/);
-  assert.match(api, /depthCharts:\(scoring='PPR'\)/);
+  assert.match(api, /depthCharts:\s*\(scoring\s*=\s*["']PPR["']\)/);
 });
 
-test('NFL game surfaces share logos and complementary probability layout', () => {
-  const matchup = fs.readFileSync('components/games/NflMatchup.jsx','utf8');
-  const dashboard = fs.readFileSync('app/dashboard/page.jsx','utf8');
-  const games = fs.readFileSync('app/games/page.jsx','utf8');
-  const parlays = fs.readFileSync('app/parlays/page.jsx','utf8');
+test("NFL game surfaces share logos and complementary probability layout", () => {
+  const matchup = fs.readFileSync("components/games/NflMatchup.jsx", "utf8");
+  const dashboard = fs.readFileSync("app/dashboard/page.jsx", "utf8");
+  const games = fs.readFileSync("app/games/page.jsx", "utf8");
+  const parlays = fs.readFileSync("app/parlays/page.jsx", "utf8");
   assert.match(matchup, /TeamLogo/);
   assert.match(matchup, /homeWinProbability/);
   assert.match(matchup, /awayWinProbability/);
@@ -56,4 +68,47 @@ test('NFL game surfaces share logos and complementary probability layout', () =>
   assert.match(dashboard, /NflMatchup/);
   assert.match(games, /NflMatchup/);
   assert.match(parlays, /NflMatchup/);
+});
+
+test("weekly NFL surfaces distinguish preseason, probability, evidence, and value", () => {
+  const games = fs.readFileSync("app/games/page.jsx", "utf8");
+  const detail = fs.readFileSync("app/games/[slug]/page.jsx", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  assert.match(games, /Preseason/);
+  assert.match(games, /Hall of Fame Game/);
+  assert.match(games, /maxWeek = seasonType === "preseason" \? 3 : 18/);
+  assert.match(games, /model win probability/);
+  assert.match(games, /Evidence quality/);
+  assert.match(games, /not a\s+probability/);
+  assert.match(games, /No trustworthy pregame pick/);
+  assert.match(detail, /Market vs model/);
+  assert.match(api, /seasonType/);
+  assert.match(api, /weekPerformance/);
+});
+
+test("multi-game builder has a real generation action and explains rejected legs", () => {
+  const page = fs.readFileSync("app/parlays/page.jsx", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  assert.match(page, /generateMulti/);
+  assert.match(page, /Validate and build parlay/);
+  assert.match(page, /rejectedSelections/);
+  assert.match(page, /No sample legs were substituted/);
+  assert.match(api, /multiGameParlay/);
+});
+
+test("internal Week 3 experiment dashboard separates predictions from wagers", () => {
+  const page = fs.readFileSync(
+    "app/internal/experiments/week3/page.jsx",
+    "utf8",
+  );
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  const auth = fs.readFileSync("components/auth/AuthProvider.jsx", "utf8");
+  assert.match(page, /Experiment integrity/);
+  assert.match(page, /Winner record/);
+  assert.match(page, /Qualified record/);
+  assert.match(page, /Expected SHA-256/);
+  assert.match(page, /Frozen game ledger/);
+  assert.match(page, /INSUFFICIENT_SAMPLE|data\.calibration\.status/);
+  assert.match(api, /api\/internal\/nfl\/experiments/);
+  assert.match(auth, /['"]\/internal['"]/);
 });

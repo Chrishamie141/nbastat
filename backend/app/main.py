@@ -12,15 +12,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import get_config_status, print_config_status
 from backend.app.api.auth import router as auth_router
 from backend.app.api.billing import router as billing_router
-from backend.app.services.entitlement_service import require_full_access
+from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user
 from backend.app.services.sports_mode_service import get_sports_mode
 from backend.app.services.schedule_service import upcoming_games
 from backend.app.services.team_metadata import teams_for_league
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
 from backend.app.services.nfl_product_service import (
-    delete_depth_chart, fantasy_depth_chart_data, historical_games,
-    list_depth_charts, save_depth_chart, weekly_board,
+    build_multi_game_parlay, current_week_context, delete_depth_chart, fantasy_depth_chart_data,
+    historical_games, list_depth_charts, nfl_season_year, prediction_performance, save_depth_chart, weekly_board,
+)
+from backend.app.services.nfl_experiment_service import (
+    ExperimentIntegrityError, experiment_dashboard, grade_experiment,
 )
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
@@ -80,20 +83,71 @@ def api_featured_game():
     return FeaturedGame(game=featured, reason="Highest deterministic watch-interest score from upcoming schedule signals." if featured else "No upcoming supported games are available.").model_dump(mode="json")
 
 @app.get("/api/nfl/week")
-def api_nfl_week(season: int=Query(2026, ge=2025, le=2100), week: int=Query(1, ge=1, le=18),
-                 profile: str=Query("BALANCED"), day: str|None=None, user=Depends(require_full_access)):
+def api_nfl_week(season: int|None=Query(None, ge=2025, le=2100), week: int=Query(1, ge=0, le=18),
+                 profile: str=Query("BALANCED"), day: str|None=None,
+                 season_type: str=Query("regular", alias="seasonType"), user=Depends(require_full_access)):
     try:
-        return weekly_board(season, week, profile, int(user["id"]), day)
+        return weekly_board(season or nfl_season_year(), week, profile, int(user["id"]), day, season_type)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
         logger.exception("NFL weekly board unavailable")
         raise HTTPException(503, "The verified NFL weekly schedule is temporarily unavailable.") from exc
 
+@app.get("/api/nfl/context")
+def api_nfl_context(season: int|None=Query(None, ge=2025, le=2100), user=Depends(require_full_access)):
+    try:
+        return current_week_context(season or nfl_season_year())
+    except Exception as exc:
+        logger.exception("NFL current week context unavailable")
+        raise HTTPException(503, "The verified NFL schedule context is temporarily unavailable.") from exc
+
+
 @app.get("/api/nfl/games/history")
-def api_nfl_game_history(season: int=Query(2026, ge=2025, le=2100), user=Depends(require_full_access)):
-    return {"season": season, "items": historical_games(season, int(user["id"])),
+def api_nfl_game_history(season: int|None=Query(None, ge=2025, le=2100),
+                         season_type: str=Query("regular", alias="seasonType"), user=Depends(require_full_access)):
+    resolved_season = season or nfl_season_year()
+    return {"season": resolved_season, "seasonType": season_type,
+            "items": historical_games(resolved_season, int(user["id"]), season_type),
             "policy": "Only original stored pregame predictions are shown; missing snapshots are never reconstructed."}
+
+
+@app.get("/api/nfl/performance/week")
+def api_nfl_week_performance(season: int|None=Query(None, ge=2025, le=2100), week: int=Query(..., ge=0, le=18),
+                             season_type: str=Query("regular", alias="seasonType"), user=Depends(require_full_access)):
+    try:
+        return prediction_performance(season or nfl_season_year(), week, int(user["id"]), season_type)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/internal/nfl/experiments/{season}/{season_type}/{week}")
+def api_nfl_experiment_dashboard(
+    season: int, season_type: str, week: int,
+    refresh: bool = Query(True), user=Depends(require_internal_access),
+):
+    try:
+        return experiment_dashboard(season, season_type, week, refresh=refresh)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except ExperimentIntegrityError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("NFL experiment dashboard unavailable")
+        raise HTTPException(503, "The internal NFL experiment dashboard is temporarily unavailable.") from exc
+
+
+@app.post("/api/internal/nfl/experiments/{season}/{season_type}/{week}/grade")
+def api_grade_nfl_experiment(
+    season: int, season_type: str, week: int, user=Depends(require_internal_access),
+):
+    try:
+        return grade_experiment(season, season_type, week)
+    except ExperimentIntegrityError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("NFL experiment grading failed")
+        raise HTTPException(503, "Official experiment grading could not be completed.") from exc
 
 @app.get("/api/nfl/fantasy/depth-charts")
 def api_fantasy_depth_charts(scoring: str=Query("PPR"), user=Depends(require_full_access)):
@@ -179,6 +233,37 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
     except Exception as exc:
         logger.exception("NFL parlay generation failed")
         raise HTTPException(503,"Prediction data is temporarily unavailable.") from exc
+
+
+@app.post("/api/nfl/parlays/multi-game")
+def nfl_multi_game_parlay(payload: dict, user=Depends(require_full_access)):
+    selections = payload.get("selections") or []
+    if not isinstance(selections, list) or len(selections) > 16:
+        raise HTTPException(400, "Choose between 1 and 16 weekly game selections.")
+    try:
+        result, rejections = build_multi_game_parlay(
+            season=int(payload.get("season") or nfl_season_year()), week=int(payload.get("week") or 1),
+            season_type=str(payload.get("seasonType") or "regular"),
+            profile=str(payload.get("profile") or "BALANCED"), selections=selections,
+            user_id=int(user["id"]),
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    legs = [leg.__dict__ for leg in result.parlay.legs]
+    save = "not saved"
+    if legs:
+        try:
+            save = f"saved #{save_web_parlay(result, user_id=int(user['id']), model_version='nfl_weekly_moneyline_v1')}"
+        except Exception:
+            logger.exception("Multi-game parlay generated but history persistence failed")
+            save = "prediction generated; history save unavailable"
+    return envelope(
+        "NFL", "Multi-Game Parlay", league="nfl", parlayMode="multi_game",
+        seasonType=str(payload.get("seasonType") or "regular"), profile=str(payload.get("profile") or "BALANCED").upper(),
+        legs=legs, rejectedSelections=rejections, combinedProbability=result.combined_probability,
+        estimatedOdds=result.estimated_odds, message=result.notes, saveStatus=save,
+        dataMode="live" if legs else "unavailable",
+    )
 @app.get("/api/analyze/nfl/history")
 def nfl_history(difficulty: str|None=None, user=Depends(require_full_access)): return envelope("NFL","View Parlay History",items=_history_rows("NFL", difficulty, int(user["id"])))
 @app.post("/api/analyze/nfl/grade")

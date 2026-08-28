@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from fastapi import Depends, HTTPException, Request
 from backend.app.database import get_db_connection, initialize_billing_database
-from backend.app.services.auth_service import current_user
+from backend.app.services.auth_service import current_user, is_internal_user
 
 ELIGIBLE_STATUSES = {"active", "trialing"}
 
@@ -36,4 +36,12 @@ def require_full_access(request: Request):
     ent = entitlement_for_user(user)
     if not ent["hasFullAccess"]:
         raise HTTPException(status_code=402, detail="Your subscription is not active.")
+    return user
+
+
+def require_internal_access(request: Request):
+    """Require an authenticated, explicitly flagged or allowlisted operator."""
+    user = current_user(request)
+    if not is_internal_user(user):
+        raise HTTPException(status_code=403, detail="Internal operator access is required.")
     return user

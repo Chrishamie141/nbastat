@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -228,27 +228,114 @@ def get_nfl_player_props(team: str | None = None, game_teams: tuple[str, str] | 
 
 def get_nfl_team_lines(team: str | None = None) -> list[dict[str, Any]]:
     def fetch():
-        key = _odds_key()
-        if not key:
-            raise ValueError("THE_ODDS_API_KEY is not set")
-        params = urlencode({"apiKey": key, "regions": "us", "markets": ",".join(TEAM_MARKETS), "oddsFormat": "american"})
-        rows = _fetch_json(f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/odds/?{params}")
-        team_key = _team_abbreviation(team) if team else None
-        lines = []
-        for game in rows:
-            teams = {_team_abbreviation(game.get("home_team")), _team_abbreviation(game.get("away_team"))}
-            if team_key and team_key not in teams:
-                continue
-            for bookmaker in game.get("bookmakers", []):
-                for market in bookmaker.get("markets", []):
-                    for outcome in market.get("outcomes", []):
-                        lines.append({"game_id": game.get("id"), "home_team": game.get("home_team"),
-                                      "away_team": game.get("away_team"), "commence_time": game.get("commence_time"),
-                                      "market": market.get("key"), "team": outcome.get("name"),
-                                      "line": outcome.get("point"), "odds": outcome.get("price"),
-                                      "bookmaker": bookmaker.get("title"), "provider": "the-odds-api"})
+        lines, health = fetch_nfl_team_lines_live(team)
+        if health["state"] not in {"HEALTHY", "STALE_DATA"}:
+            raise ValueError(health.get("safe_error_code") or health["state"])
         return lines
     return _provider_get(fetch, lambda: get_team_market_placeholders(team or "NFL"), "NFL team lines")
+
+
+def _normalize_team_lines(rows: list[dict[str, Any]], team: str | None = None) -> list[dict[str, Any]]:
+    team_key = _team_abbreviation(team) if team else None
+    lines = []
+    for game in rows:
+        teams = {_team_abbreviation(game.get("home_team")), _team_abbreviation(game.get("away_team"))}
+        if team_key and team_key not in teams:
+            continue
+        for bookmaker in game.get("bookmakers", []):
+            for market in bookmaker.get("markets", []):
+                for outcome in market.get("outcomes", []):
+                    lines.append({
+                        "game_id": game.get("id"), "home_team": game.get("home_team"),
+                        "away_team": game.get("away_team"), "commence_time": game.get("commence_time"),
+                        "market": market.get("key"), "team": outcome.get("name"),
+                        "line": outcome.get("point"), "odds": outcome.get("price"),
+                        "bookmaker": bookmaker.get("title"), "provider": "the-odds-api",
+                        "last_update": market.get("last_update") or bookmaker.get("last_update"),
+                    })
+    return lines
+
+
+def _safe_odds_error(error: HTTPError) -> tuple[str, str | None]:
+    """Classify The Odds API failures without retaining credentials or bodies."""
+    try:
+        payload = json.loads(error.read(4096).decode("utf-8", "replace"))
+    except Exception:
+        payload = {}
+    code = str(payload.get("error_code") or "").strip().upper() or None
+    if code == "OUT_OF_USAGE_CREDITS":
+        return "QUOTA_EXHAUSTED", code
+    if error.code in {401, 403}:
+        return "AUTH_ERROR", code or f"HTTP_{error.code}"
+    if error.code == 429:
+        return "RATE_LIMITED", code or "HTTP_429"
+    if 500 <= error.code <= 599:
+        return "UPSTREAM_ERROR", code or f"HTTP_{error.code}"
+    return "UPSTREAM_ERROR", code or f"HTTP_{error.code}"
+
+
+def fetch_nfl_team_lines_live(team: str | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Fetch verified markets with explicit health; never return sample prices."""
+    attempted_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    key = _odds_key()
+    if not key:
+        return [], {"state": "AUTH_ERROR", "attempted_at": attempted_at,
+                    "completed_at": attempted_at, "safe_error_code": "MISSING_API_KEY",
+                    "http_status": None, "last_market_timestamp": None}
+    params = urlencode({"apiKey": key, "regions": "us", "markets": ",".join(TEAM_MARKETS),
+                        "oddsFormat": "american"})
+    url = f"{ODDS_API_BASE}/sports/{NFL_SPORT_KEY}/odds/?{params}"
+    try:
+        rows = _fetch_json(url)
+    except HTTPError as error:
+        state, code = _safe_odds_error(error)
+        return [], {"state": state, "attempted_at": attempted_at,
+                    "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "safe_error_code": code, "http_status": error.code,
+                    "last_market_timestamp": None}
+    except TimeoutError:
+        return [], {"state": "TIMEOUT", "attempted_at": attempted_at,
+                    "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "safe_error_code": "TIMEOUT", "http_status": None,
+                    "last_market_timestamp": None}
+    except URLError as error:
+        state = "TIMEOUT" if isinstance(getattr(error, "reason", None), TimeoutError) else "UPSTREAM_ERROR"
+        return [], {"state": state, "attempted_at": attempted_at,
+                    "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "safe_error_code": "NETWORK_ERROR", "http_status": None,
+                    "last_market_timestamp": None}
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return [], {"state": "MALFORMED_RESPONSE", "attempted_at": attempted_at,
+                    "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "safe_error_code": "INVALID_JSON", "http_status": 200,
+                    "last_market_timestamp": None}
+    except OSError:
+        return [], {"state": "UPSTREAM_ERROR", "attempted_at": attempted_at,
+                    "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "safe_error_code": "NETWORK_ERROR", "http_status": None,
+                    "last_market_timestamp": None}
+    if not isinstance(rows, list):
+        return [], {"state": "MALFORMED_RESPONSE", "attempted_at": attempted_at,
+                    "completed_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "safe_error_code": "EXPECTED_LIST", "http_status": 200,
+                    "last_market_timestamp": None}
+    lines = _normalize_team_lines(rows, team)
+    timestamps = sorted(str(row["last_update"]) for row in lines if row.get("last_update"))
+    last_market = timestamps[-1] if timestamps else None
+    state = "HEALTHY" if lines else "NO_MARKET_AVAILABLE"
+    if last_market:
+        try:
+            latest = datetime.fromisoformat(last_market.replace("Z", "+00:00"))
+            if latest.tzinfo is None:
+                latest = latest.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - latest.astimezone(timezone.utc) > timedelta(minutes=45):
+                state = "STALE_DATA"
+        except ValueError:
+            state = "MALFORMED_RESPONSE"
+    completed_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return lines, {"state": state, "attempted_at": attempted_at, "completed_at": completed_at,
+                   "safe_error_code": None, "http_status": 200,
+                   "last_market_timestamp": last_market}
 
 
 def get_nfl_player_recent_stats(player: str | None = None, team: str | None = None, games: int = 5) -> dict[str, dict[str, Any]]:

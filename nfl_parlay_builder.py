@@ -500,6 +500,12 @@ def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True):
     candidates = [evaluation.candidate for evaluation in evaluations if evaluation.candidate]
     if not allow_sample:
         candidates = [candidate for candidate in candidates if not candidate.get("sample_offline")]
+    if game_teams:
+        requested_teams = {_normalize_name(value) for value in game_teams}
+        # A player prop is not safe to attach to a same-game parlay unless the
+        # structured stat feed identifies the player as belonging to that game.
+        candidates = [candidate for candidate in candidates
+                      if candidate.get("team") and _normalize_name(candidate.get("team")) in requested_teams]
 
     # Sportsbooks expose OVER and UNDER as separate quote rows. Keep one
     # correctly priced side for each player/market/line before ranking legs.
@@ -534,7 +540,14 @@ def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True):
         profit_multiple = decimal_price - 1
         estimated_odds = round(profit_multiple * 100 if decimal_price >= 2 else -100 / profit_multiple)
 
-    notes = "NFL parlay built from live provider data when available, with sample provider fallback for missing feeds."
+    notes = "NFL parlay built from verified provider markets and structured player evidence."
+    if game_teams and not legs:
+        notes = (
+            "No verified same-game props had both a live market and a confirmed player-to-team mapping for this matchup. "
+            "No sample or cross-game legs were substituted."
+        )
+    elif allow_sample:
+        notes += " A sample provider fallback may be present only outside production web recommendations."
     if not legs and _team_filter_excludes_sample_players(team):
         notes = (
             f"{notes} Team filter {str(team).strip().upper()} did not match fallback/sample NFL players; "

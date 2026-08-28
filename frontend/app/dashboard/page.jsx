@@ -1,14 +1,188 @@
-'use client';
-import Link from 'next/link';
-import {useEffect,useState} from 'react';
-import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
-import {useAuth} from '@/components/auth/AuthProvider';
-import GlowCard from '@/components/ui/GlowCard';
-import NflMatchup from '@/components/games/NflMatchup';
-import {api} from '@/lib/api';
-export default function Dashboard(){return <SubscriptionGuard><Inner/></SubscriptionGuard>}
-function Inner(){const{user}=useAuth();const[week,setWeek]=useState(1),[account,setAccount]=useState(null),[board,setBoard]=useState(null),[error,setError]=useState('');useEffect(()=>{api.dashboard().then(setAccount).catch(e=>setError(e.message))},[]);useEffect(()=>{setBoard(null);api.nfl.week({week}).then(setBoard).catch(e=>setError(e.message))},[week]);const summary=account?.summary||{};return <main className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-10 sm:px-6 md:pt-14"><div className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-4xl font-black tracking-[-.06em] md:text-5xl">Welcome back, {user?.name}</h1><p className="mt-2 text-slate-300">This week’s games come first. Analysis history and account metrics follow.</p></div><Link href="/parlays" className="btn btn-primary">Build NFL picks</Link></div>{error&&<p className="mt-5 rounded-2xl bg-red-500/15 p-4 text-red-100">{error}</p>}
-    <section className="mt-8"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-bold uppercase tracking-[.2em] text-cyan-300">NFL game board</p><h2 className="mt-1 text-3xl font-black">Week {week}</h2></div><div className="flex flex-wrap gap-2"><button className="btn btn-glass" disabled={week===1} onClick={()=>setWeek(w=>w-1)}>Previous</button><button className="btn btn-glass" disabled={week===18} onClick={()=>setWeek(w=>w+1)}>Next</button><Link className="btn btn-glass" href="/games">All games</Link></div></div>{!board?<div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(x=><div key={x} className="h-48 animate-pulse rounded-3xl bg-white/10"/>)}</div>:board.items?.length?<div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{board.items.slice(0,6).map(game=><Link href={`/games/${game.game_id}?week=${week}`} key={game.game_id} className="flex min-h-48 flex-col rounded-3xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-cyan-300/50"><p className="text-xs text-slate-400">{new Date(game.kickoff_time).toLocaleString()}</p><NflMatchup game={game} size={40} className="mt-4"/><p className="mt-auto pt-4 text-sm font-semibold text-cyan-100">{game.winner?`Model pick: ${game.winner} · ${(game.winProbability*100).toFixed(1)}%`:'Prediction unavailable'}</p></Link>)}</div>:<GlowCard className="mt-5 p-6">No games are scheduled in this week.</GlowCard>}</section>
-    <section className="mt-8"><h2 className="text-2xl font-black">Your activity</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{[['Saved analyses',summary.savedAnalyses||0],['Individual predictions',summary.individualPredictions||0],['Graded predictions',summary.gradedPredictions||0],['Saved parlays',summary.savedParlays||0],['Accuracy',summary.overallAccuracy==null?'Not enough data':`${summary.overallAccuracy}%`]].map(([label,value])=><GlowCard key={label} className="p-5"><p className="text-sm text-slate-400">{label}</p><p className="mt-2 text-2xl font-black">{value}</p></GlowCard>)}</div></section>
-    <div className="mt-6 grid gap-4 md:grid-cols-2"><GlowCard className="p-6"><h2 className="text-xl font-black">Fantasy lineup</h2><p className="mt-2 text-slate-300">Build and save a position-by-position 2026 depth chart.</p><Link href="/fantasy" className="btn btn-glass mt-4">Open fantasy builder</Link></GlowCard><GlowCard className="p-6"><h2 className="text-xl font-black">Performance</h2><p className="mt-2 text-slate-300">Review grading, completed predictions, and account-owned results.</p><div className="mt-4 flex gap-2"><Link href="/history" className="btn btn-glass">History</Link><Link href="/performance" className="btn btn-glass">Performance</Link></div></GlowCard></div>
-  </main>}
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import SubscriptionGuard from "@/components/auth/SubscriptionGuard";
+import { useAuth } from "@/components/auth/AuthProvider";
+import GlowCard from "@/components/ui/GlowCard";
+import NflMatchup from "@/components/games/NflMatchup";
+import { api } from "@/lib/api";
+export default function Dashboard() {
+  return (
+    <SubscriptionGuard>
+      <Inner />
+    </SubscriptionGuard>
+  );
+}
+function Inner() {
+  const { user } = useAuth();
+  const [season, setSeason] = useState(null),
+    [seasonType, setSeasonType] = useState("regular"),
+    [week, setWeek] = useState(1),
+    [ready, setReady] = useState(false),
+    [account, setAccount] = useState(null),
+    [board, setBoard] = useState(null),
+    [error, setError] = useState("");
+  useEffect(() => {
+    api
+      .dashboard()
+      .then(setAccount)
+      .catch((e) => setError(e.message));
+  }, []);
+  useEffect(() => {
+    api.nfl
+      .context()
+      .then((context) => {
+        setSeason(context.season);
+        setSeasonType(context.seasonType);
+        setWeek(context.week);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setReady(true));
+  }, []);
+  useEffect(() => {
+    if (!ready) return;
+    setBoard(null);
+    api.nfl
+      .week({ season, week, seasonType })
+      .then(setBoard)
+      .catch((e) => setError(e.message));
+  }, [ready, season, week, seasonType]);
+  const minWeek = seasonType === "preseason" ? 0 : 1,
+    maxWeek = seasonType === "preseason" ? 3 : 18;
+  const summary = account?.summary || {};
+  return (
+    <main className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-10 sm:px-6 md:pt-14">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black tracking-[-.06em] md:text-5xl">
+            Welcome back, {user?.name}
+          </h1>
+          <p className="mt-2 text-slate-300">
+            This week’s games come first. Analysis history and account metrics
+            follow.
+          </p>
+        </div>
+        <Link href="/parlays" className="btn btn-primary">
+          Build NFL picks
+        </Link>
+      </div>
+      {error && (
+        <p className="mt-5 rounded-2xl bg-red-500/15 p-4 text-red-100">
+          {error}
+        </p>
+      )}
+      <section className="mt-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[.2em] text-cyan-300">
+              NFL game board
+            </p>
+            <h2 className="mt-1 text-3xl font-black">
+              {board?.weekLabel || "Current NFL slate"}
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="btn btn-glass"
+              disabled={week === minWeek}
+              onClick={() => setWeek((w) => w - 1)}
+            >
+              Previous
+            </button>
+            <button
+              className="btn btn-glass"
+              disabled={week === maxWeek}
+              onClick={() => setWeek((w) => w + 1)}
+            >
+              Next
+            </button>
+            <Link className="btn btn-glass" href="/games">
+              All games
+            </Link>
+          </div>
+        </div>
+        {!board ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((x) => (
+              <div
+                key={x}
+                className="h-48 animate-pulse rounded-3xl bg-white/10"
+              />
+            ))}
+          </div>
+        ) : board.items?.length ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {board.items.slice(0, 6).map((game) => (
+              <Link
+                href={`/games/${game.game_id}?season=${season}&week=${week}&seasonType=${seasonType}`}
+                key={game.game_id}
+                className="flex min-h-48 flex-col rounded-3xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:border-cyan-300/50"
+              >
+                <p className="text-xs text-slate-400">
+                  {new Date(game.kickoff_time).toLocaleString()}
+                </p>
+                <NflMatchup game={game} size={40} className="mt-4" />
+                <p className="mt-auto pt-4 text-sm font-semibold text-cyan-100">
+                  {game.winner
+                    ? `Model pick: ${game.winner} · ${(game.winProbability * 100).toFixed(1)}%`
+                    : "Prediction unavailable"}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <GlowCard className="mt-5 p-6">
+            No games are scheduled in this week.
+          </GlowCard>
+        )}
+      </section>
+      <section className="mt-8">
+        <h2 className="text-2xl font-black">Your activity</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Saved analyses", summary.savedAnalyses || 0],
+            ["Individual predictions", summary.individualPredictions || 0],
+            ["Graded predictions", summary.gradedPredictions || 0],
+            ["Saved parlays", summary.savedParlays || 0],
+            [
+              "Accuracy",
+              summary.overallAccuracy == null
+                ? "Not enough data"
+                : `${summary.overallAccuracy}%`,
+            ],
+          ].map(([label, value]) => (
+            <GlowCard key={label} className="p-5">
+              <p className="text-sm text-slate-400">{label}</p>
+              <p className="mt-2 text-2xl font-black">{value}</p>
+            </GlowCard>
+          ))}
+        </div>
+      </section>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <GlowCard className="p-6">
+          <h2 className="text-xl font-black">Fantasy lineup</h2>
+          <p className="mt-2 text-slate-300">
+            Build and save a position-by-position 2026 depth chart.
+          </p>
+          <Link href="/fantasy" className="btn btn-glass mt-4">
+            Open fantasy builder
+          </Link>
+        </GlowCard>
+        <GlowCard className="p-6">
+          <h2 className="text-xl font-black">Performance</h2>
+          <p className="mt-2 text-slate-300">
+            Review grading, completed predictions, and account-owned results.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <Link href="/history" className="btn btn-glass">
+              History
+            </Link>
+            <Link href="/performance" className="btn btn-glass">
+              Performance
+            </Link>
+          </div>
+        </GlowCard>
+      </div>
+    </main>
+  );
+}

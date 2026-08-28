@@ -28,7 +28,7 @@ function TeamSide({abbreviation,name,label,probability,winner,reverse,size}) {
   return <div className={`flex min-w-0 items-center gap-3 ${reverse ? 'flex-row-reverse text-right' : ''}`}>
     <TeamLogo team={team} size={size}/>
     <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-[.16em] text-slate-500">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-[.16em] text-slate-300">{label}</p>
       <p className={`truncate text-lg font-black ${winner ? 'text-cyan-100' : 'text-slate-100'}`}>{abbreviation}</p>
       {probability != null ? <p className="text-xs tabular-nums text-slate-300">{(probability * 100).toFixed(1)}%</p> : null}
     </div>
@@ -39,7 +39,7 @@ export default function NflMatchup({game,size=46,showProbabilities=true,classNam
   const probabilities = showProbabilities ? matchupProbabilities(game) : null;
   return <div className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 ${className}`}>
     <TeamSide abbreviation={game.away_team} name={game.away_name} label="Away" probability={probabilities?.away} winner={game.winner===game.away_team} size={size}/>
-    <span className="text-xs font-bold uppercase tracking-[.18em] text-slate-600">at</span>
+    <span className="text-xs font-bold uppercase tracking-[.18em] text-slate-300">at</span>
     <TeamSide abbreviation={game.home_team} name={game.home_name} label="Home" probability={probabilities?.home} winner={game.winner===game.home_team} reverse size={size}/>
   </div>;
 }

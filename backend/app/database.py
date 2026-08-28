@@ -164,6 +164,8 @@ def initialize_auth_database():
             )
         """)
         connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+        if not column_exists(connection, "users", "is_internal"):
+            connection.execute("ALTER TABLE users ADD COLUMN is_internal INTEGER NOT NULL DEFAULT 0")
 
 
 def initialize_billing_database():
