@@ -30,6 +30,11 @@ os.environ["AUTH_SECRET"] = "isolated-pytest-secret-not-for-production"
 os.environ["STRIPE_SECRET_KEY"] = "sk_test_placeholder"
 os.environ["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
 os.environ["STRIPE_FOUNDING_MONTHLY_PRICE_ID"] = "price_founder"
+for _social_key in ('X_API_KEY','X_API_SECRET','X_ACCESS_TOKEN','X_ACCESS_TOKEN_SECRET','X_BEARER_TOKEN',
+                    'SOCIAL_DATABASE_URL','SOCIAL_SOURCE_SIGNING_KEY'):
+    os.environ[_social_key] = ''
+os.environ['DRY_RUN'] = 'true'
+os.environ['SOCIAL_AUTO_PUBLISH'] = 'false'
 sys.addaudithook(sqlite_audit_guard)
 sqlite3.connect = guarded_sqlite_connect
 sqlite3.dbapi2.connect = guarded_sqlite_connect

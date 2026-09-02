@@ -130,6 +130,22 @@ python -m backtesting.research_nfl_player_prop_models --season 2025 --start-week
 
 This compares Normal, Lognormal, Gamma, Poisson, Negative Binomial, zero-inflated Poisson, and zero-inflated Negative Binomial forecasts by market. It also supports expanding walk-forward variance models, isotonic and beta calibration, permutation importance, and residual clusters for team, player archetype, sportsbook, line size, favorite/underdog, home/away, implied team total, and projected pace. Learned stages fail closed as `INSUFFICIENT_HISTORY` until each test fold has at least two prior evaluated weeks. Research outputs never mutate production predictions.
 
+## Forward NFL market coverage (before model tuning)
+
+The standalone [coverage-first NFL experiment workflow](docs/nfl-market-capture-workflow.md)
+captures paired moneyline, spread, and total quotes at T−24h, T−6h, and T−60m.
+It batches due games, persists a hard paid-credit ceiling, reports per-checkpoint gaps,
+and enforces pregame-only append-only evidence in a **separate capture database**.
+It never opens `predictions.db` or modifies the completed Week 3 experiment. See the
+guide for exact `create`, `watch`, and offline `report` commands and quota recovery.
+
+The [Week 1 lifecycle guide](docs/nfl-week1-readiness.md) covers the separate 2026
+regular-season experiment, immutable baseline predictions, pregame qualification,
+automatic final-score grading, cumulative regular-season metrics, and verified marketing
+source synchronization. The [company X marketing guide](docs/social-marketing.md)
+documents official-API-only posting, a fourteen-day campaign, durable queue setup,
+dry-run defaults, company-account verification, and explicit publication approval.
+
 ## Immutable model registry
 
 Every model and experiment has an append-only, content-addressed record under `backtesting/model_registry`. The research command writes `experiment_result.json` using the shared v1 contract in `backtesting/model_registry/experiment_result.schema.json`. It includes Git, configuration, and input-dataset hashes; train/evaluation windows; reproducibility settings; Brier score, log loss, ECE, and ROI with game-cluster uncertainty; calibration bins; a reliability plot; and profit/quality breakdowns by market and confidence bucket.

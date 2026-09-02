@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import get_config_status, print_config_status
 from backend.app.api.auth import router as auth_router
 from backend.app.api.billing import router as billing_router
+from backend.app.api.social_cron import router as social_cron_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user
 from backend.app.services.sports_mode_service import get_sports_mode
@@ -64,6 +65,7 @@ frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 app.add_middleware(CORSMiddleware, allow_origins=[frontend_origin], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(auth_router)
 app.include_router(billing_router)
+app.include_router(social_cron_router)
 
 @app.middleware("http")
 async def endpoint_observability(request: Request, call_next):
