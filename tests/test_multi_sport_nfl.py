@@ -210,6 +210,32 @@ def test_valid_live_stats_are_not_overwritten_by_sample_backfill(monkeypatch):
     assert result.parlay.legs[0].confidence >= 62
 
 
+def test_same_game_parlay_rejects_cross_game_and_unmapped_players(monkeypatch):
+    import nfl_parlay_builder as builder
+
+    props = {
+        "Right Team": {"REC_YDS": [{"line": 50.5, "odds": -110, "side": "over", "provider": "the-odds-api"}]},
+        "Wrong Team": {"REC_YDS": [{"line": 40.5, "odds": -110, "side": "over", "provider": "the-odds-api"}]},
+        "Unknown Team": {"REC_YDS": [{"line": 30.5, "odds": -110, "side": "over", "provider": "the-odds-api"}]},
+    }
+    stats = {
+        "Right Team": {"team": "BUF", "REC_YDS": [70, 72, 68, 75, 71]},
+        "Wrong Team": {"team": "DAL", "REC_YDS": [60, 62, 58, 65, 61]},
+        "Unknown Team": {"REC_YDS": [50, 52, 48, 55, 51]},
+    }
+    monkeypatch.setattr(builder, "get_nfl_games", lambda: [{"home_team": "BUF", "away_team": "MIA"}])
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda team=None, game_teams=None: props)
+    monkeypatch.setattr(builder, "get_nfl_team_lines", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda team=None: stats)
+    monkeypatch.setattr(builder, "get_nfl_injuries", lambda team=None: [])
+    monkeypatch.setattr(builder, "get_nfl_weather", lambda game=None: {})
+
+    result = build_nfl_parlay("balanced", game_teams=("BUF", "MIA"), allow_sample=False)
+
+    assert [leg.player for leg in result.parlay.legs] == ["Right Team"]
+    assert all(leg.team in {"BUF", "MIA"} for leg in result.parlay.legs)
+
+
 @pytest.mark.skipif(os.getenv("SMARTBETS_RUN_LIVE_NFL_TESTS") != "1", reason="live-first NFL provider path is opt-in")
 def test_build_nfl_safe_parlay_live_first_path_smoke():
     result = build_nfl_parlay("safe")

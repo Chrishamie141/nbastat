@@ -6,11 +6,17 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
-TRACKED_KEYS = ("THE_ODDS_API_KEY", "OPENWEATHER_API_KEY")
+TRACKED_KEYS = {
+    "THE_ODDS_API_KEY": ("THE_ODDS_API_KEY", "ODDS_API_KEY"),
+    "OPENWEATHER_API_KEY": ("OPENWEATHER_API_KEY", "OPEN_WEATHER_API_KEY"),
+}
 
 
 def get_config_status():
-    return {key: "Loaded" if os.getenv(key) else "Missing" for key in TRACKED_KEYS}
+    return {
+        label: "Loaded" if any(os.getenv(name) for name in aliases) else "Missing"
+        for label, aliases in TRACKED_KEYS.items()
+    }
 
 
 def data_mode():

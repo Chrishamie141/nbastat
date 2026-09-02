@@ -1,15 +1,121 @@
-'use client';
-import { useEffect, useState } from 'react';
-import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
-import GlowCard from '@/components/ui/GlowCard';
-import { api } from '@/lib/api';
-
-const tabs = ['All', 'NFL', 'NBA', 'Predictions', 'Parlays', 'Graded', 'Ungraded'];
-export default function History() { return <SubscriptionGuard><Inner /></SubscriptionGuard>; }
+"use client";
+import { useEffect, useState } from "react";
+import SubscriptionGuard from "@/components/auth/SubscriptionGuard";
+import GlowCard from "@/components/ui/GlowCard";
+import { api } from "@/lib/api";
+const tabs = [
+  "All",
+  "Past Games",
+  "NFL",
+  "NBA",
+  "Predictions",
+  "Parlays",
+  "Graded",
+  "Ungraded",
+];
+export default function History() {
+  return (
+    <SubscriptionGuard>
+      <Inner />
+    </SubscriptionGuard>
+  );
+}
 function Inner() {
-  const [tab, setTab] = useState('All');
-  const [rows, setRows] = useState([]);
-  const [state, setState] = useState('loading');
-  useEffect(() => { setState('loading'); api.history(tab === 'All' ? '' : `?tab=${tab}`).then((data) => { setRows(data.items || []); setState('ready'); }).catch(() => { setRows([]); setState('unavailable'); }); }, [tab]);
-  return <main className="mx-auto min-h-screen max-w-6xl px-6 pt-32"><h1 className="text-5xl font-black tracking-[-.06em]">History</h1><div className="mt-6 flex flex-wrap gap-2">{tabs.map((item) => <button key={item} disabled={state === 'loading'} onClick={() => setTab(item)} className={`rounded-full px-4 py-2 disabled:opacity-60 ${tab === item ? 'bg-violet-500 text-white' : 'bg-white/10 text-gray-300'}`}>{item}</button>)}</div><GlowCard className="mt-6 p-6">{state === 'loading' ? <p className="text-gray-400">Loading stored records…</p> : state === 'unavailable' ? <p role="alert" className="text-red-200">History service unavailable. Your records may still exist; retry after the server reconnects.</p> : rows.length ? <div className="grid gap-3">{rows.map((row, index) => <div key={index} className="rounded-2xl bg-white/5 p-4"><div className="flex flex-wrap justify-between gap-3"><b>{row.date} · {row.sport} · {row.action}</b><span className="tag">{row.resultStatus}</span></div><p className="mt-2 text-gray-400">{row.summary}</p><p className="mt-2 text-sm text-gray-500">Data mode: {row.dataMode}</p></div>)}</div> : <p className="text-gray-400">No stored records found for this filter.</p>}</GlowCard></main>;
+  const [tab, setTab] = useState("All"),
+    [rows, setRows] = useState([]),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setRows([]);
+    setError("");
+    const call =
+      tab === "Past Games"
+        ? api.nfl.gameHistory()
+        : api.history(tab === "All" ? "" : `?tab=${tab}`);
+    call
+      .then((d) => { if (active) setRows(d.items || []); })
+      .catch((e) => { if (active) setError(e.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [tab]);
+  return (
+    <main className="mx-auto min-h-screen max-w-6xl px-4 pb-24 pt-12 sm:px-6">
+      <h1 className="text-5xl font-black tracking-[-.06em]">History</h1>
+      <p className="mt-2 text-slate-400">
+        Completed games show only predictions stored before kickoff. Missing
+        snapshots are never reconstructed from results.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t}
+            disabled={loading}
+            onClick={() => setTab(t)}
+            className={`rounded-full px-4 py-2 ${tab === t ? "bg-violet-500 text-white" : "bg-white/10 text-gray-300"}`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <GlowCard className="mt-6 p-6">
+        {loading ? (
+          <div className="h-48 animate-pulse rounded-2xl bg-white/10" />
+        ) : error ? (
+          <p role="alert" className="text-red-100">History service unavailable. Your records may still exist. {error}</p>
+        ) : rows.length ? (
+          <div className="grid gap-3">
+            {tab === "Past Games"
+              ? rows.map((game) => (
+                  <div
+                    key={game.game_id}
+                    className="rounded-2xl bg-white/5 p-4"
+                  >
+                    <div className="flex flex-wrap justify-between gap-3">
+                      <b>
+                        {game.away_team} {game.away_score} at {game.home_team}{" "}
+                        {game.home_score}
+                      </b>
+                      <span className="tag">
+                        {game.predictionResult || "no pregame snapshot"}
+                      </span>
+                    </div>
+                    {game.prediction ? (
+                      <p className="mt-2 text-slate-300">
+                        Original pick: {game.prediction.winner} ·{" "}
+                        {(game.prediction.winProbability * 100).toFixed(1)}% ·
+                        generated{" "}
+                        {new Date(game.prediction.generatedAt).toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-slate-400">
+                        Prediction was not generated before kickoff.
+                      </p>
+                    )}
+                  </div>
+                ))
+              : rows.map((r, i) => (
+                  <div key={i} className="rounded-2xl bg-white/5 p-4">
+                    <div className="flex flex-wrap justify-between gap-3">
+                      <b>
+                        {r.date} · {r.sport} · {r.action}
+                      </b>
+                      <span className="tag">{r.resultStatus}</span>
+                    </div>
+                    <p className="mt-2 text-gray-400">{r.summary}</p>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Data mode: {r.dataMode}
+                    </p>
+                  </div>
+                ))}
+          </div>
+        ) : (
+          <p className="text-gray-400">
+            No stored records found for this filter.
+          </p>
+        )}
+      </GlowCard>
+    </main>
+  );
 }

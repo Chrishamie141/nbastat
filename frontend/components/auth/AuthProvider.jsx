@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
 const AuthContext = createContext(null);
-const protectedRoutes = ['/dashboard', '/analyze', '/history', '/performance', '/account', '/parlays', '/fantasy', '/players', '/games', '/predictions'];
+const protectedRoutes = ['/dashboard', '/analyze', '/history', '/performance', '/account', '/parlays', '/fantasy', '/players', '/games', '/predictions', '/internal', '/nfl'];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

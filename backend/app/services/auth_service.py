@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import HTTPException, Request, Response
 from werkzeug.security import check_password_hash, generate_password_hash
-from backend.app.database import get_db_connection, initialize_auth_database
+from backend.app.database import get_db_connection, initialize_auth_database, table_exists
 
 COOKIE_NAME = 'sbs_session'
 SESSION_HOURS = 12
@@ -15,8 +15,16 @@ def _secret():
         secret = 'local-development-change-me-only'
     return secret.encode()
 def normalize_email(email: str) -> str: return email.strip().lower()
+def is_internal_user(row) -> bool:
+    allowlist = {normalize_email(value) for value in os.getenv('INTERNAL_ADMIN_EMAILS', '').split(',') if value.strip()}
+    flagged = bool(row['is_internal']) if 'is_internal' in row.keys() else False
+    return flagged or normalize_email(row['email']) in allowlist
+
+
 def safe_user(row):
-    return {'id': row['id'], 'name': row['name'], 'email': row['email'], 'createdAt': row['created_at'], 'lastLoginAt': row['last_login_at']}
+    return {'id': row['id'], 'name': row['name'], 'email': row['email'],
+            'createdAt': row['created_at'], 'lastLoginAt': row['last_login_at'],
+            'isInternal': is_internal_user(row)}
 def _b64(data: bytes) -> str: return base64.urlsafe_b64encode(data).decode().rstrip('=')
 def _unb64(data: str) -> bytes: return base64.urlsafe_b64decode(data + '=' * (-len(data) % 4))
 def create_token(user_id: int) -> str:
@@ -66,3 +74,23 @@ def current_user(request: Request):
         row = conn.execute('SELECT * FROM users WHERE id=? AND is_active=1', (user_id,)).fetchone()
     if not row: raise HTTPException(status_code=401, detail='Your session has expired. Please log in again.')
     return row
+
+
+def delete_user_account(user_id: int, email: str, password: str) -> None:
+    """Delete one authenticated account and only its account-owned records."""
+    verified = authenticate_user(email, password)
+    if int(verified["id"]) != int(user_id):
+        raise HTTPException(status_code=403, detail="Account confirmation does not match the active session.")
+    owned_tables = (
+        "fantasy_depth_charts", "nfl_game_predictions", "parlay_history",
+        "predictions", "graded_bets",
+    )
+    with get_db_connection() as connection:
+        for table in owned_tables:
+            if table_exists(connection, table):
+                connection.execute(f"DELETE FROM {table} WHERE user_id=?", (user_id,))
+        deleted = connection.execute(
+            "DELETE FROM users WHERE id=? AND lower(email)=?", (user_id, normalize_email(email))
+        )
+        if deleted.rowcount != 1:
+            raise HTTPException(status_code=404, detail="Account not found.")

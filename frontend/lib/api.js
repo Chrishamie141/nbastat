@@ -30,4 +30,116 @@ async function request(path, { method = 'GET', body, timeoutMs = REQUEST_TIMEOUT
   return data;
 }
 
-export const api={auth:{me:()=>request('/api/auth/me'),register:(body)=>request('/api/auth/register',{method:'POST',body}),login:(body)=>request('/api/auth/login',{method:'POST',body}),logout:()=>request('/api/auth/logout',{method:'POST'})},health:()=>request('/api/health'),readiness:()=>request('/api/readiness'),config:()=>request('/api/config/status'),search:(query)=>request(`/api/search?q=${encodeURIComponent(query)}`),dashboard:()=>request('/api/dashboard'),refreshGames:()=>request('/api/games/refresh',{method:'POST'}),sportsMode:()=>request('/api/sports-mode'),teams:(league)=>request(`/api/teams?league=${league}`),upcomingGames:()=>request('/api/games/upcoming'),featuredGame:()=>request('/api/games/featured'),history:(q='')=>request(`/api/history${q}`),performance:()=>request('/api/performance'),billing:{entitlements:()=>request('/api/billing/entitlements'),subscription:()=>request('/api/billing/subscription'),checkout:()=>request('/api/billing/create-checkout-session',{method:'POST'}),portal:()=>request('/api/billing/create-portal-session',{method:'POST'}),refresh:()=>request('/api/billing/refresh',{method:'POST'})},nfl:{game:(gameId)=>request(`/api/nfl/games/${encodeURIComponent(gameId)}`),refreshGame:(gameId)=>request(`/api/nfl/games/${encodeURIComponent(gameId)}/refresh`,{method:'POST'}),parlay:(body)=>request('/api/analyze/nfl/parlay',{method:'POST',body}),fantasy:(body)=>request('/api/analyze/nfl/fantasy',{method:'POST',body}),history:(q='')=>request(`/api/analyze/nfl/history${q}`),grade:(body)=>request('/api/analyze/nfl/grade',{method:'POST',body}),performance:()=>request('/api/analyze/nfl/performance')},nba:{player:(body)=>request('/api/analyze/nba/player',{method:'POST',body}),roster:(body)=>request('/api/analyze/nba/roster',{method:'POST',body}),team:(body)=>request('/api/analyze/nba/team',{method:'POST',body}),bestBets:()=>request('/api/analyze/nba/best-bets'),parlay:(body)=>request('/api/analyze/nba/parlay',{method:'POST',body}),grade:(body)=>request('/api/analyze/nba/grade',{method:'POST',body}),history:()=>request('/api/analyze/nba/history'),performance:()=>request('/api/analyze/nba/performance')}};
+export const api = {
+  auth: {
+    me: () => request("/api/auth/me"),
+    register: (body) => request("/api/auth/register", { method: "POST", body }),
+    login: (body) => request("/api/auth/login", { method: "POST", body }),
+    logout: () => request("/api/auth/logout", { method: "POST" }),
+  },
+  health: () => request("/api/health"),
+  readiness: () => request('/api/readiness'),
+  search: (query) => request(`/api/search?q=${encodeURIComponent(query)}`),
+  refreshGames: () => request('/api/games/refresh', {method: 'POST'}),
+  config: () => request("/api/config/status"),
+  dashboard: () => request("/api/dashboard"),
+  internal: {
+    nflExperiment: ({ season, seasonType, week }) =>
+      request(`/api/internal/nfl/experiments/${season}/${seasonType}/${week}`),
+    gradeNflExperiment: ({ season, seasonType, week }) =>
+      request(
+        `/api/internal/nfl/experiments/${season}/${seasonType}/${week}/grade`,
+        {
+          method: "POST",
+        },
+      ),
+  },
+  sportsMode: () => request("/api/sports-mode"),
+  teams: (league) => request(`/api/teams?league=${league}`),
+  upcomingGames: () => request("/api/games/upcoming"),
+  featuredGame: () => request("/api/games/featured"),
+  history: (q = "") => request(`/api/history${q}`),
+  performance: () => request("/api/performance"),
+  billing: {
+    entitlements: () => request("/api/billing/entitlements"),
+    subscription: () => request("/api/billing/subscription"),
+    checkout: () =>
+      request("/api/billing/create-checkout-session", { method: "POST" }),
+    portal: () =>
+      request("/api/billing/create-portal-session", { method: "POST" }),
+    refresh: () => request("/api/billing/refresh", { method: "POST" }),
+  },
+  nfl: {
+    game: (gameId) => request(`/api/nfl/games/${encodeURIComponent(gameId)}`),
+    refreshGame: (gameId) => request(`/api/nfl/games/${encodeURIComponent(gameId)}/refresh`, {method: 'POST'}),
+    context: (season) =>
+      request("/api/nfl/context" + (season ? "?season=" + season : "")),
+    week: ({
+      season,
+      week = 1,
+      profile = "BALANCED",
+      day = "ALL",
+      seasonType = "regular",
+    } = {}) =>
+      request(
+        "/api/nfl/week?" +
+          (season ? "season=" + season + "&" : "") +
+          "week=" +
+          week +
+          "&profile=" +
+          profile +
+          "&day=" +
+          day +
+          "&seasonType=" +
+          seasonType,
+      ),
+    gameHistory: (season, seasonType = "regular") =>
+      request(
+        "/api/nfl/games/history?" +
+          (season ? "season=" + season + "&" : "") +
+          "seasonType=" +
+          seasonType,
+      ),
+    weekPerformance: ({ season, week = 1, seasonType = "regular" } = {}) =>
+      request(
+        "/api/nfl/performance/week?" +
+          (season ? "season=" + season + "&" : "") +
+          "week=" +
+          week +
+          "&seasonType=" +
+          seasonType,
+      ),
+    parlay: (body) =>
+      request("/api/analyze/nfl/parlay", { method: "POST", body }),
+    multiGameParlay: (body) =>
+      request("/api/nfl/parlays/multi-game", { method: "POST", body }),
+    fantasy: (body) =>
+      request("/api/analyze/nfl/fantasy", { method: "POST", body }),
+    depthCharts: (scoring = "PPR") =>
+      request(`/api/nfl/fantasy/depth-charts?scoring=${scoring}`),
+    saveDepthChart: (body) =>
+      request("/api/nfl/fantasy/depth-charts", { method: "POST", body }),
+    updateDepthChart: (id, body) =>
+      request(`/api/nfl/fantasy/depth-charts/${id}`, { method: "PUT", body }),
+    deleteDepthChart: (id) =>
+      request(`/api/nfl/fantasy/depth-charts/${id}`, { method: "DELETE" }),
+    history: (q = "") => request(`/api/analyze/nfl/history${q}`),
+    grade: (body) =>
+      request("/api/analyze/nfl/grade", { method: "POST", body }),
+    performance: () => request("/api/analyze/nfl/performance"),
+  },
+  nba: {
+    player: (body) =>
+      request("/api/analyze/nba/player", { method: "POST", body }),
+    roster: (body) =>
+      request("/api/analyze/nba/roster", { method: "POST", body }),
+    team: (body) => request("/api/analyze/nba/team", { method: "POST", body }),
+    bestBets: () => request("/api/analyze/nba/best-bets"),
+    parlay: (body) =>
+      request("/api/analyze/nba/parlay", { method: "POST", body }),
+    grade: (body) =>
+      request("/api/analyze/nba/grade", { method: "POST", body }),
+    history: () => request("/api/analyze/nba/history"),
+    performance: () => request("/api/analyze/nba/performance"),
+  },
+};
