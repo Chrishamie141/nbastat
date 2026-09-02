@@ -290,6 +290,7 @@ def metrics(path, clock=capture.utcnow):
 
 
 def readiness(path,clock=capture.utcnow):
+    path=Path(path)
     result=metrics(path,clock)
     complete=result['predictions']==result['scheduled']
     checks={
@@ -302,6 +303,14 @@ def readiness(path,clock=capture.utcnow):
         'no_retroactive_wagers':'PASS','final_ingestion_and_grading':'PASS',
         'separate_regular_metrics':'PASS','market_coverage':'PASS' if result['coverage']['games_with_any_market']==result['scheduled'] else 'WARN',
         'worker_running':'WARN','sufficient_sample':'WARN' if result['graded']<30 else 'PASS'}
+    from backtesting.week1_worker import DB,RUNTIME,locked
+    runtime=RUNTIME if path.resolve()==DB.resolve() else path.resolve().parent/('.worker-'+path.stem)
+    try:
+        health=json.loads((runtime/'health.json').read_text(encoding='utf-8'))
+        healthy=health.get('state')=='RUNNING' and 0<=clock().timestamp()-health.get('heartbeat_epoch',0)<300
+        checks['worker_running']='PASS' if healthy and locked(path) else 'WARN'
+    except (FileNotFoundError,ValueError):
+        pass
     result['checks']=checks
     result['readiness']='FAIL' if 'FAIL' in checks.values() else 'WARN' if 'WARN' in checks.values() else 'PASS'
     return result
@@ -348,6 +357,8 @@ def main(argv=None):
     p.add_argument('--history',type=Path,default=ROOT/'data/nfl_team_game_history.json')
     p.add_argument('--include-db',type=Path,action='append',default=[])
     p.add_argument('--sync-social',action='store_true',help='Push verified aggregates hourly to configured social storage')
+    p.add_argument('--local-drafts',action='store_true',help='Save local daily drafts; never publish')
+    p.add_argument('--runtime',type=Path,help='Local worker health/stop directory')
     args=p.parse_args(argv)
     if args.action=='prepare':
         if args.db.exists(): raise ValueError('Refusing to replace existing experiment; use freeze/report')
@@ -362,6 +373,9 @@ def main(argv=None):
         result=preflight(args.db)
     else:
         if not args.allow_paid: p.error('tick/watch requires --allow-paid')
+        if args.action=='watch':
+            from backtesting.week1_worker import watch
+            return watch(args.db,runtime=args.runtime or args.db.resolve().parent/('.worker-'+args.db.stem),local_drafts=args.local_drafts,sync_social=args.sync_social)
         last_sync=0
         while True:
             market=capture.tick(args.db)

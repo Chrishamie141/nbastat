@@ -36,6 +36,24 @@ def test_dry_run_default_and_numeric_provenance(setup):
     assert social.generate(clock)['post_id']==post['post_id']
 
 
+def test_seven_day_previews_use_current_evidence_and_never_enqueue(setup):
+    from backtesting.social_marketing import preview_week
+    clock,source=setup
+    result=preview_week(clock)
+    assert not result['published'] and len(result['previews'])==7
+    assert all(p['data_as_of']==source['verified_at'] for p in result['previews'])
+    assert all(p['status']=='PREVIEW_ONLY' for p in result['previews'])
+    assert '11-4-1' in result['previews'][0]['content']
+    with social.connection() as c:
+        assert c.execute('SELECT COUNT(*) FROM social_posts').fetchone()[0]==0
+        assert c.execute('SELECT COUNT(*) FROM social_publish_days').fetchone()[0]==0
+
+
+def test_preview_rejects_stale_evidence(setup):
+    from backtesting.social_marketing import preview_week
+    with pytest.raises(ValueError,match='stale'):preview_week(lambda:setup[0]()+timedelta(days=2))
+
+
 def test_fourteen_templates_distinct_valid_length(setup):
     _,source=setup
     posts=[social.render(day,source)[1] for day in range(14)]

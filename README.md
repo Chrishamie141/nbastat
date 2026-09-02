@@ -146,6 +146,10 @@ source synchronization. The [company X marketing guide](docs/social-marketing.md
 documents official-API-only posting, a fourteen-day campaign, durable queue setup,
 dry-run defaults, company-account verification, and explicit publication approval.
 
+For unattended operation on the laptop, see the [Week 1 Windows runner guide](docs/week1-unattended.md):
+Task Scheduler installation, single-instance/graceful restart controls, live health,
+verified backups, and locally saved daily/seven-day marketing drafts with X disabled.
+
 ## Immutable model registry
 
 Every model and experiment has an append-only, content-addressed record under `backtesting/model_registry`. The research command writes `experiment_result.json` using the shared v1 contract in `backtesting/model_registry/experiment_result.schema.json`. It includes Git, configuration, and input-dataset hashes; train/evaluation windows; reproducibility settings; Brier score, log loss, ECE, and ROI with game-cluster uncertainty; calibration bins; a reliability plot; and profit/quality breakdowns by market and confidence bucket.

@@ -51,3 +51,7 @@ codex.patch
 codex-cleaned.patch
 .vercel/
 .env.local
+
+# Laptop worker logs, locks, backups, local signing configuration and previews
+.runtime/
+*.worker.lock
