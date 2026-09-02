@@ -39,7 +39,7 @@ def normalize_prop_type(stat_type):
     return PROP_TYPE_ALIASES.get(key, key)
 
 
-def load_nfl_parlay_history(db_file=DB_FILE):
+def load_nfl_parlay_history(db_file=None):
     """Load all saved NFL parlay rows from predictions.db."""
     initialize_parlay_history(db_file)
     with get_connection(db_file) as conn:
@@ -156,7 +156,7 @@ def _format_confidence(value):
     return "N/A" if value is None else f"{value:.1f}%"
 
 
-def print_nfl_performance_report(db_file=DB_FILE):
+def print_nfl_performance_report(db_file=None):
     """Print a clean CLI report for graded NFL parlay performance."""
     report = calculate_nfl_performance(load_nfl_parlay_history(db_file=db_file))
     print("\n========================")

@@ -14,6 +14,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from dotenv import load_dotenv
+from database_safety import assert_postgres_allowed, assert_sqlite_target
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(BASE_DIR / ".env")
@@ -109,6 +110,7 @@ class PostgresConnection:
 
 def get_db_connection():
     if using_postgres():
+        assert_postgres_allowed()
         try:
             import psycopg
             from psycopg.rows import dict_row
@@ -122,7 +124,9 @@ def get_db_connection():
         )
         return PostgresConnection(connection)
 
-    connection = sqlite3.connect(database_path(), timeout=5)
+    target = database_path()
+    assert_sqlite_target(target)
+    connection = sqlite3.connect(target, timeout=5)
     connection.row_factory = sqlite3.Row
     return connection
 

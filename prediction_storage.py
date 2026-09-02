@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import csv
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from database_safety import assert_sqlite_target, isolated_tests
 
 DB_FILE = Path("predictions.db")
 
@@ -14,13 +16,16 @@ def utc_now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def get_connection(db_file=DB_FILE):
+def get_connection(db_file=None):
+    if db_file is None:
+        db_file = os.getenv("SMARTBETS_TEST_SQLITE_PATH", DB_FILE) if isolated_tests() else DB_FILE
+    assert_sqlite_target(db_file)
     conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def initialize_database(db_file=DB_FILE):
+def initialize_database(db_file=None):
     with get_connection(db_file) as conn:
         conn.execute(
             """
@@ -82,7 +87,7 @@ def initialize_database(db_file=DB_FILE):
 def _column_exists(conn, table, column):
     return any(row[1] == column for row in conn.execute(f"PRAGMA table_info({table})"))
 
-def ensure_user_columns(db_file=DB_FILE):
+def ensure_user_columns(db_file=None):
     """Safe migration: add nullable user_id columns without assigning legacy rows."""
     initialize_parlay_history(db_file)
     with get_connection(db_file) as conn:
@@ -91,7 +96,7 @@ def ensure_user_columns(db_file=DB_FILE):
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER")
         conn.commit()
 
-def save_prediction_record(prediction, db_file=DB_FILE):
+def save_prediction_record(prediction, db_file=None):
     ensure_user_columns(db_file)
     with get_connection(db_file) as conn:
         cur = conn.execute(
@@ -118,7 +123,7 @@ def save_prediction_record(prediction, db_file=DB_FILE):
         return cur.lastrowid
 
 
-def save_bet_recommendations(recommendations, db_file=DB_FILE):
+def save_bet_recommendations(recommendations, db_file=None):
     initialize_database(db_file)
     created_at = utc_now_iso()
     saved_ids = []
@@ -150,7 +155,7 @@ def save_bet_recommendations(recommendations, db_file=DB_FILE):
     return saved_ids
 
 
-def load_recommendations_for_grading(db_file=DB_FILE):
+def load_recommendations_for_grading(db_file=None):
     initialize_database(db_file)
     with get_connection(db_file) as conn:
         rows = conn.execute(
@@ -179,7 +184,7 @@ def american_profit(odds, stake, hit):
     return stake * (odds / 100)
 
 
-def grade_recommendations(actual_results, default_stake=10.0, db_file=DB_FILE):
+def grade_recommendations(actual_results, default_stake=10.0, db_file=None):
     recommendations = load_recommendations_for_grading(db_file)
     lookup = {
         (_normalize_name(row["player"]), str(row["stat_type"]).upper(), str(row.get("game_date") or "")): float(row["actual_result"])
@@ -264,7 +269,7 @@ def summarize_graded_bets(graded_rows):
     }
 
 
-def initialize_parlay_history(db_file=DB_FILE):
+def initialize_parlay_history(db_file=None):
     initialize_database(db_file)
     with get_connection(db_file) as conn:
         conn.execute(
@@ -284,7 +289,7 @@ def initialize_parlay_history(db_file=DB_FILE):
         )
 
 
-def save_parlay_result(parlay_result, db_file=DB_FILE):
+def save_parlay_result(parlay_result, db_file=None):
     """Persist a shared ParlayResult for NBA/NFL history screens."""
     import json
 
@@ -328,7 +333,7 @@ def save_parlay_result(parlay_result, db_file=DB_FILE):
         return cur.lastrowid
 
 
-def load_parlay_history(sport=None, difficulty=None, result_status=None, db_file=DB_FILE):
+def load_parlay_history(sport=None, difficulty=None, result_status=None, db_file=None):
     initialize_parlay_history(db_file)
     filters = []
     params = []

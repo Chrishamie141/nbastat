@@ -6,6 +6,7 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from database_safety import assert_sqlite_target
 
 from .utils import utc_now_iso
 from .versioning import RunMetadata
@@ -16,6 +17,7 @@ class PredictionStore:
 
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
+        assert_sqlite_target(self.db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.db_path)
         self._connection.row_factory = sqlite3.Row

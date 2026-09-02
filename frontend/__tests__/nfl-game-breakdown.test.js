@@ -55,3 +55,26 @@ test('analysis action is contextual and duplicate restart control is removed', (
   assert.match(source, /Retry Analysis/);
   assert.doesNotMatch(source, />Restart<\/button>/);
 });
+
+test('integration keeps weekly picks and laptop lifecycle controls together', () => {
+  const dashboard = read('app/dashboard/page.jsx');
+  assert.match(dashboard, /<WeeklyNflBoard\s*\/>/);
+  assert.match(dashboard, /<CatalogSearch\s*\/>/);
+  assert.match(dashboard, /refreshDashboardGames/);
+  assert.match(dashboard, /NflMatchup/);
+  const detail = read('app/games/[slug]/page.jsx');
+  assert.match(detail, /Market vs model/);
+  assert.match(detail, /\/nfl\/games\//);
+  assert.match(detail, /Suspense/);
+});
+
+test('integration retains classic fantasy and authenticated experiment access', () => {
+  assert.match(read('app/analyze/page.jsx'), /\/analyze\/classic/);
+  const classic = read('app/analyze/classic/page.jsx');
+  assert.match(classic, /api\.nfl\.fantasy/);
+  assert.match(classic, /Build Draft Board/);
+  const auth = read('components/auth/AuthProvider.jsx');
+  assert.match(auth, /useCallback/);
+  assert.match(auth, /'\/internal'/);
+  assert.match(auth, /'\/nfl'/);
+});

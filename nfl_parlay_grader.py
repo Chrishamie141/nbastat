@@ -112,7 +112,7 @@ def _overall_status(results: list[str]) -> str:
     return "pending"
 
 
-def grade_nfl_parlays(db_file=DB_FILE):
+def grade_nfl_parlays(db_file=None):
     """Grade pending NFL parlays and persist leg/overall results."""
     initialize_parlay_history(db_file)
     player_stats = get_nfl_final_player_stats()
