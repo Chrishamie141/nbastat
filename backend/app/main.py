@@ -39,6 +39,7 @@ from backend.app.services.nfl_product_service import (
 from backend.app.services.nfl_experiment_service import (
     ExperimentIntegrityError, experiment_dashboard, grade_experiment,
 )
+from backend.app.services.operations_dashboard_service import command_center
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
@@ -216,6 +217,15 @@ def api_grade_nfl_experiment(
     except Exception as exc:
         logger.exception("NFL experiment grading failed")
         raise HTTPException(503, "Official experiment grading could not be completed.") from exc
+
+
+@app.get("/api/internal/operations")
+def api_internal_operations(user=Depends(require_internal_access)):
+    try:
+        return command_center()
+    except Exception as exc:
+        logger.exception("Internal operations dashboard unavailable")
+        raise HTTPException(503, "The SmartBets command center is temporarily unavailable.") from exc
 
 @app.get("/api/nfl/fantasy/depth-charts")
 def api_fantasy_depth_charts(scoring: str=Query("PPR"), user=Depends(require_full_access)):

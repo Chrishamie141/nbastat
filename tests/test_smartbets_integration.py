@@ -25,10 +25,12 @@ def test_laptop_and_home_routes_coexist():
     paths = app.openapi()["paths"]
     for path in ("/api/readiness", "/api/search", "/api/games/refresh", "/api/nfl/games/{game_id}",
                  "/api/nfl/week", "/api/nfl/context", "/api/nfl/games/history",
-                 "/api/internal/nfl/experiments/{season}/{season_type}/{week}"):
+                 "/api/internal/nfl/experiments/{season}/{season_type}/{week}",
+                 "/api/internal/operations"):
         assert path in paths
     assert (ROOT / "frontend/app/analyze/classic/page.jsx").exists()
     assert (ROOT / "frontend/app/internal/experiments/week3/page.jsx").exists()
+    assert (ROOT / "frontend/app/internal/operations/page.jsx").exists()
 
 
 def test_app_lifespan_and_readiness_start_with_isolated_database():

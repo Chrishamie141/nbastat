@@ -44,6 +44,7 @@ export const api = {
   config: () => request("/api/config/status"),
   dashboard: () => request("/api/dashboard"),
   internal: {
+    operations: () => request('/api/internal/operations'),
     nflExperiment: ({ season, seasonType, week }) =>
       request(`/api/internal/nfl/experiments/${season}/${seasonType}/${week}`),
     gradeNflExperiment: ({ season, seasonType, week }) =>

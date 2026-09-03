@@ -112,3 +112,17 @@ test("internal Week 3 experiment dashboard separates predictions from wagers", (
   assert.match(api, /api\/internal\/nfl\/experiments/);
   assert.match(auth, /['"]\/internal['"]/);
 });
+
+test("internal command center joins operations, social, experiments, and buyers", () => {
+  const page = fs.readFileSync("app/internal/operations/page.jsx", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  const nav = fs.readFileSync("components/layout/PremiumNavbar.jsx", "utf8");
+  assert.match(page, /SmartBets Command Center/);
+  assert.match(page, /Operating pipeline/);
+  assert.match(page, /Buyer funnel/);
+  assert.match(page, /X automation/);
+  assert.match(page, /Unified activity feed/);
+  assert.match(page, /setInterval\(load,60000\)/);
+  assert.match(api, /api\/internal\/operations/);
+  assert.match(nav, /internal\/operations/);
+});
