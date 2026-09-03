@@ -134,3 +134,43 @@ def test_daily_draft_failure_does_not_block_capture(store,monkeypatch):
                  clock=lambda:at.timestamp(),sleep=lambda seconds:(runtime/'STOP').touch())
     health=json.loads((runtime/'health.json').read_text())
     assert health['state']=='STOPPED' and health['social']['state']=='DRAFT_BLOCKED_REVIEW_CONFIG_OR_SOURCE'
+
+
+def test_duplicate_cli_is_successful_no_op(monkeypatch,capsys):
+    def duplicate(argv):raise worker.AlreadyRunning('WATCHER_ALREADY_RUNNING')
+    monkeypatch.setattr(worker,'main',duplicate)
+    assert worker.cli(['run'])==0
+    assert json.loads(capsys.readouterr().out)['state']=='ALREADY_RUNNING'
+
+
+def test_module_entrypoint_uses_canonical_duplicate_exception(monkeypatch,capsys):
+    import runpy
+    def duplicate(argv):raise worker.AlreadyRunning('WATCHER_ALREADY_RUNNING')
+    monkeypatch.setattr(worker,'main',duplicate)
+    with pytest.warns(RuntimeWarning),pytest.raises(SystemExit) as result:
+        runpy.run_module('backtesting.week1_worker',run_name='__main__')
+    assert result.value.code==0
+    assert json.loads(capsys.readouterr().out)['state']=='ALREADY_RUNNING'
+
+
+@pytest.mark.parametrize('error',[ValueError('THE_ODDS_API_KEY_MISSING'),RuntimeError('real failure')])
+def test_real_cli_failure_is_not_masked(monkeypatch,capsys,error):
+    def fail(argv):raise error
+    monkeypatch.setattr(worker,'main',fail)
+    assert worker.cli(['run'])==2
+    output=capsys.readouterr()
+    assert not output.out
+    assert json.loads(output.err)['state']=='FATAL_CONFIGURATION_OR_INTEGRITY'
+
+
+def test_recovery_separate_from_worker_and_stop_disables_both():
+    script=(worker.ROOT/'tools/week1-task.ps1').read_text()
+    assert '-Trigger $login -Settings $settings' in script
+    assert '-Trigger @($login,$recovery)' not in script
+    assert '-RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)' in script
+    recover=script.split("if ($Action -eq 'Recover')")[1].split("if ($Action -eq 'Repair'")[0]
+    common=(worker.ROOT/'tools/week1-task-recovery.ps1').read_text()
+    assert "@('Running','Queued')" in common and 'WORKER_ACTIVE_NO_ACTION' in common
+    assert 'Invoke-SmartBetsTaskRecovery -TaskName $taskName' in recover
+    assert '$python' not in recover and 'DATABASE_URL' not in recover
+    assert 'Disable-ScheduledTask -TaskName $recoveryName' in script

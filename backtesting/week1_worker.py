@@ -18,6 +18,10 @@ MANIFEST = 'ee7caccb4ab4eb920157b359b89d5cc5cad5af6a6cbd7228cf1f13f0fa1e4261'
 PREDICTIONS = 'e57e7e557a19c584dfabc097489bd39b1ea0550180c36f41bc6abe4c8d2591e9'
 
 
+class AlreadyRunning(RuntimeError):
+    """Benign duplicate invocation, distinct from configuration/integrity failure."""
+
+
 def stamp():
     return datetime.now(timezone.utc).isoformat()
 
@@ -49,7 +53,7 @@ def single_instance(db):
         try:
             lock()
         except OSError as exc:
-            raise RuntimeError('WATCHER_ALREADY_RUNNING') from exc
+            raise AlreadyRunning('WATCHER_ALREADY_RUNNING') from exc
         try:
             yield
         finally:
@@ -60,7 +64,7 @@ def locked(db):
     try:
         with single_instance(db):
             return False
-    except RuntimeError:
+    except AlreadyRunning:
         return True
 
 
@@ -94,12 +98,16 @@ def configure_local(*, create=False, root=ROOT):
     if create and not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('x', encoding='utf-8') as f:
-            json.dump(dict(signing_key=secrets.token_hex(32), campaign_start=stamp()[:10]), f)
+            json.dump(dict(signing_key=secrets.token_hex(32),sync_secret=secrets.token_hex(32),campaign_start=stamp()[:10]), f)
     config = json.loads(path.read_text(encoding='utf-8'))
+    if create and not config.get('sync_secret'):
+        config['sync_secret']=secrets.token_hex(32)
+        atomic_json(path,config)
     os.environ.update(SOCIAL_DATABASE_URL='sqlite:///' + (path.parent / 'social-drafts.db').as_posix(),
                       SOCIAL_SOURCE_SIGNING_KEY=config['signing_key'],
                       SOCIAL_CAMPAIGN_START=config['campaign_start'],
                       DRY_RUN='true', SOCIAL_AUTO_PUBLISH='false', SOCIAL_SCHEDULER_ENABLED='false')
+    if config.get('sync_secret'):os.environ['SOCIAL_SYNC_SECRET']=config['sync_secret']
     return path.parent
 
 
@@ -236,13 +244,23 @@ def main(argv=None):
     return 0
 
 
-if __name__ == '__main__':
+def cli(argv=None):
     try:
-        raise SystemExit(main())
+        return main(argv)
+    except AlreadyRunning:
+        print(json.dumps({'state':'ALREADY_RUNNING','action':'NO_OP'}))
+        return 0
     except (ValueError, FileNotFoundError, RuntimeError) as exc:
         # Never log provider URLs/credentials or arbitrary exception messages.
         safe_codes = {'WATCHER_ALREADY_RUNNING','FROZEN_WEEK1_INTEGRITY_FAILED',
                       'SQLITE_INTEGRITY_FAILED','THE_ODDS_API_KEY_MISSING','PROJECT_VIRTUAL_ENVIRONMENT_REQUIRED'}
         reason = str(exc) if str(exc) in safe_codes else type(exc).__name__
         print(json.dumps({'state':'FATAL_CONFIGURATION_OR_INTEGRITY', 'reason':reason}), file=sys.stderr)
-        raise SystemExit(2)
+        return 2
+
+
+if __name__ == '__main__':
+    # The lifecycle imports this module by canonical name. Use the same exception
+    # class there and here (python -m otherwise creates a second __main__ class).
+    from backtesting.week1_worker import cli as canonical_cli
+    raise SystemExit(canonical_cli())

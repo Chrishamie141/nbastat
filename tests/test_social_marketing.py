@@ -54,10 +54,10 @@ def test_preview_rejects_stale_evidence(setup):
     with pytest.raises(ValueError,match='stale'):preview_week(lambda:setup[0]()+timedelta(days=2))
 
 
-def test_fourteen_templates_distinct_valid_length(setup):
+def test_twenty_eight_templates_distinct_valid_length(setup):
     _,source=setup
-    posts=[social.render(day,source)[1] for day in range(14)]
-    assert len(set(posts))==14 and all(len(post)<=280 for post in posts)
+    posts=[social.render(day,source)[1] for day in range(28)]
+    assert len(set(posts))==28 and all(len(post)<=280 for post in posts)
     for i,left in enumerate(posts):
         for right in posts[i+1:]:
             assert social.SequenceMatcher(None,social.similarity(left),social.similarity(right)).ratio()<.82
@@ -189,8 +189,38 @@ def test_cta_domain_is_explicit(setup,monkeypatch):
     with pytest.raises(ValueError,match='match'):social.generate(setup[0])
 
 
-def test_campaign_stops_after_fourteen_days(setup):
-    with pytest.raises(ValueError,match='Outside'):social.generate(lambda:setup[0]()+timedelta(days=14))
+def test_cta_is_limited_to_two_posts_per_week(setup,monkeypatch):
+    _,source=setup
+    monkeypatch.setenv('SOCIAL_CTA_URL','https://smartbetsports.com')
+    monkeypatch.setenv('SOCIAL_COMPANY_DOMAIN','smartbetsports.com')
+    posts=[social.render(day,source)[1] for day in range(28)]
+    assert sum('https://smartbetsports.com' in post for post in posts)==8
+    assert all(len(post)<=280 for post in posts)
+
+
+def test_signed_remote_source_acceptance_is_idempotent(setup):
+    clock,source=setup
+    source=dict(source,claims_policy='predictions_are_not_wagers;small_sample_not_future_performance')
+    envelope={'source_id':social.sha(source),'payload':source,'signature':social.sign(source)}
+    first=social.accept_source_envelope(envelope,clock)
+    second=social.accept_source_envelope(envelope,clock)
+    assert first==second
+    with social.connection() as c:
+        assert c.execute('SELECT COUNT(*) FROM social_sources').fetchone()[0]==2
+    envelope['signature']='0'*64
+    with pytest.raises(ValueError,match='authenticity'):social.accept_source_envelope(envelope,clock)
+
+
+def test_campaign_continues_with_dated_rotation_after_twenty_eight_days(setup):
+    clock,source=setup
+    future=clock()+timedelta(days=28)
+    source['verified_at']=future.isoformat();seed(source)
+    post=social.generate(lambda:future)
+    assert post['category'].endswith('|28') and post['content'].startswith('Sep 29 research update:')
+
+
+def test_campaign_refuses_dates_before_start(setup):
+    with pytest.raises(ValueError,match='not started'):social.generate(lambda:setup[0]()-timedelta(days=1))
 
 
 def test_unknown_vercel_job_error_redacted(monkeypatch):
@@ -203,3 +233,23 @@ def test_unknown_vercel_job_error_redacted(monkeypatch):
     monkeypatch.setattr(social,'daily',fail)
     response=client.get('/api/cron/social-daily',headers={'authorization':'Bearer private-cron'})
     assert response.status_code==503 and 'secret-token' not in response.text
+
+
+def test_remote_source_route_requires_separate_secret(monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from backend.app.api.social_cron import router
+    app=FastAPI();app.include_router(router);client=TestClient(app)
+    monkeypatch.setenv('SOCIAL_SYNC_SECRET','sync-secret')
+    monkeypatch.setattr(social,'accept_source_envelope',lambda body:{'accepted':body['source_id']})
+    assert client.post('/api/cron/social-source',json={'source_id':'x'}).status_code==401
+    response=client.post('/api/cron/social-source',json={'source_id':'x'},headers={'authorization':'Bearer sync-secret'})
+    assert response.json()=={'accepted':'x'}
+
+
+def test_source_sync_task_never_publishes_or_opens_prediction_db_for_writes():
+    from pathlib import Path
+    script=(Path(__file__).resolve().parents[1]/'tools/social-source-task.ps1').read_text(encoding='utf-8')
+    assert 'remote-sync' in script
+    assert 'publish-one' not in script and 'SOCIAL_AUTO_PUBLISH' not in script
+    assert "New-ScheduledTaskTrigger -Daily -At '8:30 AM'" in script

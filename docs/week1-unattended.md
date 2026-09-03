@@ -28,11 +28,16 @@ Installation refuses to overwrite an existing task. If Windows denies registrati
 run the same Install command in an elevated PowerShell **as the same Windows user**;
 no credentials are collected or stored by the script. Do not delete/recreate the DB.
 
-Task `SmartBets-Week1-2026` runs hidden at user login with a five-minute recovery/wake
-trigger. `IgnoreNew` and a shared OS-held byte lock prevent overlapping watchers,
+Task `SmartBets-Week1-2026` runs hidden at user login. The separate short task
+`SmartBets-Week1-2026-Recovery` checks every five minutes and wakes the laptop when allowed;
+it returns success without launching anything if the worker is already Running/Queued,
+and respects an explicitly Disabled worker. Native failure retry is additionally configured
+at one minute, three attempts, but the independently tested recovery task is the fallback.
+`IgnoreNew` and a shared OS-held byte lock prevent overlapping watchers,
 including manually launched `nfl_week_workflow watch` instances. The lock automatically
-releases on process exit/crash. Native stdout/stderr and atomic health JSON live under
-ignored `.runtime/week1/`. Stop disables recovery before requesting a graceful stop,
+releases on process exit/crash. Duplicate CLI invocation is an explicit exit-0 no-op;
+real configuration/integrity failures still exit nonzero. Native stdout/stderr and atomic
+health JSON live under ignored `.runtime/week1/`. Stop disables both tasks before requesting a graceful stop,
 waits up to two minutes, and never forcibly kills an in-flight SQLite transaction.
 
 This is a **current-user interactive-logon task**: after a reboot, sign in once.
@@ -81,6 +86,9 @@ Status includes the real lock state, heartbeat freshness, next checkpoint UTC, c
 pending/missed counts, alerts, last provider status, latest successful capture, reserved
 budget, last reported account usage, and verified frozen hashes. Account usage is the
 provider's account-wide last observation, not a fresh query or a local cost calculation.
+The scheduler audit and explanation of the former `0x800710E0` result are in
+[the scheduler audit](week1-scheduler-audit.md). The original five-minute trigger on the
+long-running task was replaced; fresh installations now use the two-task layout.
 The raw Task Scheduler last-run result is also shown. A repeated launch can be refused
 while `IgnoreNew` keeps an existing instance running; do not confuse a refused additional
 launch with worker failure. Inspect the actual worker lock and fresh heartbeat. A stale

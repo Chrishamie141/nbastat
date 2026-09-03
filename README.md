@@ -150,6 +150,11 @@ For unattended operation on the laptop, see the [Week 1 Windows runner guide](do
 Task Scheduler installation, single-instance/graceful restart controls, live health,
 verified backups, and locally saved daily/seven-day marketing drafts with X disabled.
 
+Daily X publishing operations and fail-closed source synchronization are documented in
+[`docs/social-automation.md`](docs/social-automation.md). The cloud publishes at most once
+per UTC day; the laptop task only uploads signed aggregate evidence and never writes the
+frozen experiment databases.
+
 ## Immutable model registry
 
 Every model and experiment has an append-only, content-addressed record under `backtesting/model_registry`. The research command writes `experiment_result.json` using the shared v1 contract in `backtesting/model_registry/experiment_result.schema.json`. It includes Git, configuration, and input-dataset hashes; train/evaluation windows; reproducibility settings; Brier score, log loss, ECE, and ROI with game-cluster uncertainty; calibration bins; a reliability plot; and profit/quality breakdowns by market and confidence bucket.

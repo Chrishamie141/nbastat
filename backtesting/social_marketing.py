@@ -10,7 +10,7 @@ from backend.app.services import social_marketing as social
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action',choices=['init','sync-source','dry-run','preview-week','publish-one','daily','report','reconcile'])
+    p.add_argument('action',choices=['init','sync-source','remote-sync','remote-status','dry-run','preview-week','publish-one','daily','report','reconcile'])
     p.add_argument('--week-db',type=Path)
     p.add_argument('--post-id')
     p.add_argument('--x-post-id')
@@ -26,6 +26,22 @@ def main(argv=None):
     elif args.action=='sync-source':
         if not args.week_db: p.error('--week-db is required')
         result=social.sync_source(args.week_db)
+    elif args.action in ('remote-sync','remote-status'):
+        from dotenv import load_dotenv
+        from backtesting.week1_worker import configure_local, ROOT
+        load_dotenv(ROOT/'.env',override=False)
+        configure_local(create=args.action=='remote-sync')
+        base=os.getenv('SOCIAL_API_URL','https://smartbetsports-api.vercel.app').rstrip('/')
+        secret=os.getenv('SOCIAL_SYNC_SECRET','')
+        if not base.startswith('https://') or not secret:raise ValueError('Remote social synchronization is not configured')
+        headers={'authorization':'Bearer '+secret}
+        if args.action=='remote-sync':
+            if not args.week_db:p.error('--week-db is required')
+            response=social.requests.post(base+'/api/cron/social-source',json=social.source_envelope(args.week_db),headers=headers,timeout=20)
+        else:
+            response=social.requests.get(base+'/api/cron/social-status',headers=headers,timeout=20)
+        if response.status_code not in (200,201):raise RuntimeError(f'Remote social request failed: HTTP {response.status_code}')
+        result=response.json()
     elif args.action=='dry-run':
         # Never calls the publisher, even if environment switches are enabled.
         result=social.generate(event=args.event) if args.event else social.generate()
@@ -56,8 +72,8 @@ def preview_week(clock=social.now):
     for offset in range(7):
         date=at.date()+timedelta(days=offset)
         index=(date-start).days
-        if index not in range(14):
-            previews.append(dict(date=date.isoformat(),status='OUTSIDE_APPROVED_CAMPAIGN'))
+        if index<0:
+            previews.append(dict(date=date.isoformat(),status='BEFORE_CAMPAIGN_START'))
             continue
         category,content=social.render(index,source)
         previews.append(dict(date=date.isoformat(),category=category,content=content,
