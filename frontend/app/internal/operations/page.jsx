@@ -1,69 +1,761 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Activity, AlertTriangle, BarChart3, CheckCircle2, Clock3, ExternalLink, Radio, RefreshCw, Users } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Database,
+  ExternalLink,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Siren,
+  Workflow,
+} from "lucide-react";
 import GlowCard from "@/components/ui/GlowCard";
 import { api } from "@/lib/api";
 
-const EMPTY="—";
-const fmt=(value)=>value?new Date(value).toLocaleString():EMPTY;
-const number=(value)=>Number(value||0).toLocaleString();
+const EMPTY = "—";
+const fmt = (value) => (value ? new Date(value).toLocaleString() : EMPTY);
 
-function Pill({value}){
-  const text=String(value||"UNKNOWN");
-  const good=["HEALTHY","VERIFIED","PUBLISHED","ACTIVE"].includes(text);
-  const bad=["FAILED","UNKNOWN","ATTENTION"].includes(text);
-  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-black tracking-wide ${good?"border-emerald-400/30 bg-emerald-400/10 text-emerald-200":bad?"border-rose-400/30 bg-rose-400/10 text-rose-100":"border-amber-300/30 bg-amber-300/10 text-amber-100"}`}>{text.replaceAll("_"," ")}</span>;
+function Pill({ value }) {
+  const text = String(value || "UNKNOWN").toUpperCase();
+  const good = [
+    "HEALTHY",
+    "READY",
+    "PASS",
+    "CURRENT",
+    "SUCCEEDED",
+    "FINAL",
+    "BLOCKED",
+  ].includes(text);
+  const bad = [
+    "FAILED",
+    "CRITICAL",
+    "NOT_READY",
+    "UNAVAILABLE",
+    "STALE",
+    "MISSING",
+  ].includes(text);
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-black tracking-wide ${good ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : bad ? "border-rose-400/30 bg-rose-400/10 text-rose-100" : "border-amber-300/30 bg-amber-300/10 text-amber-100"}`}
+    >
+      {text.replaceAll("_", " ")}
+    </span>
+  );
 }
 
-function Metric({label,value,detail,icon:Icon}){
-  return <GlowCard className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{label}</p><p className="mt-3 text-3xl font-black tracking-tight text-white">{value??EMPTY}</p>{detail&&<p className="mt-1 text-xs text-slate-400">{detail}</p>}</div>{Icon&&<Icon className="text-cyan-300" size={20}/>}</div></GlowCard>;
+function Metric({ label, value, detail, icon: Icon }) {
+  return (
+    <GlowCard className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">
+            {label}
+          </p>
+          <div className="mt-3 text-3xl font-black tracking-tight text-white">
+            {value ?? EMPTY}
+          </div>
+          {detail && <p className="mt-1 text-xs text-slate-400">{detail}</p>}
+        </div>
+        {Icon && <Icon className="text-cyan-300" size={20} />}
+      </div>
+    </GlowCard>
+  );
 }
 
-function Progress({label,value,total}){
-  const pct=total?Math.min(100,100*value/total):0;
-  return <div><div className="mb-2 flex justify-between text-sm"><span className="text-slate-300">{label}</span><span className="font-bold">{value}/{total}</span></div><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400" style={{width:`${pct}%`}}/></div></div>;
+function PanelState({ panel, retry }) {
+  if (!panel || panel.status === "HEALTHY") return null;
+  return (
+    <div
+      role="alert"
+      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-3 text-sm text-amber-100"
+    >
+      <span>
+        {panel.error?.message || "This panel is temporarily unavailable."}
+      </span>
+      <button onClick={retry} className="font-bold underline">
+        Retry panel
+      </button>
+    </div>
+  );
 }
 
-export default function OperationsPage(){
-  const [data,setData]=useState(null);const [error,setError]=useState("");const [loading,setLoading]=useState(true);
-  const load=useCallback(async()=>{setLoading(true);setError("");try{setData(await api.internal.operations());}catch(e){setError(e.message);}finally{setLoading(false);}},[]);
-  useEffect(()=>{load();const id=setInterval(load,60000);return()=>clearInterval(id);},[load]);
-  const regular=data?.experiments?.regular||{};const preseason=data?.experiments?.preseason||{};const social=data?.systems?.social||{};const buyers=data?.buyers||{};
-  const record=regular.winner_record||{};const coverage=data?.experiments?.marketCoverage||{};
-  const funnel=[
-    ["Registered",buyers.registered||0],["Active accounts",buyers.active_accounts||0],["Members",buyers.members||0],["Paid members",buyers.paid_members||0]
-  ];
-  if(loading&&!data)return <main className="mx-auto min-h-screen max-w-7xl px-6 py-16" aria-live="polite">Loading SmartBets Command Center…</main>;
-  if(error&&!data)return <main className="mx-auto min-h-screen max-w-3xl px-6 py-16"><h1 className="text-4xl font-black">Command Center</h1><div role="alert" className="mt-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-5 text-rose-100">{error}</div></main>;
-  return <main className="mx-auto min-h-screen max-w-[1600px] px-4 pb-24 pt-10 sm:px-6">
-    <header className="flex flex-wrap items-end justify-between gap-5"><div><p className="text-sm font-black uppercase tracking-[.22em] text-cyan-300">Internal · Executive operations</p><div className="mt-2 flex flex-wrap items-center gap-3"><h1 className="text-4xl font-black tracking-[-.055em] md:text-6xl">SmartBets Command Center</h1><Pill value={data?.overallStatus}/></div><p className="mt-3 max-w-3xl text-slate-300">One view of model evidence, market coverage, X publishing, platform health, and the buyer funnel.</p></div><button onClick={load} disabled={loading} className="btn btn-glass flex items-center gap-2"><RefreshCw size={16} className={loading?"animate-spin":""}/>Refresh</button></header>
+function CheckRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-white/10 py-2.5 last:border-0">
+      <span className="text-sm text-slate-300">
+        {label.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase())}
+      </span>
+      <Pill value={value} />
+    </div>
+  );
+}
 
-    {error&&<div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm text-amber-100">Latest refresh failed: {error}</div>}
-    <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      <Metric label="System" value={<Pill value={data?.overallStatus}/>} detail={`Updated ${fmt(data?.generatedAt)}`} icon={Activity}/>
-      <Metric label="Regular record" value={`${record.WIN||0}-${record.LOSS||0}-${record.PUSH||0}`} detail={`${regular.graded||0} graded predictions`} icon={BarChart3}/>
-      <Metric label="Market coverage" value={`${coverage.covered||0}/${coverage.total||0}`} detail="Verified pregame games" icon={Radio}/>
-      <Metric label="X source age" value={`${social.sourceAgeMinutes??0}m`} detail={`Next post ${fmt(social.nextRunAt)}`} icon={Clock3}/>
-      <Metric label="Members" value={number(buyers.members)} detail={`${number(buyers.paid_members)} paid · ${number(buyers.promotional_members)} promo`} icon={Users}/>
-      <Metric label="X posts" value={number(social.postCounts?.PUBLISHED)} detail={`@SmartBetSports · ${social.autoPublish?"automatic":"manual"}`} icon={CheckCircle2}/>
-    </section>
+function HealthRow({ label, value, detail }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-white/10 py-3 last:border-0">
+      <div>
+        <p className="font-bold">{label}</p>
+        {detail && <p className="mt-1 text-xs text-slate-400">{detail}</p>}
+      </div>
+      <Pill value={value} />
+    </div>
+  );
+}
 
-    <section className="mt-8 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
-      <GlowCard className="p-6"><div className="flex items-center justify-between"><h2 className="text-2xl font-black">Operating pipeline</h2><Pill value={data?.systems?.api?.status}/></div><div className="mt-6 grid gap-3 md:grid-cols-5">{[
-        ["1","Signed evidence",`${social.sourceAgeMinutes??0}m old`],["2","Frozen forecast",`${regular.predictions||0}/${regular.scheduled||0}`],["3","Pregame markets",`${coverage.covered||0}/${coverage.total||0}`],["4","X publishing",social.schedulerEnabled?"Scheduled":"Disabled"],["5","Buyer access",`${buyers.members||0} members`]
-      ].map(([step,label,detail])=><div key={step} className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><span className="text-xs font-black text-cyan-300">STEP {step}</span><p className="mt-2 font-bold">{label}</p><p className="mt-1 text-xs text-slate-400">{detail}</p></div>)}</div><div className="mt-6 space-y-4"><Progress label="Frozen regular-season predictions" value={regular.predictions||0} total={regular.scheduled||0}/><Progress label="Verified market coverage" value={coverage.covered||0} total={coverage.total||0}/><Progress label="Grading completion" value={regular.graded||0} total={regular.predictions||0}/></div></GlowCard>
-      <GlowCard className="p-6"><div className="flex items-center gap-2"><AlertTriangle size={20} className={data?.alerts?.length?"text-amber-300":"text-emerald-300"}/><h2 className="text-2xl font-black">Attention queue</h2></div>{data?.alerts?.length?<div className="mt-5 space-y-3">{data.alerts.map((alert)=><div key={alert.code} className="rounded-xl border border-amber-300/20 bg-amber-300/[.07] p-4"><div className="flex items-center justify-between gap-3"><p className="font-bold">{alert.code.replaceAll("_"," ")}</p><Pill value={alert.severity}/></div><p className="mt-2 text-sm text-slate-300">{alert.message}</p></div>)}</div>:<div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/[.07] p-5"><p className="font-bold text-emerald-200">No active alerts</p><p className="mt-1 text-sm text-slate-300">Source freshness, publishing, and persisted membership state are within guardrails.</p></div>}</GlowCard>
-    </section>
+export default function OperationsPage() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [action, setAction] = useState({});
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState(null);
+  const [searching, setSearching] = useState(false);
 
-    <section className="mt-8 grid gap-4 xl:grid-cols-3">
-      <GlowCard className="p-6"><h2 className="text-xl font-black">Experiment portfolio</h2><div className="mt-5 space-y-4"><div className="rounded-xl bg-white/[.04] p-4"><div className="flex justify-between"><b>2026 regular Week {regular.week}</b><Pill value="ACTIVE"/></div><p className="mt-2 text-sm text-slate-300">{regular.predictions||0} frozen · {regular.graded||0} graded · {record.WIN||0}-{record.LOSS||0}-{record.PUSH||0}</p></div><div className="rounded-xl bg-white/[.04] p-4"><div className="flex justify-between"><b>2026 preseason Week 3</b><Pill value="VERIFIED"/></div><p className="mt-2 text-sm text-slate-300">{preseason.predictions||0} frozen · {preseason.record?.WIN||0}-{preseason.record?.LOSS||0}-{preseason.record?.PUSH||0} · {preseason.qualified_wagers||0} wagers</p></div><Link href="/internal/experiments/week3" className="inline-flex items-center gap-2 text-sm font-bold text-cyan-300">Open Week 3 ledger <ExternalLink size={14}/></Link></div></GlowCard>
-      <GlowCard className="p-6"><h2 className="text-xl font-black">Buyer funnel</h2><div className="mt-5 space-y-4">{funnel.map(([label,value],index)=><div key={label}><div className="flex justify-between text-sm"><span className="text-slate-300">{label}</span><b>{number(value)}</b></div><div className="mt-2 h-2 rounded-full bg-white/10"><div className="h-full rounded-full bg-cyan-400" style={{width:`${funnel[0][1]?Math.max(3,100*value/funnel[0][1]):0}%`,opacity:1-index*.15}}/></div></div>)}</div><div className="mt-5 grid grid-cols-2 gap-3 text-center text-sm"><div className="rounded-xl bg-white/[.04] p-3"><p className="text-slate-400">Past due</p><b className="text-lg">{number(buyers.past_due)}</b></div><div className="rounded-xl bg-white/[.04] p-3"><p className="text-slate-400">Canceling</p><b className="text-lg">{number(buyers.canceling)}</b></div></div></GlowCard>
-      <GlowCard className="p-6"><h2 className="text-xl font-black">X automation</h2><dl className="mt-5 space-y-3 text-sm">{[["Account",social.account],["Scheduler",social.schedulerEnabled?"Enabled":"Disabled"],["Automatic publish",social.autoPublish?"Enabled":"Disabled"],["Dry run",social.dryRun?"On":"Off"],["Latest signed source",fmt(social.latestSourceAt)],["Next cloud run",fmt(social.nextRunAt)]].map(([label,value])=><div key={label} className="flex justify-between gap-4 border-b border-white/10 pb-3"><dt className="text-slate-400">{label}</dt><dd className="text-right font-bold">{value||EMPTY}</dd></div>)}</dl></GlowCard>
-    </section>
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setData(await api.internal.operations());
+    } catch (exception) {
+      setError(exception.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    <section className="mt-8"><h2 className="text-2xl font-black">Unified activity feed</h2><div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[.025]">{data?.feed?.map((item,index)=><div key={`${item.type}-${item.at}-${index}`} className="grid gap-2 border-t border-white/10 p-4 first:border-0 md:grid-cols-[150px_1fr_auto]"><div><span className="text-xs font-black uppercase tracking-wider text-cyan-300">{item.type}</span><p className="mt-1 text-xs text-slate-500">{fmt(item.at)}</p></div><div><p className="font-bold">{item.title}</p><p className="mt-1 text-sm text-slate-300">{item.detail}</p></div><div className="flex items-start gap-3"><Pill value={item.status}/>{item.url&&<a href={item.url} target="_blank" rel="noreferrer" aria-label="Open post on X"><ExternalLink size={16}/></a>}</div></div>)}</div></section>
-    <p className="mt-6 text-xs text-slate-500">Internal aggregate view. Member counts exclude identities; prediction accuracy and qualified-wager performance remain separate.</p>
-  </main>;
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 60000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const runAction = useCallback(
+    async (key, request) => {
+      setAction((current) => ({ ...current, [key]: { state: "RUNNING" } }));
+      try {
+        const result = await request();
+        setAction((current) => ({
+          ...current,
+          [key]: { state: "SUCCEEDED", at: result.completedAt },
+        }));
+        await load();
+      } catch (exception) {
+        setAction((current) => ({
+          ...current,
+          [key]: { state: "FAILED", error: exception.message },
+        }));
+      }
+    },
+    [load],
+  );
+
+  const submitSearch = useCallback(
+    async (event) => {
+      event.preventDefault();
+      if (query.trim().length < 2) return;
+      setSearching(true);
+      try {
+        setSearch(await api.internal.operationsSearch(query.trim()));
+      } catch (exception) {
+        setSearch({ error: exception.message });
+      } finally {
+        setSearching(false);
+      }
+    },
+    [query],
+  );
+
+  const summary = data?.summary || {};
+  const model = data?.modelOperations || {};
+  const health = data?.dataHealth || {};
+  const automation = data?.automation || {};
+  const filteredGames = useMemo(() => data?.games || [], [data]);
+
+  if (loading && !data)
+    return (
+      <main
+        className="mx-auto min-h-screen max-w-7xl px-6 py-16"
+        aria-live="polite"
+      >
+        Loading Week 1 Command Center…
+      </main>
+    );
+  if (error && !data)
+    return (
+      <main className="mx-auto min-h-screen max-w-3xl px-6 py-16">
+        <h1 className="text-4xl font-black">Command Center</h1>
+        <div
+          role="alert"
+          className="mt-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-5 text-rose-100"
+        >
+          {error}
+        </div>
+        <button onClick={load} className="btn btn-glass mt-4">
+          Retry
+        </button>
+      </main>
+    );
+
+  return (
+    <main className="mx-auto min-h-screen max-w-[1600px] px-4 pb-24 pt-10 sm:px-6">
+      <header className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="text-sm font-black uppercase tracking-[.22em] text-cyan-300">
+            Owner operations · NFL 2026 regular season
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl font-black tracking-[-.055em] md:text-6xl">
+              Week 1 Command Center
+            </h1>
+            <Pill value={data?.week1Readiness?.status} />
+          </div>
+          <p className="mt-3 max-w-3xl text-slate-300">
+            Readiness, games, frozen predictions, outcomes, data health, and
+            operational exceptions in one control plane.
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            {data?.environment} · build {data?.version} · updated{" "}
+            {fmt(data?.generatedAt)}
+          </p>
+        </div>
+        <button
+          onClick={() => runAction("all", api.internal.refreshOperations)}
+          disabled={action.all?.state === "RUNNING"}
+          className="btn btn-glass flex items-center gap-2"
+        >
+          <RefreshCw
+            size={16}
+            className={action.all?.state === "RUNNING" ? "animate-spin" : ""}
+          />
+          {action.all?.state === "RUNNING"
+            ? "Refreshing…"
+            : action.all?.state === "FAILED"
+              ? "Retry operational refresh"
+            : "Refresh operational data"}
+        </button>
+      </header>
+
+      {error && (
+        <div
+          role="alert"
+          className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm text-amber-100"
+        >
+          Latest dashboard refresh failed; last-known-good data remains visible.{" "}
+          {error}
+        </div>
+      )}
+      {action.all?.state === "FAILED" && (
+        <div
+          role="alert"
+          className="mt-5 rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-100"
+        >
+          Refresh failed: {action.all.error}
+        </div>
+      )}
+
+      <section
+        aria-label="Week 1 readiness summary"
+        className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+      >
+        <Metric
+          label="Games ready"
+          value={`${summary.gamesReady ?? 0}/${summary.gamesTotal ?? 0}`}
+          detail="Identified and operational"
+          icon={CheckCircle2}
+        />
+        <Metric
+          label="Predictions ready"
+          value={`${summary.predictionsReady ?? 0}/${summary.predictionsTotal ?? 0}`}
+          detail="Frozen before kickoff"
+          icon={Workflow}
+        />
+        <Metric
+          label="Final results"
+          value={summary.finalResults ?? 0}
+          detail="Ingested and reconciled"
+          icon={Clock3}
+        />
+        <Metric
+          label="Needs attention"
+          value={summary.needsAttention ?? 0}
+          detail="Warning or critical"
+          icon={Siren}
+        />
+        <Metric
+          label="Database"
+          value={<Pill value={summary.databaseHealth} />}
+          detail={`${health.database?.latencyMs ?? EMPTY} ms check`}
+          icon={Database}
+        />
+        <Metric
+          label="Provider"
+          value={<Pill value={summary.providerHealth} />}
+          detail="Status only; no paid refresh"
+          icon={Activity}
+        />
+      </section>
+
+      <section
+        id="readiness"
+        className="mt-8 grid gap-4 xl:grid-cols-[.8fr_1.2fr]"
+      >
+        <GlowCard className="p-6">
+          <h2 className="text-2xl font-black">Week 1 readiness</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Critical failures prevent READY. Unknown noncritical checks degrade
+            the state.
+          </p>
+          <div className="mt-5">
+            {Object.entries(data?.week1Readiness?.checks || {}).map(
+              ([label, value]) => (
+                <CheckRow key={label} label={label} value={value} />
+              ),
+            )}
+          </div>
+        </GlowCard>
+        <GlowCard className="p-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle
+              size={20}
+              className={
+                summary.needsAttention ? "text-amber-300" : "text-emerald-300"
+              }
+            />
+            <h2 className="text-2xl font-black">Needs Attention</h2>
+          </div>
+          <div className="mt-5 space-y-3">
+            {data?.issues?.length ? (
+              data.issues.map((issue, index) => (
+                <div
+                  key={`${issue.entityId}-${issue.category}-${index}`}
+                  className="rounded-xl border border-white/10 bg-white/[.035] p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="font-bold">
+                      {issue.category} · {issue.entityId}
+                    </p>
+                    <Pill value={issue.severity} />
+                  </div>
+                  <p className="mt-2 text-sm text-slate-300">{issue.summary}</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Detected {fmt(issue.detectedAt)} · source {issue.source}
+                  </p>
+                  <div className="mt-3 flex gap-3">
+                    {issue.action === "RECONCILE" && (
+                      <button
+                        disabled={action[issue.entityId]?.state === "RUNNING"}
+                        onClick={() =>
+                          runAction(issue.entityId, () =>
+                            api.internal.reconcileOperationGame(issue.entityId),
+                          )
+                        }
+                        className="text-sm font-bold text-cyan-300"
+                      >
+                        {action[issue.entityId]?.state === "RUNNING"
+                          ? "Reconciling…"
+                          : "Reconcile game"}
+                      </button>
+                    )}
+                    {issue.action === "VIEW_PREDICTION" && (
+                      <Link
+                        className="text-sm font-bold text-cyan-300"
+                        href={`/internal/games/${issue.entityId}`}
+                      >
+                        Inspect prediction
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[.07] p-5">
+                <p className="font-bold text-emerald-200">
+                  No operational exceptions
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Critical owner workflows are within guardrails.
+                </p>
+              </div>
+            )}
+          </div>
+        </GlowCard>
+      </section>
+
+      <section id="games" className="mt-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-black">Game operations</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Every displayed game links to its detailed prediction, freshness,
+              actuals, and provenance.
+            </p>
+          </div>
+          <form onSubmit={submitSearch} className="flex gap-2">
+            <label className="relative">
+              <Search
+                className="absolute left-3 top-2.5 text-slate-500"
+                size={16}
+              />
+              <input
+                aria-label="Search games, teams, players, artifacts, and issues"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="rounded-xl border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm"
+                placeholder="Search operations"
+              />
+            </label>
+            <button
+              disabled={searching || query.trim().length < 2}
+              className="btn btn-glass px-4 py-2"
+            >
+              {searching ? "Searching…" : "Search"}
+            </button>
+          </form>
+        </div>
+        {search && (
+          <div className="mt-4 rounded-xl border border-white/10 bg-white/[.035] p-4 text-sm">
+            {search.error ? (
+              <p role="alert" className="text-rose-200">
+                Search failed: {search.error}
+              </p>
+            ) : (
+              <>
+                <p className="font-bold">Search results</p>
+                <p className="mt-1 text-slate-400">
+                  {search.games?.length || 0} games ·{" "}
+                  {search.teams?.length || 0} teams ·{" "}
+                  {search.players?.length || 0} players ·{" "}
+                  {search.issues?.length || 0} issues
+                </p>
+                {search.games?.map((game) => (
+                  <Link
+                    key={game.id}
+                    href={`/internal/games/${game.id}`}
+                    className="mr-4 mt-2 inline-block font-bold text-cyan-300"
+                  >
+                    {game.awayTeam} at {game.homeTeam}
+                  </Link>
+                ))}
+                {search.errors?.catalog && (
+                  <p className="mt-2 text-amber-200">
+                    Catalog search unavailable: {search.errors.catalog.message}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+        <PanelState panel={data?.panels?.week1} retry={load} />
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-white/[.025]">
+          <table className="w-full min-w-[1050px] text-left text-sm">
+            <thead className="bg-white/[.04] text-xs uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="p-4">Matchup</th>
+                <th className="p-4">Kickoff</th>
+                <th className="p-4">Status / score</th>
+                <th className="p-4">Prediction</th>
+                <th className="p-4">Stats</th>
+                <th className="p-4">Freshness</th>
+                <th className="p-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredGames.map((game) => {
+                const running = action[game.id]?.state === "RUNNING";
+                const final = game.status === "FINAL";
+                return (
+                  <tr key={game.id} className="border-t border-white/10">
+                    <td className="p-4">
+                      <p className="font-black">
+                        {game.awayTeam} at {game.homeTeam}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {game.id} · regular Week 1
+                      </p>
+                      {game.warnings?.map((warning) => (
+                        <p
+                          key={warning}
+                          className="mt-1 text-xs text-amber-200"
+                        >
+                          {warning}
+                        </p>
+                      ))}
+                    </td>
+                    <td className="p-4">{fmt(game.kickoff)}</td>
+                    <td className="p-4">
+                      <Pill value={game.status} />
+                      {final && (
+                        <p className="mt-2 font-bold">
+                          {game.awayScore}–{game.homeScore}
+                        </p>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <Pill value={game.predictionStatus} />
+                      <p className="mt-2 text-xs text-slate-400">
+                        {game.prediction
+                          ? `${game.prediction.winner} · ${(Number(game.prediction.probability) * 100).toFixed(1)}%`
+                          : "No artifact"}
+                      </p>
+                    </td>
+                    <td className="p-4">
+                      <Pill value={game.statsStatus} />
+                    </td>
+                    <td className="p-4">
+                      <Pill value={game.freshness} />
+                      <p className="mt-2 text-xs text-slate-500">
+                        {fmt(game.lastRefresh)}
+                      </p>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-wrap gap-3">
+                        <Link
+                          href={`/internal/games/${game.id}`}
+                          className="font-bold text-cyan-300"
+                        >
+                          {final
+                            ? game.grade
+                              ? "View evaluation"
+                              : "View final & comparison"
+                            : "View game & prediction"}
+                        </Link>
+                        <button
+                          disabled={running}
+                          onClick={() =>
+                            runAction(game.id, () =>
+                              game.freshness === "STALE"
+                                ? api.internal.reconcileOperationGame(game.id)
+                                : api.internal.refreshOperationGame(game.id),
+                            )
+                          }
+                          className="font-bold text-slate-200 disabled:text-slate-500"
+                        >
+                          {running
+                            ? "Refreshing…"
+                            : action[game.id]?.state === "FAILED"
+                              ? "Retry"
+                            : game.freshness === "STALE"
+                              ? final ? "Reconcile outcome" : "Reconcile"
+                              : final ? "Refresh final stats" : "Refresh"}
+                        </button>
+                      </div>
+                      {action[game.id]?.state === "FAILED" && (
+                        <p role="alert" className="mt-2 text-xs text-rose-200">
+                          {action[game.id].error}
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {!filteredGames.length && (
+            <p className="p-6 text-sm text-slate-400">
+              No game rows are available from this environment. The panel above
+              identifies the failed dependency explicitly.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-8 grid gap-4 xl:grid-cols-2">
+        <GlowCard id="model-operations" className="p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black">
+              Model / prediction operations
+            </h2>
+            <Pill value={model.researchStatus} />
+          </div>
+          <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+            {[
+              ["Production model", model.productionModel],
+              ["Latest prediction run", fmt(model.lastRun)],
+              ["Generation cutoff", model.generationCutoff],
+              [
+                "Game coverage",
+                `${model.gamesCovered ?? 0}/${model.gamesTotal ?? 0}`,
+              ],
+              ["Missing predictions", model.missingPredictions],
+              ["Failed predictions", model.failedPredictions],
+              ["Calibration", model.calibrationStatus],
+              ["Manifest hash", model.manifestHash],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl bg-white/[.04] p-4">
+                <dt className="text-xs uppercase tracking-wider text-slate-400">
+                  {label}
+                </dt>
+                <dd className="mt-2 break-all font-bold">{value ?? EMPTY}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-5 flex flex-wrap gap-4">
+            <a href="#games" className="font-bold text-cyan-300">
+              View prediction run
+            </a>
+            {model.missingPredictions > 0 ? (
+              <span className="text-sm text-amber-200">
+                Generation is blocked here until a scoped, provenance-preserving
+                backend job is configured.
+              </span>
+            ) : (
+              <span className="text-sm text-emerald-200">
+                All eligible Week 1 predictions are frozen; duplicate generation
+                is unavailable.
+              </span>
+            )}
+          </div>
+        </GlowCard>
+        <GlowCard id="data-health" className="p-6">
+          <h2 className="text-2xl font-black">Data / system health</h2>
+          <PanelState panel={data?.panels?.database} retry={load} />
+          <div className="mt-4">
+            <HealthRow
+              label="Primary database"
+              value={health.database?.status}
+              detail={`${health.database?.engine || EMPTY} · ${health.database?.latencyMs ?? EMPTY} ms`}
+            />
+            <HealthRow
+              label="Schedule store"
+              value={health.scheduleStore?.status}
+              detail={`${health.scheduleStore?.gameCount ?? 0} Week 1 games`}
+            />
+            <HealthRow
+              label="Game status service"
+              value={health.gameStatusService?.status}
+              detail={health.gameStatusService?.provider}
+            />
+            <HealthRow
+              label="Prediction store"
+              value={
+                health.predictionStore?.data?.status ||
+                health.predictionStore?.status
+              }
+              detail={`${health.predictionStore?.data?.artifactCount ?? 0} artifacts`}
+            />
+            <HealthRow
+              label="Player / team stats"
+              value={health.playerStatsStore?.status}
+              detail="Pending is expected before final games"
+            />
+            <HealthRow
+              label="Week 1 worker"
+              value={health.worker?.status}
+              detail={
+                health.worker?.pid
+                  ? `PID ${health.worker.pid} · heartbeat ${fmt(health.worker.heartbeatAt)}`
+                  : "Not available in this environment"
+              }
+            />
+            <HealthRow
+              label="Provider"
+              value={health.provider?.status}
+              detail={`Quota ${health.provider?.quotaState || EMPTY}`}
+            />
+            <HealthRow
+              label="Next controlled checkpoint"
+              value={health.nextCheckpoint ? "SCHEDULED" : "NONE"}
+              detail={health.nextCheckpoint ? fmt(new Date(health.nextCheckpoint.due * 1000).toISOString()) : "No pending capture"}
+            />
+          </div>
+        </GlowCard>
+      </section>
+
+      <section className="mt-8 grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
+        <GlowCard id="automation" className="p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black">
+              Automation / publishing safety
+            </h2>
+            <Pill value={automation.status} />
+          </div>
+          <p className="mt-2 text-sm text-slate-400">
+            Status only. This control plane provides no publish action.
+          </p>
+          <dl className="mt-5">
+            <HealthRow
+              label="Credentials configured"
+              value={automation.credentialsConfigured ? "YES" : "NO"}
+            />
+            <HealthRow
+              label="Dry run"
+              value={automation.dryRun ? "ON" : "OFF"}
+            />
+            <HealthRow
+              label="Automatic publishing"
+              value={automation.autoPublish ? "ENABLED" : "DISABLED"}
+            />
+            <HealthRow
+              label="Account verification"
+              value={
+                automation.accountVerificationComplete
+                  ? "COMPLETE"
+                  : "INCOMPLETE"
+              }
+            />
+            <HealthRow
+              label="Expected X user ID"
+              value={
+                automation.expectedUserIdConfigured ? "CONFIGURED" : "MISSING"
+              }
+            />
+            <HealthRow
+              label="Publish safety"
+              value={automation.publishingBlocked ? "BLOCKED" : "ARMED"}
+            />
+          </dl>
+          <p className="mt-4 text-xs text-slate-500">
+            No credential values or account identifiers are displayed.
+          </p>
+        </GlowCard>
+        <GlowCard className="p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black">Operational action history</h2>
+            <ShieldCheck className="text-cyan-300" />
+          </div>
+          <PanelState panel={data?.panels?.actionHistory} retry={load} />
+          <div className="mt-5 space-y-3">
+            {data?.actionHistory?.length ? (
+              data.actionHistory.map((item) => (
+                <div
+                  key={item.action_id}
+                  className="grid gap-2 rounded-xl bg-white/[.04] p-4 md:grid-cols-[1fr_auto]"
+                >
+                  <div>
+                    <p className="font-bold">
+                      {item.action.replaceAll("_", " ")} · {item.target}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {item.actor} · started {fmt(item.started_at)} · completed{" "}
+                      {fmt(item.completed_at)}
+                    </p>
+                    {item.error && (
+                      <p className="mt-1 text-xs text-rose-200">{item.error}</p>
+                    )}
+                  </div>
+                  <Pill value={item.result} />
+                </div>
+              ))
+            ) : (
+              <p className="rounded-xl bg-white/[.04] p-4 text-sm text-slate-400">
+                No owner actions have been recorded yet.
+              </p>
+            )}
+          </div>
+        </GlowCard>
+      </section>
+
+      <p className="mt-6 text-xs text-slate-500">
+        System A prediction evidence remains separate from sportsbook pricing.
+        Refresh actions use the free schedule/game provider and never trigger
+        paid market capture.
+      </p>
+    </main>
+  );
 }

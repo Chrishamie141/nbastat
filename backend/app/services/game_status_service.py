@@ -13,6 +13,7 @@ CANONICAL_STATUSES = {
     "final-OT",
     "postponed",
     "canceled",
+    "suspended",
     "unknown",
 }
 FINAL_STATUSES = {"final", "final-OT"}
@@ -29,6 +30,8 @@ def normalize_game_status(provider_status: Any, detail: Any = None, completed: b
         return "canceled"
     if "postpon" in joined or "delay" in joined:
         return "postponed"
+    if "suspend" in joined:
+        return "suspended"
     if completed or "final" in joined or "completed" in joined:
         overtime = "overtime" in joined or bool(re.search(r"(?:^|[\s/])ot(?:$|[\s/])", joined))
         return "final-OT" if overtime else "final"
@@ -73,7 +76,7 @@ def cache_ttl_seconds(status: str) -> int:
         return 15
     if status in {"pregame", "scheduled"}:
         return 60 if status == "pregame" else 300
-    if status in FINAL_STATUSES or status in {"canceled", "postponed"}:
+    if status in FINAL_STATUSES or status in {"canceled", "postponed", "suspended"}:
         return 86400
     return 120
 

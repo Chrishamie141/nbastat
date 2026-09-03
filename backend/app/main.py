@@ -39,7 +39,8 @@ from backend.app.services.nfl_product_service import (
 from backend.app.services.nfl_experiment_service import (
     ExperimentIntegrityError, experiment_dashboard, grade_experiment,
 )
-from backend.app.services.operations_dashboard_service import command_center
+from backend.app.services.operations_dashboard_service import command_center, week1_db_path
+from backend.app.services.operator_action_service import start as start_operator_action, finish as finish_operator_action
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
@@ -91,6 +92,11 @@ async def normalized_validation_error(_request: Request, _exc: RequestValidation
     return JSONResponse(status_code=422, content={"error": {"code": "VALIDATION_ERROR", "message": message, "retryable": False}, "detail": message})
 
 def now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+def operator_actor(user):
+    try:
+        return str(user["email"] or user["id"])
+    except (KeyError, TypeError):
+        return str(user["id"])
 def provider_status():
     providers=get_config_status()
     configured=[k for k,v in providers.items() if v == "Loaded"]
@@ -226,6 +232,121 @@ def api_internal_operations(user=Depends(require_internal_access)):
     except Exception as exc:
         logger.exception("Internal operations dashboard unavailable")
         raise HTTPException(503, "The SmartBets command center is temporarily unavailable.") from exc
+
+
+@app.get("/api/internal/operations/health")
+def api_internal_operations_health(user=Depends(require_internal_access)):
+    report = command_center()
+    return {
+        "generatedAt": report["generatedAt"], "application": report["systems"]["api"],
+        "database": report["dataHealth"]["database"], "schedule_store": report["dataHealth"]["scheduleStore"],
+        "game_status_service": report["dataHealth"]["gameStatusService"],
+        "player_stats_store": report["dataHealth"]["playerStatsStore"],
+        "prediction_store": report["dataHealth"]["predictionStore"],
+        "analysis_service": {"status": "HEALTHY", "latestRun": report["modelOperations"]["lastRun"]},
+        "outcome_grading": {"status": "OPERATIONAL", "graded": report["experiments"]["regular"]["graded"]},
+        "stale_game_count": sum(game["freshness"] == "STALE" for game in report["games"]),
+        "missing_prediction_count": report["modelOperations"]["missingPredictions"],
+        "last_successful_refresh": report["dataHealth"]["lastSuccessfulRefresh"],
+        "latest_prediction_run": report["modelOperations"]["lastRun"],
+        "latest_final_game_ingested": report["dataHealth"]["latestFinalIngested"],
+        "week1_readiness": report["week1Readiness"], "social_publish_safety": report["automation"],
+    }
+
+
+@app.get("/api/internal/operations/search")
+def api_internal_operations_search(q: str=Query(..., min_length=2, max_length=80), user=Depends(require_internal_access)):
+    report = command_center()
+    needle = q.casefold().strip()
+    games = [game for game in report["games"] if needle in " ".join(
+        str(game.get(key) or "") for key in ("id", "awayTeam", "homeTeam", "status")
+    ).casefold()]
+    issues = [issue for issue in report["issues"] if needle in " ".join(
+        str(issue.get(key) or "") for key in ("entityId", "summary", "category", "source")
+    ).casefold()]
+    try:
+        catalog = search_catalog(q, [])
+        players = [item for item in catalog.get("items", []) if item.get("type") == "player"]
+        teams = [item for item in catalog.get("items", []) if item.get("type") == "team"]
+        catalog_error = None
+    except Exception as exc:
+        logger.exception("owner_catalog_search_failed")
+        players, teams = [], []
+        catalog_error = {"code": "CATALOG_SEARCH_UNAVAILABLE", "message": "Player/team catalog search is temporarily unavailable."}
+    return {"query": q, "games": games, "issues": issues, "players": players, "teams": teams,
+            "artifacts": [report["modelOperations"]] if needle in str(report["modelOperations"]).casefold() else [],
+            "errors": {"catalog": catalog_error} if catalog_error else {}}
+
+
+@app.get("/api/internal/operations/games/{game_id}")
+def api_internal_operation_game(game_id: str, user=Depends(require_internal_access)):
+    report = command_center()
+    operational = next((game for game in report["games"] if game["id"] == game_id), None)
+    if not operational:
+        raise HTTPException(404, "Week 1 operational game was not found.")
+    try:
+        detail = get_nfl_game_detail(game_id)
+    except (GameNotFoundError, InvalidGameIdError) as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("owner_game_detail_failed", extra={"game_id": game_id})
+        raise HTTPException(503, "Verified game detail is temporarily unavailable.") from exc
+    return {**detail, "ownerPrediction": operational.get("prediction"),
+            "ownerOperational": {key: operational.get(key) for key in
+                                 ("predictionStatus", "statsStatus", "freshness", "lastRefresh", "warnings", "grade")}}
+
+
+@app.post("/api/internal/operations/refresh")
+def api_internal_refresh_all(user=Depends(require_internal_access)):
+    action_id = start_operator_action("REFRESH_OPERATIONAL_DATA", operator_actor(user), "NFL-2026-REG1")
+    try:
+        games, coalesced = refresh_games(["nfl"], limit=20, include_completed=True)
+        finish_operator_action(action_id, result="SUCCEEDED", status_change=f"{len(games)} games refreshed")
+        return {"actionId": action_id, "status": "SUCCEEDED", "gameCount": len(games),
+                "coalesced": coalesced, "paidProviderContacted": False, "completedAt": now()}
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("owner_operational_refresh_failed")
+        raise HTTPException(503, "Verified schedule refresh failed; existing data was preserved.") from exc
+
+
+@app.post("/api/internal/operations/games/{game_id}/refresh")
+def api_internal_refresh_game(game_id: str, user=Depends(require_internal_access)):
+    action_id = start_operator_action("REFRESH_GAME", operator_actor(user), game_id)
+    try:
+        detail = refresh_nfl_game_detail(game_id)
+        finish_operator_action(action_id, result="SUCCEEDED", status_change=f"status={detail.get('status')}")
+        return {"actionId": action_id, "status": "SUCCEEDED", "paidProviderContacted": False,
+                "completedAt": now(), "game": detail}
+    except (InvalidGameIdError, GameNotFoundError) as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        raise HTTPException(404 if isinstance(exc, GameNotFoundError) else 400, str(exc)) from exc
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("owner_game_refresh_failed", extra={"game_id": game_id})
+        raise HTTPException(503, "Game refresh failed; existing data was preserved.") from exc
+
+
+@app.post("/api/internal/operations/games/{game_id}/reconcile")
+def api_internal_reconcile_game(game_id: str, user=Depends(require_internal_access)):
+    report = command_center()
+    operational = next((game for game in report["games"] if game["id"] == game_id), None)
+    if not operational:
+        raise HTTPException(404, "Week 1 operational game was not found.")
+    kickoff = datetime.fromisoformat(str(operational["kickoff"]).replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) < kickoff:
+        raise HTTPException(409, "Outcome reconciliation is blocked before kickoff.")
+    action_id = start_operator_action("RECONCILE_OUTCOME", operator_actor(user), game_id)
+    try:
+        from backtesting.nfl_week_workflow import settle
+        result = settle(week1_db_path())
+        finish_operator_action(action_id, result="SUCCEEDED", status_change=f"new finals={result['new_finals']}")
+        return {"actionId": action_id, "status": "SUCCEEDED", "paidProviderContacted": False,
+                "completedAt": now(), **result}
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("owner_outcome_reconcile_failed", extra={"game_id": game_id})
+        raise HTTPException(503, "Outcome reconciliation failed; frozen predictions were preserved.") from exc
 
 @app.get("/api/nfl/fantasy/depth-charts")
 def api_fantasy_depth_charts(scoring: str=Query("PPR"), user=Depends(require_full_access)):

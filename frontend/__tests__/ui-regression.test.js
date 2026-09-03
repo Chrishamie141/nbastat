@@ -113,16 +113,34 @@ test("internal Week 3 experiment dashboard separates predictions from wagers", (
   assert.match(auth, /['"]\/internal['"]/);
 });
 
-test("internal command center joins operations, social, experiments, and buyers", () => {
+test("internal command center prioritizes Week 1 operations and removes buyer account UI", () => {
   const page = fs.readFileSync("app/internal/operations/page.jsx", "utf8");
   const api = fs.readFileSync("lib/api.js", "utf8");
   const nav = fs.readFileSync("components/layout/PremiumNavbar.jsx", "utf8");
-  assert.match(page, /SmartBets Command Center/);
-  assert.match(page, /Operating pipeline/);
-  assert.match(page, /Buyer funnel/);
-  assert.match(page, /X automation/);
-  assert.match(page, /Unified activity feed/);
-  assert.match(page, /setInterval\(load,60000\)/);
+  assert.match(page, /Week 1 Command Center/);
+  assert.match(page, /Week 1 readiness/);
+  assert.match(page, /Needs Attention/);
+  assert.match(page, /Game operations/);
+  assert.match(page, /Model \/ prediction operations/);
+  assert.match(page, /Data \/ system health/);
+  assert.match(page, /Automation \/ publishing safety/);
+  assert.match(page, /Operational action history/);
+  assert.doesNotMatch(page, /Buyer funnel|Members|Paid members|subscription/i);
+  assert.match(page, /setInterval\(load, 60000\)/);
   assert.match(api, /api\/internal\/operations/);
+  assert.match(api, /operations\/search/);
+  assert.match(api, /operations\/games/);
   assert.match(nav, /internal\/operations/);
+  assert.match(nav, /ownerPortal/);
+});
+
+test("owner game flow exposes frozen prediction evidence and has no publish control", () => {
+  const page = fs.readFileSync("app/internal/operations/page.jsx", "utf8");
+  const game = fs.readFileSync("components/games/NflGameBreakdown.jsx", "utf8");
+  assert.match(page, /internal\/games/);
+  assert.match(page, /View evaluation/);
+  assert.match(game, /ownerPrediction/);
+  assert.match(game, /Artifact SHA-256/);
+  assert.match(game, /Sportsbook prices and wager qualification remain separate/);
+  assert.doesNotMatch(page, /publishOne|Publish now|Enable publishing/);
 });

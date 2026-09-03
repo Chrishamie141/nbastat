@@ -112,10 +112,17 @@ def source_from_databases(week_db,week3_db=PRODUCTION_DATABASE,clock=now):
                        predictions=len(rows),qualified_wagers=sum(r['qualified_wager'] for r in grades),baseline_hash=baseline)
     finally: c.close()
     # Export only whitelisted, aggregate evidence. No users, emails, subscriber counts, or credentials.
+    operational_games = [{"game_id": game["game_id"], "away_team": game["away_team"],
+                          "home_team": game["home_team"], "kickoff_time": game["kickoff_time"]}
+                         for game in regular["coverage"]["experiment"]["games"]]
     return dict(verified_at=clock().isoformat(),preseason=preseason,
                 regular={k:regular[k] for k in ('experiment_id','season','phase','week','manifest_hash','prediction_hash',
                           'predictions','scheduled','graded','winner_record','accuracy','profiles','sample_warning')},
                 coverage_games=regular['coverage']['games_with_any_market'],
+                operations={"schema_version": 1, "games": operational_games,
+                            "checkpoints": {"completed": regular['coverage']['complete_checkpoints'],
+                                            "total": regular['coverage']['total_checkpoints']},
+                            "provider_status": regular['coverage']['last_status']},
                 claims_policy='predictions_are_not_wagers;small_sample_not_future_performance')
 
 
@@ -144,7 +151,7 @@ def accept_source_envelope(envelope,clock=now):
     if envelope['source_id']!=sha(source) or not hmac.compare_digest(str(envelope['signature']),sign(source)):
         raise ValueError('Source envelope authenticity check failed')
     required={'verified_at','preseason','regular','coverage_games','claims_policy'}
-    if set(source)!=required or source['claims_policy']!='predictions_are_not_wagers;small_sample_not_future_performance':
+    if not required.issubset(source) or set(source)-required-{'operations'} or source['claims_policy']!='predictions_are_not_wagers;small_sample_not_future_performance':
         raise ValueError('Source envelope schema rejected')
     age=clock()-datetime.fromisoformat(source['verified_at'])
     if age<timedelta(0) or age>timedelta(hours=2): raise ValueError('Incoming source is stale')

@@ -48,6 +48,12 @@ export const api = {
   dashboard: () => request("/api/dashboard"),
   internal: {
     operations: () => request('/api/internal/operations'),
+    operationsHealth: () => request('/api/internal/operations/health'),
+    operationsSearch: (query) => request(`/api/internal/operations/search?q=${encodeURIComponent(query)}`),
+    operationGame: (gameId) => request(`/api/internal/operations/games/${encodeURIComponent(gameId)}`, { timeoutMs: 20000 }),
+    refreshOperations: () => request('/api/internal/operations/refresh', { method: 'POST', timeoutMs: 20000 }),
+    refreshOperationGame: (gameId) => request(`/api/internal/operations/games/${encodeURIComponent(gameId)}/refresh`, { method: 'POST', timeoutMs: 20000 }),
+    reconcileOperationGame: (gameId) => request(`/api/internal/operations/games/${encodeURIComponent(gameId)}/reconcile`, { method: 'POST', timeoutMs: 30000 }),
     nflExperiment: ({ season, seasonType, week }) =>
       request(`/api/internal/nfl/experiments/${season}/${seasonType}/${week}`),
     gradeNflExperiment: ({ season, seasonType, week }) =>

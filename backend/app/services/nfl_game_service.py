@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import os
 import re
@@ -236,10 +237,13 @@ def _prediction_snapshot(game_id: str, season: int, week: int | None, phase: str
     return {
         "available": True,
         "frozen": True,
+        "artifactId": f"nfl-{season}-week-{week:02d}-player-props",
+        "artifactSha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "modelVersion": first.get("model_version"),
         "predictionCutoff": first.get("prediction_cutoff"),
         "generatedAt": first.get("generated_at"),
         "researchPolicyId": "nfl_system_a_forward_shadow_v1",
+        "calibration": {"status": "NOT_PUBLISHED", "version": None},
         "groups": [{"group": name, "items": sorted(items, key=lambda item: (item.get("team") or "", item.get("playerName") or ""))} for name, items in grouped.items()],
     }
 

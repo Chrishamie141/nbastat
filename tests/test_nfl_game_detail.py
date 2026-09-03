@@ -34,6 +34,7 @@ def clear_cache():
         ("STATUS_FINAL", "Final/OT", True, "final-OT"),
         ("STATUS_POSTPONED", "Postponed", False, "postponed"),
         ("STATUS_CANCELED", "Canceled", False, "canceled"),
+        ("STATUS_SUSPENDED", "Suspended", False, "suspended"),
         ("something-new", "Awaiting provider", False, "unknown"),
     ],
 )

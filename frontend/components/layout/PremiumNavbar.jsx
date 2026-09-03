@@ -16,10 +16,19 @@ export default function PremiumNavbar() {
     "performance",
     "account",
   ];
-  const links = user?.isInternal
-    ? [...authed, "internal/operations", "internal/experiments/week3"]
-    : authed;
-  const authPage = ["/login", "/register", "/forgot-password", "/reset-password", "/setup"].includes(path);
+  const ownerPortal = Boolean(user?.isInternal && path.startsWith("/internal"));
+  const links = ownerPortal
+    ? ["internal/operations", "internal/experiments/week3"]
+    : user?.isInternal
+      ? [...authed, "internal/operations"]
+      : authed;
+  const authPage = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/setup",
+  ].includes(path);
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#061225]/85 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
@@ -34,7 +43,11 @@ export default function PremiumNavbar() {
                 href={`/${l}`}
                 className={`rounded-xl px-2 py-2 text-sm capitalize transition ${path.includes(l) ? "bg-cyan-400/12 text-white" : "text-slate-300 hover:text-white"}`}
               >
-                {l === "internal/operations" ? "Command Center" : l.startsWith("internal") ? "Experiment" : l}
+                {l === "internal/operations"
+                  ? "Command Center"
+                  : l.startsWith("internal")
+                    ? "Week 3 Archive"
+                    : l}
               </Link>
             ))}
           </div>
