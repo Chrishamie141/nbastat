@@ -19,7 +19,7 @@ export default function PremiumNavbar() {
   const links = user?.isInternal
     ? [...authed, "internal/operations", "internal/experiments/week3"]
     : authed;
-  const authPage = path === "/login" || path === "/register";
+  const authPage = ["/login", "/register", "/forgot-password", "/reset-password", "/setup"].includes(path);
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#061225]/85 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">

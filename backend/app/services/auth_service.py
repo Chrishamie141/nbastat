@@ -1,17 +1,22 @@
-import base64, hashlib, hmac, json, os
+import base64, hashlib, hmac, json, logging, os, secrets, uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.request import Request as UrlRequest, urlopen
 from fastapi import HTTPException, Request, Response
 from werkzeug.security import check_password_hash, generate_password_hash
 from backend.app.database import get_db_connection, initialize_auth_database, table_exists
 
 COOKIE_NAME = 'sbs_session'
 SESSION_HOURS = 12
+RESET_MINUTES = 30
+logger = logging.getLogger(__name__)
 
 def _now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 def _secret():
     secret = os.getenv('AUTH_SECRET')
     if not secret:
+        if os.getenv('VERCEL'):
+            raise RuntimeError('AUTH_SECRET is required in production')
         secret = 'local-development-change-me-only'
     return secret.encode()
 def normalize_email(email: str) -> str: return email.strip().lower()
@@ -27,24 +32,27 @@ def safe_user(row):
             'isInternal': is_internal_user(row)}
 def _b64(data: bytes) -> str: return base64.urlsafe_b64encode(data).decode().rstrip('=')
 def _unb64(data: str) -> bytes: return base64.urlsafe_b64decode(data + '=' * (-len(data) % 4))
-def create_token(user_id: int) -> str:
-    payload = {'sub': user_id, 'exp': int((datetime.now(timezone.utc) + timedelta(hours=SESSION_HOURS)).timestamp())}
+def create_token(user_id: int, session_version: int = 0) -> str:
+    payload = {'sub': user_id, 'sv': session_version, 'exp': int((datetime.now(timezone.utc) + timedelta(hours=SESSION_HOURS)).timestamp())}
     body = _b64(json.dumps(payload, separators=(',', ':')).encode())
     sig = _b64(hmac.new(_secret(), body.encode(), hashlib.sha256).digest())
     return f'{body}.{sig}'
-def verify_token(token: str) -> Optional[int]:
+def _verify_token_payload(token: str) -> Optional[dict]:
     try:
         body, sig = token.split('.', 1)
         good = _b64(hmac.new(_secret(), body.encode(), hashlib.sha256).digest())
         if not hmac.compare_digest(sig, good): return None
         payload = json.loads(_unb64(body))
         if int(payload['exp']) < int(datetime.now(timezone.utc).timestamp()): return None
-        return int(payload['sub'])
+        return {'sub': int(payload['sub']), 'sv': int(payload.get('sv', 0))}
     except Exception:
         return None
-def set_session_cookie(response: Response, user_id: int):
-    secure = os.getenv('AUTH_COOKIE_SECURE', 'false').lower() == 'true'
-    response.set_cookie(COOKIE_NAME, create_token(user_id), httponly=True, secure=secure, samesite='lax', max_age=SESSION_HOURS*3600, path='/')
+def verify_token(token: str) -> Optional[int]:
+    payload = _verify_token_payload(token)
+    return payload['sub'] if payload else None
+def set_session_cookie(response: Response, user_id: int, session_version: int = 0):
+    secure = bool(os.getenv('VERCEL')) or os.getenv('AUTH_COOKIE_SECURE', 'false').lower() == 'true'
+    response.set_cookie(COOKIE_NAME, create_token(user_id, session_version), httponly=True, secure=secure, samesite='lax', max_age=SESSION_HOURS*3600, path='/')
 def clear_session_cookie(response: Response): response.delete_cookie(COOKIE_NAME, path='/')
 def register_user(name: str, email: str, password: str):
     initialize_auth_database(); email = normalize_email(email); now = _now(); hashed = generate_password_hash(password, method="scrypt")
@@ -58,7 +66,7 @@ def register_user(name: str, email: str, password: str):
             return row
     except Exception as exc:
         if 'UNIQUE' in str(exc).upper(): raise HTTPException(status_code=409, detail='Email is already registered.')
-        raise HTTPException(status_code=400, detail='Unable to create account.')
+        raise
 def authenticate_user(email: str, password: str):
     initialize_auth_database(); email = normalize_email(email)
     with get_db_connection() as conn:
@@ -68,12 +76,100 @@ def authenticate_user(email: str, password: str):
         now = _now(); conn.execute('UPDATE users SET last_login_at=?, updated_at=? WHERE id=?', (now, now, row['id'])); conn.commit()
         return conn.execute('SELECT * FROM users WHERE id=?', (row['id'],)).fetchone()
 def current_user(request: Request):
-    token = request.cookies.get(COOKIE_NAME); user_id = verify_token(token) if token else None
-    if not user_id: raise HTTPException(status_code=401, detail='Your session has expired. Please log in again.')
+    token = request.cookies.get(COOKIE_NAME); payload = _verify_token_payload(token) if token else None
+    if not payload: raise HTTPException(status_code=401, detail='Your session has expired. Please log in again.')
     with get_db_connection() as conn:
-        row = conn.execute('SELECT * FROM users WHERE id=? AND is_active=1', (user_id,)).fetchone()
-    if not row: raise HTTPException(status_code=401, detail='Your session has expired. Please log in again.')
+        row = conn.execute('SELECT * FROM users WHERE id=? AND is_active=1', (payload['sub'],)).fetchone()
+    if not row or int(row['session_version'] if 'session_version' in row.keys() else 0) != payload['sv']:
+        raise HTTPException(status_code=401, detail='Your session has expired. Please log in again.')
     return row
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+def _send_reset_email(email: str, code: str) -> bool:
+    api_key = os.getenv('RESEND_API_KEY')
+    sender = os.getenv('PASSWORD_RESET_FROM_EMAIL')
+    if not api_key or not sender:
+        logger.error('Password reset requested but email delivery is not configured')
+        return False
+    payload = json.dumps({
+        'from': sender,
+        'to': [email],
+        'subject': 'Your SmartBetSports password reset code',
+        'text': f'Your SmartBetSports password reset code is:\n\n{code}\n\nIt expires in {RESET_MINUTES} minutes. If you did not request this, ignore this email.',
+    }).encode()
+    request = UrlRequest('https://api.resend.com/emails', data=payload, method='POST', headers={
+        'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json',
+    })
+    try:
+        with urlopen(request, timeout=10) as response:
+            return 200 <= response.status < 300
+    except Exception:
+        logger.exception('Password reset email delivery failed')
+        return False
+
+def request_password_reset(email: str) -> None:
+    initialize_auth_database(); email = normalize_email(email); now = datetime.now(timezone.utc).replace(microsecond=0)
+    with get_db_connection() as conn:
+        row = conn.execute('SELECT id FROM users WHERE email=? AND is_active=1', (email,)).fetchone()
+        if not row:
+            return
+        recent = conn.execute(
+            'SELECT created_at FROM password_reset_tokens WHERE user_id=? AND used_at IS NULL ORDER BY created_at DESC LIMIT 1',
+            (row['id'],),
+        ).fetchone()
+        if recent and datetime.fromisoformat(recent['created_at']) > now - timedelta(seconds=60):
+            return
+        code = secrets.token_urlsafe(24)
+        conn.execute('UPDATE password_reset_tokens SET used_at=? WHERE user_id=? AND used_at IS NULL', (now.isoformat(), row['id']))
+        conn.execute(
+            'INSERT INTO password_reset_tokens(id,user_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?)',
+            (str(uuid.uuid4()), row['id'], _token_hash(code), now.isoformat(), (now + timedelta(minutes=RESET_MINUTES)).isoformat()),
+        )
+    if not _send_reset_email(email, code):
+        with get_db_connection() as conn:
+            conn.execute('UPDATE password_reset_tokens SET used_at=? WHERE token_hash=?', (_now(), _token_hash(code)))
+
+def reset_password(email: str, code: str, password: str) -> None:
+    initialize_auth_database(); email = normalize_email(email); now = _now()
+    with get_db_connection() as conn:
+        claimed = conn.execute(
+            'UPDATE password_reset_tokens SET used_at=? WHERE token_hash=? AND used_at IS NULL AND expires_at>? '
+            'AND user_id=(SELECT id FROM users WHERE email=? AND is_active=1) RETURNING user_id',
+            (now, _token_hash(code.strip()), now, email),
+        ).fetchone()
+        if not claimed:
+            raise HTTPException(400, 'The reset code is invalid or expired.')
+        conn.execute('UPDATE users SET password_hash=?,session_version=session_version+1,updated_at=? WHERE id=?',
+                     (generate_password_hash(password, method='scrypt'), now, claimed['user_id']))
+
+def bootstrap_admin(name: str, email: str, password: str, setup_code: str):
+    expected = os.getenv('INITIAL_ADMIN_SETUP_TOKEN', '')
+    if len(expected) < 32 or not hmac.compare_digest(setup_code, expected):
+        raise HTTPException(401, 'Unable to complete initial setup.')
+    initialize_auth_database(); email = normalize_email(email); now = _now()
+    with get_db_connection() as conn:
+        if conn.execute('SELECT 1 FROM users WHERE is_internal=1 LIMIT 1').fetchone():
+            raise HTTPException(409, 'Initial setup has already been completed.')
+        claimed = conn.execute(
+            "INSERT INTO auth_bootstrap(setup_key,completed_at) VALUES('initial_admin',?) "
+            "ON CONFLICT(setup_key) DO NOTHING RETURNING setup_key", (now,),
+        ).fetchone()
+        if not claimed:
+            raise HTTPException(409, 'Initial setup has already been completed.')
+        existing = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+        if existing:
+            conn.execute('UPDATE users SET name=?,password_hash=?,is_active=1,is_internal=1,session_version=session_version+1,updated_at=? WHERE id=?',
+                         (name.strip(), generate_password_hash(password, method='scrypt'), now, existing['id']))
+            user_id = existing['id']
+        else:
+            inserted = conn.execute(
+                'INSERT INTO users(name,email,password_hash,created_at,updated_at,is_active,is_internal) VALUES(?,?,?,?,?,1,1) RETURNING id',
+                (name.strip(), email, generate_password_hash(password, method='scrypt'), now, now),
+            ).fetchone(); user_id = inserted['id']
+        conn.execute("UPDATE auth_bootstrap SET user_id=? WHERE setup_key='initial_admin'", (user_id,))
+        return conn.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
 
 
 def delete_user_account(user_id: int, email: str, password: str) -> None:

@@ -37,12 +37,20 @@ def database_url() -> str:
     # DATABASE_URL as the explicit override used by local and non-Vercel
     # deployments, but consume the integration value automatically when it
     # is available so production never falls back to ephemeral SQLite.
-    return (
-        os.getenv("DATABASE_URL")
-        or os.getenv("POSTGRES_URL")
-        or os.getenv("POSTGRES_URL_NON_POOLING")
-        or "sqlite:///./predictions.db"
-    ).strip()
+    candidates = [
+        (os.getenv("DATABASE_URL") or "").strip(),
+        (os.getenv("POSTGRES_URL") or "").strip(),
+        (os.getenv("POSTGRES_URL_NON_POOLING") or "").strip(),
+    ]
+    if os.getenv("VERCEL"):
+        postgres = next((value for value in candidates if value.lower().startswith(_POSTGRES_SCHEMES)), "")
+        if not postgres:
+            raise RuntimeError("A persistent PostgreSQL database is required on Vercel")
+        return postgres
+    configured = next((value for value in candidates if value), "")
+    if configured:
+        return configured
+    return "sqlite:///./predictions.db"
 
 
 def using_postgres() -> bool:
@@ -169,8 +177,32 @@ def initialize_auth_database():
             )
         """)
         connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
-        if not column_exists(connection, "users", "is_internal"):
-            connection.execute("ALTER TABLE users ADD COLUMN is_internal INTEGER NOT NULL DEFAULT 0")
+        if using_postgres():
+            connection.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_internal INTEGER NOT NULL DEFAULT 0")
+            connection.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0")
+        else:
+            if not column_exists(connection, "users", "is_internal"):
+                connection.execute("ALTER TABLE users ADD COLUMN is_internal INTEGER NOT NULL DEFAULT 0")
+            if not column_exists(connection, "users", "session_version"):
+                connection.execute("ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0")
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                used_at TEXT
+            )
+        """)
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id)")
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS auth_bootstrap (
+                setup_key TEXT PRIMARY KEY,
+                completed_at TEXT NOT NULL,
+                user_id INTEGER
+            )
+        """)
 
 
 def initialize_billing_database():

@@ -17,5 +17,9 @@ tests/
 conftest.py
 tmp/
 work/
+.env
+*.env
+.env.local
 *.db
 *.patch
+.runtime
