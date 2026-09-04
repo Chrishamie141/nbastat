@@ -67,6 +67,35 @@ def _social(at: datetime) -> dict:
     }
 
 
+SOCIAL_POST_STATUSES = {"DRAFT", "PUBLISHING", "PUBLISHED", "FAILED", "UNKNOWN"}
+
+
+def social_post_history(limit: int = 25, offset: int = 0, status: str | None = None) -> dict:
+    """Return safe, owner-visible social history without contacting X."""
+    normalized = (status or "").strip().upper()
+    if normalized and normalized not in SOCIAL_POST_STATUSES:
+        raise ValueError("Unsupported social post status filter.")
+    where = " WHERE status=?" if normalized else ""
+    values: tuple[Any, ...] = (normalized,) if normalized else ()
+    with social_marketing.connection() as connection:
+        total_row = connection.execute(f"SELECT COUNT(*) AS count FROM social_posts{where}", values).fetchone()
+        rows = connection.execute(
+            "SELECT post_id,category,content,generated_at,scheduled_at,published_at,"
+            f"x_post_id,status,failure_reason,day_key FROM social_posts{where} "
+            "ORDER BY COALESCE(published_at,scheduled_at) DESC,post_id DESC LIMIT ? OFFSET ?",
+            values + (limit, offset),
+        ).fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        item["category"] = str(item["category"]).split("|", 1)[0]
+        item["xUrl"] = f"https://x.com/i/status/{item['x_post_id']}" if item.get("x_post_id") else None
+        items.append(item)
+    total = int(total_row["count"] if total_row else 0)
+    return {"items": items, "total": total, "limit": limit, "offset": offset,
+            "hasMore": offset + len(items) < total, "status": normalized or "ALL"}
+
+
 def _week_db_path() -> Path:
     value = (os.getenv("WEEK1_EXPERIMENT_DB") or "").strip()
     return Path(value).resolve() if value else DEFAULT_WEEK1_DB.resolve()

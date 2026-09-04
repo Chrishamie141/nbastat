@@ -124,6 +124,8 @@ test("internal command center prioritizes Week 1 operations and removes buyer ac
   assert.match(page, /Model \/ prediction operations/);
   assert.match(page, /Data \/ system health/);
   assert.match(page, /Automation \/ publishing safety/);
+  assert.match(page, /X post history/);
+  assert.match(page, /Posts made manually on X are not imported/);
   assert.match(page, /Operational action history/);
   assert.doesNotMatch(page, /Buyer funnel|Members|Paid members|subscription/i);
   assert.match(page, /setInterval\(load, 60000\)/);

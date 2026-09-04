@@ -47,6 +47,29 @@ def seed_social(tmp_path, monkeypatch, at):
     social.store_source(source)
 
 
+def test_social_post_history_is_paginated_filterable_and_secret_safe(tmp_path, monkeypatch):
+    from backend.app.services import social_marketing as social
+    from backend.app.services.operations_dashboard_service import social_post_history
+    at = datetime(2030, 9, 1, 13, 30, tzinfo=timezone.utc)
+    seed_social(tmp_path, monkeypatch, at)
+    with social.connection() as connection:
+        source_id = connection.execute("SELECT source_id FROM social_sources LIMIT 1").fetchone()["source_id"]
+        for index, status in enumerate(("PUBLISHED", "DRAFT", "FAILED")):
+            connection.execute(
+                "INSERT INTO social_posts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (f"post-{index}", "campaign", f"evidence|{index}", f"Post content {index}", source_id,
+                 at.isoformat(), at.isoformat(), at.isoformat() if status == "PUBLISHED" else None,
+                 "2095585810376483322" if status == "PUBLISHED" else None, status,
+                 "TEST_FAILURE" if status == "FAILED" else None, f"content-{index}", f"secret-{index}", f"2030-09-0{index + 1}"),
+            )
+    first = social_post_history(limit=2)
+    published = social_post_history(status="published")
+    assert first["total"] == 3 and len(first["items"]) == 2 and first["hasMore"] is True
+    assert published["total"] == 1 and published["items"][0]["status"] == "PUBLISHED"
+    assert published["items"][0]["xUrl"].endswith("2095585810376483322")
+    assert "signature" not in published["items"][0] and "content_hash" not in published["items"][0]
+
+
 def test_command_center_is_week1_operational_control_plane(tmp_path, monkeypatch):
     from backend.app.services.operations_dashboard_service import command_center
     at = datetime(2030, 9, 1, 13, 30, tzinfo=timezone.utc)
@@ -109,6 +132,7 @@ def test_command_center_routes_require_internal_access():
     paths = app.openapi()["paths"]
     for route, method in (("/api/internal/operations", "get"),
                           ("/api/internal/operations/health", "get"),
+                          ("/api/internal/operations/social-posts", "get"),
                           ("/api/internal/operations/search", "get"),
                           ("/api/internal/operations/refresh", "post"),
                           ("/api/internal/operations/games/{game_id}", "get"),

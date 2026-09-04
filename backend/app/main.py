@@ -39,7 +39,7 @@ from backend.app.services.nfl_product_service import (
 from backend.app.services.nfl_experiment_service import (
     ExperimentIntegrityError, experiment_dashboard, grade_experiment,
 )
-from backend.app.services.operations_dashboard_service import command_center, week1_db_path
+from backend.app.services.operations_dashboard_service import command_center, social_post_history, week1_db_path
 from backend.app.services.operator_action_service import start as start_operator_action, finish as finish_operator_action
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
@@ -252,6 +252,17 @@ def api_internal_operations_health(user=Depends(require_internal_access)):
         "latest_final_game_ingested": report["dataHealth"]["latestFinalIngested"],
         "week1_readiness": report["week1Readiness"], "social_publish_safety": report["automation"],
     }
+
+
+@app.get("/api/internal/operations/social-posts")
+def api_internal_social_posts(limit: int=Query(25, ge=1, le=100), offset: int=Query(0, ge=0),
+                              status: str | None=Query(None, pattern="^(DRAFT|PUBLISHING|PUBLISHED|FAILED|UNKNOWN)$"),
+                              user=Depends(require_internal_access)):
+    try:
+        return social_post_history(limit=limit, offset=offset, status=status)
+    except Exception as exc:
+        logger.exception("owner_social_history_failed")
+        raise HTTPException(503, "SmartBets social post history is temporarily unavailable.") from exc
 
 
 @app.get("/api/internal/operations/search")

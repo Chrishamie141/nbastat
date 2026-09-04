@@ -49,6 +49,8 @@ export const api = {
   internal: {
     operations: () => request('/api/internal/operations'),
     operationsHealth: () => request('/api/internal/operations/health'),
+    socialPosts: ({ limit = 25, offset = 0, status = 'ALL' } = {}) =>
+      request(`/api/internal/operations/social-posts?limit=${limit}&offset=${offset}${status === 'ALL' ? '' : `&status=${encodeURIComponent(status)}`}`),
     operationsSearch: (query) => request(`/api/internal/operations/search?q=${encodeURIComponent(query)}`),
     operationGame: (gameId) => request(`/api/internal/operations/games/${encodeURIComponent(gameId)}`, { timeoutMs: 20000 }),
     refreshOperations: () => request('/api/internal/operations/refresh', { method: 'POST', timeoutMs: 20000 }),

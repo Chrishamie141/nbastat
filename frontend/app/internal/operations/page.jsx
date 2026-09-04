@@ -116,6 +116,10 @@ export default function OperationsPage() {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [socialPosts, setSocialPosts] = useState({ items: [], total: 0, hasMore: false });
+  const [socialStatus, setSocialStatus] = useState("ALL");
+  const [socialLoading, setSocialLoading] = useState(true);
+  const [socialError, setSocialError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -134,6 +138,27 @@ export default function OperationsPage() {
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
   }, [load]);
+
+  const loadSocialPosts = useCallback(async ({ append = false } = {}) => {
+    setSocialLoading(true);
+    setSocialError("");
+    try {
+      const offset = append ? socialPosts.items.length : 0;
+      const result = await api.internal.socialPosts({ limit: 25, offset, status: socialStatus });
+      setSocialPosts((current) => ({
+        ...result,
+        items: append ? [...current.items, ...result.items] : result.items,
+      }));
+    } catch (exception) {
+      setSocialError(exception.message);
+    } finally {
+      setSocialLoading(false);
+    }
+  }, [socialPosts.items.length, socialStatus]);
+
+  useEffect(() => {
+    loadSocialPosts();
+  }, [socialStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const runAction = useCallback(
     async (key, request) => {
@@ -748,6 +773,75 @@ export default function OperationsPage() {
               </p>
             )}
           </div>
+        </GlowCard>
+      </section>
+
+      <section className="mt-8">
+        <GlowCard className="p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-black">X post history</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Every post recorded by SmartBets automation. This is read-only and never contacts X.
+              </p>
+            </div>
+            <label className="text-xs font-black uppercase tracking-wider text-slate-400">
+              Status
+              <select
+                aria-label="Filter X post history by status"
+                value={socialStatus}
+                onChange={(event) => setSocialStatus(event.target.value)}
+                className="ml-3 rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+              >
+                {['ALL', 'PUBLISHED', 'DRAFT', 'PUBLISHING', 'FAILED', 'UNKNOWN'].map((value) => (
+                  <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="mt-5 flex items-center justify-between text-sm text-slate-400">
+            <span>{socialPosts.total} SmartBets record{socialPosts.total === 1 ? '' : 's'}</span>
+            <button onClick={() => loadSocialPosts()} disabled={socialLoading} className="font-bold text-cyan-300 disabled:text-slate-500">
+              {socialLoading ? 'Loading…' : 'Refresh history'}
+            </button>
+          </div>
+          {socialError && (
+            <div role="alert" className="mt-4 rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-100">
+              Social history unavailable: {socialError}{' '}
+              <button onClick={() => loadSocialPosts()} className="font-bold underline">Retry</button>
+            </div>
+          )}
+          <div className="mt-4 space-y-3">
+            {socialPosts.items.map((post) => (
+              <article key={post.post_id} className="rounded-xl border border-white/10 bg-white/[.035] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-400">{post.category} · {post.day_key}</p>
+                  <Pill value={post.status} />
+                </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-200">{post.content}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+                  <span>Generated {fmt(post.generated_at)}</span>
+                  {post.published_at && <span>Published {fmt(post.published_at)}</span>}
+                  {post.failure_reason && <span className="text-rose-200">{post.failure_reason}</span>}
+                  {post.xUrl && (
+                    <a href={post.xUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-cyan-300">
+                      View on X <ExternalLink size={13} />
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
+            {!socialLoading && !socialError && !socialPosts.items.length && (
+              <p className="rounded-xl bg-white/[.04] p-4 text-sm text-slate-400">
+                No SmartBets-managed posts match this status. Posts made manually on X are not imported.
+              </p>
+            )}
+          </div>
+          {socialPosts.hasMore && (
+            <button onClick={() => loadSocialPosts({ append: true })} disabled={socialLoading} className="btn btn-glass mt-4 px-4 py-2">
+              {socialLoading ? 'Loading…' : 'Load more'}
+            </button>
+          )}
         </GlowCard>
       </section>
 
