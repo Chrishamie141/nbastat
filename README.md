@@ -97,7 +97,7 @@ The endpoint and action audits write machine-readable JSON under `reports/`. Gam
 
 The simplified frontend is organized around the original `app.py` CLI decision tree: landing page → local demo login/register → dashboard → `/analyze` → sport → CLI action → options → result.
 
-Authentication is development-only. `frontend/components/auth/AuthProvider.jsx` stores a basic demo session in `localStorage` and exposes `login`, `register`, and `logout` actions behind a `useAuth` hook so it can later be replaced by Auth.js, Clerk, Supabase Auth, or another provider. Do not use this local demo authentication for production access control.
+Authentication uses a signed, HttpOnly session cookie backed by the configured database. Consumer registration remains separate from the owner-only `/command-center` flow; owner authorization is granted only by the durable `users.is_internal` database role. Production requires a strong `AUTH_SECRET`, persistent PostgreSQL, and `https://smartbetsports.com` as the canonical site origin.
 
 Protected frontend routes redirect unauthenticated users to `/login`. No real credentials are hardcoded.
 

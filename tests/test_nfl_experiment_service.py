@@ -303,7 +303,7 @@ def test_prediction_cannot_be_created_after_kickoff(monkeypatch, tmp_path):
         assert connection.execute("SELECT COUNT(*) FROM nfl_game_predictions").fetchone()[0] == 0
 
 
-def test_internal_dashboard_access_requires_flag_or_allowlist(monkeypatch, tmp_path):
+def test_internal_dashboard_access_requires_durable_database_flag(monkeypatch, tmp_path):
     from fastapi import HTTPException
     from backend.app.database import get_db_connection, initialize_auth_database
     from backend.app.services.auth_service import create_token
@@ -325,4 +325,9 @@ def test_internal_dashboard_access_requires_flag_or_allowlist(monkeypatch, tmp_p
         require_internal_access(Request())
     assert denied.value.status_code == 403
     monkeypatch.setenv("INTERNAL_ADMIN_EMAILS", "operator@example.com")
+    with pytest.raises(HTTPException) as still_denied:
+        require_internal_access(Request())
+    assert still_denied.value.status_code == 403
+    with get_db_connection() as connection:
+        connection.execute("UPDATE users SET is_internal=1 WHERE id=1")
     assert require_internal_access(Request())["email"] == "operator@example.com"

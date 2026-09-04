@@ -1,12 +1,13 @@
 import {NextResponse} from 'next/server';
+import {CANONICAL_ORIGIN} from './lib/site-url';
 
 const AUTH_PATHS = new Set(['/login','/register','/forgot-password','/reset-password','/setup']);
 
 export function middleware(request){
   const url=request.nextUrl.clone();
   let changed=false;
-  if(process.env.VERCEL_ENV==='production'&&url.hostname.endsWith('.vercel.app')&&url.hostname!=='smartbetsports.vercel.app'){
-    url.protocol='https:';url.hostname='smartbetsports.vercel.app';url.port='';changed=true;
+  if(process.env.VERCEL_ENV==='production'&&url.origin!==CANONICAL_ORIGIN){
+    const canonical=new URL(CANONICAL_ORIGIN);url.protocol=canonical.protocol;url.hostname=canonical.hostname;url.port='';changed=true;
   }
   const normalizedPath=url.pathname.toLowerCase().replace(/\/+$/,'')||'/';
   if(AUTH_PATHS.has(normalizedPath)){
@@ -16,6 +17,9 @@ export function middleware(request){
       const raw=url.searchParams.get('next');
       try{const next=new URL(raw,'https://smartbetsports.com');const clean=next.origin==='https://smartbetsports.com'?next.pathname:'/dashboard';if(raw!==clean){url.searchParams.set('next',clean);changed=true}}catch{url.searchParams.delete('next');changed=true}
     }
+  }
+  if(normalizedPath==='/internal/operations'){
+    url.pathname='/command-center';changed=true;
   }
   return changed?NextResponse.redirect(url,308):NextResponse.next();
 }

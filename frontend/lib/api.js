@@ -25,7 +25,9 @@ async function request(path, { method = 'GET', body, timeoutMs = REQUEST_TIMEOUT
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data?.error?.message || data?.detail || (typeof data?.error === 'string' ? data.error : '') || response.statusText;
-    throw new Error(message || `Request failed (${response.status}).`);
+    const error = new Error(message || `Request failed (${response.status}).`);
+    error.status = response.status;
+    throw error;
   }
   return data;
 }
@@ -35,6 +37,7 @@ export const api = {
     me: () => request("/api/auth/me"),
     register: (body) => request("/api/auth/register", { method: "POST", body }),
     login: (body) => request("/api/auth/login", { method: "POST", body }),
+    ownerLogin: (body) => request("/api/auth/owner-login", { method: "POST", body }),
     logout: () => request("/api/auth/logout", { method: "POST" }),
     forgotPassword: (body) => request("/api/auth/forgot-password", { method: "POST", body }),
     resetPassword: (body) => request("/api/auth/reset-password", { method: "POST", body }),

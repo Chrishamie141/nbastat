@@ -1,6 +1,7 @@
 import base64, hashlib, hmac, json, logging, os, secrets, uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlparse
 from urllib.request import Request as UrlRequest, urlopen
 from fastapi import HTTPException, Request, Response
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -10,26 +11,54 @@ COOKIE_NAME = 'sbs_session'
 SESSION_HOURS = 12
 RESET_MINUTES = 30
 logger = logging.getLogger(__name__)
+CANONICAL_PRODUCTION_ORIGIN = 'https://smartbetsports.com'
+
+
+class PasswordResetDeliveryUnavailable(RuntimeError):
+    """Raised when reset delivery cannot be completed safely."""
+
+
+def _is_production() -> bool:
+    return bool(os.getenv('VERCEL')) or os.getenv('ENVIRONMENT', '').strip().lower() in {'production', 'prod'}
 
 def _now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 def _secret():
     secret = os.getenv('AUTH_SECRET')
     if not secret:
-        if os.getenv('VERCEL'):
+        if _is_production():
             raise RuntimeError('AUTH_SECRET is required in production')
         secret = 'local-development-change-me-only'
     return secret.encode()
 def normalize_email(email: str) -> str: return email.strip().lower()
 def is_internal_user(row) -> bool:
-    allowlist = {normalize_email(value) for value in os.getenv('INTERNAL_ADMIN_EMAILS', '').split(',') if value.strip()}
-    flagged = bool(row['is_internal']) if 'is_internal' in row.keys() else False
-    return flagged or normalize_email(row['email']) in allowlist
+    # Owner authorization is a durable database role. Environment email lists
+    # are intentionally never an authorization source: public registration
+    # must not be able to claim an allowlisted address and gain owner access.
+    return bool(row['is_internal']) if 'is_internal' in row.keys() else False
 
 
 def safe_user(row):
     return {'id': row['id'], 'name': row['name'], 'email': row['email'],
             'createdAt': row['created_at'], 'lastLoginAt': row['last_login_at'],
             'isInternal': is_internal_user(row)}
+
+
+def owner_account_integrity() -> dict:
+    """Return non-identifying owner-role integrity for authenticated health views."""
+    initialize_auth_database()
+    with get_db_connection() as conn:
+        row = conn.execute(
+            'SELECT COUNT(*) AS owner_count, '
+            'SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) AS active_owner_count '
+            'FROM users WHERE is_internal=1'
+        ).fetchone()
+    owner_count = int(row['owner_count'] or 0)
+    active_owner_count = int(row['active_owner_count'] or 0)
+    return {
+        'status': 'HEALTHY' if owner_count == 1 and active_owner_count == 1 else 'MISCONFIGURED',
+        'ownerCount': owner_count,
+        'activeOwnerCount': active_owner_count,
+    }
 def _b64(data: bytes) -> str: return base64.urlsafe_b64encode(data).decode().rstrip('=')
 def _unb64(data: str) -> bytes: return base64.urlsafe_b64decode(data + '=' * (-len(data) % 4))
 def create_token(user_id: int, session_version: int = 0) -> str:
@@ -51,7 +80,7 @@ def verify_token(token: str) -> Optional[int]:
     payload = _verify_token_payload(token)
     return payload['sub'] if payload else None
 def set_session_cookie(response: Response, user_id: int, session_version: int = 0):
-    secure = bool(os.getenv('VERCEL')) or os.getenv('AUTH_COOKIE_SECURE', 'false').lower() == 'true'
+    secure = _is_production() or os.getenv('AUTH_COOKIE_SECURE', 'false').lower() == 'true'
     response.set_cookie(COOKIE_NAME, create_token(user_id, session_version), httponly=True, secure=secure, samesite='lax', max_age=SESSION_HOURS*3600, path='/')
 def clear_session_cookie(response: Response): response.delete_cookie(COOKIE_NAME, path='/')
 def register_user(name: str, email: str, password: str):
@@ -87,17 +116,40 @@ def current_user(request: Request):
 def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
+def _site_origin() -> str:
+    configured = os.getenv('SITE_URL', '').strip()
+    if not configured:
+        configured = CANONICAL_PRODUCTION_ORIGIN if _is_production() else os.getenv('FRONTEND_ORIGIN', 'http://localhost:3000')
+    parsed = urlparse(configured)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in {'', '/'}:
+        raise PasswordResetDeliveryUnavailable('SITE_URL must be an origin without credentials, path, query, or fragment')
+    origin = f'{parsed.scheme}://{parsed.netloc}'.rstrip('/')
+    if _is_production() and origin != CANONICAL_PRODUCTION_ORIGIN:
+        raise PasswordResetDeliveryUnavailable('SITE_URL must match the canonical production origin')
+    return origin
+
+
+def _reset_delivery_configured() -> bool:
+    return bool(os.getenv('RESEND_API_KEY') and os.getenv('PASSWORD_RESET_FROM_EMAIL'))
+
+
+def ensure_password_reset_delivery_available() -> None:
+    if not _reset_delivery_configured():
+        raise PasswordResetDeliveryUnavailable('Password reset delivery is not configured')
+    _site_origin()
+
+
 def _send_reset_email(email: str, code: str) -> bool:
     api_key = os.getenv('RESEND_API_KEY')
     sender = os.getenv('PASSWORD_RESET_FROM_EMAIL')
     if not api_key or not sender:
-        logger.error('Password reset requested but email delivery is not configured')
-        return False
+        raise PasswordResetDeliveryUnavailable('Password reset delivery is not configured')
+    reset_url = f'{_site_origin()}/reset-password'
     payload = json.dumps({
         'from': sender,
         'to': [email],
         'subject': 'Your SmartBetSports password reset code',
-        'text': f'Your SmartBetSports password reset code is:\n\n{code}\n\nIt expires in {RESET_MINUTES} minutes. If you did not request this, ignore this email.',
+        'text': f'Reset your SmartBetSports password at:\n\n{reset_url}\n\nEnter this one-time code:\n\n{code}\n\nIt expires in {RESET_MINUTES} minutes. If you did not request this, ignore this email.',
     }).encode()
     request = UrlRequest('https://api.resend.com/emails', data=payload, method='POST', headers={
         'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json',
@@ -110,6 +162,9 @@ def _send_reset_email(email: str, code: str) -> bool:
         return False
 
 def request_password_reset(email: str) -> None:
+    # Check provider configuration before account lookup so known and unknown
+    # addresses have indistinguishable externally observable failure behavior.
+    ensure_password_reset_delivery_available()
     initialize_auth_database(); email = normalize_email(email); now = datetime.now(timezone.utc).replace(microsecond=0)
     with get_db_connection() as conn:
         row = conn.execute('SELECT id FROM users WHERE email=? AND is_active=1', (email,)).fetchone()
@@ -130,6 +185,10 @@ def request_password_reset(email: str) -> None:
     if not _send_reset_email(email, code):
         with get_db_connection() as conn:
             conn.execute('UPDATE password_reset_tokens SET used_at=? WHERE token_hash=?', (_now(), _token_hash(code)))
+        # Keep the public response indistinguishable from an unknown account.
+        # Delivery failure is operationally logged and the unusable token is
+        # revoked; configured-provider outages must not become an account oracle.
+        logger.error('Password reset email delivery failed after a send attempt')
 
 def reset_password(email: str, code: str, password: str) -> None:
     initialize_auth_database(); email = normalize_email(email); now = _now()

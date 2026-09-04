@@ -94,3 +94,26 @@ def test_vercel_asgi_adapter_restores_public_path_and_query(monkeypatch):
     assert observed["path"] == "/api/teams"
     assert observed["raw_path"] == b"/api/teams"
     assert observed["query_string"] == b"league=nfl"
+
+
+def test_vercel_asgi_adapter_rejects_ambiguous_path_carriers(monkeypatch):
+    import api.index as entrypoint
+
+    reached_app = False
+    messages = []
+
+    async def fake_app(scope, receive, send):
+        nonlocal reached_app
+        reached_app = True
+
+    async def send(message):
+        messages.append(message)
+
+    monkeypatch.setattr(entrypoint, "fastapi_app", fake_app)
+    scope = {"type": "http", "path": "/api/index", "raw_path": b"/api/index",
+             "query_string": b"__path=api%2Fhealth&__path=api%2Finternal%2Foperations"}
+
+    asyncio.run(entrypoint.app(scope, None, send))
+
+    assert reached_app is False
+    assert messages[0]["status"] == 400

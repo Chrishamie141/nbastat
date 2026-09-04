@@ -19,7 +19,7 @@ from backend.app.api.auth import router as auth_router
 from backend.app.api.billing import router as billing_router
 from backend.app.api.social_cron import router as social_cron_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
-from backend.app.services.auth_service import current_user
+from backend.app.services.auth_service import current_user, owner_account_integrity
 from backend.app.services.sports_mode_service import get_sports_mode
 from backend.app.services.schedule_service import refresh_games, upcoming_games
 from backend.app.services.nfl_game_service import (
@@ -251,6 +251,7 @@ def api_internal_operations_health(user=Depends(require_internal_access)):
         "latest_prediction_run": report["modelOperations"]["lastRun"],
         "latest_final_game_ingested": report["dataHealth"]["latestFinalIngested"],
         "week1_readiness": report["week1Readiness"], "social_publish_safety": report["automation"],
+        "owner_account_integrity": owner_account_integrity(),
     }
 
 

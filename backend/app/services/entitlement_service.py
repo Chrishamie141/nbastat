@@ -40,7 +40,7 @@ def require_full_access(request: Request):
 
 
 def require_internal_access(request: Request):
-    """Require an authenticated, explicitly flagged or allowlisted operator."""
+    """Require an authenticated operator with a durable database role."""
     user = current_user(request)
     if not is_internal_user(user):
         raise HTTPException(status_code=403, detail="Internal operator access is required.")

@@ -141,7 +141,7 @@ test("internal command center is a plain-language multi-sport owner dashboard", 
   assert.match(api, /api\/internal\/operations/);
   assert.match(api, /operations\/search/);
   assert.match(api, /operations\/games/);
-  assert.match(nav, /internal\/operations/);
+  assert.match(nav, /command-center/);
   assert.match(nav, /ownerPortal/);
 });
 
