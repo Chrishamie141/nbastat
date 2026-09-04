@@ -113,21 +113,30 @@ test("internal Week 3 experiment dashboard separates predictions from wagers", (
   assert.match(auth, /['"]\/internal['"]/);
 });
 
-test("internal command center prioritizes Week 1 operations and removes buyer account UI", () => {
+test("internal command center is a plain-language multi-sport owner dashboard", () => {
   const page = fs.readFileSync("app/internal/operations/page.jsx", "utf8");
   const api = fs.readFileSync("lib/api.js", "utf8");
   const nav = fs.readFileSync("components/layout/PremiumNavbar.jsx", "utf8");
-  assert.match(page, /Week 1 Command Center/);
-  assert.match(page, /Week 1 readiness/);
+  const terms = fs.readFileSync("lib/ownerTerminology.js", "utf8");
+  const footer = fs.readFileSync("components/layout/Footer.jsx", "utf8");
+  assert.match(page, />\s*Command Center\s*</);
+  assert.doesNotMatch(page, /Week 1 Command Center|Week 1 readiness|production · build/);
+  assert.match(page, /System Readiness/);
   assert.match(page, /Needs Attention/);
-  assert.match(page, /Game operations/);
-  assert.match(page, /Model \/ prediction operations/);
-  assert.match(page, /Data \/ system health/);
-  assert.match(page, /Automation \/ publishing safety/);
-  assert.match(page, /X post history/);
+  assert.match(page, />Games</);
+  assert.match(page, />Predictions</);
+  assert.match(page, /System Health/);
+  assert.match(page, /Social Posting/);
+  assert.match(page, /X Post History/);
   assert.match(page, /Posts made manually on X are not imported/);
-  assert.match(page, /Operational action history/);
+  assert.match(page, /Activity History/);
   assert.doesNotMatch(page, /Buyer funnel|Members|Paid members|subscription/i);
+  assert.doesNotMatch(page, /Manifest hash|Artifact hash|System A|Quota UNKNOWN|Expected X user ID|No artifact/);
+  assert.doesNotMatch(page, /game\.id}\s*·/);
+  assert.match(page, /\["ALL", "NFL", "NBA"\]/);
+  assert.match(terms, /Current Slate/);
+  assert.match(footer, /©.*brand\.name/);
+  assert.doesNotMatch(footer, /Clear sports analysis/);
   assert.match(page, /setInterval\(load, 60000\)/);
   assert.match(api, /api\/internal\/operations/);
   assert.match(api, /operations\/search/);

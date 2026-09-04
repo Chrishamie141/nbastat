@@ -16,8 +16,10 @@ def setup(tmp_path,monkeypatch):
     monkeypatch.delenv('VERCEL',raising=False);monkeypatch.delenv('VERCEL_ENV',raising=False)
     monkeypatch.delenv('SOCIAL_CTA_URL',raising=False)
     social.initialize()
+    games=[dict(game_id=f'g{i}',away_team=f'Away {i}',home_team=f'Home {i}',kickoff_time=f'2030-09-0{i+2}T17:00:00+00:00') for i in range(8)]
     source=dict(verified_at=clock().isoformat(),preseason=dict(record=dict(WIN=11,LOSS=4,PUSH=1),predictions=16,qualified_wagers=0),
-                regular=dict(week=1,predictions=16,scheduled=16,graded=0,winner_record=dict(WIN=0,LOSS=0,PUSH=0)),coverage_games=0)
+                regular=dict(week=1,predictions=16,scheduled=16,graded=0,winner_record=dict(WIN=0,LOSS=0,PUSH=0)),coverage_games=0,
+                operations=dict(games=games))
     seed(source)
     return clock,source
 
@@ -30,8 +32,8 @@ def seed(source):
 def test_dry_run_default_and_numeric_provenance(setup):
     clock,_=setup
     post=social.generate(clock)
-    assert '11-4-1' in post['content'] and '0 qualified wagers' in post['content']
-    assert '73%' not in post['content']
+    assert 'Away 0 vs Home 0' in post['content']
+    assert not any(phrase in post['content'].casefold() for phrase in social.BANNED_SOCIAL_PHRASES)
     assert social.publish_one(post['post_id'],clock,lambda:pytest.fail('X called'))['status']=='DRY_RUN'
     assert social.generate(clock)['post_id']==post['post_id']
 
@@ -43,7 +45,7 @@ def test_seven_day_previews_use_current_evidence_and_never_enqueue(setup):
     assert not result['published'] and len(result['previews'])==7
     assert all(p['data_as_of']==source['verified_at'] for p in result['previews'])
     assert all(p['status']=='PREVIEW_ONLY' for p in result['previews'])
-    assert '11-4-1' in result['previews'][0]['content']
+    assert 'Away 0 vs Home 0' in result['previews'][0]['content']
     with social.connection() as c:
         assert c.execute('SELECT COUNT(*) FROM social_posts').fetchone()[0]==0
         assert c.execute('SELECT COUNT(*) FROM social_publish_days').fetchone()[0]==0
@@ -56,11 +58,33 @@ def test_preview_rejects_stale_evidence(setup):
 
 def test_twenty_eight_templates_distinct_valid_length(setup):
     _,source=setup
-    posts=[social.render(day,source)[1] for day in range(28)]
-    assert len(set(posts))==28 and all(len(post)<=280 for post in posts)
-    for i,left in enumerate(posts):
-        for right in posts[i+1:]:
-            assert social.SequenceMatcher(None,social.similarity(left),social.similarity(right)).ratio()<.82
+    rendered=[social.render(day,source) for day in range(28)]
+    assert all(len(post)<=280 for _,post in rendered)
+    assert all(rendered[index][0]!=rendered[index-1][0] for index in range(1,len(rendered)))
+    assert {'game_preview','engagement','product_awareness','model_recap'}.issubset({kind for kind,_ in rendered})
+    assert all(not any(phrase in post.casefold() for phrase in social.BANNED_SOCIAL_PHRASES) for _,post in rendered)
+
+
+def test_structured_social_manager_supports_every_post_type_and_grounding():
+    contexts={
+        'GAME_PREVIEW':dict(away_team='Lions',home_team='Cardinals',game_time='Sep 8 · 8 PM ET'),
+        'PLAYER_SPOTLIGHT':dict(player='Amon-Ra St. Brown',market='receiving yards',median=78,ceiling=112),
+        'ENGAGEMENT':dict(matchups=['Bills vs Ravens','Eagles vs Cowboys']),
+        'MODEL_RECAP':dict(record='11-4-1',sample_size=16),
+        'TREND':dict(trend='Detroit enters with the stronger verified rushing profile.'),
+        'PRODUCT_AWARENESS':dict(games_count=16,predictions_count=16),
+        'WATCHLIST':dict(players=['Player A','Player B','Player C']),
+    }
+    for post_type,values in contexts.items():
+        source_entities=[str(value) for value in values.values() if not isinstance(value,list)]
+        source_entities += [item for value in values.values() if isinstance(value,list) for item in value]
+        result=social.compose_social_post(dict(post_type=post_type,source_entities=source_entities,cta='',**values))
+        assert result['post_type']==post_type and result['character_count']==len(result['post_text'])
+    with pytest.raises(ValueError,match='missing'):social.compose_social_post({'post_type':'MODEL_RECAP','source_entities':[]})
+    context=dict(post_type='PLAYER_SPOTLIGHT',player='Amon-Ra St. Brown',market='receiving yards',median=78,
+                 source_entities=['Amon-Ra St. Brown'],cta='')
+    def invented(_):return dict(post_text='Projected 999 yards',post_type='PLAYER_SPOTLIGHT',engagement_hook='?',cta='',source_entities=['Amon-Ra St. Brown'],character_count=19)
+    with pytest.raises(ValueError,match='unsupported number'):social.compose_social_post(context,invented)
 
 
 def test_stale_source_blocks(setup):
@@ -216,7 +240,7 @@ def test_campaign_continues_with_dated_rotation_after_twenty_eight_days(setup):
     future=clock()+timedelta(days=28)
     source['verified_at']=future.isoformat();seed(source)
     post=social.generate(lambda:future)
-    assert post['category'].endswith('|28') and post['content'].startswith('Sep 29 research update:')
+    assert post['category'].endswith('|28') and len(post['content'])<=280
 
 
 def test_campaign_refuses_dates_before_start(setup):

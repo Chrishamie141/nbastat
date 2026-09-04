@@ -1,2 +1,2 @@
 import {brand} from '@/lib/brand';import SmartBetSportsLogo from '@/components/branding/SmartBetSportsLogo';
-export default function Footer(){return <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-slate-400"><SmartBetSportsLogo size={26}/><p>© {new Date().getFullYear()} {brand.name}. Clear sports analysis and prediction tracking.</p></footer>}
+export default function Footer(){return <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-slate-400"><SmartBetSportsLogo size={26}/><p>© {new Date().getFullYear()} {brand.name}</p></footer>}

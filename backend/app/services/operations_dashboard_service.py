@@ -197,9 +197,13 @@ def _fallback(social_panel: dict) -> dict:
     operations = source.get("operations") or {}
     games = [{"id": row.get("game_id"), "awayTeam": row.get("away_team"), "homeTeam": row.get("home_team"),
               "kickoff": row.get("kickoff_time"), "season": aggregate.get("season", 2026), "seasonType": "regular", "week": 1,
-              "status": "SCHEDULED", "awayScore": None, "homeScore": None, "predictionStatus": "READY",
+              "status": "SCHEDULED", "awayScore": None, "homeScore": None,
+              "predictionStatus": "READY" if row.get("prediction") else "MISSING",
               "statsStatus": "PENDING", "lastRefresh": source.get("verified_at"), "freshness": "CURRENT", "warnings": [],
-              "prediction": None, "grade": None} for row in operations.get("games", [])]
+              "prediction": ({"winner": row["prediction"].get("winner"), "probability": row["prediction"].get("probability"),
+                              "modelVersion": row["prediction"].get("model_version"),
+                              "generatedAt": row["prediction"].get("generated_at")} if row.get("prediction") else None),
+              "grade": None} for row in operations.get("games", [])]
     checkpoints = operations.get("checkpoints") or {}
     return {"experimentId": aggregate.get("experiment_id", "NFL-2026-REG1-v1"), "season": aggregate.get("season", 2026),
             "seasonType": aggregate.get("phase", "regular"), "week": aggregate.get("week", 1), "games": games, "issues": [],
@@ -230,9 +234,10 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
                        "source": "database_health", "detectedAt": at.isoformat(), "lastAttemptAt": at.isoformat(),
                        "recommendedAction": "Review schema compatibility", "action": "RETRY_PANEL"})
     if week_panel["status"] != "HEALTHY":
-        issues.append({"severity": "WARNING", "category": "DATA", "entityId": "NFL-2026-REG1-v1",
+        issues.append({"severity": "WARNING", "category": "DATA", "entityId": "current-slate",
                        "summary": week_panel["error"]["message"], "source": "week1_store", "detectedAt": at.isoformat(),
-                       "lastAttemptAt": at.isoformat(), "recommendedAction": "Synchronize the Week 1 operational source",
+                       "ownerSummary": "Some live game data is not updating yet.",
+                       "lastAttemptAt": at.isoformat(), "recommendedAction": "Refresh game data",
                        "action": "RETRY_PANEL"})
     social = social_panel.get("data") or {}
     social_public = {key: value for key, value in social.items() if key != "verifiedAggregate"}
@@ -275,10 +280,17 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
         "DEGRADED" if any(v in {"WARN", "FAIL", "UNKNOWN"} for v in checks.values()) else "READY")
     games = week.get("games") or []
     ready_games = sum(g["predictionStatus"] in {"READY", "GRADED"} and not g["warnings"] for g in games)
+    owner_checks = {"scheduleLoaded": checks["scheduleLoaded"], "databaseHealthy": checks["databaseHealthy"],
+                    "gameIdentitiesValid": checks["gameIdentitiesValid"], "predictionsComplete": checks["predictionsComplete"],
+                    "gameDetailOperational": checks["gameDetailOperational"],
+                    "statusRefreshOperational": checks["statusRefreshOperational"],
+                    "actualIngestionOperational": checks["actualIngestionOperational"], "searchOperational": checks["searchOperational"]}
     return {
         "generatedAt": at.isoformat(), "environment": os.getenv("VERCEL_ENV", "local"), "version": _git_version(),
         "context": {"league": "NFL", "season": 2026, "seasonType": "regular", "week": 1},
-        "overallStatus": readiness, "week1Readiness": {"status": readiness, "checks": checks},
+        "availableSports": ["ALL", "NFL", "NBA"], "overallStatus": readiness,
+        "systemReadiness": {"status": readiness, "checks": owner_checks},
+        "week1Readiness": {"status": readiness, "checks": checks},
         "summary": {"gamesReady": ready_games if games else week.get("scheduledGames", 0), "gamesTotal": week.get("scheduledGames", 0),
                     "predictionsReady": week.get("predictions", 0), "predictionsTotal": week.get("scheduledGames", 0),
                     "finalResults": week.get("finals", 0), "needsAttention": sum(r["severity"] in {"WARNING", "CRITICAL"} for r in issues),

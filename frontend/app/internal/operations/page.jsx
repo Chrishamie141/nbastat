@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -17,9 +17,17 @@ import {
 } from "lucide-react";
 import GlowCard from "@/components/ui/GlowCard";
 import { api } from "@/lib/api";
+import { ownerStatus, ownerTerms } from "@/lib/ownerTerminology";
 
 const EMPTY = "—";
 const fmt = (value) => (value ? new Date(value).toLocaleString() : EMPTY);
+const modelName = (value) => value ? value.replace("nfl_game_baseline_v", "NFL Game Model v").replaceAll("_", " ") : EMPTY;
+const issueCopy = (issue) => {
+  if (issue.category === "DATA") return ["Game data needs attention", "Some live game data is not updating yet."];
+  if (issue.category === "DATABASE") return ["Database needs attention", "Some system data needs attention."];
+  if (issue.category === "AUTOMATION") return ["Social posting is paused", "Posting safeguards are keeping X activity paused."];
+  return [`${issue.category.replaceAll("_", " ")} issue`, issue.ownerSummary || issue.summary];
+};
 
 function Pill({ value }) {
   const text = String(value || "UNKNOWN").toUpperCase();
@@ -89,9 +97,9 @@ function CheckRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-white/10 py-2.5 last:border-0">
       <span className="text-sm text-slate-300">
-        {label.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase())}
+        {ownerTerms[label] || label}
       </span>
-      <Pill value={value} />
+      <Pill value={ownerStatus(value)} />
     </div>
   );
 }
@@ -109,6 +117,7 @@ function HealthRow({ label, value, detail }) {
 }
 
 export default function OperationsPage() {
+  const loadRequest = useRef(0);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -120,16 +129,19 @@ export default function OperationsPage() {
   const [socialStatus, setSocialStatus] = useState("ALL");
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialError, setSocialError] = useState("");
+  const [sport, setSport] = useState("ALL");
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequest.current;
     setLoading(true);
     setError("");
     try {
-      setData(await api.internal.operations());
+      const result = await api.internal.operations();
+      if (requestId === loadRequest.current) setData(result);
     } catch (exception) {
-      setError(exception.message);
+      if (requestId === loadRequest.current) setError(exception.message);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequest.current) setLoading(false);
     }
   }, []);
 
@@ -200,7 +212,10 @@ export default function OperationsPage() {
   const model = data?.modelOperations || {};
   const health = data?.dataHealth || {};
   const automation = data?.automation || {};
-  const filteredGames = useMemo(() => data?.games || [], [data]);
+  const filteredGames = useMemo(
+    () => (sport === "NBA" ? [] : data?.games || []),
+    [data, sport],
+  );
 
   if (loading && !data)
     return (
@@ -208,7 +223,7 @@ export default function OperationsPage() {
         className="mx-auto min-h-screen max-w-7xl px-6 py-16"
         aria-live="polite"
       >
-        Loading Week 1 Command Center…
+        Loading Command Center…
       </main>
     );
   if (error && !data)
@@ -232,22 +247,26 @@ export default function OperationsPage() {
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
           <p className="text-sm font-black uppercase tracking-[.22em] text-cyan-300">
-            Owner operations · NFL 2026 regular season
+            SmartBetSports Operations
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <h1 className="text-4xl font-black tracking-[-.055em] md:text-6xl">
-              Week 1 Command Center
+              Command Center
             </h1>
-            <Pill value={data?.week1Readiness?.status} />
+            <Pill value={ownerStatus(data?.systemReadiness?.status)} />
           </div>
           <p className="mt-3 max-w-3xl text-slate-300">
-            Readiness, games, frozen predictions, outcomes, data health, and
-            operational exceptions in one control plane.
+            Live games, predictions, results, system health, and social activity.
           </p>
-          <p className="mt-2 text-xs text-slate-500">
-            {data?.environment} · build {data?.version} · updated{" "}
-            {fmt(data?.generatedAt)}
-          </p>
+          <p className="mt-2 text-xs text-slate-500">Last updated {fmt(data?.generatedAt)}</p>
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Sport filter">
+            {["ALL", "NFL", "NBA"].map((value) => (
+              <button key={value} onClick={() => setSport(value)} className={`rounded-full px-3 py-1.5 text-xs font-black ${sport === value ? "bg-cyan-300 text-slate-950" : "bg-white/5 text-slate-300"}`}>{value}</button>
+            ))}
+            <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-400">
+              {data?.context?.league} · {data?.context?.season} {data?.context?.seasonType} · Week {data?.context?.week}
+            </span>
+          </div>
         </div>
         <button
           onClick={() => runAction("all", api.internal.refreshOperations)}
@@ -261,8 +280,8 @@ export default function OperationsPage() {
           {action.all?.state === "RUNNING"
             ? "Refreshing…"
             : action.all?.state === "FAILED"
-              ? "Retry operational refresh"
-            : "Refresh operational data"}
+              ? "Retry refresh"
+            : "Refresh data"}
         </button>
       </header>
 
@@ -285,43 +304,43 @@ export default function OperationsPage() {
       )}
 
       <section
-        aria-label="Week 1 readiness summary"
+        aria-label="Operations summary"
         className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
       >
         <Metric
-          label="Games ready"
-          value={`${summary.gamesReady ?? 0}/${summary.gamesTotal ?? 0}`}
-          detail="Identified and operational"
+          label="Games"
+          value={summary.gamesReady ?? 0}
+          detail="active"
           icon={CheckCircle2}
         />
         <Metric
-          label="Predictions ready"
-          value={`${summary.predictionsReady ?? 0}/${summary.predictionsTotal ?? 0}`}
-          detail="Frozen before kickoff"
+          label="Predictions"
+          value={summary.predictionsReady ?? 0}
+          detail="ready"
           icon={Workflow}
         />
         <Metric
           label="Final results"
           value={summary.finalResults ?? 0}
-          detail="Ingested and reconciled"
+          detail="updated"
           icon={Clock3}
         />
         <Metric
-          label="Needs attention"
+          label="Issues"
           value={summary.needsAttention ?? 0}
-          detail="Warning or critical"
+          detail={summary.needsAttention === 1 ? "warning" : "warnings"}
           icon={Siren}
         />
         <Metric
           label="Database"
-          value={<Pill value={summary.databaseHealth} />}
-          detail={`${health.database?.latencyMs ?? EMPTY} ms check`}
+          value={<Pill value={ownerStatus(summary.databaseHealth)} />}
+          detail="system data"
           icon={Database}
         />
         <Metric
-          label="Provider"
-          value={<Pill value={summary.providerHealth} />}
-          detail="Status only; no paid refresh"
+          label="Data Provider"
+          value={<Pill value={summary.providerHealth === "READY" ? "CONNECTED" : summary.providerHealth} />}
+          detail="game updates"
           icon={Activity}
         />
       </section>
@@ -331,13 +350,10 @@ export default function OperationsPage() {
         className="mt-8 grid gap-4 xl:grid-cols-[.8fr_1.2fr]"
       >
         <GlowCard className="p-6">
-          <h2 className="text-2xl font-black">Week 1 readiness</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Critical failures prevent READY. Unknown noncritical checks degrade
-            the state.
-          </p>
+          <h2 className="text-2xl font-black">System Readiness</h2>
+          <p className="mt-1 text-sm text-slate-400">{summary.needsAttention ? `${summary.needsAttention} item needs attention` : "Everything is ready"}</p>
           <div className="mt-5">
-            {Object.entries(data?.week1Readiness?.checks || {}).map(
+            {Object.entries(data?.systemReadiness?.checks || {}).map(
               ([label, value]) => (
                 <CheckRow key={label} label={label} value={value} />
               ),
@@ -356,21 +372,19 @@ export default function OperationsPage() {
           </div>
           <div className="mt-5 space-y-3">
             {data?.issues?.length ? (
-              data.issues.map((issue, index) => (
+              data.issues.map((issue, index) => {
+                const [title, message] = issueCopy(issue);
+                return (
                 <div
                   key={`${issue.entityId}-${issue.category}-${index}`}
                   className="rounded-xl border border-white/10 bg-white/[.035] p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="font-bold">
-                      {issue.category} · {issue.entityId}
-                    </p>
+                    <p className="font-bold">{title}</p>
                     <Pill value={issue.severity} />
                   </div>
-                  <p className="mt-2 text-sm text-slate-300">{issue.summary}</p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Detected {fmt(issue.detectedAt)} · source {issue.source}
-                  </p>
+                  <p className="mt-2 text-sm text-slate-300">{message}</p>
+                  <details className="mt-2 text-xs text-slate-500"><summary className="cursor-pointer">View details</summary><p className="mt-2">{issue.summary} · {fmt(issue.detectedAt)}</p></details>
                   <div className="mt-3 flex gap-3">
                     {issue.action === "RECONCILE" && (
                       <button
@@ -397,14 +411,15 @@ export default function OperationsPage() {
                     )}
                   </div>
                 </div>
-              ))
+                );
+              })
             ) : (
               <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[.07] p-5">
                 <p className="font-bold text-emerald-200">
-                  No operational exceptions
+                  No issues
                 </p>
                 <p className="mt-1 text-sm text-slate-300">
-                  Critical owner workflows are within guardrails.
+                  Games, predictions, and updates are running normally.
                 </p>
               </div>
             )}
@@ -415,10 +430,9 @@ export default function OperationsPage() {
       <section id="games" className="mt-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-black">Game operations</h2>
+            <h2 className="text-3xl font-black">Games</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Every displayed game links to its detailed prediction, freshness,
-              actuals, and provenance.
+              View predictions, scores, stats, and updates for the current slate.
             </p>
           </div>
           <form onSubmit={submitSearch} className="flex gap-2">
@@ -428,7 +442,7 @@ export default function OperationsPage() {
                 size={16}
               />
               <input
-                aria-label="Search games, teams, players, artifacts, and issues"
+                aria-label="Search games, teams, players, predictions, and issues"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 className="rounded-xl border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm"
@@ -482,11 +496,11 @@ export default function OperationsPage() {
             <thead className="bg-white/[.04] text-xs uppercase tracking-wider text-slate-400">
               <tr>
                 <th className="p-4">Matchup</th>
-                <th className="p-4">Kickoff</th>
-                <th className="p-4">Status / score</th>
+                <th className="p-4">Time</th>
+                <th className="p-4">Status</th>
                 <th className="p-4">Prediction</th>
                 <th className="p-4">Stats</th>
-                <th className="p-4">Freshness</th>
+                <th className="p-4">Updated</th>
                 <th className="p-4">Actions</th>
               </tr>
             </thead>
@@ -499,9 +513,6 @@ export default function OperationsPage() {
                     <td className="p-4">
                       <p className="font-black">
                         {game.awayTeam} at {game.homeTeam}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {game.id} · regular Week 1
                       </p>
                       {game.warnings?.map((warning) => (
                         <p
@@ -523,11 +534,7 @@ export default function OperationsPage() {
                     </td>
                     <td className="p-4">
                       <Pill value={game.predictionStatus} />
-                      <p className="mt-2 text-xs text-slate-400">
-                        {game.prediction
-                          ? `${game.prediction.winner} · ${(Number(game.prediction.probability) * 100).toFixed(1)}%`
-                          : "No artifact"}
-                      </p>
+                      {game.prediction && <p className="mt-2 text-xs text-slate-400">{game.prediction.winner} · {(Number(game.prediction.probability) * 100).toFixed(1)}%</p>}
                     </td>
                     <td className="p-4">
                       <Pill value={game.statsStatus} />
@@ -548,7 +555,7 @@ export default function OperationsPage() {
                             ? game.grade
                               ? "View evaluation"
                               : "View final & comparison"
-                            : "View game & prediction"}
+                            : game.predictionStatus === "READY" ? "View Prediction" : "View Game"}
                         </Link>
                         <button
                           disabled={running}
@@ -566,7 +573,7 @@ export default function OperationsPage() {
                             : action[game.id]?.state === "FAILED"
                               ? "Retry"
                             : game.freshness === "STALE"
-                              ? final ? "Reconcile outcome" : "Reconcile"
+                              ? final ? "Sync result" : "Sync game"
                               : final ? "Refresh final stats" : "Refresh"}
                         </button>
                       </div>
@@ -583,8 +590,7 @@ export default function OperationsPage() {
           </table>
           {!filteredGames.length && (
             <p className="p-6 text-sm text-slate-400">
-              No game rows are available from this environment. The panel above
-              identifies the failed dependency explicitly.
+              No active {sport === "ALL" ? "" : sport} games are available.
             </p>
           )}
         </div>
@@ -593,24 +599,17 @@ export default function OperationsPage() {
       <section className="mt-8 grid gap-4 xl:grid-cols-2">
         <GlowCard id="model-operations" className="p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black">
-              Model / prediction operations
-            </h2>
-            <Pill value={model.researchStatus} />
+            <h2 className="text-2xl font-black">Predictions</h2>
+            <Pill value="ACTIVE" />
           </div>
           <dl className="mt-5 grid gap-4 sm:grid-cols-2">
             {[
-              ["Production model", model.productionModel],
-              ["Latest prediction run", fmt(model.lastRun)],
-              ["Generation cutoff", model.generationCutoff],
-              [
-                "Game coverage",
-                `${model.gamesCovered ?? 0}/${model.gamesTotal ?? 0}`,
-              ],
-              ["Missing predictions", model.missingPredictions],
-              ["Failed predictions", model.failedPredictions],
-              ["Calibration", model.calibrationStatus],
-              ["Manifest hash", model.manifestHash],
+              ["Current Model", modelName(model.productionModel)],
+              ["Latest Run", fmt(model.lastRun)],
+              ["Games Covered", model.gamesCovered],
+              ["Predictions Ready", model.predictionsGenerated],
+              ["Missing", model.missingPredictions],
+              ["Errors", model.failedPredictions],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-white/[.04] p-4">
                 <dt className="text-xs uppercase tracking-wider text-slate-400">
@@ -622,69 +621,65 @@ export default function OperationsPage() {
           </dl>
           <div className="mt-5 flex flex-wrap gap-4">
             <a href="#games" className="font-bold text-cyan-300">
-              View prediction run
+              View Predictions
             </a>
             {model.missingPredictions > 0 ? (
               <span className="text-sm text-amber-200">
-                Generation is blocked here until a scoped, provenance-preserving
-                backend job is configured.
+                Some predictions are missing. Open the game list to review them.
               </span>
             ) : (
               <span className="text-sm text-emerald-200">
-                All eligible Week 1 predictions are frozen; duplicate generation
-                is unavailable.
+                Current predictions are ready.
               </span>
             )}
           </div>
         </GlowCard>
         <GlowCard id="data-health" className="p-6">
-          <h2 className="text-2xl font-black">Data / system health</h2>
+          <h2 className="text-2xl font-black">System Health</h2>
           <PanelState panel={data?.panels?.database} retry={load} />
           <div className="mt-4">
             <HealthRow
-              label="Primary database"
-              value={health.database?.status}
-              detail={`${health.database?.engine || EMPTY} · ${health.database?.latencyMs ?? EMPTY} ms`}
+              label="Database"
+              value={ownerStatus(health.database?.status)}
+              detail="Connected"
             />
             <HealthRow
-              label="Schedule store"
+              label="Schedule"
               value={health.scheduleStore?.status}
-              detail={`${health.scheduleStore?.gameCount ?? 0} Week 1 games`}
+              detail={`${health.scheduleStore?.gameCount ?? 0} active games`}
             />
             <HealthRow
-              label="Game status service"
+              label="Game Updates"
               value={health.gameStatusService?.status}
-              detail={health.gameStatusService?.provider}
             />
             <HealthRow
-              label="Prediction store"
+              label="Predictions"
               value={
                 health.predictionStore?.data?.status ||
                 health.predictionStore?.status
               }
-              detail={`${health.predictionStore?.data?.artifactCount ?? 0} artifacts`}
+              detail={model.missingPredictions ? `${model.missingPredictions} missing` : "Ready"}
             />
             <HealthRow
-              label="Player / team stats"
+              label="Game Stats"
               value={health.playerStatsStore?.status}
               detail="Pending is expected before final games"
             />
             <HealthRow
-              label="Week 1 worker"
+              label="Background Jobs"
               value={health.worker?.status}
               detail={
                 health.worker?.pid
-                  ? `PID ${health.worker.pid} · heartbeat ${fmt(health.worker.heartbeatAt)}`
-                  : "Not available in this environment"
+                  ? `Updated ${fmt(health.worker.heartbeatAt)}`
+                  : "Not available"
               }
             />
             <HealthRow
-              label="Provider"
-              value={health.provider?.status}
-              detail={`Quota ${health.provider?.quotaState || EMPTY}`}
+              label="Data Provider"
+              value={health.provider?.status === "READY" ? "CONNECTED" : health.provider?.status}
             />
             <HealthRow
-              label="Next controlled checkpoint"
+              label="Next Update"
               value={health.nextCheckpoint ? "SCHEDULED" : "NONE"}
               detail={health.nextCheckpoint ? fmt(new Date(health.nextCheckpoint.due * 1000).toISOString()) : "No pending capture"}
             />
@@ -695,53 +690,32 @@ export default function OperationsPage() {
       <section className="mt-8 grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
         <GlowCard id="automation" className="p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black">
-              Automation / publishing safety
-            </h2>
-            <Pill value={automation.status} />
+            <h2 className="text-2xl font-black">Social Posting</h2>
+            <Pill value={automation.publishingBlocked ? "PAUSED" : "READY"} />
           </div>
-          <p className="mt-2 text-sm text-slate-400">
-            Status only. This control plane provides no publish action.
-          </p>
           <dl className="mt-5">
             <HealthRow
-              label="Credentials configured"
-              value={automation.credentialsConfigured ? "YES" : "NO"}
+              label="X Account"
+              value={automation.accountVerificationComplete ? "VERIFIED" : "NEEDS SETUP"}
             />
             <HealthRow
               label="Dry run"
               value={automation.dryRun ? "ON" : "OFF"}
             />
             <HealthRow
-              label="Automatic publishing"
-              value={automation.autoPublish ? "ENABLED" : "DISABLED"}
+              label="Auto Posting"
+              value={automation.autoPublish ? "ON" : "OFF"}
             />
             <HealthRow
-              label="Account verification"
-              value={
-                automation.accountVerificationComplete
-                  ? "COMPLETE"
-                  : "INCOMPLETE"
-              }
+              label="Status"
+              value={automation.publishingBlocked ? "PAUSED" : "READY"}
             />
-            <HealthRow
-              label="Expected X user ID"
-              value={
-                automation.expectedUserIdConfigured ? "CONFIGURED" : "MISSING"
-              }
-            />
-            <HealthRow
-              label="Publish safety"
-              value={automation.publishingBlocked ? "BLOCKED" : "ARMED"}
-            />
+            <HealthRow label="Last Post" value={automation.lastAttemptStatus || "NONE"} detail={fmt(automation.lastPublishAttempt)} />
           </dl>
-          <p className="mt-4 text-xs text-slate-500">
-            No credential values or account identifiers are displayed.
-          </p>
         </GlowCard>
         <GlowCard className="p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black">Operational action history</h2>
+            <h2 className="text-2xl font-black">Activity History</h2>
             <ShieldCheck className="text-cyan-300" />
           </div>
           <PanelState panel={data?.panels?.actionHistory} retry={load} />
@@ -754,7 +728,7 @@ export default function OperationsPage() {
                 >
                   <div>
                     <p className="font-bold">
-                      {item.action.replaceAll("_", " ")} · {item.target}
+                      {item.action.replaceAll("_", " ")}
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
                       {item.actor} · started {fmt(item.started_at)} · completed{" "}
@@ -780,9 +754,9 @@ export default function OperationsPage() {
         <GlowCard className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-black">X post history</h2>
+              <h2 className="text-2xl font-black">X Post History</h2>
               <p className="mt-1 text-sm text-slate-400">
-                Every post recorded by SmartBets automation. This is read-only and never contacts X.
+                Recent posts created by SmartBetSports.
               </p>
             </div>
             <label className="text-xs font-black uppercase tracking-wider text-slate-400">
@@ -815,14 +789,13 @@ export default function OperationsPage() {
             {socialPosts.items.map((post) => (
               <article key={post.post_id} className="rounded-xl border border-white/10 bg-white/[.035] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs font-black uppercase tracking-wider text-slate-400">{post.category} · {post.day_key}</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-400">{post.category.replaceAll("_", " ")} · {post.day_key}</p>
                   <Pill value={post.status} />
                 </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-200">{post.content}</p>
+                <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-slate-200">{post.content}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
-                  <span>Generated {fmt(post.generated_at)}</span>
-                  {post.published_at && <span>Published {fmt(post.published_at)}</span>}
-                  {post.failure_reason && <span className="text-rose-200">{post.failure_reason}</span>}
+                  <span>{fmt(post.published_at || post.generated_at)}</span>
+                  {post.failure_reason && <span className="text-rose-200">Post failed</span>}
                   {post.xUrl && (
                     <a href={post.xUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-cyan-300">
                       View on X <ExternalLink size={13} />
@@ -845,11 +818,6 @@ export default function OperationsPage() {
         </GlowCard>
       </section>
 
-      <p className="mt-6 text-xs text-slate-500">
-        System A prediction evidence remains separate from sportsbook pricing.
-        Refresh actions use the free schedule/game provider and never trigger
-        paid market capture.
-      </p>
     </main>
   );
 }

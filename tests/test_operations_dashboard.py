@@ -81,6 +81,8 @@ def test_command_center_is_week1_operational_control_plane(tmp_path, monkeypatch
     result = command_center(lambda: at)
 
     assert result["week1Readiness"]["status"] == "READY"
+    assert result["systemReadiness"]["status"] == "READY"
+    assert result["availableSports"] == ["ALL", "NFL", "NBA"]
     assert result["summary"]["gamesReady"] == 16
     assert result["summary"]["predictionsReady"] == 16
     assert len(result["games"]) == 16

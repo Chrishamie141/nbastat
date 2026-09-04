@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from difflib import SequenceMatcher
 import hashlib
 import hmac
@@ -112,9 +113,20 @@ def source_from_databases(week_db,week3_db=PRODUCTION_DATABASE,clock=now):
                        predictions=len(rows),qualified_wagers=sum(r['qualified_wager'] for r in grades),baseline_hash=baseline)
     finally: c.close()
     # Export only whitelisted, aggregate evidence. No users, emails, subscriber counts, or credentials.
-    operational_games = [{"game_id": game["game_id"], "away_team": game["away_team"],
-                          "home_team": game["home_team"], "kickoff_time": game["kickoff_time"]}
-                         for game in regular["coverage"]["experiment"]["games"]]
+    week_path = Path(week_db).resolve()
+    week_connection = sqlite3.connect(week_path.as_uri() + '?mode=ro', uri=True)
+    week_connection.row_factory = sqlite3.Row
+    try:
+        predictions = {row['game_id']: dict(row) for row in week_connection.execute(
+            'SELECT game_id,winner,probability,generated_at,model_version FROM forward_predictions')}
+    finally:
+        week_connection.close()
+    operational_games = []
+    for game in regular["coverage"]["experiment"]["games"]:
+        prediction = predictions.get(game["game_id"])
+        operational_games.append({"game_id": game["game_id"], "away_team": game["away_team"],
+                                  "home_team": game["home_team"], "kickoff_time": game["kickoff_time"],
+                                  "prediction": prediction})
     return dict(verified_at=clock().isoformat(),preseason=preseason,
                 regular={k:regular[k] for k in ('experiment_id','season','phase','week','manifest_hash','prediction_hash',
                           'predictions','scheduled','graded','winner_record','accuracy','profiles','sample_warning')},
@@ -170,12 +182,15 @@ def load_source(c,source_id=None,clock=now):
     return row['source_id'],value
 
 
-CATEGORIES=('transparent_performance','preparation','how_it_works','product_features','data_education',
-            'market_coverage','product_cta','model_insight','responsible_bankroll','results_recap',
-            'market_movement','pregame_process','subscriber_cta','weekly_transparency',
-            'no_retroactive_bets','dashboard_literacy','calibration_education','price_shopping',
-            'sample_size','timestamp_integrity','coverage_update','buyer_diligence','prediction_review',
-            'push_handling','model_disagreement','research_checklist','weekly_market_review','build_log')
+POST_TYPES=('GAME_PREVIEW','PLAYER_SPOTLIGHT','ENGAGEMENT','MODEL_RECAP','TREND','PRODUCT_AWARENESS','WATCHLIST')
+CATEGORIES=tuple(value.lower() for value in POST_TYPES)
+BANNED_SOCIAL_PHRASES=('guaranteed','can\'t lose','free money','100%','easy win','qualified wager',
+                       'pregame price','probability calibration','system a','system b','model artifact')
+SOCIAL_MARKET_LABELS={
+    'passing_tds':'passing TDs','passing tds':'passing TDs',
+    'passing_yards':'passing yards','receiving_yards':'receiving yards',
+    'rushing_yards':'rushing yards','receptions':'receptions',
+}
 
 
 def cta():
@@ -189,58 +204,121 @@ def cta():
     return ' Explore SmartBets: '+value
 
 
+def _require(context, *fields):
+    missing=[field for field in fields if context.get(field) in (None,'',[],{})]
+    if missing: raise ValueError('Grounded social context is missing: '+', '.join(missing))
+
+
+def validate_social_copy(result,context):
+    required={'post_text','post_type','engagement_hook','cta','source_entities','character_count'}
+    if set(result)!=required or result['post_type'] not in POST_TYPES: raise ValueError('Invalid social writer output')
+    text=str(result['post_text']).strip();lower=text.casefold()
+    if not text or len(text)>280 or result['character_count']!=len(text): raise ValueError('Invalid social post length')
+    if '@' in text: raise ValueError('Unsolicited mentions are not supported')
+    if any(phrase in lower for phrase in BANNED_SOCIAL_PHRASES): raise ValueError('Unsafe or technical social phrasing blocked')
+    allowed={str(value) for value in context.get('source_entities',[])}
+    if set(map(str,result['source_entities']))-allowed: raise ValueError('Social writer introduced an unsupported entity')
+    supplied_numbers=set(re.findall(r'\d+(?:\.\d+)?',encode(context)))
+    if set(re.findall(r'\d+(?:\.\d+)?',text))-supplied_numbers: raise ValueError('Social writer introduced an unsupported number')
+    return result
+
+
+def compose_social_post(context,writer=None):
+    """Create engaging copy from explicit evidence; an optional AI writer must pass the same guardrails."""
+    post_type=str(context.get('post_type') or '').upper();context=dict(context,post_type=post_type)
+    if post_type not in POST_TYPES: raise ValueError('Unsupported social post type')
+    if writer:
+        return validate_social_copy(writer(context),context)
+    cta_text=context.get('cta','')
+    variant=int(context.get('variant',0))%4
+    if post_type=='GAME_PREVIEW':
+        _require(context,'away_team','home_team','game_time')
+        preview_hooks=('Who are you taking? 👀','What is your read on this one?','Which side has the edge? 👇','Score prediction?')
+        hook=preview_hooks[variant]
+        text=(f"🚨 {context['away_team']} vs {context['home_team']}\n\n"
+              f"Kickoff: {context['game_time']}\n\nThis matchup is on the SmartBets radar.\n\n{hook}{cta_text}")
+    elif post_type=='PLAYER_SPOTLIGHT':
+        _require(context,'player','market','median')
+        market=SOCIAL_MARKET_LABELS.get(str(context['market']).casefold(),context['market'])
+        ceiling=f"\n• High range: {context['ceiling']}" if context.get('ceiling') is not None else ''
+        text=(f"📈 Player to watch: {context['player']}\n\nProjected {market}:\n"
+              f"• Median: {context['median']}{ceiling}\n\nOver or under? 👀{cta_text}")
+        hook='Over or under?'
+    elif post_type=='ENGAGEMENT':
+        _require(context,'matchups')
+        options='\n'.join(f"{chr(65+i)}) {matchup}" for i,matchup in enumerate(context['matchups'][:4]))
+        poll_hooks=('Which matchup are you watching first?','Where is your strongest lean?','Which game steals the show?','Pick one game to watch—what is it?')
+        hook=poll_hooks[variant]
+        text=f"🏈 The slate is taking shape.\n\n{hook}\n\n{options}\n\nDrop your pick below 👇{cta_text}"
+    elif post_type=='MODEL_RECAP':
+        _require(context,'record','sample_size')
+        recap_hooks=('Which result should we break down next? 👀','What stood out to you?','Which matchup deserves a deeper look?','What should the model review next?')
+        hook=recap_hooks[variant]
+        text=(f"📊 MODEL RECAP\n\nRecord: {context['record']} across {context['sample_size']} predictions.\n\n{hook}{cta_text}")
+    elif post_type=='TREND':
+        _require(context,'trend')
+        text=f"👀 Matchup trend to watch:\n\n{context['trend']}\n\nDoes it change your read on the game?{cta_text}"
+        hook='Does it change your read?'
+    elif post_type=='WATCHLIST':
+        _require(context,'players')
+        names='\n'.join(f"{icon} {player}" for icon,player in zip(('🔥','📈','🎯'),context['players'][:3]))
+        text=f"👀 SmartBets Watchlist\n\nPlayers on our model radar:\n\n{names}\n\nWho should we break down first?{cta_text}"
+        hook='Who should we break down first?'
+    else:
+        _require(context,'games_count','predictions_count')
+        product_hooks=('See the full slate.','Follow every matchup in one place.','See what the model is tracking.','Open the Command Center.')
+        hook=product_hooks[variant]
+        text=(f"Every game. Every prediction. One clear view.\n\nSmartBetSports is tracking "
+              f"{context['games_count']} active games and {context['predictions_count']} predictions.\n\n{hook}{cta_text}")
+    result={'post_text':text,'post_type':post_type,'engagement_hook':hook,'cta':cta_text,
+            'source_entities':list(context.get('source_entities',[])),'character_count':len(text)}
+    return validate_social_copy(result,context)
+
+
+def social_context(source,post_type,day=0):
+    games=(source.get('operations') or {}).get('games') or []
+    p,r=source['preseason'],source['regular'];post_type=post_type.upper()
+    base={'sport':'NFL','post_type':post_type,'cta':'','source_entities':[],'variant':int(day)//4}
+    if post_type=='GAME_PREVIEW':
+        if not games: raise ValueError('No verified game is available for a preview')
+        game=games[int(day)%len(games)]
+        kickoff=datetime.fromisoformat(game['kickoff_time'].replace('Z','+00:00'))
+        when=kickoff.astimezone(ZoneInfo('America/New_York')).strftime('%b %d · %I:%M %p ET')
+        return dict(base,away_team=game['away_team'],home_team=game['home_team'],game_time=when,
+                    source_entities=[game['away_team'],game['home_team'],game['game_id']])
+    if post_type=='ENGAGEMENT':
+        if not games: raise ValueError('No verified matchups are available')
+        start=(int(day)*4)%len(games);selected=(games+games)[start:start+4]
+        matchups=[f"{game['away_team']} vs {game['home_team']}" for game in selected]
+        return dict(base,matchups=matchups,source_entities=[team for game in selected for team in (game['away_team'],game['home_team'])])
+    if post_type=='MODEL_RECAP':
+        completed=r if r.get('graded') else p
+        if not completed.get('predictions') or not completed.get('record',completed.get('winner_record')): raise ValueError('No completed prediction sample is available')
+        record=completed.get('record') or completed['winner_record'];value=f"{record['WIN']}-{record['LOSS']}-{record['PUSH']}"
+        sample_size=completed.get('graded',completed['predictions'])
+        return dict(base,record=value,sample_size=sample_size,source_entities=[value])
+    return dict(base,post_type='PRODUCT_AWARENESS',games_count=r['scheduled'],predictions_count=r['predictions'],
+                source_entities=[r['scheduled'],r['predictions']])
+
+
 def render(day,source):
-    p,r=source['preseason'],source['regular'];record=p['record'];regular=r['winner_record']
-    messages=[
-        f"Our frozen preseason test: {record['WIN']}-{record['LOSS']}-{record['PUSH']} across {p['predictions']} PREDICTIONS; {p['qualified_wagers']} qualified wagers. A small preseason sample, not a promise of future returns.",
-        f"Regular-season Week {r['week']} preparation: {r['predictions']}/{r['scheduled']} predictions frozen. Pregame prices and qualified wagers are tracked separately from picks.",
-        'A prediction is a model estimate. A qualified wager also needs a valid pregame price and must clear our probability and edge rules. Missing prices mean no wager.',
-        'SmartBets keeps prediction timestamps, input provenance and market snapshots separate. That makes it possible to review what was known before kickoff.',
-        'A winning pick does not prove a profitable betting strategy. Price, losses, pushes and sample size all matter. We report predictions separately from qualified wagers.',
-        f"Verified pregame market coverage currently reaches {source['coverage_games']}/{r['scheduled']} games in our regular-season experiment. Gaps stay visible; missing prices are never filled with postgame odds.",
-        'Explore how SmartBets turns football research into traceable predictions. Review the process and product before deciding whether it fits your needs. No outcome is guaranteed.',
-        'Model insight starts with an honest question: which inputs were available at prediction time? SmartBets freezes the evidence so later results cannot rewrite the original reasoning.',
-        'Responsible research means setting limits, accepting uncertainty and never chasing losses. A model probability is not a promise. You can follow the analysis without placing a wager.',
-        f"Regular-season prediction recap so far: {regular['WIN']}-{regular['LOSS']}-{regular['PUSH']}, with {r['graded']} graded predictions. This is a developing sample, not an established future win rate. Wagers are a separate record.",
-        'Market movement needs timestamped observations. SmartBets compares pregame snapshots without pretending current prices were available earlier. No verified capture means no movement claim.',
-        'Our pregame process: freeze the prediction, capture a valid price, check qualification, then preserve the evidence. Final scores arrive later and cannot create a retroactive wager.',
-        'Considering SmartBets? Start with the research process, transparent limitations and product details. A subscription provides product access, not guaranteed betting results.',
-        f"Transparency check: {r['predictions']} regular-season predictions frozen for {r['scheduled']} scheduled games. We keep preseason and regular-season records separate, including pushes and unpriced picks.",
-        'Results cannot create a bet after the fact. SmartBets only recognizes a wager when a valid price was captured before kickoff and the published qualification rules were met.',
-        'Read a betting dashboard in layers: prediction record, priced opportunities, qualified wagers and realized returns answer different questions. SmartBets keeps those layers separate.',
-        'A useful probability should be calibrated, not merely confident. SmartBets measures whether events labeled 60% actually occur near that rate over a meaningful out-of-sample history.',
-        'The same prediction can have different value at different sportsbooks. SmartBets records bookmaker, line, price and retrieval time so price shopping is measurable rather than assumed.',
-        'Small samples can look spectacular or terrible by chance. We preserve every eligible result and report the sample size so one streak cannot quietly become a long-term claim.',
-        'Pregame evidence needs a clock. SmartBets stores when data was retrieved, the provider timestamp and kickoff time, then rejects captures made at or after kickoff.',
-        f"Coverage update: verified pregame markets are available for {source['coverage_games']} of {r['scheduled']} games. Uncovered games remain predictions, not retroactively priced wagers.",
-        'Evaluating SmartBets? Check the timestamped inputs, frozen predictions, complete grading and separation of picks from wagers. Transparent limitations matter as much as headline results.',
-        'A postgame review should ask two questions: was the forecast direction right, and was the pregame price good enough to bet? SmartBets records those answers independently.',
-        'Pushes are outcomes, not missing data. SmartBets keeps them in the record and applies explicit settlement rules instead of quietly dropping inconvenient results.',
-        'Model disagreement is information. Comparing a forecast with the market can reveal an opportunity, but it can also reveal missing context. SmartBets preserves both estimates for review.',
-        'Research checklist: use only information available before kickoff, freeze the prediction, capture a real price, apply the rules consistently and grade every eligible result.',
-        f"Weekly market review: {r['graded']} regular-season predictions are graded and verified coverage spans {source['coverage_games']} games. The wager record remains separate from pick accuracy.",
-        'Build log: SmartBets is designed so provider failures, stale prices and missing coverage remain visible. A trustworthy system should fail closed instead of inventing certainty.',
-    ]
     day=int(day)
-    index=day%len(messages)
-    # Links are deliberately limited to two days per seven-day block. Most posts
-    # should teach or report something useful instead of repeatedly selling.
-    link_days={3,6,10,12,17,20,24,27}
+    rotation=('GAME_PREVIEW','ENGAGEMENT','PRODUCT_AWARENESS','MODEL_RECAP')
+    post_type=rotation[day%len(rotation)]
+    if post_type in {'GAME_PREVIEW','ENGAGEMENT'} and not (source.get('operations') or {}).get('games'):
+        post_type='PRODUCT_AWARENESS'
+    context=social_context(source,post_type,day)
     configured_cta=cta()
-    content=messages[index]+(configured_cta if index in link_days else '')
-    if day>=len(messages):
-        start=datetime.fromisoformat(os.environ['SOCIAL_CAMPAIGN_START']).date()
-        content=f"{(start+timedelta(days=day)).strftime('%b %d')} research update: "+content
-    if len(content)>280: raise ValueError('Post exceeds conservative 280-character limit; shorten configured CTA')
-    if '@' in content: raise ValueError('Unsolicited mentions are not supported')
-    return CATEGORIES[index],content
+    if day%7 in {2,6}: context['cta']=configured_cta
+    result=compose_social_post(context)
+    return result['post_type'].lower(),result['post_text']
 
 
 def similarity(text):
     return re.sub(r'\s+',' ',re.sub(r'https://\S+|\d+(?:\.\d+)?','',text.lower())).strip()
 
 
-EVENT_TEMPLATES={'slate_frozen':1,'pregame_picks_ready':5,'sunday_recap':9,'final_weekly_results':13}
+EVENT_TEMPLATES={'slate_frozen':2,'pregame_picks_ready':0,'sunday_recap':3,'final_weekly_results':3}
 
 
 def generate(clock=now,event=None):
@@ -264,9 +342,9 @@ def generate(clock=now,event=None):
             if event=='final_weekly_results' and regular['graded']!=regular['scheduled']:raise ValueError('Weekly grading incomplete')
             day=EVENT_TEMPLATES[event]
         category,content=render(day,source)
-        # A complete four-week topic rotation prevents rapid template reuse while allowing
-        # a dated, newly verified research update after a full cycle.
-        for prior in c.execute('SELECT content FROM social_posts ORDER BY scheduled_at DESC LIMIT 27').fetchall():
+        # Guard the current editorial week against repetitive copy while allowing
+        # a grounded format to return later with fresh game context.
+        for prior in c.execute('SELECT content FROM social_posts ORDER BY scheduled_at DESC LIMIT 7').fetchall():
             if SequenceMatcher(None,similarity(content),similarity(prior['content'])).ratio()>=.82:
                 raise ValueError('Near-duplicate content blocked; editorial review required')
         post_id=sha(dict(campaign=campaign,day=today))[:32]
