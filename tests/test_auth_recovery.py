@@ -161,6 +161,44 @@ def test_password_reset_fails_closed_when_delivery_is_unconfigured(monkeypatch):
     assert unavailable.value.detail == "Password reset is temporarily unavailable. Please try again."
 
 
+def test_password_reset_email_uses_supported_resend_transport(monkeypatch):
+    from backend.app.services import auth_service
+
+    observed = {}
+
+    class Accepted:
+        status_code = 200
+
+    def fake_post(url, *, json, headers, timeout):
+        observed.update(url=url, payload=json, headers=headers, timeout=timeout)
+        return Accepted()
+
+    monkeypatch.setenv("RESEND_API_KEY", "configured-test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "SmartBetSports <security@smartbetsports.com>")
+    monkeypatch.setenv("SITE_URL", "https://smartbetsports.com")
+    monkeypatch.setattr(auth_service.requests, "post", fake_post)
+
+    assert auth_service._send_reset_email("owner@example.com", "one-time-code") is True
+    assert observed["url"] == "https://api.resend.com/emails"
+    assert observed["payload"]["to"] == ["owner@example.com"]
+    assert observed["payload"]["from"] == "SmartBetSports <security@smartbetsports.com>"
+    assert "https://smartbetsports.com/reset-password" in observed["payload"]["text"]
+    assert observed["headers"] == {"Authorization": "Bearer configured-test-key"}
+    assert observed["timeout"] == 10
+
+
+def test_password_reset_email_rejects_provider_error(monkeypatch):
+    from backend.app.services import auth_service
+
+    class Rejected:
+        status_code = 403
+
+    monkeypatch.setenv("RESEND_API_KEY", "configured-test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "security@example.com")
+    monkeypatch.setattr(auth_service.requests, "post", lambda *_args, **_kwargs: Rejected())
+    assert auth_service._send_reset_email("owner@example.com", "one-time-code") is False
+
+
 def test_production_reset_origin_is_canonical(monkeypatch):
     from backend.app.services import auth_service
 

@@ -2,7 +2,7 @@ import base64, hashlib, hmac, json, logging, os, secrets, uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from urllib.parse import urlparse
-from urllib.request import Request as UrlRequest, urlopen
+import requests
 from fastapi import HTTPException, Request, Response
 from werkzeug.security import check_password_hash, generate_password_hash
 from backend.app.database import get_db_connection, initialize_auth_database, table_exists
@@ -145,19 +145,24 @@ def _send_reset_email(email: str, code: str) -> bool:
     if not api_key or not sender:
         raise PasswordResetDeliveryUnavailable('Password reset delivery is not configured')
     reset_url = f'{_site_origin()}/reset-password'
-    payload = json.dumps({
+    payload = {
         'from': sender,
         'to': [email],
         'subject': 'Your SmartBetSports password reset code',
         'text': f'Reset your SmartBetSports password at:\n\n{reset_url}\n\nEnter this one-time code:\n\n{code}\n\nIt expires in {RESET_MINUTES} minutes. If you did not request this, ignore this email.',
-    }).encode()
-    request = UrlRequest('https://api.resend.com/emails', data=payload, method='POST', headers={
-        'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json',
-    })
+    }
     try:
-        with urlopen(request, timeout=10) as response:
-            return 200 <= response.status < 300
-    except Exception:
+        response = requests.post(
+            'https://api.resend.com/emails',
+            json=payload,
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10,
+        )
+        if 200 <= response.status_code < 300:
+            return True
+        logger.error('Password reset provider rejected delivery with status %s', response.status_code)
+        return False
+    except requests.RequestException:
         logger.exception('Password reset email delivery failed')
         return False
 
