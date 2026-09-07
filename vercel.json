@@ -3,7 +3,7 @@
   "crons": [{"path": "/api/cron/social-daily", "schedule": "0 13 * * *"}],
   "functions": {
     "api/index.py": {
-      "includeFiles": "data/*.json"
+      "includeFiles": "{data/*.json,backtesting/game_matching.py,backtesting/markets.py}"
     }
   },
   "rewrites": [
