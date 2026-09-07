@@ -150,6 +150,12 @@ For unattended operation on the laptop, see the [Week 1 Windows runner guide](do
 Task Scheduler installation, single-instance/graceful restart controls, live health,
 verified backups, and locally saved daily/seven-day marketing drafts with X disabled.
 
+The production replacement is the [active-season server automation](docs/nfl-server-automation.md).
+Supabase Cron invokes one bounded Vercel REST tick every five minutes; PostgreSQL owns
+the active preseason/regular/postseason context, quota reservations, checkpoint state,
+immutable pre-kickoff evidence, and failure history. It never requires a laptop worker,
+never regenerates predictions, and never publishes social content.
+
 Daily X publishing operations and fail-closed source synchronization are documented in
 [`docs/social-automation.md`](docs/social-automation.md). The cloud publishes at most once
 per UTC day; the laptop task only uploads signed aggregate evidence and never writes the

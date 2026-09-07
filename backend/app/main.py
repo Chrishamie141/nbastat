@@ -18,6 +18,7 @@ from backend.app.config import get_config_status, print_config_status
 from backend.app.api.auth import router as auth_router
 from backend.app.api.billing import router as billing_router
 from backend.app.api.social_cron import router as social_cron_router
+from backend.app.api.nfl_automation_cron import router as nfl_automation_cron_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user, owner_account_integrity
 from backend.app.services.sports_mode_service import get_sports_mode
@@ -41,6 +42,7 @@ from backend.app.services.nfl_experiment_service import (
 )
 from backend.app.services.operations_dashboard_service import command_center, social_post_history, week1_db_path
 from backend.app.services.operator_action_service import start as start_operator_action, finish as finish_operator_action
+from backend.app.services import nfl_server_automation
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
@@ -68,6 +70,7 @@ app.add_middleware(CORSMiddleware, allow_origins=[frontend_origin], allow_creden
 app.include_router(auth_router)
 app.include_router(billing_router)
 app.include_router(social_cron_router)
+app.include_router(nfl_automation_cron_router)
 
 @app.middleware("http")
 async def endpoint_observability(request: Request, call_next):
@@ -253,6 +256,15 @@ def api_internal_operations_health(user=Depends(require_internal_access)):
         "week1_readiness": report["week1Readiness"], "social_publish_safety": report["automation"],
         "owner_account_integrity": owner_account_integrity(),
     }
+
+
+@app.get("/api/internal/operations/nfl-automation")
+def api_internal_nfl_automation(user=Depends(require_internal_access)):
+    try:
+        return nfl_server_automation.status()
+    except Exception as exc:
+        logger.exception("server_nfl_automation_status_failed")
+        raise HTTPException(503, "Server-side NFL automation status is temporarily unavailable.") from exc
 
 
 @app.get("/api/internal/operations/social-posts")

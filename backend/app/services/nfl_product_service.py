@@ -29,7 +29,7 @@ PROFILE_POLICY = {
     "BALANCED": {"minimum_probability": 0.57, "minimum_edge": 0.01},
     "AGGRESSIVE": {"minimum_probability": 0.52, "minimum_edge": 0.03},
 }
-SEASON_TYPES = {"preseason": 1, "regular": 2}
+SEASON_TYPES = {"preseason": 1, "regular": 2, "postseason": 3}
 SCHEDULE_REFRESH_SECONDS = 300
 MAPPING_REFRESH_SECONDS = 3600
 DEPTH_SLOTS = ["QB", "RB", "WR1", "WR2", "WR3", "TE", "LT", "LG", "C", "RG", "RT",
@@ -48,10 +48,13 @@ def _abbr(value: str | None) -> str:
 
 def _season_type(value: str | None) -> str:
     normalized = str(value or "regular").strip().lower().replace("-", "_")
-    aliases = {"pre": "preseason", "regular_season": "regular", "reg": "regular"}
+    aliases = {
+        "pre": "preseason", "regular_season": "regular", "reg": "regular",
+        "post": "postseason", "playoffs": "postseason", "post_season": "postseason",
+    }
     normalized = aliases.get(normalized, normalized)
     if normalized not in SEASON_TYPES:
-        raise ValueError("season_type must be preseason or regular")
+        raise ValueError("season_type must be preseason, regular, or postseason")
     return normalized
 
 
@@ -180,8 +183,15 @@ def _schedule(season: int, week: int, season_type: str = "regular") -> list[dict
         identity = _preseason_week_mapping(season).get(week)
         if not identity:
             return []
-    else:
+    elif season_type == "regular":
         identity = {"provider_week": week, "week_key": f"REG{week}", "week_label": f"Week {week}"}
+    else:
+        postseason_labels = {
+            1: "Wild Card", 2: "Divisional Round", 3: "Conference Championships",
+            4: "Pro Bowl", 5: "Super Bowl",
+        }
+        identity = {"provider_week": week, "week_key": f"POST{week}",
+                    "week_label": postseason_labels.get(week, f"Postseason Week {week}")}
     games = _provider_schedule(season, identity["provider_week"], season_type)
     return [{**game, "week": week, "display_week": week, "provider": "espn",
              "week_key": identity["week_key"], "week_label": identity["week_label"]}
@@ -816,7 +826,8 @@ def prediction_performance(season: int, week: int, user_id: int, season_type: st
 def current_week_context(season: int) -> dict:
     now = datetime.now(timezone.utc)
     candidates = []
-    for season_type, weeks in (("preseason", range(0, 6)), ("regular", range(1, 19))):
+    for season_type, weeks in (("preseason", range(0, 6)), ("regular", range(1, 19)),
+                               ("postseason", range(1, 6))):
         for week in weeks:
             try:
                 games = _schedule(season, week, season_type)
