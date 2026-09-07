@@ -106,6 +106,52 @@ def test_command_center_partial_week_store_failure_is_explicit(tmp_path, monkeyp
     assert any(issue["category"] == "DATA" for issue in result["issues"])
 
 
+def test_production_worker_health_uses_supabase_cron(monkeypatch):
+    from backend.app.services import operations_dashboard_service as operations
+    at = datetime(2030, 9, 1, 13, 30, tzinfo=timezone.utc)
+    monkeypatch.setattr(operations, "using_postgres", lambda: True)
+    monkeypatch.setattr(operations.nfl_server_automation, "status", lambda: {
+        "enabled": True,
+        "state": {
+            "active_experiment_key": "NFL-2030-REGULAR-1-CAPTURE-v1",
+            "last_tick_completed_at": "2030-09-01T13:29:30+00:00",
+            "last_status": "IDLE",
+        },
+        "experiment": {"next_due_at": "2030-09-01T14:00:00+00:00"},
+        "checkpoint_counts": {"PENDING": 48},
+        "game_coverage": {"total": 16, "covered": 0},
+        "cron_job": {"active": True},
+        "latest_cron_run": {"status": "succeeded"},
+    })
+
+    result = operations._worker(at)
+
+    assert result["status"] == "HEALTHY"
+    assert result["running"] is True
+    assert result["scheduler"] == "SUPABASE_CRON"
+    assert result["state"] == "IDLE"
+    assert result["heartbeatAgeSeconds"] == 30
+    assert result["activeExperiment"] == "NFL-2030-REGULAR-1-CAPTURE-v1"
+    assert result["pid"] is None
+
+
+def test_production_worker_health_fails_closed_for_failed_cron(monkeypatch):
+    from backend.app.services import operations_dashboard_service as operations
+    at = datetime(2030, 9, 1, 13, 30, tzinfo=timezone.utc)
+    monkeypatch.setattr(operations, "using_postgres", lambda: True)
+    monkeypatch.setattr(operations.nfl_server_automation, "status", lambda: {
+        "enabled": True,
+        "state": {"last_tick_completed_at": "2030-09-01T13:29:30+00:00", "last_status": "FAILED"},
+        "cron_job": {"active": True},
+        "latest_cron_run": {"status": "failed"},
+    })
+
+    result = operations._worker(at)
+
+    assert result["status"] == "UNAVAILABLE"
+    assert result["running"] is True
+
+
 def test_operator_action_history_records_lifecycle():
     from backend.app.services.operator_action_service import finish, recent, start
     action_id = start("REFRESH_GAME", "operator@example.com", "espn-1")
