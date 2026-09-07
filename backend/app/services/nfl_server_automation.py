@@ -15,7 +15,7 @@ import os
 from urllib.parse import urlencode, urlparse
 
 from backend.app.database import get_db_connection, using_postgres
-from backend.app.services.nfl_product_service import _schedule, current_week_context, nfl_season_year
+from backend.app.services.nfl_product_service import _schedule, nfl_season_year
 from backtesting.game_matching import match_game, normalize_team, parse_dt
 from nfl_providers import (
     HttpJsonResponse, NFL_SPORT_KEY, ODDS_API_BASE, StructuredHttpError,
@@ -54,6 +54,51 @@ def aware_dt(value) -> datetime | None:
         return parse_dt(value) if raw.tzinfo is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _regular_season_opener(season: int) -> datetime:
+    """NFL Week 1 starts on the first Thursday after September's first Monday."""
+    day = datetime(season, 9, 1, tzinfo=timezone.utc)
+    first_monday = day + timedelta(days=(7 - day.weekday()) % 7)
+    return first_monday + timedelta(days=3)
+
+
+def resolve_active_context(season: int, *, at: datetime | None = None,
+                           schedule_loader=_schedule) -> dict:
+    """Provider-verify a small calendar-guided candidate set, never a full season scan."""
+    now = at or utcnow()
+    if now.month in {3, 4, 5, 6, 7}:
+        return {"season": season, "seasonType": "regular", "week": 1, "hasUpcoming": False}
+    candidates: list[tuple[str, int]] = []
+    if now.month == 8:
+        candidates.extend(("preseason", week) for week in range(0, 6))
+        candidates.append(("regular", 1))
+    elif now.month >= 9:
+        estimate = max(1, min(18, ((now - _regular_season_opener(season)).days // 7) + 1))
+        candidates.extend(("regular", week) for week in sorted({max(1, estimate - 1), estimate, min(18, estimate + 1)}))
+    else:  # January and February can straddle Week 18 and the postseason.
+        candidates.extend(("regular", week) for week in (17, 18))
+        candidates.extend(("postseason", week) for week in range(1, 6))
+    verified = []
+    for phase, week in candidates:
+        try:
+            games = schedule_loader(season, week, phase)
+        except Exception:
+            continue
+        starts = [aware_dt(game.get("kickoff_time")) for game in games]
+        starts = [start for start in starts if start]
+        if not starts:
+            continue
+        verified.append({"season": season, "seasonType": phase, "week": week,
+                         "displayWeek": week, "providerWeek": int(games[0].get("provider_week", week)),
+                         "weekKey": games[0].get("week_key"), "weekLabel": games[0].get("week_label"),
+                         "start": min(starts), "end": max(starts),
+                         "hasUpcoming": any(game.get("status") == "scheduled" for game in games)})
+    upcoming = [row for row in verified if row["hasUpcoming"] and row["end"] >= now]
+    if not upcoming:
+        return {"season": season, "seasonType": "regular", "week": 1, "hasUpcoming": False}
+    chosen = min(upcoming, key=lambda row: row["start"])
+    return {key: value for key, value in chosen.items() if key not in {"start", "end"}}
 
 
 def _bool_env(name: str, default: bool = False) -> bool:
@@ -267,7 +312,7 @@ def _register_context(connection, context: dict, now: datetime) -> str | None:
     return key
 
 
-def _active_experiment(connection, now: datetime, context_resolver=current_week_context) -> str | None:
+def _active_experiment(connection, now: datetime, context_resolver=None) -> str | None:
     state = connection.execute("SELECT * FROM nfl_automation_state WHERE singleton=1").fetchone()
     key = _row_value(state, "active_experiment_key")
     if key:
@@ -276,7 +321,8 @@ def _active_experiment(connection, now: datetime, context_resolver=current_week_
         if end_epoch is not None and now.timestamp() <= float(end_epoch) + 8 * 3600:
             return str(key)
         connection.execute("UPDATE nfl_capture_experiments SET status='SEALED',sealed_at=? WHERE experiment_key=? AND status='ACTIVE'", (iso(now), key))
-    context = context_resolver(nfl_season_year(now))
+    resolver = context_resolver or (lambda season: resolve_active_context(season, at=now))
+    context = resolver(nfl_season_year(now))
     return _register_context(connection, context, now)
 
 
@@ -392,7 +438,7 @@ def _store_game(connection, checkpoint, events: list, request_id: int,
 
 
 def tick(*, clock=utcnow, fetcher=_fetch_json_structured,
-         context_resolver=current_week_context, api_key: str | None = None) -> dict:
+         context_resolver=None, api_key: str | None = None) -> dict:
     """Run one safe serverless tick; never loop or regenerate model artifacts."""
     if not using_postgres() and os.getenv("PYTEST_CURRENT_TEST") is None:
         raise RuntimeError("Server automation requires persistent PostgreSQL")

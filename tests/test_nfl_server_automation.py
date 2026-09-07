@@ -45,6 +45,21 @@ def test_phase_normalization_supports_entire_nfl_season():
     assert _season_type("playoffs") == "postseason"
 
 
+def test_calendar_guided_context_checks_only_nearby_regular_weeks():
+    calls = []
+
+    def schedule(_season, week, phase):
+        calls.append((phase, week))
+        kickoff = datetime(2026, 11, 22, 18, 0, tzinfo=timezone.utc)
+        return [_game(kickoff)] if (phase, week) == ("regular", 11) else []
+
+    context = automation.resolve_active_context(
+        2026, at=datetime(2026, 11, 20, tzinfo=timezone.utc), schedule_loader=schedule)
+    assert context["seasonType"] == "regular"
+    assert context["week"] == 11
+    assert len(calls) <= 3
+
+
 def test_tick_is_bounded_idempotent_and_coverage_first(monkeypatch):
     kickoff = NOW + timedelta(hours=24)
     monkeypatch.setenv("NFL_AUTOMATION_ENABLED", "true")
