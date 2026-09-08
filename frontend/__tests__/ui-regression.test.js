@@ -86,6 +86,14 @@ test("weekly NFL surfaces distinguish preseason, probability, evidence, and valu
   assert.match(api, /weekPerformance/);
 });
 
+test("weekly NFL board allows the verified server response to complete", () => {
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  assert.match(
+    api,
+    /seasonType,\s*\{\s*timeoutMs:\s*30000\s*\}/,
+  );
+});
+
 test("multi-game builder has a real generation action and explains rejected legs", () => {
   const page = fs.readFileSync("app/parlays/page.jsx", "utf8");
   const api = fs.readFileSync("lib/api.js", "utf8");

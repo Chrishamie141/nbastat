@@ -242,6 +242,49 @@ def test_scheduled_game_displays_first_global_snapshot_without_recalculation(mon
     assert item["recommendedBet"] is True
 
 
+def test_weekly_board_uses_persisted_market_without_live_provider_request(monkeypatch):
+    import backend.app.services.nfl_experiment_service as experiment_service
+    import backend.app.services.nfl_product_service as service
+
+    snapshot = {
+        "winner": "BUF", "winProbability": .62, "homeWinProbability": .62,
+        "awayWinProbability": .38, "seasonType": "regular", "rating": 7.4,
+        "profileEligibility": {"SAFE": False, "BALANCED": False, "AGGRESSIVE": False},
+        "market": {"homeOdds": None, "awayOdds": None,
+                   "coverage": {"moneyline": False, "spread": False, "total": False}},
+    }
+    persisted_market = {
+        "homeOdds": -110, "awayOdds": 100,
+        "homeImpliedProbability": .5116, "awayImpliedProbability": .4884,
+        "sportsbook": "Verified Book", "provider": "the-odds-api",
+        "marketTimestamp": (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat(),
+        "coverage": {"moneyline": True, "spread": False, "total": False},
+    }
+    monkeypatch.setattr(service, "_schedule", lambda *args: [_game()])
+    monkeypatch.setattr(
+        service, "_odds_by_game",
+        lambda *args: (_ for _ in ()).throw(AssertionError("consumer board must not call paid provider")),
+    )
+    monkeypatch.setattr(
+        service, "_market_history",
+        lambda game_id: {"count": 1, "latest": {"market": persisted_market},
+                         "first": {"market": persisted_market}, "closing": None,
+                         "closingStatus": "pending"},
+    )
+    monkeypatch.setattr(
+        service, "_prediction_snapshots",
+        lambda user_id, *args, **kwargs: {"espn-test": snapshot} if user_id == 0 else {},
+    )
+    monkeypatch.setattr(experiment_service, "record_schedule_game", lambda game: None)
+
+    item = service.weekly_board(2026, 1, "BALANCED", 99)["items"][0]
+
+    assert item["market"]["homeOdds"] == -110
+    assert item["market"]["sportsbook"] == "Verified Book"
+    assert item["winProbability"] == .62
+    assert item["recommendedBet"] is True
+
+
 def test_live_market_overlay_changes_edge_not_frozen_model_probability(monkeypatch):
     import backend.app.services.nfl_product_service as service
 

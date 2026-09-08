@@ -113,6 +113,7 @@ export const api = {
           day +
           "&seasonType=" +
           seasonType,
+        { timeoutMs: 30000 },
       ),
     gameHistory: (season, seasonType = "regular") =>
       request(

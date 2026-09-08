@@ -573,7 +573,9 @@ def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | 
         raise ValueError("profile must be SAFE, BALANCED, or AGGRESSIVE")
     season_type = _season_type(season_type)
     schedule = _schedule(season, week, season_type)
-    odds = _odds_by_game(int(time() // 300))
+    # Consumer reads must never trigger a paid provider request. Server-side
+    # automation owns market ingestion; this board reads only the immutable,
+    # pregame-validated observations already persisted by that workflow.
     predictor, history = NFLGameMarketPredictorV2(), _history()
     preseason_history = _preseason_history(season, week) if season_type == "preseason" else []
     user_snapshots = _prediction_snapshots(user_id, season, week, season_type)
@@ -591,13 +593,10 @@ def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | 
                         f"Preseason Week {week}" if season_type == "preseason" else f"Week {week}")
         from backend.app.services.nfl_experiment_service import record_schedule_game
         record_schedule_game(game)
-        market = _market_context(odds.get(frozenset({game["home_team"], game["away_team"]}), []), game["home_team"], game["away_team"])
-        if game["status"] == "scheduled":
-            _save_market_observation(game, market)
         market_history = _market_history(game["game_id"])
         latest_market = (market_history.get("latest") or {}).get("market")
-        effective_market = market if any((market.get("coverage") or {}).get(name) is True
-                                         for name in ("moneyline", "spread", "total")) else latest_market or market
+        market = latest_market or _market_context([], game["home_team"], game["away_team"])
+        effective_market = market
         item = {**game, "profile": profile, "modelVersion": V2_MODEL_VERSION, "market": market,
                 "marketHistory": market_history,
                 "predictionStatus": "unavailable", "recommended": False, "recommendedBet": False}
