@@ -83,6 +83,12 @@ export const api = {
     portal: () =>
       request("/api/billing/create-portal-session", { method: "POST" }),
     refresh: () => request("/api/billing/refresh", { method: "POST" }),
+    confirmCheckout: (sessionId) =>
+      request("/api/billing/confirm-checkout", {
+        method: "POST",
+        body: { sessionId: sessionId || null },
+        timeoutMs: 20000,
+      }),
   },
   nfl: {
     game: (gameId) => request(`/api/nfl/games/${encodeURIComponent(gameId)}`),
