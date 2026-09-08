@@ -22,6 +22,11 @@ def initialize() -> None:
             status_change TEXT, metadata_json TEXT NOT NULL
         )""")
         connection.execute("CREATE INDEX IF NOT EXISTS idx_operator_actions_started ON operator_actions(started_at)")
+        if using_postgres():
+            # Operational audit entries are available only to the backend's
+            # direct database role, never to browser-facing Data API roles.
+            connection.execute("ALTER TABLE operator_actions ENABLE ROW LEVEL SECURITY")
+            connection.execute("REVOKE ALL ON TABLE operator_actions FROM anon, authenticated")
 
 
 def start(action: str, actor: str, target: str, metadata: dict | None = None) -> str:

@@ -36,6 +36,31 @@ def test_password_reset_is_one_time_hashed_and_revokes_existing_sessions(monkeyp
     assert reused.value.status_code == 400
 
 
+def test_postgres_auth_initialization_locks_down_server_only_tables(monkeypatch):
+    from contextlib import contextmanager
+    from backend.app import database
+
+    statements = []
+
+    class RecordingConnection:
+        def execute(self, query, _params=None):
+            statements.append(" ".join(str(query).split()))
+            return self
+
+    @contextmanager
+    def recording_connection():
+        yield RecordingConnection()
+
+    monkeypatch.setattr(database, "using_postgres", lambda: True)
+    monkeypatch.setattr(database, "get_db_connection", recording_connection)
+
+    database.initialize_auth_database()
+
+    for table in ("password_reset_tokens", "auth_bootstrap"):
+        assert f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY" in statements
+        assert f"REVOKE ALL ON TABLE {table} FROM anon, authenticated" in statements
+
+
 def test_password_reset_request_does_not_disclose_unknown_accounts(monkeypatch):
     from backend.app.services import auth_service
 

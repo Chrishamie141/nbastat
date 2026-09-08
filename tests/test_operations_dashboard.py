@@ -162,6 +162,30 @@ def test_operator_action_history_records_lifecycle():
     assert row["completed_at"]
 
 
+def test_postgres_operator_action_initialization_locks_down_data_api(monkeypatch):
+    from contextlib import contextmanager
+    from backend.app.services import operator_action_service
+
+    statements = []
+
+    class RecordingConnection:
+        def execute(self, query, _params=None):
+            statements.append(" ".join(str(query).split()))
+            return self
+
+    @contextmanager
+    def recording_connection():
+        yield RecordingConnection()
+
+    monkeypatch.setattr(operator_action_service, "using_postgres", lambda: True)
+    monkeypatch.setattr(operator_action_service, "get_db_connection", recording_connection)
+
+    operator_action_service.initialize()
+
+    assert "ALTER TABLE operator_actions ENABLE ROW LEVEL SECURITY" in statements
+    assert "REVOKE ALL ON TABLE operator_actions FROM anon, authenticated" in statements
+
+
 def test_critical_database_failure_marks_week1_not_ready(tmp_path, monkeypatch):
     from backend.app.services import operations_dashboard_service as operations
     at = datetime(2030, 9, 1, 13, 30, tzinfo=timezone.utc)
