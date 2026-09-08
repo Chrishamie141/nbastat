@@ -203,6 +203,38 @@ def test_current_context_prefers_persisted_automation_state(monkeypatch):
     assert service.current_week_context(2026) == persisted
 
 
+def test_persisted_context_reads_active_automation_slate(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, *_args):
+            return self
+
+        def fetchone(self):
+            return {
+                "season": 2030, "season_type": "regular", "display_week": 2,
+                "provider_week": 2, "status": "ACTIVE",
+                "first_kickoff_epoch": 1915150000.0,
+                "last_kickoff_epoch": 1915750000.0,
+            }
+
+    monkeypatch.setattr(service, "get_db_connection", Connection)
+    monkeypatch.setattr(service, "table_exists", lambda connection, table: True)
+    result = service._persisted_current_week_context(
+        2030, datetime.fromtimestamp(1915150000.0, timezone.utc),
+    )
+
+    assert result["weekKey"] == "REG2"
+    assert result["source"] == "automation_state"
+    assert result["hasUpcoming"] is True
+
+
 def test_historical_games_never_reconstruct_missing_pregame_prediction(monkeypatch, tmp_path):
     import backend.app.services.nfl_product_service as service
 

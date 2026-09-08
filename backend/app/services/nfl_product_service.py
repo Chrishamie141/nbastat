@@ -13,7 +13,7 @@ from time import perf_counter, time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from backend.app.database import column_exists, database_url, get_db_connection, using_postgres
+from backend.app.database import column_exists, database_url, get_db_connection, table_exists, using_postgres
 from backtesting.nfl_game_predictor import NFLGameMarketPredictorV2, V2_MODEL_VERSION, no_vig_probabilities
 from nfl_data_service import NFL_TEAM_ABBREVIATIONS, fetch_nfl_team_lines_live
 from nfl_fantasy_service import build_fantasy_rankings
