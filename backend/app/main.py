@@ -181,6 +181,27 @@ def api_nfl_context(season: int|None=Query(None, ge=2025, le=2100), user=Depends
         raise HTTPException(503, "The verified NFL schedule context is temporarily unavailable.") from exc
 
 
+@app.get("/api/nfl/current-week")
+def api_nfl_current_week(
+    season: int | None = Query(None, ge=2025, le=2100),
+    profile: str = Query("BALANCED"), day: str | None = None,
+    user=Depends(require_full_access),
+):
+    """Return the current context and board without a client-side waterfall."""
+    try:
+        context = current_week_context(season or nfl_season_year())
+        board = weekly_board(
+            int(context["season"]), int(context["week"]), profile, int(user["id"]), day,
+            str(context["seasonType"]),
+        )
+        return {"context": context, "board": board}
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("NFL current weekly board unavailable")
+        raise HTTPException(503, "The verified NFL current weekly board is temporarily unavailable.") from exc
+
+
 @app.get("/api/nfl/games/history")
 def api_nfl_game_history(season: int|None=Query(None, ge=2025, le=2100),
                          season_type: str=Query("regular", alias="seasonType"), user=Depends(require_full_access)):

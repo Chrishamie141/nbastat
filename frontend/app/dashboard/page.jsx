@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import SubscriptionGuard from '@/components/auth/SubscriptionGuard';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -102,19 +102,26 @@ function WeeklyNflBoard() {
     [ready, setReady] = useState(false),
     [board, setBoard] = useState(null),
     [error, setError] = useState("");
+  const initialBoardLoaded = useRef(false);
   useEffect(() => {
     api.nfl
-      .context()
-      .then((context) => {
+      .currentWeek()
+      .then(({ context, board: currentBoard }) => {
         setSeason(context.season);
         setSeasonType(context.seasonType);
         setWeek(context.week);
+        setBoard(currentBoard);
+        initialBoardLoaded.current = true;
       })
       .catch((e) => setError(e.message))
       .finally(() => setReady(true));
   }, []);
   useEffect(() => {
     if (!ready) return;
+    if (initialBoardLoaded.current) {
+      initialBoardLoaded.current = false;
+      return;
+    }
     let active = true;
     setError("");
     setBoard(null);

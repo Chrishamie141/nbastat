@@ -21,7 +21,7 @@ def test_weekly_profiles_keep_every_game_and_only_change_recommendation(monkeypa
 
     monkeypatch.setattr(service, "_schedule", lambda season, week, season_type="regular": [_game()])
     monkeypatch.setattr(service, "_odds_by_game", lambda bucket: {})
-    monkeypatch.setattr(service, "_save_prediction", lambda *args: None)
+    monkeypatch.setattr(service, "_save_predictions", lambda *args: None)
 
     safe = service.weekly_board(2026, 1, "SAFE", 4)
     aggressive = service.weekly_board(2026, 1, "AGGRESSIVE", 4)
@@ -163,7 +163,7 @@ def test_schedule_refresh_window_advances_without_restart(monkeypatch):
 def test_current_context_automatically_advances_to_next_provider_slate(monkeypatch):
     import backend.app.services.nfl_product_service as service
 
-    now = datetime.now(timezone.utc)
+    now = datetime(2027, 8, 18, 12, 0, tzinfo=timezone.utc)
     def game(week, status, offset):
         return {
             **_game(status), "week": week, "display_week": week,
@@ -181,9 +181,26 @@ def test_current_context_automatically_advances_to_next_provider_slate(monkeypat
         lambda season, week, season_type="regular": slates.get(week, [])
         if season_type == "preseason" else [],
     )
-    assert service.current_week_context(2027)["weekKey"] == "PRE2"
+    assert service.current_week_context(2027, at=now)["weekKey"] == "PRE2"
     slates[2] = [game(2, "final", -1)]
-    assert service.current_week_context(2027)["weekKey"] == "PRE3"
+    assert service.current_week_context(2027, at=now)["weekKey"] == "PRE3"
+
+
+def test_current_context_prefers_persisted_automation_state(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    persisted = {
+        "season": 2026, "seasonType": "regular", "week": 1,
+        "displayWeek": 1, "providerWeek": 1, "weekKey": "REG1",
+        "weekLabel": "Week 1", "hasUpcoming": True, "source": "automation_state",
+    }
+    monkeypatch.setattr(service, "_persisted_current_week_context", lambda season, now: persisted)
+    monkeypatch.setattr(
+        service, "_schedule",
+        lambda *args: (_ for _ in ()).throw(AssertionError("provider scan must not run")),
+    )
+
+    assert service.current_week_context(2026) == persisted
 
 
 def test_historical_games_never_reconstruct_missing_pregame_prediction(monkeypatch, tmp_path):
@@ -233,7 +250,7 @@ def test_scheduled_game_displays_first_global_snapshot_without_recalculation(mon
         service, "_prediction_snapshots",
         lambda user_id, *args, **kwargs: {"espn-test": snapshot} if user_id == 0 else {},
     )
-    monkeypatch.setattr(service, "_save_prediction", lambda *args: (_ for _ in ()).throw(AssertionError("must not rewrite")))
+    monkeypatch.setattr(service, "_save_predictions", lambda *args: (_ for _ in ()).throw(AssertionError("must not rewrite")))
 
     board = service.weekly_board(2026, 1, "BALANCED", 99)
     item = board["items"][0]
@@ -266,10 +283,10 @@ def test_weekly_board_uses_persisted_market_without_live_provider_request(monkey
         lambda *args: (_ for _ in ()).throw(AssertionError("consumer board must not call paid provider")),
     )
     monkeypatch.setattr(
-        service, "_market_history",
-        lambda game_id: {"count": 1, "latest": {"market": persisted_market},
-                         "first": {"market": persisted_market}, "closing": None,
-                         "closingStatus": "pending"},
+        experiment_service, "weekly_board_context",
+        lambda games: {"espn-test": {"count": 1, "latest": {"market": persisted_market},
+                                      "first": {"market": persisted_market}, "closing": None,
+                                      "closingStatus": "pending"}},
     )
     monkeypatch.setattr(
         service, "_prediction_snapshots",
@@ -286,6 +303,7 @@ def test_weekly_board_uses_persisted_market_without_live_provider_request(monkey
 
 
 def test_live_market_overlay_changes_edge_not_frozen_model_probability(monkeypatch):
+    import backend.app.services.nfl_experiment_service as experiment_service
     import backend.app.services.nfl_product_service as service
 
     snapshot = {
@@ -308,10 +326,10 @@ def test_live_market_overlay_changes_edge_not_frozen_model_probability(monkeypat
     )
     monkeypatch.setattr(service, "_save_market_observation", lambda *args: None)
     monkeypatch.setattr(
-        service, "_market_history",
-        lambda game_id: {"count": 1, "first": {"market": current_market},
-                         "latest": {"market": current_market}, "closing": None,
-                         "closingStatus": "pending"},
+        experiment_service, "weekly_board_context",
+        lambda games: {"espn-test": {"count": 1, "first": {"market": current_market},
+                                      "latest": {"market": current_market}, "closing": None,
+                                      "closingStatus": "pending"}},
     )
     monkeypatch.setattr(
         service, "_prediction_snapshots",
@@ -343,7 +361,7 @@ def test_preseason_board_uses_only_prior_preseason_results_and_caps_uncertainty(
     monkeypatch.setattr(service, "_schedule", schedule)
     monkeypatch.setattr(service, "_odds_by_game", lambda bucket: {})
     monkeypatch.setattr(service, "_prediction_snapshots", lambda *args: {})
-    monkeypatch.setattr(service, "_save_prediction", lambda *args: None)
+    monkeypatch.setattr(service, "_save_predictions", lambda *args: None)
 
     board = service.weekly_board(2026, 3, "BALANCED", 7, season_type="preseason")
     pick = board["items"][0]

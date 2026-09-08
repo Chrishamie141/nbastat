@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SubscriptionGuard from "@/components/auth/SubscriptionGuard";
 import GlowCard from "@/components/ui/GlowCard";
 import NflMatchup from "@/components/games/NflMatchup";
@@ -20,23 +20,30 @@ function Board() {
     [season, setSeason] = useState(null),
     [seasonType, setSeasonType] = useState("regular"),
     [ready, setReady] = useState(false);
+  const initialBoardLoaded = useRef(false);
   const [data, setData] = useState(null),
     [error, setError] = useState("");
   const minWeek = seasonType === "preseason" ? 0 : 1,
     maxWeek = seasonType === "preseason" ? 3 : 18;
   useEffect(() => {
     api.nfl
-      .context()
-      .then((context) => {
+      .currentWeek()
+      .then(({ context, board }) => {
         setSeason(context.season);
         setWeek(context.week);
         setSeasonType(context.seasonType);
+        setData(board);
+        initialBoardLoaded.current = true;
       })
-      .catch(() => {})
+      .catch((e) => setError(e.message))
       .finally(() => setReady(true));
   }, []);
   useEffect(() => {
     if (!ready) return;
+    if (initialBoardLoaded.current) {
+      initialBoardLoaded.current = false;
+      return;
+    }
     setData(null);
     setError("");
     api.nfl

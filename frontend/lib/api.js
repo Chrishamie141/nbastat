@@ -95,6 +95,14 @@ export const api = {
     refreshGame: (gameId) => request(`/api/nfl/games/${encodeURIComponent(gameId)}/refresh`, {method: 'POST'}),
     context: (season) =>
       request("/api/nfl/context" + (season ? "?season=" + season : "")),
+    currentWeek: ({ season, profile = "BALANCED", day = "ALL" } = {}) =>
+      request(
+        "/api/nfl/current-week?" +
+          (season ? "season=" + season + "&" : "") +
+          "profile=" + encodeURIComponent(profile) +
+          "&day=" + encodeURIComponent(day),
+        { timeoutMs: 15000 },
+      ),
     week: ({
       season,
       week = 1,
