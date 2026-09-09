@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import SubscriptionGuard from "@/components/auth/SubscriptionGuard";
 import RiskLevelSelector from "@/components/analyze/RiskLevelSelector";
 import GlowCard from "@/components/ui/GlowCard";
@@ -43,6 +43,7 @@ function Builder() {
     [picks, setPicks] = useState({}),
     [result, setResult] = useState(null),
     [selectedGame, setSelectedGame] = useState(null);
+  const initialBoardLoaded = useRef(false);
   const minWeek = seasonType === "preseason" ? 0 : 1,
     maxWeek = seasonType === "preseason" ? 3 : 18;
   useEffect(() => {
@@ -63,17 +64,27 @@ function Builder() {
       setReady(true);
     } else
       api.nfl
-        .context()
-        .then((context) => {
+        .currentWeek({
+          profile: "BALANCED",
+          day: DAYS.includes(requestedDay) ? requestedDay : "ALL",
+        })
+        .then(({ context, board }) => {
           setSeason(context.season);
           setWeek(context.week);
           setSeasonType(context.seasonType);
+          setData(board);
+          setLoading(false);
+          initialBoardLoaded.current = true;
         })
-        .catch(() => {})
+        .catch((exc) => setError(exc.message))
         .finally(() => setReady(true));
   }, []);
   useEffect(() => {
     if (!ready) return;
+    if (initialBoardLoaded.current) {
+      initialBoardLoaded.current = false;
+      return;
+    }
     setLoading(true);
     setError("");
     setResult(null);

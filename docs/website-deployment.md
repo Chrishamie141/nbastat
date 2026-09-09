@@ -15,7 +15,10 @@ The API project requires these production environment variables:
 - `DATABASE_URL`
 - `AUTH_SECRET`
 - `AUTH_COOKIE_SECURE=true`
-- `FRONTEND_ORIGIN=https://smartbetsports.vercel.app`
+- `FRONTEND_ORIGIN=https://smartbetsports.com`
+- `SITE_URL=https://smartbetsports.com`
+- `RESEND_API_KEY`
+- `PASSWORD_RESET_FROM_EMAIL=SmartBetSports <security@smartbetsports.com>`
 - `THE_ODDS_API_KEY`
 - Stripe variables used by `backend/app/api/billing.py`
 - `OPENWEATHER_API_KEY` (optional weather context)

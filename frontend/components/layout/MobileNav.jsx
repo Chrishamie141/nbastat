@@ -15,9 +15,9 @@ export default function MobileNav() {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return null;
   const links =
-    user?.isInternal && path.startsWith("/internal")
+    user?.isInternal && (path.startsWith("/internal") || path.startsWith("/command-center"))
       ? [
-          ["/internal/operations", Activity, "Command"],
+          ["/command-center", Activity, "Command"],
           ["/internal/experiments/week3", ShieldCheck, "Week 3"],
         ]
       : [

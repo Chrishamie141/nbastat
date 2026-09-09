@@ -16,9 +16,20 @@ test('login, registration, and account surfaces expose password recovery', () =>
 test('recovery and setup forms keep identity and secrets in request bodies', () => {
   const files = ['app/forgot-password/page.jsx', 'app/reset-password/page.jsx', 'app/setup/page.jsx'].map(read).join('\n');
   assert.doesNotMatch(files, /router\.(push|replace)\([^)]*(email|code|token|setupCode)/);
-  assert.match(read('middleware.js'), /smartbetsports\.vercel\.app/);
+  assert.match(read('lib/site-url.js'), /https:\/\/smartbetsports\.com/);
   assert.match(read('middleware.js'), /\.\.\.url\.searchParams\.keys/);
   assert.match(read('middleware.js'), /toLowerCase\(\).*replace/);
+});
+
+test('owner command center uses a dedicated owner-only login flow', () => {
+  const login = read('app/login/page.jsx');
+  const auth = read('components/auth/AuthProvider.jsx');
+  assert.match(login, /ownerLogin/);
+  assert.match(login, /Owner Login/);
+  assert.match(login, /!ownerMode/);
+  assert.match(auth, /'\/command-center'/);
+  assert.match(read('lib/api.js'), /\/api\/auth\/owner-login/);
+  assert.ok(fs.existsSync(path.join(__dirname, '../app/command-center/page.jsx')));
 });
 
 test('all redirect consumers use the shared safe path boundary', () => {

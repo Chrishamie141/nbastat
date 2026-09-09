@@ -9,8 +9,10 @@ from pathlib import Path
 import sqlite3
 from typing import Any, Callable
 
+from backend.app.database import using_postgres
 from backend.app.services import social_marketing
 from backend.app.services import social_operations_service
+from backend.app.services import nfl_server_automation
 from backend.app.services.operator_action_service import recent as recent_actions
 from backend.app.services.readiness_service import database_health, prediction_store_health
 
@@ -197,6 +199,38 @@ def _week1(at: datetime) -> dict:
 
 
 def _worker(at: datetime) -> dict:
+    if using_postgres():
+        automation = nfl_server_automation.status()
+        state = automation.get("state") or {}
+        cron_job = automation.get("cron_job") or {}
+        latest_run = automation.get("latest_cron_run") or {}
+        heartbeat = state.get("last_tick_completed_at")
+        heartbeat_at = None
+        if isinstance(heartbeat, datetime):
+            heartbeat_at = heartbeat if heartbeat.tzinfo else heartbeat.replace(tzinfo=timezone.utc)
+        elif heartbeat:
+            heartbeat_at = datetime.fromisoformat(str(heartbeat).replace("Z", "+00:00"))
+        age = max(0, (at - heartbeat_at.astimezone(timezone.utc)).total_seconds()) if heartbeat_at else None
+        enabled = bool(automation.get("enabled"))
+        active = bool(cron_job.get("active"))
+        latest_status = str(latest_run.get("status") or "").lower()
+        healthy = enabled and active and age is not None and age < 15 * 60 and latest_status == "succeeded"
+        stale = enabled and active and age is not None and age >= 15 * 60
+        status = "HEALTHY" if healthy else "STALE" if stale else "UNAVAILABLE"
+        return {
+            "status": status,
+            "running": enabled and active,
+            "heartbeatAt": heartbeat_at.isoformat() if heartbeat_at else None,
+            "heartbeatAgeSeconds": round(age, 1) if age is not None else None,
+            "pid": None,
+            "state": state.get("last_status"),
+            "scheduler": "SUPABASE_CRON",
+            "activeExperiment": state.get("active_experiment_key"),
+            "nextDueAt": (automation.get("experiment") or {}).get("next_due_at"),
+            "checkpointCounts": automation.get("checkpoint_counts") or {},
+            "gameCoverage": automation.get("game_coverage") or {"total": 0, "covered": 0},
+            "latestCronRun": latest_run or None,
+        }
     try:
         value = json.loads((ROOT / ".runtime" / "week1" / "health.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -271,9 +305,14 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
     worker = worker_panel.get("data") or {}
     if worker.get("status") == "STALE":
         issues.append({"severity": "CRITICAL", "category": "AUTOMATION", "entityId": "week1-worker",
-                       "summary": "Week 1 worker heartbeat is stale.", "source": "worker_health",
+                       "summary": "NFL automation heartbeat is stale.", "source": "worker_health",
                        "detectedAt": at.isoformat(), "lastAttemptAt": worker.get("heartbeatAt"),
-                       "recommendedAction": "Inspect and restart the scheduled worker", "action": None})
+                       "recommendedAction": "Inspect the server scheduler and latest cron run", "action": None})
+    elif worker.get("scheduler") == "SUPABASE_CRON" and worker.get("status") != "HEALTHY":
+        issues.append({"severity": "CRITICAL", "category": "AUTOMATION", "entityId": "nfl-server-automation",
+                       "summary": "Server-side NFL automation is not fully operational.", "source": "worker_health",
+                       "detectedAt": at.isoformat(), "lastAttemptAt": worker.get("heartbeatAt"),
+                       "recommendedAction": "Inspect the Supabase Cron job and its latest run", "action": None})
     provider_status = str((week.get("provider") or {}).get("status") or "UNKNOWN").upper()
     if provider_status in {"AUTH_ERROR", "NETWORK_ERROR", "QUOTA_EXHAUSTED", "FAILED"}:
         issues.append({"severity": "CRITICAL" if provider_status == "AUTH_ERROR" else "WARNING", "category": "API",

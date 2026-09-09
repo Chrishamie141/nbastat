@@ -669,8 +669,8 @@ export default function OperationsPage() {
               label="Background Jobs"
               value={health.worker?.status}
               detail={
-                health.worker?.pid
-                  ? `Updated ${fmt(health.worker.heartbeatAt)}`
+                health.worker?.heartbeatAt
+                  ? `${health.worker.scheduler === "SUPABASE_CRON" ? "Supabase Cron" : "Local worker"} · Updated ${fmt(health.worker.heartbeatAt)}`
                   : "Not available"
               }
             />

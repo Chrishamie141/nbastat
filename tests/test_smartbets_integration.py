@@ -19,12 +19,34 @@ def test_static_history_route_is_not_shadowed_by_game_id(monkeypatch):
     assert "policy" in response.json()
 
 
+def test_current_week_route_combines_context_and_board(monkeypatch):
+    from backend.app import main
+
+    context = {"season": 2030, "seasonType": "regular", "week": 2}
+    observed = {}
+    main.app.dependency_overrides[main.require_full_access] = lambda: {"id": 17}
+    monkeypatch.setattr(main, "current_week_context", lambda season: context)
+    monkeypatch.setattr(
+        main, "weekly_board",
+        lambda *args: observed.update(args=args) or {"items": [{"game_id": "espn-1"}]},
+    )
+    try:
+        response = TestClient(main.app).get("/api/nfl/current-week?profile=SAFE&day=SUNDAY")
+    finally:
+        main.app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["context"] == context
+    assert response.json()["board"]["items"][0]["game_id"] == "espn-1"
+    assert observed["args"] == (2030, 2, "SAFE", 17, "SUNDAY", "regular")
+
+
 def test_laptop_and_home_routes_coexist():
     from backend.app.main import app
 
     paths = app.openapi()["paths"]
     for path in ("/api/readiness", "/api/search", "/api/games/refresh", "/api/nfl/games/{game_id}",
-                 "/api/nfl/week", "/api/nfl/context", "/api/nfl/games/history",
+                 "/api/nfl/week", "/api/nfl/context", "/api/nfl/current-week", "/api/nfl/games/history",
                  "/api/internal/nfl/experiments/{season}/{season_type}/{week}",
                  "/api/internal/operations"):
         assert path in paths

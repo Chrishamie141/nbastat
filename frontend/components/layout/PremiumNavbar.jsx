@@ -16,11 +16,11 @@ export default function PremiumNavbar() {
     "performance",
     "account",
   ];
-  const ownerPortal = Boolean(user?.isInternal && path.startsWith("/internal"));
+  const ownerPortal = Boolean(user?.isInternal && (path.startsWith("/internal") || path.startsWith("/command-center")));
   const links = ownerPortal
-    ? ["internal/operations", "internal/experiments/week3"]
+    ? ["command-center", "internal/experiments/week3"]
     : user?.isInternal
-      ? [...authed, "internal/operations"]
+      ? [...authed, "command-center"]
       : authed;
   const authPage = [
     "/login",
@@ -43,7 +43,7 @@ export default function PremiumNavbar() {
                 href={`/${l}`}
                 className={`rounded-xl px-2 py-2 text-sm capitalize transition ${path.includes(l) ? "bg-cyan-400/12 text-white" : "text-slate-300 hover:text-white"}`}
               >
-                {l === "internal/operations"
+                {l === "command-center"
                   ? "Command Center"
                   : l.startsWith("internal")
                     ? "Week 3 Archive"
@@ -59,12 +59,7 @@ export default function PremiumNavbar() {
             >
               Back to Home
             </Link>
-            <Link
-              href={path === "/login" ? "/register" : "/login"}
-              className="btn btn-glass px-4 py-2"
-            >
-              {path === "/login" ? "Create Account" : "Log In"}
-            </Link>
+            {path !== "/login" && <Link href="/login" className="btn btn-glass px-4 py-2">Log In</Link>}
           </div>
         ) : (
           <div className="hidden items-center gap-2 md:flex">

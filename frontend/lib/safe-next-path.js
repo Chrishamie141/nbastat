@@ -1,6 +1,6 @@
 const allowedPrefixes = [
   '/dashboard', '/games', '/parlays', '/fantasy', '/history', '/performance',
-  '/account', '/analyze', '/players', '/predictions', '/internal', '/nfl', '/subscribe',
+  '/account', '/analyze', '/players', '/predictions', '/internal', '/command-center', '/nfl', '/subscribe',
 ];
 
 export function safeNextPath(value, fallback = '/dashboard') {

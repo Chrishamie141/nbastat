@@ -19,8 +19,9 @@ from backend.app.api.auth import router as auth_router
 from backend.app.api.billing import router as billing_router
 from backend.app.api.social_cron import router as social_cron_router
 from backend.app.api.social_operations import router as social_operations_router
+from backend.app.api.nfl_automation_cron import router as nfl_automation_cron_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
-from backend.app.services.auth_service import current_user
+from backend.app.services.auth_service import current_user, owner_account_integrity
 from backend.app.services.sports_mode_service import get_sports_mode
 from backend.app.services.schedule_service import refresh_games, upcoming_games
 from backend.app.services.nfl_game_service import (
@@ -42,6 +43,7 @@ from backend.app.services.nfl_experiment_service import (
 )
 from backend.app.services.operations_dashboard_service import command_center, social_post_history, week1_db_path
 from backend.app.services.operator_action_service import start as start_operator_action, finish as finish_operator_action
+from backend.app.services import nfl_server_automation
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
@@ -70,6 +72,7 @@ app.include_router(auth_router)
 app.include_router(billing_router)
 app.include_router(social_cron_router)
 app.include_router(social_operations_router)
+app.include_router(nfl_automation_cron_router)
 
 @app.middleware("http")
 async def endpoint_observability(request: Request, call_next):
@@ -180,6 +183,27 @@ def api_nfl_context(season: int|None=Query(None, ge=2025, le=2100), user=Depends
         raise HTTPException(503, "The verified NFL schedule context is temporarily unavailable.") from exc
 
 
+@app.get("/api/nfl/current-week")
+def api_nfl_current_week(
+    season: int | None = Query(None, ge=2025, le=2100),
+    profile: str = Query("BALANCED"), day: str | None = None,
+    user=Depends(require_full_access),
+):
+    """Return the current context and board without a client-side waterfall."""
+    try:
+        context = current_week_context(season or nfl_season_year())
+        board = weekly_board(
+            int(context["season"]), int(context["week"]), profile, int(user["id"]), day,
+            str(context["seasonType"]),
+        )
+        return {"context": context, "board": board}
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("NFL current weekly board unavailable")
+        raise HTTPException(503, "The verified NFL current weekly board is temporarily unavailable.") from exc
+
+
 @app.get("/api/nfl/games/history")
 def api_nfl_game_history(season: int|None=Query(None, ge=2025, le=2100),
                          season_type: str=Query("regular", alias="seasonType"), user=Depends(require_full_access)):
@@ -253,7 +277,17 @@ def api_internal_operations_health(user=Depends(require_internal_access)):
         "latest_prediction_run": report["modelOperations"]["lastRun"],
         "latest_final_game_ingested": report["dataHealth"]["latestFinalIngested"],
         "week1_readiness": report["week1Readiness"], "social_publish_safety": report["automation"],
+        "owner_account_integrity": owner_account_integrity(),
     }
+
+
+@app.get("/api/internal/operations/nfl-automation")
+def api_internal_nfl_automation(user=Depends(require_internal_access)):
+    try:
+        return nfl_server_automation.status()
+    except Exception as exc:
+        logger.exception("server_nfl_automation_status_failed")
+        raise HTTPException(503, "Server-side NFL automation status is temporarily unavailable.") from exc
 
 
 @app.get("/api/internal/operations/social-posts")

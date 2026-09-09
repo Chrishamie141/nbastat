@@ -43,6 +43,13 @@ test('game UI labels prior-season context and client requests are bounded', () =
   assert.match(read('lib/api.js'), /error\?\.message/);
 });
 
+test('initial weekly screens avoid the context then board request waterfall', () => {
+  assert.match(read('lib/api.js'), /currentWeek:/);
+  for (const file of ['app/games/page.jsx', 'app/dashboard/page.jsx', 'app/parlays/page.jsx']) {
+    assert.match(read(file), /api\.nfl\s*\.currentWeek\(/, `${file} should use the combined endpoint`);
+  }
+});
+
 test('search and history failures do not masquerade as empty results', () => {
   assert.match(read('components/analyze/TeamSelector.jsx'), /Team search service unavailable/);
   assert.match(read('components/search/CatalogSearch.jsx'), /This is not a zero-result search/);

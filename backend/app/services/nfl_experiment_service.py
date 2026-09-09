@@ -211,23 +211,21 @@ def record_provider_attempt(*, provider: str, state: str, attempted_at: str,
                 provider, state, market_count, http_status, _safe_code(safe_error_code))
 
 
-def latest_provider_health(provider: str = "the-odds-api") -> dict:
-    initialize_experiment_database()
-    with get_db_connection() as connection:
-        row = connection.execute(
-            """SELECT attempted_at,completed_at,state,safe_error_code,http_status,market_count,
-            last_market_timestamp FROM nfl_provider_attempts WHERE provider=?
-            ORDER BY attempted_at DESC,id DESC LIMIT 1""", (provider,)
-        ).fetchone()
-        success = connection.execute(
-            """SELECT completed_at,last_market_timestamp FROM nfl_provider_attempts
-            WHERE provider=? AND state IN ('HEALTHY','NO_MARKET_AVAILABLE','STALE_DATA')
-            ORDER BY attempted_at DESC,id DESC LIMIT 1""", (provider,)
-        ).fetchone()
-        market_success = (connection.execute(
-            """SELECT retrieved_at,market_timestamp FROM nfl_market_observations
-            WHERE provider=? ORDER BY retrieved_at DESC,id DESC LIMIT 1""", (provider,)
-        ).fetchone() if table_exists(connection, "nfl_market_observations") else None)
+def _latest_provider_health(connection, provider: str) -> dict:
+    row = connection.execute(
+        """SELECT attempted_at,completed_at,state,safe_error_code,http_status,market_count,
+        last_market_timestamp FROM nfl_provider_attempts WHERE provider=?
+        ORDER BY attempted_at DESC,id DESC LIMIT 1""", (provider,)
+    ).fetchone()
+    success = connection.execute(
+        """SELECT completed_at,last_market_timestamp FROM nfl_provider_attempts
+        WHERE provider=? AND state IN ('HEALTHY','NO_MARKET_AVAILABLE','STALE_DATA')
+        ORDER BY attempted_at DESC,id DESC LIMIT 1""", (provider,)
+    ).fetchone()
+    market_success = (connection.execute(
+        """SELECT retrieved_at,market_timestamp FROM nfl_market_observations
+        WHERE provider=? ORDER BY retrieved_at DESC,id DESC LIMIT 1""", (provider,)
+    ).fetchone() if table_exists(connection, "nfl_market_observations") else None)
     if not row:
         return {"provider": provider, "state": "NO_MARKET_AVAILABLE", "lastAttempt": None,
                 "lastSuccessfulRetrieval": None, "lastMarketTimestamp": None,
@@ -241,6 +239,12 @@ def latest_provider_health(provider: str = "the-odds-api") -> dict:
         "safeErrorCode": row["safe_error_code"], "httpStatus": row["http_status"],
         "marketCount": row["market_count"],
     }
+
+
+def latest_provider_health(provider: str = "the-odds-api") -> dict:
+    initialize_experiment_database()
+    with get_db_connection() as connection:
+        return _latest_provider_health(connection, provider)
 
 
 def record_schedule_refresh(*, provider: str, season: int, season_type: str,
@@ -277,53 +281,56 @@ def _record_change(connection, game_id: str, observed_at: str, provider: str,
                 game_id, field, previous, current)
 
 
-def record_schedule_game(game: dict, observed_at: str | None = None) -> None:
-    """Persist operational kickoff/status/results without touching predictions."""
-    initialize_experiment_database()
-    observed = observed_at or _now()
+def _record_schedule_game(connection, game: dict, observed: str) -> None:
     provider = str(game.get("provider") or "espn")
     status = str(game.get("status") or "scheduled").lower()
     kickoff = str(game["kickoff_time"])
+    previous = connection.execute(
+        "SELECT * FROM nfl_game_schedule_state WHERE game_id=?", (game["game_id"],)
+    ).fetchone()
+    if not previous:
+        connection.execute(
+            """INSERT INTO nfl_game_schedule_state
+            (game_id,season,season_type,display_week,provider_week,home_team,away_team,
+             original_kickoff,current_kickoff,status,home_score,away_score,provider,
+             first_seen_at,last_seen_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (game["game_id"], game["season"], game["season_type"], game["display_week"],
+             game.get("provider_week"), game["home_team"], game["away_team"], kickoff,
+             kickoff, status, game.get("home_score"), game.get("away_score"), provider,
+             observed, observed),
+        )
+    else:
+        for field, column in (("kickoff_time", "current_kickoff"), ("status", "status")):
+            current = kickoff if field == "kickoff_time" else status
+            if str(previous[column]) != str(current):
+                _record_change(connection, game["game_id"], observed, provider,
+                               field, previous[column], current)
+        connection.execute(
+            """UPDATE nfl_game_schedule_state SET current_kickoff=?,status=?,home_score=?,
+            away_score=?,provider_week=?,last_seen_at=? WHERE game_id=?""",
+            (kickoff, status, game.get("home_score"), game.get("away_score"),
+             game.get("provider_week"), observed, game["game_id"]),
+        )
+    if status == "final" and game.get("home_score") is not None and game.get("away_score") is not None:
+        connection.execute(
+            """INSERT INTO nfl_game_results
+            (game_id,season,season_type,display_week,home_team,away_team,home_score,
+             away_score,source,source_status,source_timestamp,recorded_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(game_id) DO UPDATE SET home_score=excluded.home_score,
+            away_score=excluded.away_score,source_status=excluded.source_status,
+            source_timestamp=excluded.source_timestamp,recorded_at=excluded.recorded_at""",
+            (game["game_id"], game["season"], game["season_type"], game["display_week"],
+             game["home_team"], game["away_team"], int(game["home_score"]),
+             int(game["away_score"]), provider, status, observed, observed),
+        )
+
+
+def record_schedule_game(game: dict, observed_at: str | None = None) -> None:
+    """Persist operational kickoff/status/results without touching predictions."""
+    initialize_experiment_database()
     with get_db_connection() as connection:
-        previous = connection.execute(
-            "SELECT * FROM nfl_game_schedule_state WHERE game_id=?", (game["game_id"],)
-        ).fetchone()
-        if not previous:
-            connection.execute(
-                """INSERT INTO nfl_game_schedule_state
-                (game_id,season,season_type,display_week,provider_week,home_team,away_team,
-                 original_kickoff,current_kickoff,status,home_score,away_score,provider,
-                 first_seen_at,last_seen_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (game["game_id"], game["season"], game["season_type"], game["display_week"],
-                 game.get("provider_week"), game["home_team"], game["away_team"], kickoff,
-                 kickoff, status, game.get("home_score"), game.get("away_score"), provider,
-                 observed, observed),
-            )
-        else:
-            for field, column in (("kickoff_time", "current_kickoff"), ("status", "status")):
-                current = kickoff if field == "kickoff_time" else status
-                if str(previous[column]) != str(current):
-                    _record_change(connection, game["game_id"], observed, provider,
-                                   field, previous[column], current)
-            connection.execute(
-                """UPDATE nfl_game_schedule_state SET current_kickoff=?,status=?,home_score=?,
-                away_score=?,provider_week=?,last_seen_at=? WHERE game_id=?""",
-                (kickoff, status, game.get("home_score"), game.get("away_score"),
-                 game.get("provider_week"), observed, game["game_id"]),
-            )
-        if status == "final" and game.get("home_score") is not None and game.get("away_score") is not None:
-            connection.execute(
-                """INSERT INTO nfl_game_results
-                (game_id,season,season_type,display_week,home_team,away_team,home_score,
-                 away_score,source,source_status,source_timestamp,recorded_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(game_id) DO UPDATE SET home_score=excluded.home_score,
-                away_score=excluded.away_score,source_status=excluded.source_status,
-                source_timestamp=excluded.source_timestamp,recorded_at=excluded.recorded_at""",
-                (game["game_id"], game["season"], game["season_type"], game["display_week"],
-                 game["home_team"], game["away_team"], int(game["home_score"]),
-                 int(game["away_score"]), provider, status, observed, observed),
-            )
+        _record_schedule_game(connection, game, observed_at or _now())
 
 
 def operational_kickoff(game_id: str, fallback: str | None = None) -> str | None:
@@ -342,18 +349,7 @@ def is_strictly_pregame(*, market_timestamp: str | None, retrieved_at: str | Non
     return bool(market_time and retrieved and kickoff and market_time < kickoff and retrieved < kickoff)
 
 
-def market_history_for_game(game_id: str, fallback_kickoff: str | None = None) -> dict:
-    initialize_experiment_database()
-    kickoff_text = operational_kickoff(game_id, fallback_kickoff)
-    with get_db_connection() as connection:
-        rows = connection.execute(
-            """SELECT kickoff_time,retrieved_at,market_timestamp,provider,market_json
-            FROM nfl_market_observations WHERE game_id=? ORDER BY market_timestamp,retrieved_at,id""",
-            (game_id,),
-        ).fetchall()
-        state = connection.execute(
-            "SELECT status,last_seen_at FROM nfl_game_schedule_state WHERE game_id=?", (game_id,)
-        ).fetchone()
+def _market_history_payload(rows, state, kickoff_text: str | None, provider: dict) -> dict:
     if not kickoff_text and rows:
         kickoff_text = rows[-1]["kickoff_time"]
     valid = []
@@ -373,7 +369,6 @@ def market_history_for_game(game_id: str, fallback_kickoff: str | None = None) -
     phase = str(state["status"] if state else "scheduled").lower()
     has_started = phase in {"live", "final", "graded"} or bool(kickoff and datetime.now(timezone.utc) >= kickoff)
     closing = valid[-1] if has_started and valid else None
-    provider = latest_provider_health()
     return {
         "count": len(valid), "rejectedPostKickoffCount": rejected,
         "first": valid[0] if valid else None, "latest": valid[-1] if valid else None,
@@ -382,6 +377,64 @@ def market_history_for_game(game_id: str, fallback_kickoff: str | None = None) -
         "operationalKickoff": kickoff_text,
         "lastProviderAttempt": provider.get("lastAttempt"),
         "providerStatus": provider.get("state"),
+    }
+
+
+def market_history_for_game(game_id: str, fallback_kickoff: str | None = None) -> dict:
+    initialize_experiment_database()
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """SELECT kickoff_time,retrieved_at,market_timestamp,provider,market_json
+            FROM nfl_market_observations WHERE game_id=? ORDER BY market_timestamp,retrieved_at,id""",
+            (game_id,),
+        ).fetchall()
+        state = connection.execute(
+            "SELECT current_kickoff,status,last_seen_at FROM nfl_game_schedule_state WHERE game_id=?",
+            (game_id,),
+        ).fetchone()
+        provider = _latest_provider_health(connection, "the-odds-api")
+    kickoff_text = state["current_kickoff"] if state else fallback_kickoff
+    return _market_history_payload(rows, state, kickoff_text, provider)
+
+
+def weekly_board_context(games: list[dict]) -> dict[str, dict]:
+    """Persist and read a full slate with one database connection.
+
+    This keeps consumer reads from opening a new Supabase connection for every
+    schedule, kickoff, market-history, and provider-health lookup.
+    """
+    if not games:
+        return {}
+    initialize_experiment_database()
+    observed = _now()
+    game_ids = list(dict.fromkeys(str(game["game_id"]) for game in games))
+    placeholders = ",".join("?" for _ in game_ids)
+    with get_db_connection() as connection:
+        for game in games:
+            _record_schedule_game(connection, game, observed)
+        rows = connection.execute(
+            f"""SELECT game_id,kickoff_time,retrieved_at,market_timestamp,provider,market_json
+            FROM nfl_market_observations WHERE game_id IN ({placeholders})
+            ORDER BY game_id,market_timestamp,retrieved_at,id""",
+            tuple(game_ids),
+        ).fetchall()
+        states = connection.execute(
+            f"""SELECT game_id,current_kickoff,status,last_seen_at
+            FROM nfl_game_schedule_state WHERE game_id IN ({placeholders})""",
+            tuple(game_ids),
+        ).fetchall()
+        provider = _latest_provider_health(connection, "the-odds-api")
+    rows_by_game = {game_id: [] for game_id in game_ids}
+    for row in rows:
+        rows_by_game[str(row["game_id"])].append(row)
+    states_by_game = {str(row["game_id"]): row for row in states}
+    return {
+        game_id: _market_history_payload(
+            rows_by_game[game_id], states_by_game.get(game_id),
+            states_by_game[game_id]["current_kickoff"] if game_id in states_by_game else None,
+            provider,
+        )
+        for game_id in game_ids
     }
 
 

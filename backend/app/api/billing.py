@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from backend.app.database import get_db_connection, initialize_billing_database
 from backend.app.services.auth_service import current_user
@@ -22,6 +23,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
 ACTIVE = {"active", "trialing"}
+
+
+class CheckoutConfirmationRequest(BaseModel):
+    session_id: str | None = Field(
+        default=None,
+        alias="sessionId",
+        max_length=255,
+    )
 
 
 def _now():
@@ -122,6 +131,30 @@ def _source(subscription):
 
 def _plan(obj):
     return _metadata(obj).get("plan") or "founding"
+
+
+def _stripe_id(value):
+    if isinstance(value, str):
+        return value
+    return _get(value, "id")
+
+
+def _checkout_user_id(session):
+    return (
+        _safe_int(_metadata(session).get("user_id"))
+        or _safe_int(_get(session, "client_reference_id"))
+    )
+
+
+def _checkout_success_url():
+    url = os.getenv(
+        "STRIPE_SUCCESS_URL",
+        "http://localhost:3000/billing/success",
+    )
+    if "{CHECKOUT_SESSION_ID}" in url:
+        return url
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}session_id={{CHECKOUT_SESSION_ID}}"
 
 
 def _update(conn, uid, **values):
@@ -379,10 +412,7 @@ def create_checkout_session(request: Request):
         ],
         "allow_promotion_codes": True,
         "client_reference_id": str(user["id"]),
-        "success_url": os.getenv(
-            "STRIPE_SUCCESS_URL",
-            "http://localhost:3000/billing/success",
-        ),
+        "success_url": _checkout_success_url(),
         "cancel_url": os.getenv(
             "STRIPE_CANCEL_URL",
             "http://localhost:3000/subscribe",
@@ -494,6 +524,103 @@ def refresh(request: Request):
             )
 
     return current_entitlement_for_user_id(user["id"])
+
+
+def _owned_completed_checkout(stripe_client, user, session_id=None):
+    """Retrieve only a completed Checkout session created for this user."""
+    if session_id:
+        if not session_id.startswith("cs_"):
+            raise HTTPException(400, detail="Invalid Checkout confirmation.")
+        session = stripe_client.checkout.Session.retrieve(
+            session_id,
+            expand=["subscription"],
+        )
+        candidates = [session]
+    else:
+        # Recovery for older success URLs that omitted {CHECKOUT_SESSION_ID}.
+        # The scan is deliberately bounded and every candidate must carry the
+        # authenticated local user ID that our checkout creation path stored.
+        sessions = stripe_client.checkout.Session.list(
+            limit=25,
+            status="complete",
+            expand=["data.subscription"],
+        )
+        candidates = _get(sessions, "data", []) or []
+
+    for candidate in candidates:
+        if _checkout_user_id(candidate) != int(user["id"]):
+            continue
+        if _get(candidate, "status") != "complete":
+            continue
+        if _get(candidate, "mode") not in (None, "subscription"):
+            continue
+        if not _stripe_id(_get(candidate, "subscription")):
+            continue
+        return candidate
+
+    raise HTTPException(
+        409,
+        detail="Payment confirmation is still pending. Please retry shortly.",
+    )
+
+
+@router.post("/confirm-checkout")
+def confirm_checkout(payload: CheckoutConfirmationRequest, request: Request):
+    """Reconcile a completed owned Checkout session when webhooks are delayed."""
+    user = current_user(request)
+    initialize_billing_database()
+    stripe_client = _stripe()
+
+    try:
+        checkout_session = _owned_completed_checkout(
+            stripe_client,
+            user,
+            payload.session_id,
+        )
+        subscription = _get(checkout_session, "subscription")
+        subscription_id = _stripe_id(subscription)
+        if isinstance(subscription, str):
+            subscription = stripe_client.Subscription.retrieve(subscription_id)
+
+        with get_db_connection() as conn:
+            linked = _update(
+                conn,
+                user["id"],
+                customer=_stripe_id(_get(checkout_session, "customer")),
+                subscription=subscription_id,
+                plan=_plan(checkout_session),
+            )
+            applied = _apply_sub(conn, subscription)
+            if not linked or not applied:
+                raise HTTPException(
+                    409,
+                    detail="Payment was found but membership could not be linked.",
+                )
+            conn.commit()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(
+            "Unable to confirm Stripe Checkout for user_id=%s",
+            user["id"],
+        )
+        raise HTTPException(
+            503,
+            detail="Unable to confirm payment right now. Please retry shortly.",
+        ) from exc
+
+    entitlement = current_entitlement_for_user_id(user["id"])
+    if not entitlement["hasFullAccess"]:
+        raise HTTPException(
+            409,
+            detail="Payment is complete but the membership is not active yet.",
+        )
+    logger.info(
+        "Stripe Checkout reconciled for user_id=%s subscription=%s",
+        user["id"],
+        subscription_id,
+    )
+    return entitlement
 
 
 @router.post("/webhook")

@@ -2,12 +2,13 @@
 .pytest_cache/
 __pycache__/
 # The production NFL board imports the deterministic game predictor and its
-# two lightweight helpers. Keep the rest of the backtesting workspace out of
+# lightweight helpers. Keep the rest of the backtesting workspace out of
 # the serverless bundle while allowing those runtime modules through.
 backtesting/*
 !backtesting/__init__.py
 !backtesting/nfl_game_predictor.py
 !backtesting/game_matching.py
+!backtesting/markets.py
 !backtesting/team_history.py
 docs/
 frontend/

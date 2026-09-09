@@ -94,6 +94,31 @@ def test_updated_and_postponed_kickoff_control_the_closing_boundary(monkeypatch,
     assert history["operationalKickoff"] == "2030-09-02T23:00:00Z"
 
 
+def test_weekly_board_context_uses_one_connection_for_the_full_slate(monkeypatch, tmp_path):
+    import backend.app.services.nfl_product_service as product
+    from backend.app.services import nfl_experiment_service as experiment
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{(tmp_path / 'batch.db').as_posix()}")
+    product._initialize_predictions()
+    experiment.initialize_experiment_database()
+    original_connection = experiment.get_db_connection
+    connection_count = 0
+
+    def counted_connection():
+        nonlocal connection_count
+        connection_count += 1
+        return original_connection()
+
+    monkeypatch.setattr(experiment, "initialize_experiment_database", lambda: None)
+    monkeypatch.setattr(experiment, "get_db_connection", counted_connection)
+
+    contexts = experiment.weekly_board_context([_game("batch-1"), _game("batch-2")])
+
+    assert connection_count == 1
+    assert set(contexts) == {"batch-1", "batch-2"}
+    assert all(value["count"] == 0 for value in contexts.values())
+
+
 def test_hash_mismatch_fails_closed_before_official_grading(monkeypatch, tmp_path):
     import backend.app.services.nfl_product_service as product
     from backend.app.database import get_db_connection
@@ -303,7 +328,7 @@ def test_prediction_cannot_be_created_after_kickoff(monkeypatch, tmp_path):
         assert connection.execute("SELECT COUNT(*) FROM nfl_game_predictions").fetchone()[0] == 0
 
 
-def test_internal_dashboard_access_requires_flag_or_allowlist(monkeypatch, tmp_path):
+def test_internal_dashboard_access_requires_durable_database_flag(monkeypatch, tmp_path):
     from fastapi import HTTPException
     from backend.app.database import get_db_connection, initialize_auth_database
     from backend.app.services.auth_service import create_token
@@ -325,4 +350,9 @@ def test_internal_dashboard_access_requires_flag_or_allowlist(monkeypatch, tmp_p
         require_internal_access(Request())
     assert denied.value.status_code == 403
     monkeypatch.setenv("INTERNAL_ADMIN_EMAILS", "operator@example.com")
+    with pytest.raises(HTTPException) as still_denied:
+        require_internal_access(Request())
+    assert still_denied.value.status_code == 403
+    with get_db_connection() as connection:
+        connection.execute("UPDATE users SET is_internal=1 WHERE id=1")
     assert require_internal_access(Request())["email"] == "operator@example.com"

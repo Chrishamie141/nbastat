@@ -64,6 +64,137 @@ def test_checkout_uses_authenticated_user_and_enables_promo(monkeypatch):
     assert calls['client_reference_id'] == '1'
     assert calls['customer_email'] == 'a@example.com'
     assert calls['subscription_data']['metadata']['user_id'] == '1'
+    assert calls['success_url'].endswith('session_id={CHECKOUT_SESSION_ID}')
+
+
+def test_confirm_checkout_reconciles_owned_session(monkeypatch):
+    checkout = {
+        'id': 'cs_test_owned',
+        'status': 'complete',
+        'mode': 'subscription',
+        'client_reference_id': '1',
+        'metadata': {'user_id': '1', 'plan': 'founding'},
+        'customer': 'cus_owned',
+        'subscription': 'sub_owned',
+    }
+    subscription = {
+        'id': 'sub_owned',
+        'customer': 'cus_owned',
+        'status': 'active',
+        'current_period_end': 2000000000,
+        'cancel_at_period_end': False,
+        'metadata': {'user_id': '1', 'plan': 'founding'},
+    }
+
+    class Session:
+        @staticmethod
+        def retrieve(session_id, **kwargs):
+            assert session_id == 'cs_test_owned'
+            assert kwargs['expand'] == ['subscription']
+            return checkout
+
+    class Subscription:
+        @staticmethod
+        def retrieve(subscription_id):
+            assert subscription_id == 'sub_owned'
+            return subscription
+
+    monkeypatch.setattr(
+        billing,
+        'stripe',
+        SimpleNamespace(
+            api_key=None,
+            checkout=SimpleNamespace(Session=Session),
+            Subscription=Subscription,
+        ),
+    )
+    result = billing.confirm_checkout(
+        billing.CheckoutConfirmationRequest(sessionId='cs_test_owned'),
+        Req(1),
+    )
+    assert result['hasFullAccess'] is True
+    assert result['status'] == 'active'
+    with get_db_connection() as conn:
+        row = conn.execute(
+            'SELECT stripe_customer_id,stripe_subscription_id FROM users WHERE id=1'
+        ).fetchone()
+    assert row['stripe_customer_id'] == 'cus_owned'
+    assert row['stripe_subscription_id'] == 'sub_owned'
+
+
+def test_confirm_checkout_recovers_legacy_success_without_session_id(monkeypatch):
+    owned = {
+        'id': 'cs_test_legacy',
+        'status': 'complete',
+        'mode': 'subscription',
+        'client_reference_id': '1',
+        'metadata': {'user_id': '1', 'plan': 'founding'},
+        'customer': 'cus_legacy',
+        'subscription': {
+            'id': 'sub_legacy',
+            'customer': 'cus_legacy',
+            'status': 'trialing',
+            'current_period_end': 2000000000,
+            'cancel_at_period_end': False,
+            'metadata': {'user_id': '1', 'plan': 'founding'},
+        },
+    }
+
+    class Session:
+        @staticmethod
+        def list(**kwargs):
+            assert kwargs == {
+                'limit': 25,
+                'status': 'complete',
+                'expand': ['data.subscription'],
+            }
+            return {'data': [
+                {**owned, 'id': 'cs_test_other', 'client_reference_id': '999', 'metadata': {'user_id': '999'}},
+                owned,
+            ]}
+
+    monkeypatch.setattr(
+        billing,
+        'stripe',
+        SimpleNamespace(
+            api_key=None,
+            checkout=SimpleNamespace(Session=Session),
+        ),
+    )
+    result = billing.confirm_checkout(
+        billing.CheckoutConfirmationRequest(),
+        Req(1),
+    )
+    assert result['hasFullAccess'] is True
+    assert result['status'] == 'trialing'
+
+
+def test_confirm_checkout_rejects_another_users_session(monkeypatch):
+    class Session:
+        @staticmethod
+        def retrieve(*args, **kwargs):
+            return {
+                'id': 'cs_test_other',
+                'status': 'complete',
+                'mode': 'subscription',
+                'client_reference_id': '999',
+                'metadata': {'user_id': '999'},
+                'customer': 'cus_other',
+                'subscription': 'sub_other',
+            }
+
+    monkeypatch.setattr(
+        billing,
+        'stripe',
+        SimpleNamespace(api_key=None, checkout=SimpleNamespace(Session=Session)),
+    )
+    with pytest.raises(Exception) as exc:
+        billing.confirm_checkout(
+            billing.CheckoutConfirmationRequest(sessionId='cs_test_other'),
+            Req(1),
+        )
+    assert exc.value.status_code == 409
+    assert current_entitlement_for_user_id(1)['hasFullAccess'] is False
 
 def test_duplicate_active_subscriptions_prevented():
     with get_db_connection() as conn:

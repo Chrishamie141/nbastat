@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from fastapi import HTTPException, Response
+from fastapi import BackgroundTasks, HTTPException, Response
 
 
 class CookieRequest:
@@ -16,6 +16,8 @@ def test_password_reset_is_one_time_hashed_and_revokes_existing_sessions(monkeyp
     account = auth_service.register_user("Chris", "owner@example.com", "old-password")
     old_token = auth_service.create_token(account["id"], account["session_version"])
     delivered = {}
+    monkeypatch.setenv("RESEND_API_KEY", "test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "security@example.com")
     monkeypatch.setattr(auth_service, "_send_reset_email", lambda email, code: delivered.update(email=email, code=code) or True)
 
     auth_service.request_password_reset("OWNER@example.com")
@@ -34,10 +36,37 @@ def test_password_reset_is_one_time_hashed_and_revokes_existing_sessions(monkeyp
     assert reused.value.status_code == 400
 
 
+def test_postgres_auth_initialization_locks_down_server_only_tables(monkeypatch):
+    from contextlib import contextmanager
+    from backend.app import database
+
+    statements = []
+
+    class RecordingConnection:
+        def execute(self, query, _params=None):
+            statements.append(" ".join(str(query).split()))
+            return self
+
+    @contextmanager
+    def recording_connection():
+        yield RecordingConnection()
+
+    monkeypatch.setattr(database, "using_postgres", lambda: True)
+    monkeypatch.setattr(database, "get_db_connection", recording_connection)
+
+    database.initialize_auth_database()
+
+    for table in ("password_reset_tokens", "auth_bootstrap"):
+        assert f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY" in statements
+        assert f"REVOKE ALL ON TABLE {table} FROM anon, authenticated" in statements
+
+
 def test_password_reset_request_does_not_disclose_unknown_accounts(monkeypatch):
     from backend.app.services import auth_service
 
     sent = []
+    monkeypatch.setenv("RESEND_API_KEY", "test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "security@example.com")
     monkeypatch.setattr(auth_service, "_send_reset_email", lambda email, code: sent.append((email, code)) or True)
     assert auth_service.request_password_reset("missing@example.com") is None
     assert sent == []
@@ -109,3 +138,116 @@ def test_registration_insert_outage_reaches_503_boundary(monkeypatch):
     with pytest.raises(HTTPException) as unavailable:
         auth.register(RegisterRequest(name="Chris", email="owner@example.com", password="strong-password"), Response())
     assert unavailable.value.status_code == 503
+
+
+def test_email_allowlist_cannot_grant_owner_access(monkeypatch):
+    from backend.app.services import auth_service
+
+    monkeypatch.setenv("INTERNAL_ADMIN_EMAILS", "attacker@example.com")
+    account = auth_service.register_user("Attacker", "attacker@example.com", "strong-password")
+    assert auth_service.is_internal_user(account) is False
+    assert auth_service.safe_user(account)["isInternal"] is False
+
+
+def test_owner_login_rejects_normal_account_without_setting_cookie():
+    from backend.app.api import auth
+    from backend.app.schemas.auth import LoginRequest
+    from backend.app.services import auth_service
+
+    auth_service.register_user("Member", "member@example.com", "strong-password")
+    response = Response()
+    with pytest.raises(HTTPException) as denied:
+        auth.owner_login(LoginRequest(email="member@example.com", password="strong-password"), response)
+    assert denied.value.status_code == 401
+    assert response.headers.get("set-cookie") is None
+
+
+def test_owner_integrity_reports_exactly_one_active_database_owner(monkeypatch):
+    from backend.app.services import auth_service
+
+    setup_code = "owner-integrity-setup-token-that-is-long-enough"
+    monkeypatch.setenv("INITIAL_ADMIN_SETUP_TOKEN", setup_code)
+    assert auth_service.owner_account_integrity()["status"] == "MISCONFIGURED"
+    auth_service.bootstrap_admin("Owner", "owner@example.com", "strong-password", setup_code)
+    assert auth_service.owner_account_integrity() == {
+        "status": "HEALTHY", "ownerCount": 1, "activeOwnerCount": 1,
+    }
+
+
+def test_password_reset_fails_closed_when_delivery_is_unconfigured(monkeypatch):
+    from backend.app.api import auth
+    from backend.app.schemas.auth import PasswordResetRequest
+
+    monkeypatch.delenv("RESEND_API_KEY", raising=False)
+    monkeypatch.delenv("PASSWORD_RESET_FROM_EMAIL", raising=False)
+    with pytest.raises(HTTPException) as unavailable:
+        auth.forgot_password(PasswordResetRequest(email="anyone@example.com"), BackgroundTasks())
+    assert unavailable.value.status_code == 503
+    assert unavailable.value.detail == "Password reset is temporarily unavailable. Please try again."
+
+
+def test_password_reset_email_uses_supported_resend_transport(monkeypatch):
+    from backend.app.services import auth_service
+
+    observed = {}
+
+    class Accepted:
+        status_code = 200
+
+    def fake_post(url, *, json, headers, timeout):
+        observed.update(url=url, payload=json, headers=headers, timeout=timeout)
+        return Accepted()
+
+    monkeypatch.setenv("RESEND_API_KEY", "configured-test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "SmartBetSports <security@smartbetsports.com>")
+    monkeypatch.setenv("SITE_URL", "https://smartbetsports.com")
+    monkeypatch.setattr(auth_service.requests, "post", fake_post)
+
+    assert auth_service._send_reset_email("owner@example.com", "one-time-code") is True
+    assert observed["url"] == "https://api.resend.com/emails"
+    assert observed["payload"]["to"] == ["owner@example.com"]
+    assert observed["payload"]["from"] == "SmartBetSports <security@smartbetsports.com>"
+    assert "https://smartbetsports.com/reset-password" in observed["payload"]["text"]
+    assert observed["headers"] == {"Authorization": "Bearer configured-test-key"}
+    assert observed["timeout"] == 10
+
+
+def test_password_reset_email_rejects_provider_error(monkeypatch):
+    from backend.app.services import auth_service
+
+    class Rejected:
+        status_code = 403
+
+    monkeypatch.setenv("RESEND_API_KEY", "configured-test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "security@example.com")
+    monkeypatch.setattr(auth_service.requests, "post", lambda *_args, **_kwargs: Rejected())
+    assert auth_service._send_reset_email("owner@example.com", "one-time-code") is False
+
+
+def test_production_reset_origin_is_canonical(monkeypatch):
+    from backend.app.services import auth_service
+
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("SITE_URL", "https://wrong.example")
+    with pytest.raises(auth_service.PasswordResetDeliveryUnavailable, match="canonical"):
+        auth_service._site_origin()
+    monkeypatch.setenv("SITE_URL", "https://smartbetsports.com")
+    assert auth_service._site_origin() == "https://smartbetsports.com"
+
+
+def test_provider_failure_does_not_reveal_known_account(monkeypatch):
+    from backend.app.api import auth
+    from backend.app.schemas.auth import PasswordResetRequest
+    from backend.app.services import auth_service
+
+    monkeypatch.setenv("RESEND_API_KEY", "configured-test-key")
+    monkeypatch.setenv("PASSWORD_RESET_FROM_EMAIL", "security@example.com")
+    monkeypatch.setattr(auth_service, "_send_reset_email", lambda *_: False)
+    auth_service.register_user("Known", "known@example.com", "strong-password")
+
+    known_tasks = BackgroundTasks()
+    unknown_tasks = BackgroundTasks()
+    known = auth.forgot_password(PasswordResetRequest(email="known@example.com"), known_tasks)
+    unknown = auth.forgot_password(PasswordResetRequest(email="unknown@example.com"), unknown_tasks)
+    assert known == unknown == {"message": "If an account exists, a reset code will be sent."}
+    assert len(known_tasks.tasks) == len(unknown_tasks.tasks) == 1
