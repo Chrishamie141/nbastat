@@ -95,6 +95,11 @@ unavailable endpoint is reported as a provider failure rather than simulated.
 6. Turn off dry run and enable auto publish only after explicit review. Preview
    and development deployments remain prohibited from publishing.
 
+For unattended production discovery, enable
+`SOCIAL_SERVER_SOURCE_REFRESH_ENABLED=true`. Each worker run then verifies the
+frozen Week 3 hash and reads current canonical NFL evidence before it scores any
+opportunity; a mismatch or incomplete evidence blocks the run.
+
 **PAUSE ALL SOCIAL** is available at the top of Social Operations. It writes a
 persisted kill switch and audit entry. The environment-level emergency controls
 remain `SOCIAL_AUTO_PUBLISH=false`, `SOCIAL_SCHEDULER_ENABLED=false`, or

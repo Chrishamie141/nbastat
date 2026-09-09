@@ -48,6 +48,12 @@ The daily endpoint is backward compatible, but now orchestrates a bounded event
 discovery and queue pass. Dedicated idempotent endpoints are also available for
 deployments that need a more frequent cadence:
 
+When `SOCIAL_SERVER_SOURCE_REFRESH_ENABLED=true`, discovery first rebuilds and
+signs the whitelisted social snapshot from the canonical server-side NFL
+experiment, frozen predictions, pre-kickoff markets, results, and grades. The
+refresh is fail-closed on the Week 3 integrity hash and never writes to sports
+evidence tables. This removes the local-worker dependency in production.
+
 | Endpoint | Purpose | Default gate |
 | --- | --- | --- |
 | `/api/cron/social-discover` | Store grounded events, scores, queued and skipped opportunities | `SOCIAL_AUTOMATION_ENABLED` |

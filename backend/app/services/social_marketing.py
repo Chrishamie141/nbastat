@@ -24,10 +24,12 @@ from backend.app.services.social.content import validate_caption
 from backend.app.services.social.media.assets import storage_factory
 from backend.app.services.social.media.service import generate_media
 from backend.app.services.social.publisher import OfficialX
+from backend.app.services.social.sources import build_server_source
 from backend.app.services.social.storage import decoded, initialize_schema
 
 logger = logging.getLogger(__name__)
 SOCIAL_SCHEMA_LOCK_ID = 734120
+WEEK3_EXPECTED_HASH = 'a8a405ba262ef59bedb1b7bfcdf1ca4a7c0bf78cafe4b0ff0c1268b7d8b2412a'
 
 
 def now(): return datetime.now(timezone.utc)
@@ -210,6 +212,29 @@ def store_source(source):
     with connection() as c:
         c.execute('INSERT INTO social_sources VALUES(?,?,?,?) ON CONFLICT(source_id) DO NOTHING',
                   (source_id,encode(source),sign(source),source['verified_at']))
+    return {'source_id':source_id,'verified_at':source['verified_at']}
+
+
+def refresh_server_source(clock=now):
+    """Refresh the signed aggregate from the server's canonical read-only evidence."""
+    initialize()
+    with connection() as c:
+        row=c.execute('SELECT * FROM social_sources ORDER BY verified_at DESC LIMIT 1').fetchone()
+        fallback=None
+        if row:
+            previous=json.loads(row['payload'])
+            if sha(previous)!=row['source_id'] or not hmac.compare_digest(sign(previous),row['signature']):
+                raise ValueError('Existing source authenticity check failed during server refresh')
+            fallback=previous.get('preseason')
+        source=build_server_source(c,sha,clock,WEEK3_EXPECTED_HASH,fallback)
+        source_id=sha(source)
+        c.execute('INSERT INTO social_sources VALUES(?,?,?,?) ON CONFLICT(source_id) DO NOTHING',
+                  (source_id,encode(source),sign(source),source['verified_at']))
+    logger.info('social_server_source_refreshed', extra={
+        'sourceId':source_id,'verifiedAt':source['verified_at'],
+        'week':source['regular']['week'],'predictions':source['regular']['predictions'],
+        'coverageGames':source['coverage_games'],
+    })
     return {'source_id':source_id,'verified_at':source['verified_at']}
 
 
@@ -535,6 +560,8 @@ def daily(clock=now):
 
 def discover_opportunities(clock=now):
     initialize()
+    if enabled('SOCIAL_SERVER_SOURCE_REFRESH_ENABLED'):
+        refresh_server_source(clock)
     with connection() as c:
         source_id,source=load_source(c,clock=clock)
         settings=social_settings.load_settings(c)

@@ -126,10 +126,16 @@ def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, An
 
 
 def event_identity(event: dict[str, Any], sha) -> tuple[str, str]:
-    evidence_hash = sha(event["evidence"])
+    # Snapshot synchronization time proves freshness but is not sports evidence.
+    # Excluding it (and the envelope id) keeps discovery idempotent when the
+    # server re-signs otherwise identical canonical evidence on a later day.
+    evidence = {key: value for key, value in event["evidence"].items() if key != "source_timestamp"}
+    if isinstance(evidence.get("prediction"), dict):
+        evidence["prediction"] = dict(evidence["prediction"])
+    evidence_hash = sha(evidence)
     event_id = sha({
         "event_type": event["event_type"], "game_id": event.get("game_id"),
-        "source_id": event["source_id"], "evidence_hash": evidence_hash,
+        "evidence_hash": evidence_hash,
     })[:32]
     return event_id, evidence_hash
 

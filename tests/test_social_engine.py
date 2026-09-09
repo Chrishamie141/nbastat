@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from contextlib import contextmanager
 from io import BytesIO
+import hashlib
 import json
 from pathlib import Path
 
@@ -116,6 +117,98 @@ def test_discovery_is_idempotent_and_stores_skip_reasons(engine, monkeypatch):
         count = connection.execute("SELECT COUNT(*) FROM social_opportunities").fetchone()[0]
         skipped = connection.execute("SELECT COUNT(*) FROM social_opportunities WHERE status='SKIPPED' AND skip_reason IS NOT NULL").fetchone()[0]
     assert count > 0 and skipped > 0
+
+
+def test_resigned_source_does_not_duplicate_opportunities(engine):
+    at, _ = engine
+    first = source(at)
+    second = json.loads(json.dumps(first))
+    second["verified_at"] = (at + timedelta(hours=12)).isoformat()
+    first_id, second_id = store_source(first), store_source(second)
+    assert first_id != second_id
+    with social.connection() as connection:
+        config = settings.load_settings(connection)
+        opportunities.discover(connection, first_id, first, config, social.sha, lambda: at)
+        count = connection.execute("SELECT COUNT(*) FROM social_opportunities").fetchone()[0]
+        opportunities.discover(connection, second_id, second, config, social.sha, lambda: at)
+        assert connection.execute("SELECT COUNT(*) FROM social_opportunities").fetchone()[0] == count
+
+
+def test_server_source_refresh_reads_canonical_evidence_without_mutating_it(engine, monkeypatch):
+    at, _ = engine
+    week3_payloads = []
+    with social.connection() as connection:
+        connection.execute("""CREATE TABLE nfl_game_predictions(
+            user_id INTEGER,game_id TEXT,season INTEGER,season_type TEXT,display_week INTEGER,
+            kickoff_time TEXT,generated_at TEXT,model_version TEXT,prediction_json TEXT)""")
+        connection.execute("""CREATE TABLE nfl_experiment_grades(
+            experiment_key TEXT,game_id TEXT,prediction_result TEXT,qualified_wager INTEGER,
+            graded_at TEXT)""")
+        connection.execute("""CREATE TABLE nfl_game_results(
+            game_id TEXT,season INTEGER,season_type TEXT,display_week INTEGER,home_team TEXT,
+            away_team TEXT,home_score INTEGER,away_score INTEGER,recorded_at TEXT,source_timestamp TEXT)""")
+        connection.execute("""CREATE TABLE nfl_automation_state(
+            singleton INTEGER,active_experiment_key TEXT,last_status TEXT,last_error_code TEXT)""")
+        connection.execute("""CREATE TABLE nfl_capture_experiments(
+            experiment_key TEXT,season INTEGER,season_type TEXT,display_week INTEGER,status TEXT,
+            manifest_hash TEXT,quota_state TEXT,created_at TEXT)""")
+        connection.execute("""CREATE TABLE nfl_capture_games(
+            experiment_key TEXT,game_id TEXT,home_team TEXT,away_team TEXT,kickoff TEXT,
+            kickoff_epoch REAL,status TEXT)""")
+        connection.execute("""CREATE TABLE nfl_capture_markets(
+            capture_key TEXT,experiment_key TEXT,game_id TEXT,bookmaker TEXT,source_time TEXT,
+            source_epoch REAL,retrieved_epoch REAL,cutoff_epoch REAL,market_type TEXT)""")
+        connection.execute("CREATE TABLE nfl_capture_quotes(capture_key TEXT,side TEXT,price REAL)")
+        connection.execute("""CREATE TABLE nfl_capture_checkpoints(
+            experiment_key TEXT,state TEXT)""")
+        for index in range(16):
+            raw = json.dumps({"winner": "W", "index": index}, separators=(",", ":"))
+            week3_payloads.append(raw)
+            connection.execute("INSERT INTO nfl_game_predictions VALUES(?,?,?,?,?,?,?,?,?)", (
+                0, f"pre-{index}", 2026, "preseason", 3,
+                (at + timedelta(days=1)).isoformat(), (at - timedelta(days=1)).isoformat(), "v1", raw))
+            connection.execute("INSERT INTO nfl_experiment_grades VALUES(?,?,?,?,?)", (
+                "NFL-2026-PRE3", f"pre-{index}", "WIN" if index < 11 else "LOSS" if index < 15 else "PUSH",
+                0, at.isoformat()))
+        game_id = "espn-current"
+        prediction = json.dumps({
+            "winner": "HOME", "winProbability": .62, "modelVersion": "verified-v1",
+            "market": {"provider": "the-odds-api", "sportsbook": "Book",
+                       "marketTimestamp": (at - timedelta(hours=1)).isoformat(),
+                       "homeImpliedProbability": .55, "awayImpliedProbability": .45},
+        }, separators=(",", ":"))
+        kickoff = (at + timedelta(hours=3)).isoformat()
+        connection.execute("INSERT INTO nfl_game_predictions VALUES(?,?,?,?,?,?,?,?,?)", (
+            0, game_id, 2026, "regular", 1, kickoff, (at - timedelta(hours=2)).isoformat(),
+            "verified-v1", prediction))
+        connection.execute("INSERT INTO nfl_automation_state VALUES(?,?,?,?)", (
+            1, "NFL-2026-REGULAR-1-CAPTURE-v1", "IDLE", None))
+        connection.execute("INSERT INTO nfl_capture_experiments VALUES(?,?,?,?,?,?,?,?)", (
+            "NFL-2026-REGULAR-1-CAPTURE-v1", 2026, "regular", 1, "ACTIVE", "manifest", "KNOWN", at.isoformat()))
+        connection.execute("INSERT INTO nfl_capture_games VALUES(?,?,?,?,?,?,?)", (
+            "NFL-2026-REGULAR-1-CAPTURE-v1", game_id, "HOME", "AWAY", kickoff,
+            (at + timedelta(hours=3)).timestamp(), "SCHEDULED"))
+    expected = hashlib.sha256("".join(
+        raw for _, raw in sorted((f"pre-{index}", raw) for index, raw in enumerate(week3_payloads))
+    ).encode()).hexdigest()
+    monkeypatch.setattr(social, "WEEK3_EXPECTED_HASH", expected)
+    refreshed = social.refresh_server_source(lambda: at)
+    with social.connection() as connection:
+        source_id, value = social.load_source(connection, refreshed["source_id"], lambda: at)
+        assert source_id == refreshed["source_id"]
+        assert value["preseason"]["record"] == {"WIN": 11, "LOSS": 4, "PUSH": 1}
+        assert value["regular"]["predictions"] == 1
+        assert value["coverage_games"] == 1
+        assert value["operations"]["games"][0]["market"]["edge"] == pytest.approx(.07)
+        assert connection.execute("SELECT COUNT(*) FROM nfl_game_predictions").fetchone()[0] == 17
+        connection.execute("DELETE FROM nfl_game_predictions WHERE season_type='preseason'")
+        connection.execute("DELETE FROM nfl_experiment_grades WHERE experiment_key='NFL-2026-PRE3'")
+    fallback_refresh = social.refresh_server_source(lambda: at + timedelta(hours=1))
+    with social.connection() as connection:
+        _, value = social.load_source(connection, fallback_refresh["source_id"], lambda: at + timedelta(hours=1))
+        assert value["preseason"]["baseline_hash"] == expected
+        assert value["preseason"]["record"] == {"WIN": 11, "LOSS": 4, "PUSH": 1}
+        assert connection.execute("SELECT COUNT(*) FROM nfl_game_predictions").fetchone()[0] == 1
 
 
 @pytest.mark.parametrize("result,event_type", [("WIN", "PREDICTION_WIN"), ("LOSS", "PREDICTION_LOSS"), ("PUSH", "PREDICTION_PUSH")])

@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [{"path": "/api/cron/social-daily", "schedule": "0 13 * * *"}],
+  "crons": [{"path": "/api/cron/social-daily", "schedule": "0 17 * * *"}],
   "functions": {
     "api/index.py": {
       "includeFiles": "{data/*.json,backtesting/game_matching.py,backtesting/markets.py}"

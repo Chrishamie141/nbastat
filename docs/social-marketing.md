@@ -112,6 +112,7 @@ command arguments, source snapshots, screenshots, logs, or `NEXT_PUBLIC_` variab
 | `DRY_RUN` | Defaults true; must be explicitly `false` to post |
 | `SOCIAL_AUTO_PUBLISH` | Defaults false; must be explicitly `true` to post |
 | `SOCIAL_SCHEDULER_ENABLED` | Defaults false; enables cron generation when true |
+| `SOCIAL_SERVER_SOURCE_REFRESH_ENABLED` | Defaults false; rebuilds signed social input from canonical server evidence before discovery |
 | `CRON_SECRET` | Random secret for Vercel bearer authentication, at least 16 characters recommended |
 | `X_EXPECTED_USER_ID` | Required company-account identity check before publishing |
 
