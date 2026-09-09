@@ -290,6 +290,20 @@ def test_queue_materialization_pause_and_caption_grounding(engine):
         assert scheduler.due(connection, settings.load_settings(connection), lambda: at) == []
 
 
+def test_positive_post_interval_limits_each_publish_batch_to_one(engine):
+    at, _ = engine
+    value = source(at)
+    source_id = store_source(value)
+    with social.connection() as connection:
+        config = settings.load_settings(connection)
+        opportunities.discover(connection, source_id, value, config, social.sha, lambda: at)
+        due = scheduler.due(connection, config, lambda: at + timedelta(minutes=16), limit=2)
+        assert len(due) == 1
+        config["min_post_interval_minutes"] = 0
+        due_without_spacing = scheduler.due(connection, config, lambda: at + timedelta(minutes=16), limit=2)
+        assert len(due_without_spacing) == 2
+
+
 def test_queue_dry_run_builds_deterministic_media_without_external_writes(engine):
     pytest.importorskip("PIL")
     at, _ = engine

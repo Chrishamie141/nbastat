@@ -105,12 +105,16 @@ def due(connection, settings: dict[str, Any], clock=None, limit: int = 2) -> lis
     remaining = max(0, int(settings["max_posts_per_day"]) - int(published))
     if not remaining:
         return []
+    # A positive interval is also a between-items guarantee. Selecting a batch
+    # of two here would publish both before the next invocation can observe the
+    # first timestamp, defeating the owner's cadence control.
+    batch_limit = 1 if int(settings["min_post_interval_minutes"]) > 0 else max(1, int(limit))
     receipt_count = int(connection.execute("""SELECT COUNT(*) AS count FROM social_posts p JOIN social_post_details d USING(post_id)
         WHERE p.status='PUBLISHED' AND p.day_key=? AND d.post_type IN ('WIN_RECEIPT','LOSS_RECEIPT','CASHED','MISS')""",
         (at.date().isoformat(),)).fetchone()["count"])
     rows = connection.execute("""SELECT * FROM social_opportunities WHERE status='QUEUED'
         AND scheduled_at<=? ORDER BY score DESC,scheduled_at LIMIT ?""",
-        (at.isoformat(), min(max(1, int(limit) * 2), remaining * 2))).fetchall()
+        (at.isoformat(), min(batch_limit * 2, remaining * 2))).fetchall()
     selected = []
     for row in rows:
         if row["content_type"] in {"WIN_RECEIPT", "LOSS_RECEIPT", "CASHED", "MISS"}:
@@ -118,7 +122,7 @@ def due(connection, settings: dict[str, Any], clock=None, limit: int = 2) -> lis
                 continue
             receipt_count += 1
         selected.append(dict(row))
-        if len(selected) >= min(max(1, int(limit)), remaining):
+        if len(selected) >= min(batch_limit, remaining):
             break
     return selected
 
