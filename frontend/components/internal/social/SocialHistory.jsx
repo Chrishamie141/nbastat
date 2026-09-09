@@ -2,7 +2,7 @@ import Image from "next/image";
 import GlowCard from "@/components/ui/GlowCard";
 import { StatusPill } from "./SocialStatus";
 
-const EMPTY = "—";
+const EMPTY = "--";
 const fmt = (value) => value ? new Date(value).toLocaleString() : EMPTY;
 const metric = (value) => value == null ? "Unavailable" : Number(value).toLocaleString();
 

@@ -10,7 +10,7 @@ export default function SocialQueue({ items, busy, onPreview, onCaption, onMedia
       {item.previewUrl ? <div className="relative aspect-video bg-slate-950"><Image src={item.previewUrl} alt={`${item.content_type} preview`} fill sizes="(max-width: 1024px) 100vw, 50vw" unoptimized className="object-cover" /></div> : <div className="flex aspect-[3/1] items-center justify-center bg-gradient-to-br from-slate-950 to-emerald-950/40 text-xs font-black uppercase tracking-[.22em] text-slate-500">Media {item.media_status || "not generated"}</div>}
       <div className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-black">{item.matchup}</p><StatusPill status={item.status} /></div>
-        <p className="mt-1 text-xs font-black uppercase tracking-wider text-cyan-300">{item.content_type?.replaceAll("_", " ")} · Score {item.score}</p>
+        <p className="mt-1 text-xs font-black uppercase tracking-wider text-cyan-300">{item.content_type?.replaceAll("_", " ")} / Score {item.score}</p>
         <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">{item.content || "Caption will be created from verified evidence when this item is processed."}</p>
         <p className="mt-3 text-xs text-slate-500">{fmt(item.scheduled_at)}</p>
         <details className="mt-3 text-xs text-slate-400"><summary className="cursor-pointer font-bold">Why this score</summary><ul className="mt-2 list-disc space-y-1 pl-4">{item.score_reasons?.map((reason) => <li key={reason}>{reason}</li>)}</ul></details>
