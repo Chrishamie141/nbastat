@@ -245,6 +245,7 @@ def test_ai_writer_failure_uses_grounded_deterministic_fallback(engine, monkeypa
 def test_image_prompt_forbids_generated_authoritative_text(engine):
     prompt = prompts.creative_prompt({"away_team": "Bills", "home_team": "Steelers"}, "AI_PICK")
     assert "Do not render any words" in prompt and "deterministic data overlay" in prompt
+    assert "Avoid blank empty space" in prompt and "avoid UI-card shapes" in prompt
 
 
 def test_deterministic_overlay_and_media_metadata(engine):
@@ -262,6 +263,19 @@ def test_deterministic_overlay_and_media_metadata(engine):
                                storage=LocalMediaStorage(tmp_path / "media"), clock=lambda: at)
         row = connection.execute("SELECT * FROM social_media_assets WHERE media_asset_id=?", (asset["media_asset_id"],)).fetchone()
     assert row["status"] == "READY" and row["source_hash"] == "source-hash" and Path(row["storage_url"]).exists()
+
+
+def test_feed_graphic_keeps_authoritative_values_readable(engine):
+    pytest.importorskip("PIL")
+    context = {"post_type": "MODEL_VS_MARKET", "away_team": "Cleveland Browns",
+               "home_team": "Jacksonville Jaguars", "winner": "Jacksonville Jaguars",
+               "model_probability": .865, "market_probability": .541, "edge": .324}
+    payload = render_graphic(context, "MODEL_VS_MARKET")
+    from PIL import Image
+    image = Image.open(BytesIO(payload))
+    assert image.size == (1600, 900)
+    thumbnail = image.resize((600, 338))
+    assert thumbnail.getbbox() == (0, 0, 600, 338)
 
 
 def test_image_and_video_feature_flags_and_caps(engine, monkeypatch):
