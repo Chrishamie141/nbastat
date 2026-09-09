@@ -42,6 +42,25 @@ Treat `FAILED`, `UNKNOWN`, `PUBLISHING`, `SOURCE_STALE`, and
 `LAST_DELIVERY_REQUIRES_REVIEW` as operator alerts. An `UNKNOWN` delivery must
 be reconciled against its X post ID; it must never be blindly retried.
 
+## Event engine and bounded workers
+
+The daily endpoint is backward compatible, but now orchestrates a bounded event
+discovery and queue pass. Dedicated idempotent endpoints are also available for
+deployments that need a more frequent cadence:
+
+| Endpoint | Purpose | Default gate |
+| --- | --- | --- |
+| `/api/cron/social-discover` | Store grounded events, scores, queued and skipped opportunities | `SOCIAL_AUTOMATION_ENABLED` |
+| `/api/cron/social-process` | Materialize/process at most two due opportunities | `SOCIAL_SCHEDULER_ENABLED` plus all publishing gates |
+| `/api/cron/social-metrics` | Collect available X metrics for recent published posts | `SOCIAL_METRICS_ENABLED` |
+
+Every endpoint requires `Authorization: Bearer <CRON_SECRET>`. Add extra Vercel
+cron entries only after confirming plan limits and function duration. Queue work
+is intentionally resumable; a single invocation never generates unlimited media.
+
+Deploy with discovery enabled, `SOCIAL_DRY_RUN=true`, videos and replies off.
+Review the Social Operations screen before enabling any public-write setting.
+
 Production secrets belong only in Vercel's encrypted Production environment.
 The local synchronization and signing secrets live in the ignored,
 access-restricted `.runtime/week1/social-local.json`. Never commit either.

@@ -10,6 +10,7 @@ import sqlite3
 from typing import Any, Callable
 
 from backend.app.services import social_marketing
+from backend.app.services import social_operations_service
 from backend.app.services.operator_action_service import recent as recent_actions
 from backend.app.services.readiness_service import database_health, prediction_store_health
 
@@ -42,18 +43,20 @@ def _git_version() -> str:
 
 
 def _social(at: datetime) -> dict:
+    social_marketing.initialize()
+    summary = social_operations_service.summary(lambda: at)
     with social_marketing.connection() as connection:
         source_row = connection.execute("SELECT payload,verified_at FROM social_sources ORDER BY verified_at DESC LIMIT 1").fetchone()
         status_rows = connection.execute("SELECT status,COUNT(*) AS count FROM social_posts GROUP BY status").fetchall()
         last_post = connection.execute("SELECT scheduled_at,published_at,status FROM social_posts ORDER BY scheduled_at DESC LIMIT 1").fetchone()
     source = json.loads(source_row["payload"]) if source_row else {}
     source_at = datetime.fromisoformat(source_row["verified_at"]) if source_row else None
-    dry_run = os.getenv("DRY_RUN", "true").lower() != "false"
-    auto_publish = social_marketing.enabled("SOCIAL_AUTO_PUBLISH")
+    dry_run = summary["settings"]["dry_run"]
+    auto_publish = summary["settings"]["auto_publish"]
     expected_user = bool((os.getenv("X_EXPECTED_USER_ID") or "").strip())
     credentials = all(bool((os.getenv(name) or "").strip()) for name in
                       ("X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET"))
-    blocked = dry_run or not auto_publish or not expected_user
+    blocked = summary["publicWritesBlocked"] or not expected_user
     return {
         "status": "BLOCKED" if blocked else "ARMED", "credentialsConfigured": credentials,
         "dryRun": dry_run, "autoPublish": auto_publish, "accountVerificationComplete": expected_user,
@@ -64,10 +67,13 @@ def _social(at: datetime) -> dict:
         "lastDryRunGeneration": last_post["scheduled_at"] if last_post and last_post["status"] == "DRAFT" else None,
         "lastPublishAttempt": (last_post["published_at"] or last_post["scheduled_at"]) if last_post and last_post["status"] != "DRAFT" else None,
         "lastAttemptStatus": last_post["status"] if last_post else None, "verifiedAggregate": source,
+        "engineState": summary["engineState"], "queued": summary["queued"],
+        "reviewRequired": summary["reviewRequired"], "imagesGeneratedToday": summary["imagesGeneratedToday"],
+        "videosGeneratedToday": summary["videosGeneratedToday"], "nextScheduledPost": summary["nextScheduledPost"],
     }
 
 
-SOCIAL_POST_STATUSES = {"DRAFT", "PUBLISHING", "PUBLISHED", "FAILED", "UNKNOWN"}
+SOCIAL_POST_STATUSES = {"DRAFT", "READY", "QUEUED", "REVIEW", "MEDIA_GENERATING", "PUBLISHING", "PUBLISHED", "FAILED", "UNKNOWN", "SKIPPED", "CANCELLED"}
 
 
 def social_post_history(limit: int = 25, offset: int = 0, status: str | None = None) -> dict:
@@ -75,21 +81,36 @@ def social_post_history(limit: int = 25, offset: int = 0, status: str | None = N
     normalized = (status or "").strip().upper()
     if normalized and normalized not in SOCIAL_POST_STATUSES:
         raise ValueError("Unsupported social post status filter.")
-    where = " WHERE status=?" if normalized else ""
+    where = " WHERE p.status=?" if normalized else ""
     values: tuple[Any, ...] = (normalized,) if normalized else ()
+    social_marketing.initialize()
     with social_marketing.connection() as connection:
-        total_row = connection.execute(f"SELECT COUNT(*) AS count FROM social_posts{where}", values).fetchone()
+        total_row = connection.execute(f"SELECT COUNT(*) AS count FROM social_posts p{where}", values).fetchone()
         rows = connection.execute(
-            "SELECT post_id,category,content,generated_at,scheduled_at,published_at,"
-            f"x_post_id,status,failure_reason,day_key FROM social_posts{where} "
-            "ORDER BY COALESCE(published_at,scheduled_at) DESC,post_id DESC LIMIT ? OFFSET ?",
+            "SELECT p.post_id,p.category,p.content,p.generated_at,p.scheduled_at,p.published_at,"
+            "p.x_post_id,p.status,p.failure_reason,p.day_key,d.post_type,d.media_type,d.score,d.game_id,"
+            "a.media_asset_id,m.impressions,m.likes,m.replies,m.reposts,e.evidence_json "
+            "FROM social_posts p LEFT JOIN social_post_details d USING(post_id) "
+            "LEFT JOIN social_events e ON e.event_id=d.event_id "
+            "LEFT JOIN social_media_assets a ON a.media_asset_id=(SELECT a2.media_asset_id FROM social_media_assets a2 WHERE a2.post_id=p.post_id ORDER BY a2.version DESC LIMIT 1) "
+            "LEFT JOIN social_metrics m ON m.metric_id=(SELECT m2.metric_id FROM social_metrics m2 WHERE m2.post_id=p.post_id ORDER BY m2.collected_at DESC LIMIT 1) "
+            f"{where} ORDER BY COALESCE(p.published_at,p.scheduled_at) DESC,p.post_id DESC LIMIT ? OFFSET ?",
             values + (limit, offset),
         ).fetchall()
     items = []
     for row in rows:
         item = dict(row)
+        evidence = json.loads(item.pop("evidence_json") or "{}")
         item["category"] = str(item["category"]).split("|", 1)[0]
+        item["post_type"] = item.get("post_type") or item["category"]
+        item["matchup"] = " at ".join(value for value in (evidence.get("away_team"), evidence.get("home_team")) if value) or "Slate-wide"
+        item["mediaIndicator"] = item.get("media_type") or "text"
+        item["thumbnailUrl"] = f"/api/internal/operations/social/media/{item['media_asset_id']}/content" if item.get("media_asset_id") else None
         item["xUrl"] = f"https://x.com/i/status/{item['x_post_id']}" if item.get("x_post_id") else None
+        if item.get("impressions") not in (None, 0) and all(item.get(key) is not None for key in ("likes", "replies", "reposts")):
+            item["engagementRate"] = round((item["likes"] + item["replies"] + item["reposts"]) / item["impressions"], 6)
+        else:
+            item["engagementRate"] = None
         items.append(item)
     total = int(total_row["count"] if total_row else 0)
     return {"items": items, "total": total, "limit": limit, "offset": offset,

@@ -21,7 +21,7 @@ The preseason record is a small historical sample, never a promised future win r
 - `vercel.json`: daily production cron at **13:00 UTC** (9am New York during daylight
   saving time, 8am during standard time). Timing is not a real-time guarantee.
 
-Three dedicated tables:
+The compatibility ledger began with three dedicated tables:
 
 | Table | Purpose |
 | --- | --- |
@@ -42,6 +42,12 @@ from the table owner, install reviewed server-role RLS policies. Do not expose t
 database connection to browser clients or grant a browser role access to signing secrets.
 The current environment does not have a configured hosted social database; real PostgreSQL
 integration/deployment verification remains an operator prerequisite.
+
+The production-grade event engine, multi-post queue, media ledger, analytics,
+settings and engagement approval schema are documented in
+[`docs/social-operations.md`](social-operations.md). Legacy records remain visible
+after the version-2 in-place migration; the obsolete one-post-per-day constraint
+is removed without weakening per-event, per-content and per-delivery idempotency.
 
 Uniqueness constraints and PostgreSQL advisory locks / SQLite immediate transactions
 serialize daily generation and publication. A durable `PUBLISHING` claim commits before

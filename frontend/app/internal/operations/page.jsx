@@ -712,6 +712,9 @@ export default function OperationsPage() {
             />
             <HealthRow label="Last Post" value={automation.lastAttemptStatus || "NONE"} detail={fmt(automation.lastPublishAttempt)} />
           </dl>
+          <Link href="/internal/operations/social" className="btn btn-primary mt-5 inline-flex px-4 py-2">
+            Open Social Operations
+          </Link>
         </GlowCard>
         <GlowCard className="p-6">
           <div className="flex items-center justify-between">

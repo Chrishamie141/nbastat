@@ -18,6 +18,7 @@ from backend.app.config import get_config_status, print_config_status
 from backend.app.api.auth import router as auth_router
 from backend.app.api.billing import router as billing_router
 from backend.app.api.social_cron import router as social_cron_router
+from backend.app.api.social_operations import router as social_operations_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user
 from backend.app.services.sports_mode_service import get_sports_mode
@@ -68,6 +69,7 @@ app.add_middleware(CORSMiddleware, allow_origins=[frontend_origin], allow_creden
 app.include_router(auth_router)
 app.include_router(billing_router)
 app.include_router(social_cron_router)
+app.include_router(social_operations_router)
 
 @app.middleware("http")
 async def endpoint_observability(request: Request, call_next):

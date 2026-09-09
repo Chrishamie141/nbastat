@@ -8,6 +8,7 @@ from difflib import SequenceMatcher
 import hashlib
 import hmac
 import json
+import logging
 import os
 from pathlib import Path
 import re
@@ -16,6 +17,16 @@ from urllib.parse import urlsplit
 
 import requests
 from database_safety import assert_postgres_allowed, assert_sqlite_target, PRODUCTION_DATABASE
+from backend.app.services.social import opportunities as opportunity_service
+from backend.app.services.social import scheduler as queue_scheduler
+from backend.app.services.social import settings as social_settings
+from backend.app.services.social.content import validate_caption
+from backend.app.services.social.media.assets import storage_factory
+from backend.app.services.social.media.service import generate_media
+from backend.app.services.social.publisher import OfficialX
+from backend.app.services.social.storage import decoded, initialize_schema
+
+logger = logging.getLogger(__name__)
 
 
 def now(): return datetime.now(timezone.utc)
@@ -67,11 +78,7 @@ def initialize():
         c.execute('CREATE INDEX IF NOT EXISTS social_posts_status_schedule ON social_posts(status,scheduled_at)')
         c.execute('CREATE INDEX IF NOT EXISTS social_sources_verified ON social_sources(verified_at)')
         c.execute('''CREATE TABLE IF NOT EXISTS social_publish_days(day_key TEXT PRIMARY KEY,post_id TEXT NOT NULL)''')
-        if c.postgres:
-            # Dedicated server role only. No browser-client RLS policies are installed.
-            for table in ('social_sources','social_posts','social_publish_days'):
-                c.execute(f'ALTER TABLE {table} ENABLE ROW LEVEL SECURITY')
-                c.execute(f'REVOKE ALL ON TABLE {table} FROM anon, authenticated')
+        initialize_schema(c)
 
 
 def signing_key():
@@ -117,8 +124,49 @@ def source_from_databases(week_db,week3_db=PRODUCTION_DATABASE,clock=now):
     week_connection = sqlite3.connect(week_path.as_uri() + '?mode=ro', uri=True)
     week_connection.row_factory = sqlite3.Row
     try:
+        operational_schedule = regular["coverage"]["experiment"]["games"]
+        kickoff_by_game = {game["game_id"]: aware_dt(game.get("kickoff_time")) for game in operational_schedule}
         predictions = {row['game_id']: dict(row) for row in week_connection.execute(
-            'SELECT game_id,winner,probability,generated_at,model_version FROM forward_predictions')}
+            'SELECT game_id,winner,probability,generated_at,model_version,model_hash,prediction_hash FROM forward_predictions')}
+        finals = {row['game_id']: dict(row) for row in week_connection.execute('SELECT * FROM forward_finals')}
+        grades = {row['game_id']: dict(row) for row in week_connection.execute('SELECT * FROM forward_grades')}
+        wagers = {row['game_id'] for row in week_connection.execute('SELECT DISTINCT game_id FROM forward_wagers')}
+        markets = {}
+        for game_id in predictions:
+            captures = week_connection.execute("""SELECT retrieved_at,source_time,event_id,bookmaker,outcomes
+                FROM captures WHERE game_id=? AND market_type='h2h' ORDER BY retrieved_epoch""", (game_id,)).fetchall()
+            normalized = []
+            for market in captures:
+                observed_at = aware_dt(market['source_time'] or market['retrieved_at'])
+                kickoff = kickoff_by_game.get(game_id)
+                # Social comparisons must use legitimate historical pregame
+                # observations. A current or post-kickoff price can never be
+                # presented as model-vs-market evidence.
+                if not observed_at or not kickoff or observed_at >= kickoff:
+                    continue
+                outcomes = json.loads(market['outcomes'])
+                raw = []
+                for outcome in outcomes:
+                    price = float(outcome['price'])
+                    raw.append((-price / (-price + 100)) if price < 0 else (100 / (price + 100)))
+                total = sum(raw)
+                probabilities = {str(outcome['side']): raw[index] / total for index, outcome in enumerate(outcomes)} if total else {}
+                winner = predictions[game_id]['winner']
+                if winner in probabilities:
+                    normalized.append((market, probabilities))
+            if normalized:
+                first, latest = normalized[0], normalized[-1]
+                winner = predictions[game_id]['winner']
+                latest_probability = latest[1][winner]
+                markets[game_id] = {
+                    'snapshot_id': sha({'event_id': latest[0]['event_id'], 'bookmaker': latest[0]['bookmaker'],
+                                        'source_time': latest[0]['source_time']}),
+                    'bookmaker': latest[0]['bookmaker'], 'source_time': latest[0]['source_time'],
+                    'probability': latest_probability,
+                    'edge': predictions[game_id]['probability'] - latest_probability,
+                    'movement': latest_probability - first[1][winner] if len(normalized) > 1 else None,
+                    'underdog': min(latest[1], key=latest[1].get),
+                }
     finally:
         week_connection.close()
     operational_games = []
@@ -126,7 +174,10 @@ def source_from_databases(week_db,week3_db=PRODUCTION_DATABASE,clock=now):
         prediction = predictions.get(game["game_id"])
         operational_games.append({"game_id": game["game_id"], "away_team": game["away_team"],
                                   "home_team": game["home_team"], "kickoff_time": game["kickoff_time"],
-                                  "prediction": prediction})
+                                  "prediction": prediction, "market": markets.get(game["game_id"]),
+                                  "final": finals.get(game["game_id"]),
+                                  "grade": ({**grades[game["game_id"]], "qualified_wager": game["game_id"] in wagers}
+                                            if game["game_id"] in grades else None)})
     return dict(verified_at=clock().isoformat(),preseason=preseason,
                 regular={k:regular[k] for k in ('experiment_id','season','phase','week','manifest_hash','prediction_hash',
                           'predictions','scheduled','graded','winner_record','accuracy','profiles','sample_warning')},
@@ -327,10 +378,11 @@ def generate(clock=now,event=None):
     if day<0: raise ValueError('Campaign has not started')
     campaign=os.getenv('SOCIAL_CAMPAIGN','smartbets-launch-v1')
     today=clock().date().isoformat()
+    post_id=sha(dict(campaign=campaign,day=today))[:32]
     with connection() as c:
         if c.postgres: c.execute('SELECT pg_advisory_xact_lock(734121)')
         else: c.execute('BEGIN IMMEDIATE')
-        existing=c.execute('SELECT * FROM social_posts WHERE day_key=?',(today,)).fetchone()
+        existing=c.execute('SELECT * FROM social_posts WHERE post_id=?',(post_id,)).fetchone()
         if existing: return dict(existing)
         source_id,source=load_source(c,clock=clock)
         if event:
@@ -347,7 +399,6 @@ def generate(clock=now,event=None):
         for prior in c.execute('SELECT content FROM social_posts ORDER BY scheduled_at DESC LIMIT 7').fetchall():
             if SequenceMatcher(None,similarity(content),similarity(prior['content'])).ratio()>=.82:
                 raise ValueError('Near-duplicate content blocked; editorial review required')
-        post_id=sha(dict(campaign=campaign,day=today))[:32]
         generated=clock().isoformat()
         signed=dict(post_id=post_id,content=content,source_id=source_id,day=day,day_key=today,campaign=campaign)
         # Signature also covers template index, stored as category|index for deterministic revalidation.
@@ -357,62 +408,82 @@ def generate(clock=now,event=None):
         return dict(c.execute('SELECT * FROM social_posts WHERE post_id=?',(post_id,)).fetchone())
 
 
-class OfficialX:
-    def __init__(self):
-        from requests_oauthlib import OAuth1
-        names=('X_API_KEY','X_API_SECRET','X_ACCESS_TOKEN','X_ACCESS_TOKEN_SECRET')
-        credentials=[os.getenv(name) for name in names]
-        if not all(credentials): raise ValueError('Four OAuth 1.0a user-context credentials are required')
-        self.session=requests.Session()
-        self.session.auth=OAuth1(*credentials)
-
-    def verify_company(self):
-        expected=os.getenv('X_EXPECTED_USER_ID')
-        if not expected: raise ValueError('X_EXPECTED_USER_ID is required')
-        response=self.session.get('https://api.x.com/2/users/me',timeout=15,allow_redirects=False)
-        if response.status_code!=200 or response.json().get('data',{}).get('id')!=expected:
-            raise ValueError('X company-account verification failed')
-
-    def post(self,content):
-        return self.session.post('https://api.x.com/2/tweets',json={'text':content},timeout=20,allow_redirects=False)
-
-    def lookup(self,post_id):
-        if not re.fullmatch(r'[0-9]+',post_id):raise ValueError('Invalid X post ID')
-        return self.session.get(f'https://api.x.com/2/tweets/{post_id}',params={'tweet.fields':'author_id'},timeout=15,allow_redirects=False)
-
-
 def publish_one(post_id,clock=now,client_factory=OfficialX):
-    if os.getenv('DRY_RUN','true').lower()!='false' or not enabled('SOCIAL_AUTO_PUBLISH'):
+    initialize()
+    with connection() as c:
+        settings=social_settings.load_settings(c)
+    if settings['paused']:
+        return {'status':'PAUSED','post_id':post_id,'published':False}
+    if settings['dry_run'] or not settings['auto_publish']:
         return {'status':'DRY_RUN','post_id':post_id,'published':False}
     if os.getenv('VERCEL_ENV') not in (None,'production'):
         raise ValueError('Publishing is prohibited from preview/development deployments')
+    media=[];reply_to=None;claim_key='post:'+post_id
     with connection() as c:
         if c.postgres: c.execute('SELECT pg_advisory_xact_lock(734121)')
         else: c.execute('BEGIN IMMEDIATE')
         row=c.execute('SELECT * FROM social_posts WHERE post_id=?',(post_id,)).fetchone()
         if not row: raise ValueError('Post not found')
-        if row['status']!='DRAFT': return {'status':row['status'],'published':False}
+        # FAILED is considered only after the durable claim has proved that the
+        # failure happened before any public tweet write.  All other terminal
+        # states remain non-retryable.
+        if row['status'] not in ('DRAFT','READY','FAILED'): return {'status':row['status'],'published':False}
         _,source=load_source(c,row['source_id'],clock)
-        category,index=row['category'].rsplit('|',1)
-        _,content=render(int(index),source)
-        signed=dict(post_id=post_id,content=content,source_id=row['source_id'],day=int(index),day_key=row['day_key'],campaign=row['campaign'])
-        if (content!=row['content'] or sha(content)!=row['content_hash'] or not hmac.compare_digest(sign(signed),row['signature'])):
-            raise ValueError('Post content/stat authenticity check failed')
+        details=c.execute('SELECT * FROM social_post_details WHERE post_id=?',(post_id,)).fetchone()
+        if details:
+            context=decoded(details['source_context_json'],{})
+            content=validate_caption(row['content'],context)
+            signed=dict(post_id=post_id,content=content,source_id=row['source_id'],
+                        opportunity_id=details['opportunity_id'],source_hash=details['source_hash'])
+            integrity=sha(dict(signed=signed,context=context))
+            if (sha(content)!=row['content_hash'] or integrity!=details['integrity_hash']
+                    or not hmac.compare_digest(sign(signed),row['signature'])):
+                raise ValueError('Post content/stat authenticity check failed')
+            media_ids=decoded(details['media_asset_ids_json'],[])
+            for media_id in media_ids[-4:]:
+                asset=c.execute('SELECT * FROM social_media_assets WHERE media_asset_id=?',(media_id,)).fetchone()
+                if not asset or asset['status']!='READY' or asset['source_hash']!=details['source_hash']:
+                    raise ValueError('Post media authenticity check failed')
+                media.append(dict(asset))
+            reply_to=details['reply_to_x_post_id']
+        else:
+            category,index=row['category'].rsplit('|',1)
+            _,content=render(int(index),source)
+            signed=dict(post_id=post_id,content=content,source_id=row['source_id'],day=int(index),day_key=row['day_key'],campaign=row['campaign'])
+            if (content!=row['content'] or sha(content)!=row['content_hash'] or not hmac.compare_digest(sign(signed),row['signature'])):
+                raise ValueError('Post content/stat authenticity check failed')
         if row['day_key']!=clock().date().isoformat() or datetime.fromisoformat(row['scheduled_at'])>clock():
             raise ValueError('Post is not scheduled for today')
-        if c.execute('SELECT 1 FROM social_publish_days WHERE day_key=?',(row['day_key'],)).fetchone():
-            return {'status':'DAY_ALREADY_CLAIMED','published':False}
-        c.execute('INSERT INTO social_publish_days VALUES(?,?)',(row['day_key'],post_id))
+        prior=c.execute('SELECT state,last_error_code,attempt_count FROM social_delivery_claims WHERE idempotency_key=?',(claim_key,)).fetchone()
+        retryable_failure=prior and prior['state']=='FAILED' and prior['last_error_code'] in (
+            'ACCOUNT_OR_AUTH_VERIFICATION_FAILED','MEDIA_OR_DELIVERY_PRECHECK_FAILED')
+        if row['status']=='FAILED' and not retryable_failure:
+            return {'status':row['status'],'published':False}
+        if prior and (not retryable_failure or int(prior['attempt_count'])>=3):
+            return {'status':prior['state'],'published':False}
+        claimed=clock().isoformat()
+        if prior:
+            c.execute("UPDATE social_delivery_claims SET state='PUBLISHING',attempt_count=attempt_count+1,last_error_code=NULL,updated_at=? WHERE idempotency_key=?",
+                      (claimed,claim_key))
+        else:
+            c.execute("INSERT INTO social_delivery_claims(idempotency_key,post_id,claimed_at,state,attempt_count,updated_at) VALUES(?,? ,?,'PUBLISHING',1,?)",
+                      (claim_key,post_id,claimed,claimed))
         c.execute("UPDATE social_posts SET status='PUBLISHING' WHERE post_id=?",(post_id,))
     # A durable claim precedes all external writes. Crashes never cause blind reposting.
-    status,reason,x_id='FAILED',None,None
+    status,reason,x_id,remote_media,tweet_attempted='FAILED',None,None,[],False
     try:
         client=client_factory();client.verify_company()
     except Exception:
         reason='ACCOUNT_OR_AUTH_VERIFICATION_FAILED'
     else:
         try:
-            response=client.post(content)
+            store=storage_factory() if media else None
+            for asset in media:
+                payload=store.get(asset['storage_key'])
+                content_type='video/mp4' if asset['media_type']=='video' else 'image/png'
+                remote_media.append(client.upload(payload,content_type,asset['alt_text']))
+            tweet_attempted=True
+            response=client.post(content,remote_media,reply_to) if (remote_media or reply_to) else client.post(content)
             if response.status_code in (200,201):
                 x_id=response.json().get('data',{}).get('id')
                 status='PUBLISHED' if x_id else 'UNKNOWN'
@@ -422,18 +493,80 @@ def publish_one(post_id,clock=now,client_factory=OfficialX):
             else:
                 status,reason='FAILED',f'X_HTTP_{response.status_code}'
         except Exception:
-            status,reason='UNKNOWN','UNCERTAIN_DELIVERY_RECONCILE'
+            status,reason=('UNKNOWN','UNCERTAIN_DELIVERY_RECONCILE') if tweet_attempted else ('FAILED','MEDIA_OR_DELIVERY_PRECHECK_FAILED')
     with connection() as c:
         c.execute('UPDATE social_posts SET status=?,failure_reason=?,x_post_id=?,published_at=? WHERE post_id=?',
                   (status,reason,x_id,clock().isoformat() if status=='PUBLISHED' else None,post_id))
+        c.execute('UPDATE social_delivery_claims SET state=?,remote_media_ids_json=?,remote_post_id=?,last_error_code=?,updated_at=? WHERE idempotency_key=?',
+                  (status,encode(remote_media),x_id,reason,clock().isoformat(),claim_key))
+        if details:
+            c.execute('UPDATE social_opportunities SET status=?,updated_at=? WHERE opportunity_id=?',
+                      (status,clock().isoformat(),details['opportunity_id']))
+            for local_id,remote_id in zip(decoded(details['media_asset_ids_json'],[])[-4:],remote_media):
+                c.execute('UPDATE social_media_assets SET remote_media_id=?,updated_at=? WHERE media_asset_id=?',
+                          (remote_id,clock().isoformat(),local_id))
+            if reason=='MEDIA_OR_DELIVERY_PRECHECK_FAILED':
+                for local_id in decoded(details['media_asset_ids_json'],[])[-4:]:
+                    c.execute('UPDATE social_media_assets SET retry_count=retry_count+1,error_code=?,updated_at=? WHERE media_asset_id=?',
+                              (reason,clock().isoformat(),local_id))
+    logger.info("social_publish_result", extra={"postId": post_id, "status": status,
+                                                "mediaCount": len(remote_media), "failureCode": reason})
     return dict(status=status,post_id=post_id,published=status=='PUBLISHED',x_post_id=x_id,failure_reason=reason)
 
 
 def daily(clock=now):
     initialize()
-    post=generate(clock)
-    result=publish_one(post['post_id'],clock)
-    return dict(post=post,result=result)
+    discovered=discover_opportunities(clock)
+    processed=process_queue(clock=clock,limit=2)
+    if processed['processed']:
+        return dict(discovery=discovered,queue=processed,post=processed['items'][0].get('post'),result=processed['items'][0].get('result'))
+    # The compatibility generate() entry point remains available for explicit
+    # legacy callers, but the automated worker never manufactures a generic
+    # daily post when no verified opportunity is due.
+    return dict(discovery=discovered,queue=processed,post=None,
+                result={'status':'NO_DUE_OPPORTUNITY','published':False})
+
+
+def discover_opportunities(clock=now):
+    initialize()
+    with connection() as c:
+        source_id,source=load_source(c,clock=clock)
+        settings=social_settings.load_settings(c)
+        if not settings['automation_enabled'] or settings['paused']:
+            return {'status':'PAUSED','discovered':0,'opportunities':0,'items':[]}
+        result=opportunity_service.discover(c,source_id,source,settings,sha,clock)
+        logger.info("social_opportunity_discovery", extra={"sourceId":source_id,"discovered":result['discovered'],
+                                                           "queued":result['queued'],"review":result['review'],"skipped":result['skipped']})
+        return result
+
+
+def process_queue(clock=now,limit=2,client_factory=OfficialX):
+    initialize();items=[]
+    with connection() as c:
+        settings=social_settings.load_settings(c)
+        queued=queue_scheduler.due(c,settings,clock,limit)
+        for opportunity in queued:
+            post=queue_scheduler.materialize(c,opportunity['opportunity_id'],sha=sha,sign=sign,cta=cta(),clock=clock)
+            context=post.pop('context',None)
+            graphics_enabled=os.getenv('SOCIAL_DETERMINISTIC_GRAPHICS_ENABLED','true').lower()=='true'
+            if context and (settings['ai_images_enabled'] or graphics_enabled):
+                try:
+                    asset=generate_media(c,opportunity,post,context,settings,sha,clock=clock)
+                    if asset:
+                        c.execute('UPDATE social_post_details SET media_asset_ids_json=?,media_type=?,alt_text=?,updated_at=? WHERE post_id=?',
+                                  (encode([asset['media_asset_id']]),asset['media_type'],asset['alt_text'],clock().isoformat(),post['post_id']))
+                except Exception:
+                    c.execute("UPDATE social_opportunities SET status='REVIEW',skip_reason='MEDIA_GENERATION_FAILED',updated_at=? WHERE opportunity_id=?",
+                              (clock().isoformat(),opportunity['opportunity_id']))
+                    items.append({'opportunity_id':opportunity['opportunity_id'],'post':post,'status':'REVIEW','result':None})
+                    continue
+            items.append({'opportunity_id':opportunity['opportunity_id'],'post':post})
+    for item in items:
+        if item.get('status')=='REVIEW':continue
+        item['result']=publish_one(item['post']['post_id'],clock,client_factory)
+        item['status']=item['result']['status']
+    logger.info("social_queue_processed", extra={"processed":len(items),"statuses":[item.get('status') for item in items]})
+    return {'processed':len(items),'items':items}
 
 
 def reconcile_published(post_id,x_post_id,clock=now,client_factory=OfficialX):
@@ -453,6 +586,7 @@ def reconcile_published(post_id,x_post_id,clock=now,client_factory=OfficialX):
 
 
 def campaign_report():
+    initialize()
     with connection() as c:
         posts=[dict(r) for r in c.execute('SELECT post_id,campaign,category,content,source_id,generated_at,scheduled_at,published_at,x_post_id,status,failure_reason,content_hash FROM social_posts ORDER BY scheduled_at')]
         source=c.execute('SELECT verified_at FROM social_sources ORDER BY verified_at DESC LIMIT 1').fetchone()
@@ -463,6 +597,7 @@ def campaign_report():
             if age<timedelta(0) or age>timedelta(hours=36):alerts.append('SOURCE_STALE')
         if posts and posts[-1]['status'] in ('FAILED','UNKNOWN','PUBLISHING'):
             alerts.append('LAST_DELIVERY_REQUIRES_REVIEW')
-        return {'posts':posts,'categories':list(CATEGORIES),'alerts':alerts,
+        settings=social_settings.load_settings(c)
+        return {'posts':posts,'categories':list(CATEGORIES),'alerts':alerts,'settings':settings,
                 'latest_source_at':source['verified_at'] if source else None,
-                'dry_run':os.getenv('DRY_RUN','true').lower()!='false','auto_publish':enabled('SOCIAL_AUTO_PUBLISH')}
+                'dry_run':settings['dry_run'],'auto_publish':settings['auto_publish'],'paused':settings['paused']}

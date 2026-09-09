@@ -145,6 +145,25 @@ test("internal command center is a plain-language multi-sport owner dashboard", 
   assert.match(nav, /ownerPortal/);
 });
 
+test("social operations is a responsive owner control room with safety controls", () => {
+  const page = fs.readFileSync("app/internal/operations/social/page.jsx", "utf8");
+  const queue = fs.readFileSync("components/internal/social/SocialQueue.jsx", "utf8");
+  const settings = fs.readFileSync("components/internal/social/SocialSettings.jsx", "utf8");
+  const performance = fs.readFileSync("components/internal/social/SocialPerformance.jsx", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  assert.match(page, /Social Operations/);
+  assert.match(page, /PAUSE ALL SOCIAL/);
+  assert.match(page, /Content Studio/);
+  assert.match(page, /Skipped Opportunities/);
+  assert.match(page, /Media Library/);
+  assert.match(performance, /Not available from current X API access/);
+  assert.match(queue, /Post Now/);
+  assert.match(queue, /Regenerate image/);
+  assert.match(settings, /External auto replies/);
+  assert.match(api, /operations\/social\/queue/);
+  assert.match(api, /operations\/social\/metrics\/refresh/);
+});
+
 test("owner game flow exposes frozen prediction evidence and has no publish control", () => {
   const page = fs.readFileSync("app/internal/operations/page.jsx", "utf8");
   const game = fs.readFileSync("components/games/NflGameBreakdown.jsx", "utf8");

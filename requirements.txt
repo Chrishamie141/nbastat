@@ -13,3 +13,4 @@ httpx2
 psycopg[binary]>=3.2,<4
 requests-oauthlib>=2.0,<3
 jsonschema>=4,<5
+Pillow>=11,<13
