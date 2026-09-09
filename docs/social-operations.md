@@ -68,9 +68,12 @@ numbers, marks and logos. Pillow adds the verified overlay at 1600x900 and check
 format, dimensions and required values before storage.
 
 Videos are deterministic 10-20 second H.264 MP4s rendered with FFmpeg from the
-validated graphic. Set `SOCIAL_VIDEO_ENABLED=true` only after FFmpeg is present
-at `SOCIAL_FFMPEG_PATH`. A missing renderer holds the item safely; it never
-publishes malformed media. Optional narration is deliberately not enabled.
+validated graphic. The deployment includes a bounded FFmpeg binary through
+`imageio-ffmpeg`; `SOCIAL_FFMPEG_PATH` can still override it. When
+`SOCIAL_VIDEO_ENABLED=true`, daily/weekly recaps and streak milestones may use
+video while ordinary picks remain images. A missing renderer holds the item
+safely; it never publishes malformed media. Optional narration is deliberately
+not enabled.
 
 Generated assets are immutable versions. Regeneration creates a new asset row
 and storage object. Estimated cost appears only when the operator supplies a

@@ -22,7 +22,7 @@ from backend.app.services.social import scheduler as queue_scheduler
 from backend.app.services.social import settings as social_settings
 from backend.app.services.social.content import validate_caption
 from backend.app.services.social.media.assets import storage_factory
-from backend.app.services.social.media.service import generate_media
+from backend.app.services.social.media.service import generate_media, preferred_media_type
 from backend.app.services.social.publisher import OfficialX
 from backend.app.services.social.sources import build_server_source
 from backend.app.services.social.storage import decoded, initialize_schema
@@ -584,7 +584,9 @@ def process_queue(clock=now,limit=2,client_factory=OfficialX):
             graphics_enabled=os.getenv('SOCIAL_DETERMINISTIC_GRAPHICS_ENABLED','true').lower()=='true'
             if context and (settings['ai_images_enabled'] or graphics_enabled):
                 try:
-                    asset=generate_media(c,opportunity,post,context,settings,sha,clock=clock)
+                    media_type=preferred_media_type(opportunity,settings)
+                    asset=generate_media(c,opportunity,post,context,settings,sha,
+                                         requested_type=media_type,clock=clock)
                     if asset:
                         c.execute('UPDATE social_post_details SET media_asset_ids_json=?,media_type=?,alt_text=?,updated_at=? WHERE post_id=?',
                                   (encode([asset['media_asset_id']]),asset['media_type'],asset['alt_text'],clock().isoformat(),post['post_id']))

@@ -10,13 +10,26 @@ from pathlib import Path
 VIDEO_WIDTH, VIDEO_HEIGHT = 1280, 720
 
 
+def _binary() -> str | None:
+    configured = os.getenv("SOCIAL_FFMPEG_PATH", "ffmpeg")
+    resolved = shutil.which(configured)
+    if resolved:
+        return resolved
+    try:
+        from imageio_ffmpeg import get_ffmpeg_exe
+        bundled = get_ffmpeg_exe()
+        return bundled if bundled and Path(bundled).is_file() else None
+    except (ImportError, RuntimeError):
+        return None
+
+
 def available() -> bool:
-    return shutil.which(os.getenv("SOCIAL_FFMPEG_PATH", "ffmpeg")) is not None
+    return _binary() is not None
 
 
 def render_video(image: bytes, duration_seconds: int = 15) -> bytes:
-    binary = os.getenv("SOCIAL_FFMPEG_PATH", "ffmpeg")
-    if not shutil.which(binary):
+    binary = _binary()
+    if not binary:
         raise RuntimeError("FFMPEG_UNAVAILABLE")
     duration_seconds = max(10, min(int(duration_seconds), 20))
     with tempfile.TemporaryDirectory(prefix="smartbets-social-") as directory:

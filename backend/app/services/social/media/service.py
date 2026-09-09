@@ -15,6 +15,14 @@ from .video_renderer import VIDEO_HEIGHT, VIDEO_WIDTH, render_video
 from ..storage import decoded
 
 logger = logging.getLogger(__name__)
+VIDEO_CONTENT_TYPES = frozenset({"DAILY_RECAP", "WEEKLY_REPORT", "STREAK_MILESTONE"})
+
+
+def preferred_media_type(opportunity: dict[str, Any], settings: dict[str, Any]) -> str:
+    """Use scarce video capacity for recap/milestone formats, not every post."""
+    if settings["video_enabled"] and opportunity.get("content_type") in VIDEO_CONTENT_TYPES:
+        return "video"
+    return "image"
 
 
 def _configured_cost(name: str) -> float | None:

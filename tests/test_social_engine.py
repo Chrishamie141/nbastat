@@ -13,7 +13,7 @@ from backend.app.services.social import analytics, content, events, opportunitie
 from backend.app.services.social.media import prompts
 from backend.app.services.social.media.assets import LocalMediaStorage
 from backend.app.services.social.media.graphic_renderer import render_graphic
-from backend.app.services.social.media.service import generate_media
+from backend.app.services.social.media.service import generate_media, preferred_media_type
 from backend.app.services.social.publisher import OfficialX
 
 
@@ -274,6 +274,17 @@ def test_image_and_video_feature_flags_and_caps(engine, monkeypatch):
             generate_media(connection, {"opportunity_id": "o", "content_type": "AI_PICK", "game_id": "g", "source_hash": "h"},
                            {"post_id": None}, {"winner": "A", "model_probability": .6}, settings.environment_defaults(), social.sha,
                            storage=LocalMediaStorage(), clock=lambda: at)
+
+
+def test_video_is_reserved_for_enabled_recap_and_milestone_formats(engine):
+    config = settings.environment_defaults()
+    config["video_enabled"] = True
+    assert preferred_media_type({"content_type": "DAILY_RECAP"}, config) == "video"
+    assert preferred_media_type({"content_type": "WEEKLY_REPORT"}, config) == "video"
+    assert preferred_media_type({"content_type": "STREAK_MILESTONE"}, config) == "video"
+    assert preferred_media_type({"content_type": "AI_PICK"}, config) == "image"
+    config["video_enabled"] = False
+    assert preferred_media_type({"content_type": "DAILY_RECAP"}, config) == "image"
 
 
 def test_queue_materialization_pause_and_caption_grounding(engine):
