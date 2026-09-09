@@ -27,6 +27,7 @@ from backend.app.services.social.publisher import OfficialX
 from backend.app.services.social.storage import decoded, initialize_schema
 
 logger = logging.getLogger(__name__)
+SOCIAL_SCHEMA_LOCK_ID = 734120
 
 
 def now(): return datetime.now(timezone.utc)
@@ -68,6 +69,11 @@ def connection():
 
 def initialize():
     with connection() as c:
+        # Serverless requests may initialize the same fresh PostgreSQL database
+        # concurrently. Serialize all social DDL before taking table locks so
+        # parallel Command Center requests cannot deadlock one another.
+        if c.postgres:
+            c.execute('SELECT pg_advisory_xact_lock(?)', (SOCIAL_SCHEMA_LOCK_ID,))
         c.execute('''CREATE TABLE IF NOT EXISTS social_sources(source_id TEXT PRIMARY KEY,payload TEXT NOT NULL,
             signature TEXT NOT NULL,verified_at TEXT NOT NULL)''')
         c.execute('''CREATE TABLE IF NOT EXISTS social_posts(post_id TEXT PRIMARY KEY,campaign TEXT NOT NULL,

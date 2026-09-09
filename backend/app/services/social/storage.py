@@ -61,11 +61,16 @@ def initialize_schema(connection) -> None:
     This follows the repository's existing idempotent-initializer convention and
     records an explicit schema version.  It never touches predictions.db.
     """
+    connection.execute("""CREATE TABLE IF NOT EXISTS social_schema_migrations(
+        version INTEGER PRIMARY KEY,description TEXT NOT NULL,applied_at TEXT NOT NULL)""")
+    applied = connection.execute(
+        "SELECT MAX(version) AS version FROM social_schema_migrations"
+    ).fetchone()
+    if applied and int(applied["version"] or 0) >= 3:
+        return
     _remove_day_key_uniqueness(connection)
     connection.execute("CREATE INDEX IF NOT EXISTS social_posts_status_schedule ON social_posts(status,scheduled_at)")
     connection.execute("CREATE INDEX IF NOT EXISTS social_posts_day_status ON social_posts(day_key,status,published_at)")
-    connection.execute("""CREATE TABLE IF NOT EXISTS social_schema_migrations(
-        version INTEGER PRIMARY KEY,description TEXT NOT NULL,applied_at TEXT NOT NULL)""")
     connection.execute("""CREATE TABLE IF NOT EXISTS social_settings(
         setting_key TEXT PRIMARY KEY,value_json TEXT NOT NULL,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL)""")
     connection.execute("""CREATE TABLE IF NOT EXISTS social_events(

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from contextlib import contextmanager
 from io import BytesIO
 import json
 from pathlib import Path
@@ -70,6 +71,31 @@ def test_schema_migrates_legacy_day_key_to_multi_post(engine):
         connection.execute("INSERT INTO social_posts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values(2))
         assert connection.execute("SELECT COUNT(*) FROM social_posts WHERE day_key=?", (at.date().isoformat(),)).fetchone()[0] == 2
         assert connection.execute("SELECT MAX(version) FROM social_schema_migrations").fetchone()[0] == 3
+
+
+def test_postgres_initialization_locks_before_schema_ddl(monkeypatch):
+    statements = []
+
+    class FakeConnection:
+        postgres = True
+
+        def execute(self, sql, values=()):
+            statements.append((sql, values))
+
+    @contextmanager
+    def fake_connection():
+        yield FakeConnection()
+
+    monkeypatch.setattr(social, "connection", fake_connection)
+    monkeypatch.setattr(social, "initialize_schema", lambda connection: connection.execute("SCHEMA MIGRATION"))
+
+    social.initialize()
+
+    assert statements[0] == (
+        "SELECT pg_advisory_xact_lock(?)",
+        (social.SOCIAL_SCHEMA_LOCK_ID,),
+    )
+    assert statements[-1][0] == "SCHEMA MIGRATION"
 
 
 def test_scoring_is_explainable_and_deterministic(engine):
