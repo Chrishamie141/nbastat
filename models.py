@@ -52,6 +52,11 @@ class ParlayLeg:
     line: Optional[float] = None
     odds: Optional[int] = None
     notes: str = ""
+    provider: Optional[str] = None
+    bookmaker: Optional[str] = None
+    event_id: Optional[str] = None
+    market_timestamp: Optional[str] = None
+    market_kickoff: Optional[str] = None
 
 
 @dataclass(frozen=True)

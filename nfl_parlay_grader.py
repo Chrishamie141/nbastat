@@ -71,11 +71,15 @@ def _actual_player_value(leg: dict[str, Any], final_stats: dict[str, Any]) -> fl
 
 
 def _grade_player_leg(leg: dict[str, Any], final_stats: dict[str, Any]) -> str:
+    if leg.get("void"):
+        return "void"
     actual = _actual_player_value(leg, final_stats)
     if actual is None or leg.get("line") is None:
         return "pending"
     line = float(leg["line"])
     side = _prediction_side(leg)
+    if actual == line:
+        return "push"
     return "hit" if (actual < line if side == "under" else actual > line) else "missed"
 
 
@@ -89,26 +93,41 @@ def _grade_team_leg(leg: dict[str, Any], team_results: dict[str, Any]) -> str:
         return "pending"
     if market == "MONEYLINE":
         won = result.get("won")
+        if result.get("void"):
+            return "void"
+        if result.get("tied"):
+            return "push"
         return "pending" if won is None else ("hit" if won else "missed")
     if market == "SPREAD":
         margin = result.get("margin")
         if margin is None or leg.get("line") is None:
             return "pending"
-        return "hit" if float(margin) + float(leg["line"]) > 0 else "missed"
+        adjusted = float(margin) + float(leg["line"])
+        return "push" if adjusted == 0 else "hit" if adjusted > 0 else "missed"
     if market == "TOTAL":
         total = result.get("total")
         if total is None or leg.get("line") is None:
             return "pending"
         side = _prediction_side(leg)
-        return "hit" if (float(total) < float(leg["line"]) if side == "under" else float(total) > float(leg["line"])) else "missed"
+        actual_total, line = float(total), float(leg["line"])
+        if actual_total == line:
+            return "push"
+        return "hit" if (actual_total < line if side == "under" else actual_total > line) else "missed"
     return "pending"
 
 
 def _overall_status(results: list[str]) -> str:
     if any(result == "missed" for result in results):
         return "missed"
-    if results and all(result == "hit" for result in results):
+    if not results or any(result == "pending" for result in results):
+        return "pending"
+    active = [result for result in results if result not in {"push", "void"}]
+    if active and all(result == "hit" for result in active):
         return "hit"
+    if any(result == "push" for result in results):
+        return "push"
+    if all(result == "void" for result in results):
+        return "void"
     return "pending"
 
 

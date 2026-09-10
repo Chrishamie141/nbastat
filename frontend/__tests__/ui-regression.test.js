@@ -104,6 +104,34 @@ test("multi-game builder has a real generation action and explains rejected legs
   assert.match(api, /multiGameParlay/);
 });
 
+test("parlays enforce game identity and explain final read-only state", () => {
+  const page = fs.readFileSync("app/parlays/page.jsx", "utf8");
+  assert.match(page, /gameId:\s*selectedGame\.game_id/);
+  assert.match(page, /seasonType/);
+  assert.match(page, /New pregame parlays are locked/);
+  assert.match(page, /No sample legs were substituted/);
+});
+
+test("history renders durable prediction settlement evidence", () => {
+  const page = fs.readFileSync("app/history/page.jsx", "utf8");
+  assert.match(page, /Original pick/);
+  assert.match(page, /r\.settledAt/);
+  assert.match(page, /r\.awayScore/);
+  assert.match(page, /r\.resultStatus === "WON"/);
+});
+
+test("command center exposes owner-only NFL audit and SGP lab", () => {
+  const page = fs.readFileSync("app/internal/operations/page.jsx", "utf8");
+  const panel = fs.readFileSync("components/internal/NflProductionHealth.jsx", "utf8");
+  const api = fs.readFileSync("lib/api.js", "utf8");
+  assert.match(page, /NflProductionHealth/);
+  assert.match(panel, /Run Production Audit/);
+  assert.match(panel, /SAFE/);
+  assert.match(panel, /BALANCED/);
+  assert.match(panel, /AGGRESSIVE/);
+  assert.match(api, /api\/internal\/operations\/nfl-production/);
+});
+
 test("internal Week 3 experiment dashboard separates predictions from wagers", () => {
   const page = fs.readFileSync(
     "app/internal/experiments/week3/page.jsx",

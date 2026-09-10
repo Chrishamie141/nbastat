@@ -1,6 +1,7 @@
 import json
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
 from nfl_parlay_grader import grade_nfl_parlays
+from nfl_parlay_grader import _grade_player_leg, _grade_team_leg, _overall_status
 from prediction_storage import load_parlay_history, save_parlay_result
 
 
@@ -65,3 +66,11 @@ def test_grade_nfl_parlays_leaves_pending_when_finals_unavailable(tmp_path, monk
 
     assert summaries == []
     assert rows[0]["result_status"] == "pending"
+
+
+def test_push_and_void_do_not_become_losses():
+    assert _grade_player_leg({"player": "A", "stat_type": "RECEPTIONS", "line": 5, "side": "over"}, {"A": {"RECEPTIONS": 5}}) == "push"
+    assert _grade_team_leg({"team": "SEA", "stat_type": "SPREAD", "line": -3}, {"SEA": {"margin": 3}}) == "push"
+    assert _grade_team_leg({"team": "SEA", "stat_type": "TOTAL", "line": 40, "side": "under"}, {"SEA": {"total": 40}}) == "push"
+    assert _overall_status(["hit", "push"]) == "hit"
+    assert _overall_status(["void", "void"]) == "void"

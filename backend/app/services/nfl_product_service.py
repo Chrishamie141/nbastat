@@ -589,6 +589,25 @@ def _prediction_snapshots(user_id: int, season: int, week: int | None = None,
     return snapshots
 
 
+def _canonical_prediction_snapshots(season: int, season_type: str) -> dict[str, dict]:
+    """Return one published model snapshot per game, preferring system rows."""
+    _initialize_predictions()
+    with get_db_connection() as connection:
+        rows = connection.execute("""SELECT user_id,game_id,generated_at,model_version,prediction_json
+            FROM nfl_game_predictions WHERE season=? AND season_type=? ORDER BY id""",
+            (season, _season_type(season_type))).fetchall()
+    snapshots: dict[str, dict] = {}
+    owners: dict[str, int] = {}
+    for row in rows:
+        game_id = row["game_id"]
+        if game_id in snapshots and not (row["user_id"] == 0 and owners[game_id] != 0):
+            continue
+        snapshots[game_id] = {**json.loads(row["prediction_json"]), "generatedAt": row["generated_at"],
+                              "modelVersion": row["model_version"]}
+        owners[game_id] = row["user_id"]
+    return snapshots
+
+
 def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | None = None,
                  season_type: str = "regular") -> dict:
     started = perf_counter()
@@ -771,7 +790,7 @@ def historical_games(season: int, user_id: int, season_type: str = "regular") ->
     season_type = _season_type(season_type)
     user_snapshots = _prediction_snapshots(user_id, season, season_type=season_type)
     system_snapshots = user_snapshots if user_id == 0 else _prediction_snapshots(0, season, season_type=season_type)
-    snapshots = {**user_snapshots, **system_snapshots}
+    snapshots = {**_canonical_prediction_snapshots(season, season_type), **user_snapshots, **system_snapshots}
     completed = []
     for week in range(0 if season_type == "preseason" else 1, 6 if season_type == "preseason" else 19):
         try:

@@ -164,6 +164,10 @@ function Builder() {
         await api.nfl.parlay({
           mode: "same_game",
           difficulty: profile,
+          gameId: selectedGame.game_id,
+          season,
+          week,
+          seasonType,
           homeTeam: selectedGame.home_team,
           awayTeam: selectedGame.away_team,
         }),
@@ -355,9 +359,13 @@ function SelectionPanel({
             <button
               className="btn btn-primary mt-4 w-full"
               onClick={generateSameGame}
+              disabled={selectedGame.status !== "scheduled"}
             >
               Build verified same-game parlay
             </button>
+            {selectedGame.status !== "scheduled" && (
+              <p className="mt-3 text-sm text-amber-200">This result is final and remains available for review only. New pregame parlays are locked.</p>
+            )}
           </>
         ) : (
           <p className="mt-3 text-sm text-slate-400">

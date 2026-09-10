@@ -219,6 +219,8 @@ def get_nfl_player_props(team: str | None = None, game_teams: tuple[str, str] | 
                             "bookmaker": bookmaker.get("title"),
                             "provider": "the-odds-api",
                             "event_id": event.get("id") or event_id,
+                            "last_update": market.get("last_update") or bookmaker.get("last_update"),
+                            "commence_time": event.get("commence_time") or game.get("commence_time"),
                         })
         if not props:
             raise ValueError("The Odds API event odds endpoint returned no NFL player props")
@@ -365,14 +367,23 @@ def get_nfl_player_recent_stats(player: str | None = None, team: str | None = No
                     normalized[name].setdefault(key.upper(), []).append(value)
         return normalized
     def sample():
-        runtime = _runtime_recent_stats(player=player, team=team)
-        if runtime:
-            return runtime
         rows = {name: data for name, data in NFL_SAMPLE_RECENT_STATS.items() if (not player or player.lower() in name.lower())}
         if team:
             rows = {name: data for name, data in rows.items() if data.get("team") == team.upper()}
         return rows
-    return _provider_get(fetch, sample, "NFL player recent stats")
+    try:
+        live = fetch()
+        if live:
+            return live
+        failure = "provider returned no usable rows"
+    except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+        failure = f"provider failed ({exc})"
+    runtime = _runtime_recent_stats(player=player, team=team)
+    if runtime:
+        print(f"NFL current-week player stats unavailable: {failure}. Using the versioned local prior-season history artifact.")
+        return runtime
+    _fallback(f"NFL player recent stats {failure}")
+    return sample()
 
 
 def get_nfl_injuries(team: str | None = None) -> list[dict[str, Any]]:

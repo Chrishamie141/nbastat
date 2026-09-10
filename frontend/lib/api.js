@@ -52,6 +52,12 @@ export const api = {
   internal: {
     operations: () => request('/api/internal/operations'),
     operationsHealth: () => request('/api/internal/operations/health'),
+    nflProduction: ({ season, seasonType = 'regular', week }) =>
+      request(`/api/internal/operations/nfl-production/${season}/${seasonType}/${week}`),
+    runNflProductionAudit: ({ season, seasonType = 'regular', week }) =>
+      request(`/api/internal/operations/nfl-production/${season}/${seasonType}/${week}/audit`, { method: 'POST', timeoutMs: 30000 }),
+    runNflProductionLifecycle: ({ season, seasonType = 'regular', week }) =>
+      request(`/api/internal/operations/nfl-production/${season}/${seasonType}/${week}/lifecycle`, { method: 'POST', timeoutMs: 90000 }),
     socialPosts: ({ limit = 25, offset = 0, status = 'ALL' } = {}) =>
       request(`/api/internal/operations/social-posts?limit=${limit}&offset=${offset}${status === 'ALL' ? '' : `&status=${encodeURIComponent(status)}`}`),
     social: {

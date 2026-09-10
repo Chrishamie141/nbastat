@@ -16,6 +16,7 @@ import {
   Workflow,
 } from "lucide-react";
 import GlowCard from "@/components/ui/GlowCard";
+import NflProductionHealth from "@/components/internal/NflProductionHealth";
 import { api } from "@/lib/api";
 import { ownerStatus, ownerTerms } from "@/lib/ownerTerminology";
 
@@ -686,6 +687,8 @@ export default function OperationsPage() {
           </div>
         </GlowCard>
       </section>
+
+      <NflProductionHealth season={2026} seasonType="regular" week={1} />
 
       <section className="mt-8 grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
         <GlowCard id="automation" className="p-6">

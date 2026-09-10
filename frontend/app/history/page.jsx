@@ -96,14 +96,22 @@ function Inner() {
                   </div>
                 ))
               : rows.map((r, i) => (
-                  <div key={i} className="rounded-2xl bg-white/5 p-4">
+                  <div key={`${r.action}-${r.id || i}`} className="rounded-2xl bg-white/5 p-4">
                     <div className="flex flex-wrap justify-between gap-3">
                       <b>
                         {r.date} · {r.sport} · {r.action}
                       </b>
-                      <span className="tag">{r.resultStatus}</span>
+                      <span className={`tag ${r.resultStatus === "WON" ? "text-emerald-300" : r.resultStatus === "LOST" ? "text-red-300" : ""}`}>{r.resultStatus}</span>
                     </div>
                     <p className="mt-2 text-gray-400">{r.summary}</p>
+                    {r.action === "Prediction" && (
+                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-slate-300">
+                        <p>{r.matchup} · Original pick: <b>{r.predictedWinner}</b>{r.modelProbability != null ? ` · ${(r.modelProbability * 100).toFixed(1)}%` : ""}</p>
+                        {r.awayScore != null && r.homeScore != null && (
+                          <p className="mt-1">Final: {r.awayScore}–{r.homeScore} · Settled {r.settledAt ? new Date(r.settledAt).toLocaleString() : "pending"}</p>
+                        )}
+                      </div>
+                    )}
                     <p className="mt-2 text-sm text-gray-500">
                       Data mode: {r.dataMode}
                     </p>

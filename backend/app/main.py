@@ -37,6 +37,7 @@ from backend.app.services.parlay_history_service import load_web_parlays, save_w
 from backend.app.services.nfl_product_service import (
     build_multi_game_parlay, current_week_context, delete_depth_chart, fantasy_depth_chart_data,
     historical_games, list_depth_charts, nfl_season_year, prediction_performance, save_depth_chart, weekly_board,
+    _schedule,
 )
 from backend.app.services.nfl_experiment_service import (
     ExperimentIntegrityError, experiment_dashboard, grade_experiment,
@@ -44,6 +45,13 @@ from backend.app.services.nfl_experiment_service import (
 from backend.app.services.operations_dashboard_service import command_center, social_post_history, week1_db_path
 from backend.app.services.operator_action_service import start as start_operator_action, finish as finish_operator_action
 from backend.app.services import nfl_server_automation
+from backend.app.services.nfl_production_service import (
+    audit_week as audit_nfl_production_week,
+    benchmark_performance as nfl_benchmark_performance,
+    latest_audit as latest_nfl_production_audit,
+    prediction_history as nfl_prediction_history,
+    run_lifecycle as run_nfl_production_lifecycle,
+)
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
@@ -290,6 +298,48 @@ def api_internal_nfl_automation(user=Depends(require_internal_access)):
         raise HTTPException(503, "Server-side NFL automation status is temporarily unavailable.") from exc
 
 
+@app.get("/api/internal/operations/nfl-production/{season}/{season_type}/{week}")
+def api_internal_nfl_production(season: int, season_type: str, week: int,
+                                user=Depends(require_internal_access)):
+    try:
+        return {
+            "latestAudit": latest_nfl_production_audit(season=season, season_type=season_type, week=week),
+            "performance": nfl_benchmark_performance(season=season, season_type=season_type, week=week),
+        }
+    except Exception as exc:
+        logger.exception("nfl_production_dashboard_failed")
+        raise HTTPException(503, "NFL production health is temporarily unavailable.") from exc
+
+
+@app.post("/api/internal/operations/nfl-production/{season}/{season_type}/{week}/audit")
+def api_internal_run_nfl_production_audit(season: int, season_type: str, week: int,
+                                          user=Depends(require_internal_access)):
+    action_id = start_operator_action("RUN_NFL_PRODUCTION_AUDIT", operator_actor(user), f"NFL-{season}-{season_type}-{week}")
+    try:
+        report = audit_nfl_production_week(season=season, season_type=season_type, week=week)
+        finish_operator_action(action_id, result="SUCCEEDED" if report["result"] == "PASS" else "FAILED",
+                               status_change=f"result={report['result']} warnings={len(report['warnings'])}")
+        return {"actionId": action_id, **report}
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("nfl_production_audit_failed")
+        raise HTTPException(503, "NFL production audit could not complete.") from exc
+
+
+@app.post("/api/internal/operations/nfl-production/{season}/{season_type}/{week}/lifecycle")
+def api_internal_run_nfl_lifecycle(season: int, season_type: str, week: int,
+                                   user=Depends(require_internal_access)):
+    action_id = start_operator_action("RUN_NFL_PRODUCTION_LIFECYCLE", operator_actor(user), f"NFL-{season}-{season_type}-{week}")
+    try:
+        result = run_nfl_production_lifecycle(season=season, season_type=season_type, week=week)
+        finish_operator_action(action_id, result="SUCCEEDED", status_change=f"audit={result['audit']['result']}")
+        return {"actionId": action_id, **result}
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("nfl_production_lifecycle_failed")
+        raise HTTPException(503, "NFL production lifecycle could not complete safely.") from exc
+
+
 @app.get("/api/internal/operations/social-posts")
 def api_internal_social_posts(limit: int=Query(25, ge=1, le=100), offset: int=Query(0, ge=0),
                               status: str | None=Query(None, pattern="^(DRAFT|PUBLISHING|PUBLISHED|FAILED|UNKNOWN)$"),
@@ -490,6 +540,18 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
         if parlay_mode=="same_game":
             home=str(payload.get("homeTeam") or "").upper(); away=str(payload.get("awayTeam") or "").upper()
             if not home or not away: raise HTTPException(400,"Choose one NFL game before building a same-game parlay.")
+            game_id=str(payload.get("gameId") or "")
+            if not game_id: raise HTTPException(400,"Choose a verified NFL game before building a same-game parlay.")
+            season=int(payload.get("season") or nfl_season_year()); week=int(payload.get("week") or 1)
+            season_type=str(payload.get("seasonType") or "regular")
+            games=_schedule(season,week,season_type)
+            selected=next((game for game in games if str(game.get("game_id"))==game_id),None)
+            if not selected: raise HTTPException(404,"The selected game is not part of this verified weekly slate.")
+            if selected.get("home_team")!=home or selected.get("away_team")!=away:
+                raise HTTPException(409,"The selected matchup changed. Refresh the weekly board before building.")
+            kickoff=datetime.fromisoformat(str(selected["kickoff_time"]).replace("Z","+00:00"))
+            if selected.get("status")!="scheduled" or kickoff<=datetime.now(timezone.utc):
+                raise HTTPException(409,"This game has started or finished. Historical games are read-only and cannot produce a new pregame parlay.")
             game_teams=(home,away)
         if game_teams:
             result=build_nfl_parlay(payload.get("difficulty") or "BALANCED", team=team.upper() if team else None,
@@ -501,7 +563,10 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
         save="not saved"
         if legs:
             try:
-                save=f"saved #{save_web_parlay(result,user_id=int(user['id']),model_version=NFL_WEB_MODEL_VERSION)}"
+                context = ({"gameId": game_id, "season": season, "seasonType": season_type,
+                            "week": week, "kickoffTime": selected["kickoff_time"]}
+                           if game_teams else {})
+                save=f"saved #{save_web_parlay(result,user_id=int(user['id']),model_version=NFL_WEB_MODEL_VERSION,context=context)}"
             except Exception:
                 logger.exception("NFL prediction generated but parlay history persistence failed")
                 save="prediction generated; history save unavailable"
@@ -534,7 +599,13 @@ def nfl_multi_game_parlay(payload: dict, user=Depends(require_full_access)):
     save = "not saved"
     if legs:
         try:
-            save = f"saved #{save_web_parlay(result, user_id=int(user['id']), model_version='nfl_weekly_moneyline_v1')}"
+            season = int(payload.get("season") or nfl_season_year())
+            week = int(payload.get("week") or 1)
+            season_type = str(payload.get("seasonType") or "regular")
+            game_ids = {str(selection.get("team") or "").upper(): str(selection.get("gameId"))
+                        for selection in selections if selection.get("gameId")}
+            save = f"saved #{save_web_parlay(result, user_id=int(user['id']), model_version='nfl_weekly_moneyline_v1', context={
+                'season': season, 'seasonType': season_type, 'week': week, 'legGameIds': game_ids})}"
         except Exception:
             logger.exception("Multi-game parlay generated but history persistence failed")
             save = "prediction generated; history save unavailable"
@@ -609,13 +680,16 @@ def nba_perf(user=Depends(require_full_access)): return performance()
 
 @app.get("/api/history")
 def history(tab: str=Query("All"), user=Depends(require_full_access)):
-    rows=_history_rows(None,None,int(user["id"]))
+    prediction_rows=nfl_prediction_history(user_id=int(user["id"]))
+    parlay_rows=_history_rows(None,None,int(user["id"]))
+    rows=prediction_rows+parlay_rows
+    rows.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
     t=tab.lower()
     if t in {"nfl","nba"}: rows=[r for r in rows if r["sport"].lower()==t]
-    if t=="graded": rows=[r for r in rows if r["resultStatus"]!="pending"]
-    if t=="ungraded": rows=[r for r in rows if r["resultStatus"]=="pending"]
-    if t=="predictions": rows=[]
-    if t=="parlays": rows=rows
+    if t=="graded": rows=[r for r in rows if str(r["resultStatus"]).lower()!="pending"]
+    if t=="ungraded": rows=[r for r in rows if str(r["resultStatus"]).lower()=="pending"]
+    if t=="predictions": rows=prediction_rows
+    if t=="parlays": rows=parlay_rows
     return {"items":rows[:50]}
 @app.get("/api/performance")
 def performance(user=Depends(require_full_access)): return {"metrics":_metrics(),"series":[]}

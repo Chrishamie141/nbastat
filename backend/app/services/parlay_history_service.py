@@ -29,6 +29,14 @@ def initialize_parlay_history_database() -> None:
             connection.execute("ALTER TABLE parlay_history ADD COLUMN user_id BIGINT")
         if not column_exists(connection, "parlay_history", "model_version"):
             connection.execute("ALTER TABLE parlay_history ADD COLUMN model_version TEXT")
+        additions = {
+            "game_id": "TEXT", "season": "INTEGER", "season_type": "TEXT", "week": "INTEGER",
+            "kickoff_time": "TEXT", "settled_at": "TEXT", "source_type": "TEXT DEFAULT 'USER'",
+            "game_ids_json": "TEXT",
+        }
+        for column, definition in additions.items():
+            if not column_exists(connection, "parlay_history", column):
+                connection.execute(f"ALTER TABLE parlay_history ADD COLUMN {column} {definition}")
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_parlay_history_user_created ON parlay_history(user_id, created_at)"
         )
@@ -46,34 +54,55 @@ def _legs(parlay_result) -> list[dict]:
             "prediction": leg.prediction,
             "confidence": leg.confidence,
             "notes": leg.notes,
+            "provider": getattr(leg, "provider", None),
+            "bookmaker": getattr(leg, "bookmaker", None),
+            "event_id": getattr(leg, "event_id", None),
+            "market_timestamp": getattr(leg, "market_timestamp", None),
+            "market_kickoff": getattr(leg, "market_kickoff", None),
         }
         for leg in parlay_result.parlay.legs
     ]
 
 
-def save_web_parlay(parlay_result, *, user_id: int, model_version: str) -> int:
+def save_web_parlay(parlay_result, *, user_id: int, model_version: str,
+                    context: dict | None = None) -> int:
     initialize_parlay_history_database()
     parlay = parlay_result.parlay
+    context = context or {}
+    legs = _legs(parlay_result)
+    leg_games = context.get("legGameIds") or {}
+    for leg in legs:
+        game_id = leg_games.get(str(leg.get("team") or "").upper()) or context.get("gameId")
+        if game_id:
+            leg["game_id"] = game_id
     with get_db_connection() as connection:
         inserted = connection.execute(
             """
             INSERT INTO parlay_history (
                 user_id, sport, created_at, difficulty, legs_json,
                 estimated_odds, combined_probability, result_status, notes,
-                model_version
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+                model_version, game_id, season, season_type, week, kickoff_time,
+                source_type, game_ids_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
             """,
             (
                 user_id,
                 getattr(parlay.sport, "value", parlay.sport),
                 parlay.created_at,
                 getattr(parlay.difficulty, "value", parlay.difficulty),
-                json.dumps(_legs(parlay_result)),
+                json.dumps(legs),
                 parlay_result.estimated_odds,
                 parlay_result.combined_probability,
                 parlay_result.result_status,
                 parlay_result.notes or parlay.notes,
                 model_version,
+                context.get("gameId"),
+                context.get("season"),
+                context.get("seasonType"),
+                context.get("week"),
+                context.get("kickoffTime"),
+                "USER",
+                json.dumps(sorted(set(leg_games.values()))) if leg_games else None,
             ),
         ).fetchone()
     return int(inserted["id"])

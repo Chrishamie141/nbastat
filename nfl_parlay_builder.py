@@ -428,6 +428,11 @@ def _evaluate_candidate(player_name, stat_type, line_info, recent_stats, injurie
                 f"{data_label}"
             ),
             "sample_offline": _is_sample_line(cleaned_line),
+            "provider": cleaned_line.get("provider"),
+            "bookmaker": cleaned_line.get("bookmaker"),
+            "event_id": cleaned_line.get("event_id"),
+            "market_timestamp": cleaned_line.get("last_update"),
+            "market_kickoff": cleaned_line.get("commence_time"),
         }
 
     return CandidateEvaluation(
@@ -470,6 +475,11 @@ def _candidate_to_leg(candidate):
         prediction=candidate["prediction"],
         confidence=candidate["confidence"],
         notes=candidate["notes"],
+        provider=candidate.get("provider"),
+        bookmaker=candidate.get("bookmaker"),
+        event_id=candidate.get("event_id"),
+        market_timestamp=candidate.get("market_timestamp"),
+        market_kickoff=candidate.get("market_kickoff"),
     )
 
 

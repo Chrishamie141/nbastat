@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 import asyncio
+import pytest
+from fastapi import HTTPException
 
 from models import DifficultyLevel, SportType
 
@@ -48,6 +50,19 @@ def test_web_prediction_survives_history_save_failure(monkeypatch):
     assert response["modelVersion"] == "nfl_player_prop_matchup_v2"
     assert response["modelStatus"]["serving"] == "LATEST_DEPLOYABLE"
     assert response["modelStatus"]["researchPolicyState"] == "FROZEN_SHADOW_ONLY"
+
+
+def test_same_game_parlay_is_blocked_server_side_after_final(monkeypatch):
+    import backend.app.main as api
+    monkeypatch.setattr(api, "_schedule", lambda *_args: [{
+        "game_id": "espn-1", "home_team": "SEA", "away_team": "NE",
+        "kickoff_time": "2026-09-10T00:20:00Z", "status": "final",
+    }])
+    with pytest.raises(HTTPException) as exc:
+        api.nfl_parlay({"mode": "same_game", "gameId": "espn-1", "season": 2026, "week": 1,
+                        "seasonType": "regular", "homeTeam": "SEA", "awayTeam": "NE"}, user={"id": 7})
+    assert exc.value.status_code == 409
+    assert "read-only" in str(exc.value.detail)
 
 
 def test_web_parlay_history_uses_configured_database(monkeypatch, tmp_path):
