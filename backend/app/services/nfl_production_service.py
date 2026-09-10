@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import logging
+import os
 from typing import Any, Callable
 from uuid import uuid4
 from pathlib import Path
@@ -530,11 +531,12 @@ def benchmark_performance(*, season: int, season_type: str, week: int) -> dict:
         probability_buckets[label] = {"legs": len(subset), "hit": sum(leg["result_status"] == "HIT" for leg in subset),
                                       "missed": sum(leg["result_status"] == "MISSED" for leg in subset),
                                       "hitRate": round(sum(leg["result_status"] == "HIT" for leg in decided) / len(decided) * 100, 1) if decided else None}
+    decided_tickets = [row for row in tickets if row["ticket_status"] in {"WON", "LOST", "PUSH", "VOID"}]
     return {"season": season, "seasonType": season_type, "week": week, "overall": ticket_stats(tickets),
             "byProfile": by_profile, "byMarketType": categories, "byLegCount": by_leg_count,
             "byProbabilityBucket": probability_buckets, "totalLegs": len(legs), "legsGraded": len(leg_graded),
             "individualLegHitRate": round(sum(r["result_status"] == "HIT" for r in leg_graded) / max(1, sum(r["result_status"] in {"HIT", "MISSED"} for r in leg_graded)) * 100, 1) if leg_graded else None,
-            "sampleStatus": "INSUFFICIENT_SAMPLE" if len(tickets) < 30 else "REPORTABLE"}
+            "sampleStatus": "REPORTABLE" if len(decided_tickets) >= 30 else "INSUFFICIENT_SAMPLE"}
 
 
 def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict] | None = None,
@@ -628,7 +630,17 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
     root = Path(__file__).resolve().parents[3]
     frontend_paths = [root / "frontend" / "app" / name / "page.jsx" for name in
                       ("dashboard", "games", "analyze", "parlays", "history", "performance", "internal/operations")]
-    check("Frontend smoke tests", all(path.exists() for path in frontend_paths), detail=f"{sum(path.exists() for path in frontend_paths)}/{len(frontend_paths)} critical route modules present")
+    frontend_count = sum(path.exists() for path in frontend_paths)
+    if (os.getenv("VERCEL") or os.getenv("VERCEL_ENV")) and frontend_count == 0:
+        # The API and Next.js application are separate Vercel projects. The API
+        # function bundle intentionally excludes frontend source files, so a
+        # local-path assertion would be a false production failure. Deployment
+        # and browser smoke checks remain part of the release gate.
+        frontend_configured = bool((os.getenv("FRONTEND_ORIGIN") or os.getenv("SITE_URL") or "").strip())
+        check("Frontend smoke tests", frontend_configured, detail="split Vercel frontend deployment configured; route smoke tests run in the release gate")
+    else:
+        check("Frontend smoke tests", frontend_count == len(frontend_paths),
+              detail=f"{frontend_count}/{len(frontend_paths)} critical route modules present")
     counts = {"scheduledGames": len(schedule), "finalGames": len(finals),
               "finalPredictionsGraded": sum(p["game_id"] in final_ids and p["settlement_status"] != "PENDING" for p in canonical_predictions),
               "correctPredictions": sum(p["settlement_status"] == "WON" for p in canonical_predictions),

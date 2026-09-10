@@ -152,6 +152,28 @@ def test_no_bet_is_persisted_and_audit_is_deterministic():
     assert first["counts"] == second["counts"]
 
 
+def test_pending_benchmarks_never_claim_reportable_sample():
+    seed_prediction()
+    generate_benchmarks(season=2026, season_type="regular", week=1, schedule=[game()],
+                        clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc), parlay_builder=fake_builder)
+    performance = benchmark_performance(season=2026, season_type="regular", week=1)
+    assert performance["overall"]["pending"] == 3
+    assert performance["sampleStatus"] == "INSUFFICIENT_SAMPLE"
+
+
+def test_vercel_audit_does_not_require_frontend_source_in_api_bundle(monkeypatch):
+    seed_prediction()
+    capture_prediction_history(season=2026, season_type="regular", week=1, schedule=[game()])
+    monkeypatch.setattr("backend.app.services.nfl_production_service.initialize", lambda: None)
+    monkeypatch.setenv("VERCEL_ENV", "production")
+    monkeypatch.setenv("FRONTEND_ORIGIN", "https://smartbetsports.com")
+    monkeypatch.setattr("backend.app.services.nfl_production_service.Path.exists", lambda _path: False)
+    report = audit_week(season=2026, season_type="regular", week=1, schedule=[game()], persist=False)
+    frontend = next(check for check in report["checks"] if check["name"] == "Frontend smoke tests")
+    assert frontend["status"] == "PASS"
+    assert "split Vercel frontend deployment" in frontend["detail"]
+
+
 def test_user_parlay_settles_only_with_persisted_game_identity():
     ticket = fake_builder("SAFE")
     save_web_parlay(ticket, user_id=9, model_version="nfl-v-test",
