@@ -190,6 +190,11 @@ test("social operations is a responsive owner control room with safety controls"
   assert.match(page, /Social Operations/);
   assert.match(page, /PAUSE ALL SOCIAL/);
   assert.match(page, /Content Studio/);
+  assert.match(page, />Graphic</);
+  assert.match(page, />Copy</);
+  assert.match(page, /Source Data/);
+  assert.match(page, /Source prediction ID/);
+  assert.match(page, /Predictions available/);
   assert.match(page, /Skipped Opportunities/);
   assert.match(page, /Media Library/);
   assert.match(performance, /Not available from current X API access/);

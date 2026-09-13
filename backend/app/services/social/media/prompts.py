@@ -10,7 +10,8 @@ def creative_prompt(context: dict, template: str) -> str:
         "black and charcoal shadows with emerald and cyan accents, energetic diagonal composition, atmospheric depth, "
         "high contrast, sophisticated editorial finish, realistic but not based on a real player photograph. "
         f"Theme: {template.replace('_', ' ').lower()}. Matchup mood: {matchup or 'weekly football slate'}. "
-        "Keep the left-center readable but visually textured for a deterministic data overlay; place the strongest "
-        "athlete/stadium detail toward the right third and outer edges. Avoid blank empty space and avoid UI-card shapes. "
+        "The artwork is secondary to an information-first deterministic data overlay. Keep the left two-thirds readable "
+        "with restrained texture; place the strongest athlete/stadium detail toward the right third and outer edges. "
+        "Avoid blank empty space and avoid UI-card shapes, central subjects, or visual clutter behind the data area. "
         "Do not render any words, letters, numbers, statistics, team logos, league marks, watermarks, or sponsor marks."
     )

@@ -11,6 +11,15 @@ from . import content
 from .storage import decoded, json_value
 
 
+def _copy_fingerprint(value: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"https://\S+|\d+(?:\.\d+)?", "", value.lower())).strip()
+
+
+def is_near_duplicate(candidate: str, prior: str, threshold: float = .88) -> bool:
+    """Compare public wording while ignoring changing links and numbers."""
+    return SequenceMatcher(None, _copy_fingerprint(candidate), _copy_fingerprint(prior)).ratio() >= threshold
+
+
 def _load_opportunity(connection, opportunity_id: str) -> dict[str, Any]:
     row = connection.execute("""SELECT o.*,e.event_type,e.source_id,e.evidence_json,e.evidence_hash
         FROM social_opportunities o JOIN social_events e ON e.event_id=o.event_id
@@ -35,10 +44,8 @@ def materialize(connection, opportunity_id: str, *, sha, sign, cta: str = "", ct
     if cta_builder:
         context["cta"] = cta_builder(context)
     caption, writer = content.compose(context, writer_factory)
-    normalized = re.sub(r"\s+", " ", re.sub(r"https://\S+|\d+(?:\.\d+)?", "", caption.lower())).strip()
     for prior in connection.execute("SELECT content FROM social_posts ORDER BY scheduled_at DESC LIMIT 12").fetchall():
-        prior_normalized = re.sub(r"\s+", " ", re.sub(r"https://\S+|\d+(?:\.\d+)?", "", prior["content"].lower())).strip()
-        if SequenceMatcher(None, normalized, prior_normalized).ratio() >= .88:
+        if is_near_duplicate(caption, prior["content"]):
             raise ValueError("Near-duplicate content blocked; editorial review required")
     post_id = sha({"opportunity_id": opportunity_id, "content_hash": sha(caption)})[:32]
     campaign = os.getenv("SOCIAL_CAMPAIGN", "smartbets-social-engine-v2")
@@ -170,7 +177,7 @@ def edit_caption(connection, post_id: str, caption: str, sha, sign, clock=None) 
     if not row or row["status"] not in {"READY", "DRAFT", "REVIEW"}:
         raise ValueError("Only an unpublished social post can be edited")
     context = decoded(row["source_context_json"], {})
-    caption = content.validate_caption(caption, context)
+    caption = content.validate_content_quality(caption, context)
     signed = {"post_id": post_id, "content": caption, "source_id": row["source_id"],
               "opportunity_id": row["opportunity_id"], "source_hash": row["source_hash"]}
     integrity_hash = sha({"signed": signed, "context": context})

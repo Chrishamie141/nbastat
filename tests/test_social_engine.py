@@ -12,7 +12,7 @@ from backend.app.services import social_operations_service as owner
 from backend.app.services.social import analytics, content, events, opportunities, scheduler, scoring, settings
 from backend.app.services.social.media import prompts
 from backend.app.services.social.media.assets import LocalMediaStorage
-from backend.app.services.social.media.graphic_renderer import render_graphic
+from backend.app.services.social.media.graphic_renderer import graphic_facts, render_graphic
 from backend.app.services.social.media.service import generate_media, preferred_media_type
 from backend.app.services.social.publisher import OfficialX
 
@@ -411,6 +411,78 @@ def test_cta_uses_configured_company_url_and_week_attribution(engine, monkeypatc
     value = social.cta({"week": 1, "window_key": "SUNDAY_COUNTDOWN"})
     assert "smartbetsports.com/games" in value and "utm_source=x" in value
     assert "utm_campaign=nfl_week_1" in value and "utm_content=sunday_countdown" in value
+
+
+def test_late_slate_copy_is_ranked_bettor_friendly_and_grounded(engine, monkeypatch):
+    zone = __import__("zoneinfo").ZoneInfo("America/New_York")
+    at = datetime(2026, 9, 13, 13, 26, tzinfo=zone).astimezone(timezone.utc)
+    picks = [
+        ("ARI", "LAC", "LAC", .8213), ("WSH", "PHI", "PHI", .7529),
+        ("GB", "MIN", "MIN", .6539), ("DAL", "NYG", "NYG", .6048),
+        ("DEN", "KC", "DEN", .5850), ("MIA", "LV", "MIA", .5547),
+    ]
+    value = source(at); value["regular"].update({"season": 2026, "week": 1, "predictions": 6, "scheduled": 16})
+    value["operations"]["games"] = []
+    for index, (away, home, winner, probability) in enumerate(picks):
+        kickoff = datetime(2026, 9, 13 + (index == 4), 16 + (4 if index == 4 else 0), 5,
+                           tzinfo=zone).astimezone(timezone.utc)
+        value["operations"]["games"].append({
+            "game_id": f"game-{index}", "away_team": away, "home_team": home,
+            "kickoff_time": kickoff.isoformat(),
+            "prediction": {"winner": winner, "probability": probability,
+                           "prediction_hash": f"prediction-{index}",
+                           "generated_at": (at - timedelta(hours=2)).isoformat()},
+        })
+    event = next(item for item in events.discover("source", value, lambda: at)
+                 if item["event_type"] == "SPORTS_DAY_WINDOW")
+    monkeypatch.setenv("SOCIAL_CTA_URL", "https://smartbetsports.com")
+    monkeypatch.setenv("SOCIAL_COMPANY_DOMAIN", "smartbetsports.com")
+    context = content.context_from_event(event, "TODAYS_CARD", social.cta({"week": 1, "window_key": "SUNDAY_LATE"}))
+    caption = content.deterministic_caption(context)
+    assert context["window_key"] == "SUNDAY_LATE" and context["predictions_count"] == 6
+    assert [pick["winner"] for pick in context["ranked_picks"][:3]] == ["LAC", "PHI", "MIN"]
+    assert all(value in caption for value in ("Chargers", "82.1%", "Eagles", "75.3%", "Vikings", "65.4%"))
+    assert all(value not in caption for value in ("verified pregame predictions remain", "model lean frozen", " LAC "))
+    assert "#NFL" in caption and "#SmartBets" in caption and "utm_source=x" in caption
+    assert len(caption) <= 280
+
+    facts = graphic_facts(context, "TODAYS_CARD")
+    assert facts["predictions_count"] == 6
+    assert facts["top_picks"] == [
+        {"team": "Chargers", "probability": 82.1, "game_id": "game-0", "prediction_id": "prediction-0"},
+        {"team": "Eagles", "probability": 75.3, "game_id": "game-1", "prediction_id": "prediction-1"},
+        {"team": "Vikings", "probability": 65.4, "game_id": "game-2", "prediction_id": "prediction-2"},
+    ]
+
+
+def test_public_quality_gate_blocks_internal_and_guarantee_language(engine):
+    context = {"post_type": "TODAYS_CARD", "predictions_count": 6, "week": 1,
+               "ranked_picks": [{"winner": "LAC", "probability": .821}],
+               "source_entities": ["LAC", "Chargers", "Los Angeles Chargers"]}
+    with pytest.raises(ValueError, match="Internal system terminology"):
+        content.validate_content_quality(
+            "6 verified pregame predictions remain. Chargers 82.1% #SmartBets", context)
+    with pytest.raises(ValueError, match="Unsafe social phrasing"):
+        content.validate_content_quality("Chargers are guaranteed. 82.1% #SmartBets", context)
+    with pytest.raises(ValueError, match="Unsafe social phrasing"):
+        content.validate_content_quality("Chargers are the LOCK. 82.1% #SmartBets", context)
+
+
+def test_loss_receipt_is_transparent_and_never_claims_a_wager(engine):
+    context = {"post_type": "LOSS_RECEIPT", "away_team": "SF", "home_team": "LAR",
+               "winner": "LAR", "model_probability": .604, "away_score": 27, "home_score": 7,
+               "source_entities": ["SF", "49ers", "LAR", "Rams", "San Francisco 49ers", "Los Angeles Rams"]}
+    caption = content.deterministic_caption(context)
+    assert "MODEL MISS" in caption and "SmartBets picked Rams" in caption and "Loss recorded" in caption
+    assert "wager" not in caption.casefold() and "bet won" not in caption.casefold()
+
+
+def test_recent_copy_repetition_guard_ignores_only_numbers_and_links(engine):
+    original = "Chargers lead the late slate at 82.1%. Full board: https://example.test/a"
+    repeated = "Chargers lead the late slate at 81.9%. Full board: https://example.test/b"
+    distinct = "Eagles and Vikings headline three model picks still live."
+    assert scheduler.is_near_duplicate(original, repeated)
+    assert not scheduler.is_near_duplicate(original, distinct)
 
 
 def test_owner_draftkings_ticket_is_not_a_social_model_source(engine):

@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 VIDEO_CONTENT_TYPES = frozenset({"DAILY_RECAP", "WEEKLY_REPORT", "STREAK_MILESTONE"})
 
 
+def _pct_for_alt(value: Any) -> str:
+    number = float(value)
+    return f"{(number * 100 if abs(number) <= 1 else number):.1f}%"
+
+
 def preferred_media_type(opportunity: dict[str, Any], settings: dict[str, Any]) -> str:
     """Use scarce video capacity for recap/milestone formats, not every post."""
     if settings["video_enabled"] and opportunity.get("content_type") in VIDEO_CONTENT_TYPES:
@@ -95,7 +100,12 @@ def generate_media(connection, opportunity: dict[str, Any], post: dict[str, Any]
         key = f"{at:%Y/%m/%d}/{asset_id}-v{version}.{extension}"
         location = (storage or storage_factory()).put(key, payload, content_type)
         alt_text = f"SmartBetSports {template.replace('_', ' ').title()} graphic"
-        if context.get("away_team") and context.get("home_team"):
+        ranked = context.get("ranked_picks") or []
+        if ranked:
+            leaders = ", ".join(f"{pick['winner']} {_pct_for_alt(pick['probability'])}"
+                                for pick in ranked[:3] if pick.get("winner") and pick.get("probability") is not None)
+            alt_text += f" featuring top model picks: {leaders}"
+        elif context.get("away_team") and context.get("home_team"):
             alt_text += f" for {context['away_team']} at {context['home_team']}"
         connection.execute("""UPDATE social_media_assets SET provider=?,provider_model=?,storage_key=?,storage_url=?,
             status='READY',width=?,height=?,duration_seconds=?,alt_text=?,cost_estimate=?,updated_at=? WHERE media_asset_id=?""",

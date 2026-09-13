@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import hashlib
 from typing import Any, Callable
 
 import requests
@@ -14,12 +15,72 @@ from backend.app.services.team_metadata import NFL_TEAMS, NBA_TEAMS
 
 BANNED_PHRASES = (
     "guaranteed", "can't lose", "cannot lose", "free money", "100%", "easy win",
-    "sure thing", "risk-free", "lock of the day", "bet the house",
+    "sure thing", "risk-free", "lock of the day", "bet the house", "guarantee",
 )
+
+INTERNAL_PUBLIC_PHRASES = (
+    "verified pregame predictions remain", "candidate generated", "model lean frozen",
+    "prediction records available", "eligible games remain", "board contains",
+    "frozen predictions", "model artifact", "source envelope",
+)
+DEFAULT_HASHTAGS = "#NFL #NFLPicks #SportsBetting #SmartBets"
+
+
+def team_display(value: Any, *, full: bool = False) -> str:
+    """Turn a stored NFL identifier into natural public-facing copy."""
+    raw = str(value or "").strip()
+    folded = raw.casefold()
+    for abbreviation, full_name, city, nickname in NFL_TEAMS:
+        if folded in {abbreviation.casefold(), full_name.casefold(), nickname.casefold(),
+                      f"{city} {nickname}".casefold()}:
+            return full_name if full else nickname
+    return raw
+
+
+def _entity_forms(value: Any) -> list[str]:
+    raw = str(value or "").strip()
+    if not raw:
+        return []
+    forms = [raw]
+    folded = raw.casefold()
+    for abbreviation, full_name, city, nickname in NFL_TEAMS:
+        if folded in {abbreviation.casefold(), full_name.casefold(), nickname.casefold(),
+                      f"{city} {nickname}".casefold()}:
+            forms.extend((abbreviation, full_name, city, nickname))
+            break
+    return forms
+
+
+def _variant(context: dict[str, Any], count: int) -> int:
+    seed = "|".join(str(context.get(key) or "") for key in
+                    ("window_key", "game_id", "source_timestamp", "post_type"))
+    return int(hashlib.sha256(seed.encode("utf-8")).hexdigest()[:8], 16) % count
+
+
+def _cta_url(context: dict[str, Any]) -> str:
+    match = re.search(r"https://\S+", str(context.get("cta") or ""))
+    return match.group(0).rstrip(".,") if match else ""
+
+
+def _finish(body: str, context: dict[str, Any], label: str = "See the full board") -> str:
+    suffix = ""
+    url = _cta_url(context)
+    if url:
+        suffix += f"\n\n{label} → {url}"
+    if os.getenv("SOCIAL_HASHTAGS_ENABLED", "true").lower() == "true":
+        suffix += f"\n\n{DEFAULT_HASHTAGS}"
+    text = body.strip() + suffix
+    if len(text) > 280 and "#SportsBetting " in text:
+        text = text.replace("#SportsBetting ", "")
+    if len(text) > 280:
+        raise ValueError("Social caption must contain 1-280 characters")
+    return text
 
 
 def _numbers(value: Any) -> set[str]:
-    encoded = json.dumps(value, sort_keys=True)
+    # Keep literal Unicode copy literal; JSON escaping an emoji can manufacture
+    # digit-like code points (for example ``\u26a1``) that are not claims.
+    encoded = value if isinstance(value, str) else json.dumps(value, sort_keys=True)
     result = set(re.findall(r"(?<![A-Za-z])\d+(?:\.\d+)?", encoded))
     for raw in list(result):
         try:
@@ -38,7 +99,7 @@ def validate_caption(text: str, context: dict[str, Any]) -> str:
     if not text or len(text) > 280:
         raise ValueError("Social caption must contain 1-280 characters")
     lowered = text.casefold()
-    if any(phrase in lowered for phrase in BANNED_PHRASES):
+    if any(phrase in lowered for phrase in BANNED_PHRASES) or re.search(r"\block\b", lowered):
         raise ValueError("Unsafe social phrasing blocked")
     if re.search(r"(?<!\w)@[A-Za-z0-9_]+", text):
         raise ValueError("Unsolicited mentions are not supported")
@@ -60,6 +121,32 @@ def validate_caption(text: str, context: dict[str, Any]) -> str:
     return text
 
 
+def validate_content_quality(text: str, context: dict[str, Any]) -> str:
+    """Fail closed when grounded copy still reads like an internal status log."""
+    text = validate_caption(text, context)
+    lowered = text.casefold()
+    if any(phrase in lowered for phrase in INTERNAL_PUBLIC_PHRASES):
+        raise ValueError("Internal system terminology is not suitable for public copy")
+    kind = str(context.get("post_type") or "").upper()
+    prediction_types = {"AI_PICK", "MODEL_VS_MARKET", "UPSET_WATCH", "LINE_MOVEMENT"}
+    if kind in prediction_types:
+        teams = (team_display(context.get("winner")), team_display(context.get("away_team")),
+                 team_display(context.get("home_team")))
+        if not any(team and team.casefold() in lowered for team in teams):
+            raise ValueError("Prediction copy must mention a supported team")
+        if context.get("model_probability") is not None and _pct(context["model_probability"]) not in text:
+            raise ValueError("Prediction copy must include useful model information")
+    if kind == "TODAYS_CARD":
+        picks = context.get("ranked_picks") or []
+        if picks and not any(team_display(pick.get("winner")).casefold() in lowered for pick in picks[:3]):
+            raise ValueError("Slate copy must feature a real ranked model pick")
+    if _cta_url(context) and _cta_url(context) not in text:
+        raise ValueError("Configured CTA is missing")
+    if os.getenv("SOCIAL_HASHTAGS_ENABLED", "true").lower() == "true" and "#smartbets" not in lowered:
+        raise ValueError("Configured social hashtags are missing")
+    return text
+
+
 def _pct(value: Any) -> str:
     number = float(value)
     if number <= 1:
@@ -76,55 +163,86 @@ def deterministic_caption(context: dict[str, Any]) -> str:
     kind = str(context.get("post_type") or "").upper()
     if kind not in CONTENT_TYPES:
         raise ValueError("Unsupported social post type")
-    away, home = context.get("away_team"), context.get("home_team")
+    away, home = team_display(context.get("away_team")), team_display(context.get("home_team"))
     matchup = f"{away} at {home}" if away and home else "today's slate"
-    winner = context.get("winner")
+    winner = team_display(context.get("winner"))
     probability = context.get("model_probability")
     market = context.get("market_probability")
     edge = context.get("edge")
     if kind == "AI_PICK":
-        text = f"SMARTBETS AI PICK\n{matchup}\nModel lean: {winner} ({_pct(probability)})\nA projection, not a promise."
+        variants = (
+            f"⚡ THE MODEL LIKES {winner.upper()}\n\n{matchup}\n🤖 Win probability: {_pct(probability)}\n\nAgree with the model?",
+            f"🏈 SMARTBETS MODEL PICK\n\n{matchup}\nPick: {winner}\nWin probability: {_pct(probability)}",
+            f"🤖 {winner.upper()} GETS THE NOD\n\n{matchup}\nSmartBets win probability: {_pct(probability)}",
+        )
+        text = _finish(variants[_variant(context, len(variants))], context, "See the matchup")
     elif kind == "TODAYS_CARD":
-        if context.get("window_key"):
-            headline = context.get("window_label") or "NFL SUNDAY"
-            top = ""
-            if winner and probability is not None:
-                top = f"\nHighest model confidence: {winner} ({_pct(probability)})."
-            text = (f"{headline}\n{context['predictions_count']} verified pregame predictions remain on the Week "
-                    f"{context['week']} board.{top}\nEvery model lean was frozen before kickoff.")
-        else:
-            text = f"TODAY'S CARD\n{context['predictions_count']} verified predictions across {context['games_count']} games. Every lean is frozen before kickoff."
+        picks = context.get("ranked_picks") or []
+        lines = []
+        for icon, pick in zip(("⚡", "🔥", "👀"), picks[:3]):
+            if pick.get("winner") and pick.get("probability") is not None:
+                lines.append(f"{icon} {team_display(pick['winner'])} {_pct(pick['probability'])}")
+        headline = context.get("window_label") or "TODAY'S NFL BOARD"
+        count = int(context.get("predictions_count") or len(picks))
+        variants = (
+            f"🏈 NFL WEEK {context.get('week')} — {headline}\n\n{count} SmartBets predictions still live.",
+            f"🏈 {headline}\n\nThe SmartBets model has {count} Week {context.get('week')} picks left.",
+            f"⚡ {headline}\n\n{count} games remain on the SmartBets board.",
+        )
+        body = variants[_variant(context, len(variants))]
+        if lines:
+            body += "\n\n" + "\n".join(lines)
+        text = _finish(body, context)
     elif kind == "MODEL_VS_MARKET":
         if market is None or edge is None:
             raise ValueError("Market comparison requires verified market data")
-        text = f"SMARTBETS vs MARKET\n{matchup}\nModel: {_pct(probability)} | Market: {_pct(market)} | Edge: {_pct(edge)}\nNumbers captured before kickoff."
+        variants = (
+            f"📊 MODEL VS MARKET\n\n{matchup}\n🤖 {winner}: {_pct(probability)}\nMarket: {_pct(market)} | Edge: {_pct(edge)}",
+            f"👀 THE NUMBERS DISAGREE\n\nSmartBets has {winner} at {_pct(probability)}.\nMarket: {_pct(market)} | Model edge: {_pct(edge)}\n{matchup}",
+        )
+        text = _finish(variants[_variant(context, len(variants))], context, "See the analysis")
     elif kind == "UPSET_WATCH":
         if market is None:
             raise ValueError("Upset watch requires verified market data")
-        text = f"UPSET WATCH\n{matchup}\nThe model leans {winner} at {_pct(probability)} while the market prices the other side shorter. Worth watching—not a guarantee."
+        variants = (
+            f"🚨 UPSET WATCH\n\nThe market has {winner} as the underdog. SmartBets sees a live shot.\n\n🤖 {winner}: {_pct(probability)}\n{matchup}",
+            f"👀 DOG WITH A CHANCE\n\nSmartBets has {winner} at {_pct(probability)}.\n{matchup}\n\nWho are you taking?",
+        )
+        text = _finish(variants[_variant(context, len(variants))], context, "See why")
     elif kind == "LINE_MOVEMENT":
         movement = context.get("movement")
         if movement is None:
             raise ValueError("Line movement requires two verified market observations")
-        text = f"LINE MOVEMENT\n{matchup}\nVerified implied-probability move: {_pct(movement)}. The model lean remains {winner} at {_pct(probability)}."
+        text = _finish(f"📈 LINE MOVE\n\n{matchup}\nMarket move: {_pct(movement)}\nSmartBets: {winner} at {_pct(probability)}", context, "Track the matchup")
     elif kind in {"CASHED", "WIN_RECEIPT"}:
-        text = f"PREDICTION WIN\n{matchup}\nFrozen pick: {winner} ({_pct(probability)})\nFinal: {context['away_score']}-{context['home_score']}\nReceipts include the wins and the misses."
+        variants = (
+            f"✅ SMARTBETS CALLED IT\n\nPick: {winner} ({_pct(probability)})\nFinal: {away} {context['away_score']}, {home} {context['home_score']}\n\nEvery result stays on the record.",
+            f"✅ MODEL WIN\n\nSmartBets was on {winner} at {_pct(probability)}.\nFinal: {away} {context['away_score']}, {home} {context['home_score']}\n\nOne more result logged.",
+        )
+        text = _finish(variants[_variant(context, len(variants))], context, "Track every prediction")
     elif kind in {"MISS", "LOSS_RECEIPT"}:
-        text = f"PREDICTION MISS\n{matchup}\nFrozen pick: {winner} ({_pct(probability)})\nFinal: {context['away_score']}-{context['home_score']}\nNo hiding the result."
+        variants = (
+            f"❌ MODEL MISS\n\nSmartBets picked {winner} ({_pct(probability)}).\nFinal: {away} {context['away_score']}, {home} {context['home_score']}\n\nLoss recorded. No hiding it.",
+            f"❌ NOT THIS TIME\n\nThe model was on {winner} at {_pct(probability)}.\nFinal: {away} {context['away_score']}, {home} {context['home_score']}\n\nThe miss stays in the history.",
+        )
+        text = _finish(variants[_variant(context, len(variants))], context, "See the full record")
     elif kind == "DAILY_RECAP":
-        text = f"DAILY RECAP\n{context.get('finals_count', 0)} finals are verified. Current prediction record: {_record(context.get('record'))}. Predictions and wagers are tracked separately."
+        text = _finish(f"📊 SUNDAY RECAP\n\n{context.get('finals_count', 0)} finals in. SmartBets is {_record(context.get('record'))} on winner picks today.\n\nWins and misses—all tracked.", context, "See the results")
     elif kind in {"WEEKLY_REPORT", "MODEL_RECAP"}:
-        text = f"WEEKLY REPORT\nVerified prediction record: {_record(context.get('record'))} across {context.get('games_count', 0)} games. One sample, not a promise of future results."
+        text = _finish(f"📈 WEEKLY REPORT\n\nSmartBets: {_record(context.get('record'))} across {context.get('games_count', 0)} games.\n\nEvery pick. Every result. No selective history.", context, "View the week")
     elif kind == "STREAK_MILESTONE":
-        text = f"MODEL MILESTONE\n{context['streak_count']} straight verified {context['streak_result'].lower()} results. The full record stays visible."
+        text = _finish(f"🔥 MODEL STREAK\n\n{context['streak_count']} straight {context['streak_result'].lower()} results for SmartBets.\n\nThe full record stays visible.", context, "View the results")
     elif kind == "ENGAGEMENT_QUESTION":
-        text = f"{matchup}\nThe SmartBets model leans {winner}. What matchup factor matters most to your read?"
+        text = _finish(f"🏈 {matchup}\n\nSmartBets is on {winner}. Who are you taking?", context, "See the model")
     else:
         kickoff = context.get("kickoff_label") or "Kickoff ahead"
-        lean = f"\nModel lean: {winner} ({_pct(probability)})" if winner and probability is not None else ""
-        text = f"GAME PREVIEW\n{matchup}\n{kickoff}{lean}\nWhat are you watching?"
-    cta = context.get("cta") or ""
-    return validate_caption(text + cta, context)
+        lean = f"\nSmartBets: {winner} ({_pct(probability)})" if winner and probability is not None else ""
+        variants = (
+            f"🏈 GAME PREVIEW\n\n{matchup}\n{kickoff}{lean}\n\nWho gets it done?",
+            f"⏰ KICKOFF AHEAD\n\n{matchup}{lean}\n\nAgree with SmartBets?",
+        )
+        text = _finish(variants[_variant(context, len(variants))], context, "See the matchup")
+    return validate_content_quality(text, context)
 
 
 def context_from_event(event: dict[str, Any], post_type: str, cta: str = "") -> dict[str, Any]:
@@ -145,11 +263,17 @@ def context_from_event(event: dict[str, Any], post_type: str, cta: str = "") -> 
         "kickoff_time": evidence.get("kickoff_time"), "kickoff_label": evidence.get("kickoff_label"),
         "season": evidence.get("season"), "week": evidence.get("week"),
         "window_key": evidence.get("window_key"), "window_label": evidence.get("window_label"),
-        "next_kickoff": evidence.get("next_kickoff"),
+        "next_kickoff": evidence.get("next_kickoff"), "ranked_picks": evidence.get("ranked_picks") or [],
+        "prediction_id": prediction.get("prediction_hash") or prediction.get("artifact_hash"),
         "stored_wager_evidence": bool((evidence.get("grade") or {}).get("qualified_wager")),
         "source_timestamp": evidence.get("source_timestamp"), "cta": cta,
-        "source_entities": [value for value in (evidence.get("away_team"), evidence.get("home_team"), prediction.get("winner")) if value],
+        "source_entities": [],
     }
+    entity_values = [evidence.get("away_team"), evidence.get("home_team"), prediction.get("winner")]
+    for pick in context["ranked_picks"]:
+        entity_values.extend((pick.get("away_team"), pick.get("home_team"), pick.get("winner")))
+    context["source_entities"] = list(dict.fromkeys(
+        form for value in entity_values for form in _entity_forms(value)))
     return context
 
 
@@ -184,7 +308,7 @@ class OpenAICopyWriter:
                     if part.get("type") == "output_text":
                         text = part.get("text")
                         break
-        return validate_caption(text, context)
+        return validate_content_quality(text, context)
 
 
 def compose(context: dict[str, Any], writer_factory: Callable[[], Callable] = OpenAICopyWriter) -> tuple[str, str]:
@@ -192,6 +316,6 @@ def compose(context: dict[str, Any], writer_factory: Callable[[], Callable] = Op
     if os.getenv("SOCIAL_AI_COPY_ENABLED", "false").lower() != "true":
         return fallback, "deterministic"
     try:
-        return validate_caption(writer_factory()(context), context), "openai"
+        return validate_content_quality(writer_factory()(context), context), "openai"
     except Exception:
         return fallback, "deterministic_fallback"

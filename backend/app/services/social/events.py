@@ -81,9 +81,17 @@ def sports_day_context(source: dict[str, Any], clock) -> dict[str, Any]:
                 window_key, window_label = "SUNDAY_LATE", "LATE SLATE"
             elif prime and prime[0][0] - at <= timedelta(hours=3):
                 window_key, window_label = "SUNDAY_NIGHT", "SUNDAY NIGHT FOOTBALL"
-    top = max((game for _, game in future),
-              key=lambda game: float((game.get("prediction") or {}).get("probability") or 0),
-              default=None)
+    ranked_picks = sorted(({
+        "game_id": game.get("game_id"),
+        "prediction_id": (game.get("prediction") or {}).get("prediction_hash")
+            or (game.get("prediction") or {}).get("artifact_hash"),
+        "away_team": game.get("away_team"), "home_team": game.get("home_team"),
+        "winner": (game.get("prediction") or {}).get("winner"),
+        "probability": (game.get("prediction") or {}).get("probability"),
+        "kickoff_time": game.get("kickoff_time"),
+    } for _, game in future), key=lambda pick: float(pick.get("probability") or 0), reverse=True)
+    top = next((game for _, game in future
+                if ranked_picks and game.get("game_id") == ranked_picks[0]["game_id"]), None)
     return {
         "season": regular.get("season"), "week": regular.get("week"),
         "local_date": eastern.date().isoformat(), "window_key": window_key,
@@ -91,7 +99,7 @@ def sports_day_context(source: dict[str, Any], clock) -> dict[str, Any]:
         "predictions_found": sum(bool(game.get("prediction")) for game in games),
         "future_games": len(future),
         "next_kickoff": future[0][0].isoformat() if future else None,
-        "top_game": top,
+        "top_game": top, "ranked_picks": ranked_picks,
     }
 
 
@@ -102,8 +110,20 @@ def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, An
     events: list[dict[str, Any]] = []
     predictions = [game for game in games if game.get("prediction")]
     if predictions:
+        ranked = sorted(({
+            "game_id": game.get("game_id"),
+            "prediction_id": (game.get("prediction") or {}).get("prediction_hash")
+                or (game.get("prediction") or {}).get("artifact_hash"),
+            "away_team": game.get("away_team"), "home_team": game.get("home_team"),
+            "winner": (game.get("prediction") or {}).get("winner"),
+            "probability": (game.get("prediction") or {}).get("probability"),
+            "kickoff_time": game.get("kickoff_time"),
+        } for game in predictions), key=lambda pick: float(pick.get("probability") or 0), reverse=True)
         events.append(_event("SLATE_READY", source_id, {
             "games_count": len(games), "predictions_count": len(predictions),
+            "season": (source.get("regular") or {}).get("season"),
+            "week": (source.get("regular") or {}).get("week"),
+            "ranked_picks": ranked,
             "source_timestamp": source.get("verified_at"),
         }, at=at))
 
@@ -118,11 +138,13 @@ def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, An
             "next_kickoff": day["next_kickoff"], "kickoff_label": day["window_label"],
             "away_team": top.get("away_team"), "home_team": top.get("home_team"),
             "prediction": top_prediction, "market": top.get("market") or {},
+            "ranked_picks": day["ranked_picks"],
             "source_timestamp": source.get("verified_at"),
         }
         events.append(_event("SPORTS_DAY_WINDOW", source_id, evidence, game=top, at=at))
 
     day_final_count = 0
+    regular = source.get("regular") or {}
     graded_sequence: list[tuple[datetime, str]] = []
     for game in games:
         kickoff = _dt(game.get("kickoff_time"))
@@ -135,6 +157,7 @@ def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, An
             "game_id": game.get("game_id"), "away_team": game.get("away_team"),
             "home_team": game.get("home_team"), "kickoff_time": game.get("kickoff_time"),
             "prediction": prediction, "market": market, "final": final, "grade": grade,
+            "record": regular.get("winner_record"), "week": regular.get("week"),
             "source_timestamp": source.get("verified_at"),
         }
         pregame = bool(kickoff and at < kickoff and prediction and generated_at and generated_at < kickoff)
@@ -168,7 +191,6 @@ def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, An
             events.append(_event(f"PREDICTION_{result}", source_id, base, game=game, at=final_at))
             graded_sequence.append((final_at, result))
 
-    regular = source.get("regular") or {}
     if day_final_count:
         events.append(_event("DAILY_SLATE_COMPLETE", source_id, {
             "finals_count": day_final_count, "record": regular.get("winner_record"),

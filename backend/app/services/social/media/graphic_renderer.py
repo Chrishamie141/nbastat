@@ -64,6 +64,16 @@ def _team_code(value: Any) -> str:
     return "".join(word[0] for word in words)[:4].upper() or name[:4].upper()
 
 
+def _team_name(value: Any, *, full: bool = False) -> str:
+    name = str(value or "").strip()
+    folded = name.casefold()
+    for abbreviation, full_name, city, nickname in NFL_TEAMS:
+        if folded in {abbreviation.casefold(), full_name.casefold(), nickname.casefold(),
+                      f"{city} {nickname}".casefold()}:
+            return full_name if full else nickname
+    return name
+
+
 def _fit_font(draw, text: str, max_width: int, start: int, minimum: int = 36):
     size = start
     while size > minimum:
@@ -105,10 +115,10 @@ def _draw_brand(draw) -> None:
     draw.rounded_rectangle((84, 70, 116, 102), radius=9, outline=EMERALD, width=4)
     draw.text((136, 55), "SMARTBET", font=_font(34, True, condensed=True), fill=WHITE)
     draw.text((352, 55), "SPORTS", font=_font(34, True, condensed=True), fill=CYAN)
-    draw.text((137, 94), "VERIFIED MODEL INTELLIGENCE", font=_font(16, True), fill=MUTED)
+    draw.text((137, 94), "DATA-DRIVEN NFL PICKS", font=_font(16, True), fill=MUTED)
 
 
-def _draw_type_badge(draw, template: str) -> None:
+def _draw_type_badge(draw, template: str, context: dict[str, Any]) -> None:
     label = {
         "AI_PICK": "AI PICK",
         "GAME_PREVIEW": "GAME PREVIEW",
@@ -125,6 +135,8 @@ def _draw_type_badge(draw, template: str) -> None:
         "MODEL_RECAP": "MODEL REPORT",
         "STREAK_MILESTONE": "MODEL MILESTONE",
     }.get(template, template.replace("_", " "))
+    if template == "TODAYS_CARD" and context.get("window_label"):
+        label = str(context["window_label"])
     font = _font(22, True, condensed=True)
     width = draw.textbbox((0, 0), label, font=font)[2] + 54
     left = WIDTH - 72 - width
@@ -133,7 +145,8 @@ def _draw_type_badge(draw, template: str) -> None:
 
 
 def _draw_matchup(draw, context: dict[str, Any]) -> int:
-    away, home = str(context.get("away_team") or ""), str(context.get("home_team") or "")
+    away = _team_name(context.get("away_team"), full=True)
+    home = _team_name(context.get("home_team"), full=True)
     if not away or not home:
         return 165
     away_code, home_code = _team_code(away), _team_code(home)
@@ -154,12 +167,12 @@ def _draw_stat_tile(draw, x: int, y: int, label: str, value: str, color: str = W
 
 
 def _draw_pick(draw, context: dict[str, Any], y: int) -> None:
-    winner = str(context.get("winner") or "")
+    winner = _team_name(context.get("winner"))
     probability = context.get("model_probability")
     if not winner or probability is None:
         return
     value = _pct(probability)
-    draw.text((72, y), "THE MODEL LEANS", font=_font(24, True), fill=CYAN)
+    draw.text((72, y), "SMARTBETS MODEL PICK", font=_font(24, True), fill=CYAN)
     winner_font = _fit_font(draw, winner.upper(), 900, 92, 58)
     draw.text((68, y + 36), winner.upper(), font=winner_font, fill=WHITE, stroke_width=2, stroke_fill=INK)
     draw.text((72, y + 142), f"{value:.1f}", font=_font(142, True, condensed=True), fill=EMERALD, stroke_width=2, stroke_fill=INK)
@@ -175,17 +188,24 @@ def _draw_pick(draw, context: dict[str, Any], y: int) -> None:
 
 def _draw_receipt(draw, context: dict[str, Any], template: str, y: int) -> None:
     is_win = template in WIN_TYPES
-    result = "WIN" if is_win else "MISS"
+    result = "SMARTBETS CALLED IT" if is_win else "MODEL MISS"
     color = EMERALD if is_win else "#FB7185"
-    draw.text((72, y), "FROZEN PREDICTION RESULT", font=_font(24, True), fill=MUTED)
-    draw.text((66, y + 30), result, font=_font(154, True, condensed=True), fill=color, stroke_width=3, stroke_fill=INK)
+    draw.text((72, y), "WEEK 1 RESULT" if context.get("week") == 1 else "MODEL RESULT",
+              font=_font(24, True), fill=MUTED)
+    draw.text((66, y + 35), result, font=_fit_font(draw, result, 950, 98, 60),
+              fill=color, stroke_width=3, stroke_fill=INK)
     if context.get("away_score") is not None and context.get("home_score") is not None:
-        score = f"{context['away_score']}  -  {context['home_score']}"
-        _draw_stat_tile(draw, 560, y + 74, "FINAL SCORE", score, WHITE, 390)
+        away = _team_name(context.get("away_team")); home = _team_name(context.get("home_team"))
+        score = f"{away.upper()} {context['away_score']}  •  {home.upper()} {context['home_score']}"
+        draw.text((72, y + 160), score, font=_fit_font(draw, score, 980, 46, 30), fill=WHITE)
     winner, probability = context.get("winner"), context.get("model_probability")
     if winner and probability is not None:
-        detail = f"PICK  {str(winner).upper()}  •  {_pct(probability):.1f}%"
-        draw.text((72, y + 220), detail, font=_fit_font(draw, detail, 920, 34, 24), fill=WHITE)
+        detail = f"MODEL PICK  {_team_name(winner).upper()}  •  {_pct(probability):.1f}%"
+        draw.text((72, y + 235), detail, font=_fit_font(draw, detail, 920, 34, 24), fill=CYAN)
+    record = context.get("record") or {}
+    if record:
+        record_text = f"WEEK RECORD  {int(record.get('WIN', 0))}-{int(record.get('LOSS', 0))}-{int(record.get('PUSH', 0))}"
+        draw.text((72, y + 300), record_text, font=_font(26, True), fill=MUTED)
 
 
 def _draw_recap(draw, context: dict[str, Any], template: str, y: int) -> None:
@@ -198,6 +218,50 @@ def _draw_recap(draw, context: dict[str, Any], template: str, y: int) -> None:
     count = context.get("games_count") or context.get("finals_count")
     if count is not None:
         _draw_stat_tile(draw, 620, y + 67, "VERIFIED GAMES", str(count), CYAN, 300)
+
+
+def graphic_facts(context: dict[str, Any], template: str) -> dict[str, Any]:
+    """Expose the exact authoritative values the deterministic overlay renders."""
+    picks = [{
+        "team": _team_name(pick.get("winner")),
+        "probability": round(_pct(pick["probability"]), 1),
+        "game_id": pick.get("game_id"),
+        "prediction_id": pick.get("prediction_id"),
+    } for pick in (context.get("ranked_picks") or [])[:3]
+        if pick.get("winner") and pick.get("probability") is not None]
+    return {
+        "template": template, "week": context.get("week"),
+        "window": context.get("window_label"),
+        "predictions_count": context.get("predictions_count"),
+        "top_picks": picks,
+        "matchup": [_team_name(context.get("away_team"), full=True),
+                    _team_name(context.get("home_team"), full=True)],
+        "winner": _team_name(context.get("winner")),
+        "model_probability": round(_pct(context["model_probability"]), 1)
+            if context.get("model_probability") is not None else None,
+    }
+
+
+def _draw_slate(draw, context: dict[str, Any]) -> None:
+    facts = graphic_facts(context, "TODAYS_CARD")
+    week = facts.get("week")
+    window = str(facts.get("window") or "TODAY'S CARD")
+    draw.text((72, 154), f"NFL WEEK {week}" if week is not None else "NFL MODEL BOARD",
+              font=_font(25, True), fill=CYAN)
+    draw.text((66, 184), window, font=_fit_font(draw, window, 980, 78, 54),
+              fill=WHITE, stroke_width=2, stroke_fill=INK)
+    draw.rectangle((72, 282, 462, 290), fill=CYAN)
+    draw.text((72, 326), "TOP MODEL PICKS", font=_font(23, True), fill=MUTED)
+    for index, pick in enumerate(facts["top_picks"]):
+        y = 374 + index * 112
+        draw.text((72, y + 8), str(index + 1), font=_font(29, True), fill=CYAN)
+        team = pick["team"].upper()
+        draw.text((126, y), team, font=_fit_font(draw, team, 610, 54, 38), fill=WHITE)
+        value = f"{pick['probability']:.1f}%"
+        draw.text((774, y), value, font=_font(54, True, condensed=True), fill=EMERALD)
+        draw.line((126, y + 76, 1030, y + 76), fill=(255, 255, 255, 45), width=2)
+    count = int(facts.get("predictions_count") or len(facts["top_picks"]))
+    draw.text((72, 730), f"{count} PREDICTIONS REMAIN", font=_font(27, True), fill=CYAN)
 
 
 def render_graphic(context: dict[str, Any], template: str, background: bytes | None = None) -> bytes:
@@ -228,20 +292,21 @@ def render_graphic(context: dict[str, Any], template: str, background: bytes | N
     draw.polygon(((WIDTH - 430, 0), (WIDTH, 0), (WIDTH, 250), (WIDTH - 170, 105)), fill=(53, 228, 154, 38))
     draw.polygon(((WIDTH - 280, HEIGHT), (WIDTH, HEIGHT - 210), (WIDTH, HEIGHT),), fill=(72, 231, 226, 40))
     _draw_brand(draw)
-    _draw_type_badge(draw, template)
-    content_y = _draw_matchup(draw, context)
+    _draw_type_badge(draw, template, context)
+    content_y = 165 if template == "TODAYS_CARD" and context.get("ranked_picks") else _draw_matchup(draw, context)
 
     if template in WIN_TYPES | LOSS_TYPES:
         _draw_receipt(draw, context, template, content_y)
     elif template in RECAP_TYPES:
         _draw_recap(draw, context, template, content_y)
     elif template == "TODAYS_CARD":
-        draw.text((72, content_y), "THE VERIFIED SLATE", font=_font(28, True), fill=CYAN)
-        count = context.get("predictions_count") or 0
-        draw.text((66, content_y + 28), str(count), font=_font(164, True, condensed=True), fill=WHITE)
-        draw.text((72, content_y + 198), "FROZEN PREDICTIONS", font=_font(25, True), fill=MUTED)
-        if context.get("games_count") is not None:
-            _draw_stat_tile(draw, 500, content_y + 78, "GAMES", str(context["games_count"]), CYAN)
+        if context.get("ranked_picks"):
+            _draw_slate(draw, context)
+        else:
+            draw.text((72, content_y), "TODAY'S MODEL BOARD", font=_font(28, True), fill=CYAN)
+            count = context.get("predictions_count") or 0
+            draw.text((66, content_y + 28), str(count), font=_font(164, True, condensed=True), fill=WHITE)
+            draw.text((72, content_y + 198), "PREDICTIONS", font=_font(25, True), fill=MUTED)
     elif template == "STREAK_MILESTONE":
         count = int(context.get("streak_count") or 0)
         result = str(context.get("streak_result") or "RESULT").upper()
@@ -251,9 +316,9 @@ def render_graphic(context: dict[str, Any], template: str, background: bytes | N
     else:
         _draw_pick(draw, context, content_y)
 
-    draw.text((72, 838), "FROZEN BEFORE KICKOFF", font=_font(19, True), fill=WHITE)
-    draw.ellipse((353, 846, 361, 854), fill=CYAN)
-    draw.text((380, 838), "PREDICTIONS ARE NOT WAGERS", font=_font(19, True), fill=MUTED)
+    draw.text((72, 838), "MODEL DATA • TRACKED RESULTS", font=_font(17, True), fill=WHITE)
+    draw.ellipse((388, 846, 396, 854), fill=CYAN)
+    draw.text((418, 838), "PREDICTIONS ARE NOT WAGERS", font=_font(17, True), fill=MUTED)
     draw.text((WIDTH - 370, 835), "SMARTBETSPORTS.COM", font=_font(21, True), fill=CYAN)
 
     result = Image.alpha_composite(image, overlay).convert("RGB")
@@ -274,3 +339,7 @@ def validate_image(payload: bytes, context: dict[str, Any]) -> None:
         raise ValueError("Generated image has invalid format or dimensions")
     if context.get("winner") and context.get("model_probability") is None:
         raise ValueError("Required overlay values are incomplete")
+    if context.get("post_type") == "TODAYS_CARD" and context.get("ranked_picks"):
+        facts = graphic_facts(context, "TODAYS_CARD")
+        if not facts["top_picks"] or facts.get("predictions_count") is None:
+            raise ValueError("Slate graphic is missing meaningful ranked model information")
