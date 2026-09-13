@@ -1,12 +1,12 @@
 """Owner-facing social control plane; never returns credentials or source payloads."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 from typing import Any
 
 from backend.app.services import social_marketing as social
-from backend.app.services.social import analytics, scheduler, settings
+from backend.app.services.social import analytics, events, scheduler, settings
 from backend.app.services.social.content import compose, context_from_event
 from backend.app.services.social.media.assets import storage_factory
 from backend.app.services.social.media.service import regenerate_media
@@ -47,15 +47,37 @@ def summary(clock=_now) -> dict[str, Any]:
             "SELECT media_type,COUNT(*) AS count FROM social_media_assets WHERE status='READY' AND generated_at LIKE ? GROUP BY media_type",
             (today + "%",)).fetchall()}
         posts_today = int(connection.execute("SELECT COUNT(*) AS count FROM social_posts WHERE status='PUBLISHED' AND day_key=?", (today,)).fetchone()["count"])
+        week_start = (at.date() - timedelta(days=at.weekday())).isoformat()
+        posts_this_week = int(connection.execute("""SELECT COUNT(*) AS count FROM social_posts
+            WHERE status='PUBLISHED' AND day_key>=? AND day_key<=?""", (week_start, today)).fetchone()["count"])
         generating = int(connection.execute("SELECT COUNT(*) AS count FROM social_media_assets WHERE status='GENERATING'").fetchone()["count"])
         last = connection.execute("SELECT published_at,status FROM social_posts ORDER BY COALESCE(published_at,scheduled_at) DESC LIMIT 1").fetchone()
         next_item = connection.execute("SELECT opportunity_id,scheduled_at,content_type FROM social_opportunities WHERE status='QUEUED' ORDER BY scheduled_at LIMIT 1").fetchone()
-        source = connection.execute("SELECT verified_at FROM social_sources ORDER BY verified_at DESC LIMIT 1").fetchone()
+        source = connection.execute("SELECT source_id,verified_at,payload FROM social_sources ORDER BY verified_at DESC LIMIT 1").fetchone()
+        cycle = connection.execute("SELECT * FROM social_cycles ORDER BY started_at DESC LIMIT 1").fetchone()
+        sports_context = None
+        if source:
+            try:
+                sports_context = events.sports_day_context(decoded(source["payload"], {}), clock)
+            except (TypeError, ValueError):
+                sports_context = None
     credentials = all(bool(os.getenv(name)) for name in ("X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET"))
     engine_state = "PAUSED" if configured["paused"] else "DISCOVERY" if configured["dry_run"] or not configured["auto_publish"] else "ACTIVE"
+    heartbeat = cycle["completed_at"] or cycle["started_at"] if cycle else None
+    heartbeat_age = at - datetime.fromisoformat(str(heartbeat).replace("Z", "+00:00")).astimezone(timezone.utc) if heartbeat else None
+    scheduler_state = "HEALTHY" if heartbeat_age is not None and heartbeat_age <= timedelta(minutes=35) else "STALE" if cycle else "NOT_INSTALLED"
+    worker_state = "ERROR" if cycle and cycle["status"] == "FAILED" else scheduler_state
+    last_status = str(last["status"] if last else "").upper()
+    x_state = "NEEDS_SETUP" if not (credentials and os.getenv("X_EXPECTED_USER_ID")) else "ERROR" if last_status in {"FAILED", "UNKNOWN"} else "HEALTHY" if post_counts.get("PUBLISHED", 0) else "CONFIGURED"
     return {
-        "engineState": engine_state, "xAccountState": "CONFIGURED" if credentials and os.getenv("X_EXPECTED_USER_ID") else "NEEDS_SETUP",
-        "postsToday": posts_today, "queued": opportunity_counts.get("QUEUED", 0),
+        "engineState": engine_state, "xAccountState": x_state,
+        "schedulerState": scheduler_state, "workerState": worker_state,
+        "lastSchedulerHeartbeat": heartbeat, "lastCycleStatus": cycle["status"] if cycle else None,
+        "lastCycleError": cycle["error_code"] if cycle else None,
+        "nextExpectedContentWindow": (sports_context or {}).get("window_key"),
+        "currentNflContext": {key:(sports_context or {}).get(key) for key in
+            ("season", "week", "window_key", "window_label", "next_kickoff", "games_found", "predictions_found", "future_games")},
+        "postsToday": posts_today, "postsThisWeek": posts_this_week, "queued": opportunity_counts.get("QUEUED", 0),
         "generating": generating, "reviewRequired": opportunity_counts.get("REVIEW", 0),
         "published": post_counts.get("PUBLISHED", 0), "failed": post_counts.get("FAILED", 0),
         "imagesGeneratedToday": media_counts.get("image", 0), "videosGeneratedToday": media_counts.get("video", 0),
@@ -119,6 +141,16 @@ def post_detail(post_id: str) -> dict[str, Any]:
     result["media"] = [_public_asset(asset) for asset in assets]
     result.pop("signature", None)
     return result
+
+
+def generate_preview(opportunity_id: str) -> dict[str, Any]:
+    """Materialize a validated caption without publishing or incurring media cost."""
+    _setup()
+    with social.connection() as connection:
+        post = scheduler.materialize(connection, opportunity_id, sha=social.sha, sign=social.sign,
+                                     cta_builder=social.cta, clock=_now)
+        post_id = post["post_id"]
+    return post_detail(post_id)
 
 
 def media_library(limit: int = 50, offset: int = 0) -> dict[str, Any]:

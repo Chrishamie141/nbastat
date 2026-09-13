@@ -23,9 +23,12 @@ def score(event: dict[str, Any], settings: dict[str, Any], *, recent_posts: int 
                       "LINE_MOVEMENT", "GAME_STARTING_SOON", "GAME_FINAL"}:
         value += 20
         reasons.append("Timely game-specific event adds 20 points")
-    if event_type == "SLATE_READY":
+    if event_type in {"SLATE_READY", "SPORTS_DAY_WINDOW"}:
         value += 25
         reasons.append("A verified slate ready for audience review adds 25 points")
+    if event_type == "SPORTS_DAY_WINDOW":
+        value += 15
+        reasons.append("The current sports-day publishing window adds 15 points")
 
     probability = float(prediction.get("probability") or 0)
     if probability >= .65:

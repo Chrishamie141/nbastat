@@ -40,6 +40,61 @@ def _event(event_type: str, source_id: str, evidence: dict[str, Any], *, game: d
     }
 
 
+def sports_day_context(source: dict[str, Any], clock) -> dict[str, Any]:
+    """Describe the current NFL publishing window in Eastern time.
+
+    Windows are intentionally broad. A worker that restarts mid-window creates
+    one current catch-up event instead of replaying every missed slot.
+    """
+    at = clock().astimezone(timezone.utc)
+    eastern = at.astimezone(ZoneInfo("America/New_York"))
+    regular = source.get("regular") or {}
+    games = list((source.get("operations") or {}).get("games") or [])
+    future = []
+    for game in games:
+        kickoff = _dt(game.get("kickoff_time"))
+        prediction = game.get("prediction") or {}
+        generated = _dt(prediction.get("generated_at"))
+        if kickoff and kickoff > at and prediction and generated and generated < kickoff:
+            future.append((kickoff, game))
+    future.sort(key=lambda item: item[0])
+    window_key = None
+    window_label = None
+    if eastern.weekday() == 6 and future:
+        minute = eastern.hour * 60 + eastern.minute
+        if 510 <= minute < 570:
+            window_key, window_label = "SUNDAY_OPEN", "NFL SUNDAY IS HERE"
+        elif 570 <= minute < 630:
+            window_key, window_label = "SUNDAY_SLATE", "SUNDAY SLATE"
+        elif 630 <= minute < 690:
+            window_key, window_label = "SUNDAY_TOP_PICKS", "TOP MODEL PICKS"
+        elif 690 <= minute < 735:
+            window_key, window_label = "SUNDAY_VALUE", "VALUE WATCH"
+        elif 735 <= minute < 780:
+            window_key, window_label = "SUNDAY_COUNTDOWN", "1 PM ET COUNTDOWN"
+        elif minute >= 780:
+            late = [(kickoff, game) for kickoff, game in future
+                    if 16 <= kickoff.astimezone(ZoneInfo("America/New_York")).hour < 20]
+            prime = [(kickoff, game) for kickoff, game in future
+                     if kickoff.astimezone(ZoneInfo("America/New_York")).hour >= 20]
+            if late and late[0][0] - at <= timedelta(hours=3):
+                window_key, window_label = "SUNDAY_LATE", "LATE SLATE"
+            elif prime and prime[0][0] - at <= timedelta(hours=3):
+                window_key, window_label = "SUNDAY_NIGHT", "SUNDAY NIGHT FOOTBALL"
+    top = max((game for _, game in future),
+              key=lambda game: float((game.get("prediction") or {}).get("probability") or 0),
+              default=None)
+    return {
+        "season": regular.get("season"), "week": regular.get("week"),
+        "local_date": eastern.date().isoformat(), "window_key": window_key,
+        "window_label": window_label, "games_found": len(games),
+        "predictions_found": sum(bool(game.get("prediction")) for game in games),
+        "future_games": len(future),
+        "next_kickoff": future[0][0].isoformat() if future else None,
+        "top_game": top,
+    }
+
+
 def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, Any]]:
     """Return only events supported by contemporaneous verified evidence."""
     at = clock().astimezone(timezone.utc)
@@ -51,6 +106,21 @@ def discover(source_id: str, source: dict[str, Any], clock) -> list[dict[str, An
             "games_count": len(games), "predictions_count": len(predictions),
             "source_timestamp": source.get("verified_at"),
         }, at=at))
+
+    day = sports_day_context(source, clock)
+    if day["window_key"] and day["top_game"]:
+        top = day["top_game"]
+        top_prediction = top.get("prediction") or {}
+        evidence = {
+            "season": day["season"], "week": day["week"], "window_key": day["window_key"],
+            "window_label": day["window_label"], "local_date": day["local_date"],
+            "games_count": day["future_games"], "predictions_count": day["future_games"],
+            "next_kickoff": day["next_kickoff"], "kickoff_label": day["window_label"],
+            "away_team": top.get("away_team"), "home_team": top.get("home_team"),
+            "prediction": top_prediction, "market": top.get("market") or {},
+            "source_timestamp": source.get("verified_at"),
+        }
+        events.append(_event("SPORTS_DAY_WINDOW", source_id, evidence, game=top, at=at))
 
     day_final_count = 0
     graded_sequence: list[tuple[datetime, str]] = []

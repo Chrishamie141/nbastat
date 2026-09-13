@@ -71,7 +71,7 @@ def test_schema_migrates_legacy_day_key_to_multi_post(engine):
         connection.execute("INSERT INTO social_posts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values(1))
         connection.execute("INSERT INTO social_posts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", values(2))
         assert connection.execute("SELECT COUNT(*) FROM social_posts WHERE day_key=?", (at.date().isoformat(),)).fetchone()[0] == 2
-        assert connection.execute("SELECT MAX(version) FROM social_schema_migrations").fetchone()[0] == 3
+        assert connection.execute("SELECT MAX(version) FROM social_schema_migrations").fetchone()[0] == 4
 
 
 def test_postgres_initialization_locks_before_schema_ddl(monkeypatch):
@@ -350,6 +350,98 @@ def test_daily_worker_never_falls_back_to_generic_content(engine, monkeypatch):
     monkeypatch.setattr(social, "generate", lambda *args, **kwargs: pytest.fail("generic post generated"))
     result = social.daily(lambda: engine[0])
     assert result["post"] is None and result["result"]["status"] == "NO_DUE_OPPORTUNITY"
+
+
+@pytest.mark.parametrize(("hour","minute","expected"), [
+    (8, 45, "SUNDAY_OPEN"), (9, 45, "SUNDAY_SLATE"),
+    (10, 45, "SUNDAY_TOP_PICKS"), (11, 45, "SUNDAY_VALUE"),
+    (12, 30, "SUNDAY_COUNTDOWN"),
+])
+def test_nfl_week_one_sunday_windows_are_eastern_and_recoverable(engine, hour, minute, expected):
+    eastern = datetime(2026, 9, 13, hour, minute, tzinfo=__import__("zoneinfo").ZoneInfo("America/New_York"))
+    at = eastern.astimezone(timezone.utc)
+    value = source(at); value["regular"]["season"] = 2026
+    context = events.sports_day_context(value, lambda: at)
+    assert context["season"] == 2026 and context["week"] == 1 and context["window_key"] == expected
+
+
+def test_sunday_1230_restart_creates_one_current_catchup_event(engine):
+    at = datetime(2026, 9, 13, 16, 30, tzinfo=timezone.utc)
+    value = source(at); value["regular"]["season"] = 2026
+    discovered = events.discover("fresh-source", value, lambda: at)
+    catchups = [item for item in discovered if item["event_type"] == "SPORTS_DAY_WINDOW"]
+    assert len(catchups) == 1 and catchups[0]["evidence"]["window_key"] == "SUNDAY_COUNTDOWN"
+
+
+@pytest.mark.parametrize(("local_hour","kickoff_hour","expected"), [
+    (14, 16, "SUNDAY_LATE"), (18, 20, "SUNDAY_NIGHT"),
+])
+def test_sunday_late_and_night_transitions(engine, local_hour, kickoff_hour, expected):
+    zone = __import__("zoneinfo").ZoneInfo("America/New_York")
+    at = datetime(2026, 9, 13, local_hour, 30, tzinfo=zone).astimezone(timezone.utc)
+    value = source(at); game = value["operations"]["games"][0]
+    game["kickoff_time"] = datetime(2026, 9, 13, kickoff_hour, 5, tzinfo=zone).astimezone(timezone.utc).isoformat()
+    assert events.sports_day_context(value, lambda: at)["window_key"] == expected
+
+
+def test_failed_media_generation_falls_back_to_text(engine, monkeypatch):
+    at, _ = engine; store_source(source(at)); social.discover_opportunities(lambda: at)
+    monkeypatch.setattr(social, "generate_media", lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError("image provider down")))
+    result = social.process_queue(clock=lambda: at + timedelta(minutes=16), limit=1,
+                                  client_factory=lambda: pytest.fail("dry run created an X client"))
+    assert result["items"][0]["result"]["status"] == "DRY_RUN"
+    with social.connection() as connection:
+        detail = connection.execute("SELECT media_type,media_asset_ids_json FROM social_post_details").fetchone()
+    assert detail["media_type"] == "text" and json.loads(detail["media_asset_ids_json"]) == []
+
+
+def test_started_game_and_stale_source_queue_items_expire(engine):
+    at, _ = engine; value = source(at); source_id = store_source(value)
+    with social.connection() as connection:
+        config = settings.load_settings(connection)
+        opportunities.discover(connection, source_id, value, config, social.sha, lambda: at)
+        result = scheduler.expire_stale(connection, lambda: at + timedelta(hours=3))
+        assert result["expired"] > 0
+        assert connection.execute("SELECT COUNT(*) FROM social_opportunities WHERE skip_reason='GAME_STARTED'").fetchone()[0] > 0
+
+
+def test_cta_uses_configured_company_url_and_week_attribution(engine, monkeypatch):
+    monkeypatch.setenv("SOCIAL_CTA_URL", "https://smartbetsports.com/games")
+    monkeypatch.setenv("SOCIAL_COMPANY_DOMAIN", "smartbetsports.com")
+    value = social.cta({"week": 1, "window_key": "SUNDAY_COUNTDOWN"})
+    assert "smartbetsports.com/games" in value and "utm_source=x" in value
+    assert "utm_campaign=nfl_week_1" in value and "utm_content=sunday_countdown" in value
+
+
+def test_owner_draftkings_ticket_is_not_a_social_model_source(engine):
+    at, _ = engine; value = source(at); value["owner_wager"] = {"teams": ["Miami Dolphins"], "odds": 100959}
+    discovered = events.discover("source", value, lambda: at)
+    encoded = json.dumps(discovered)
+    assert "Miami Dolphins" not in encoded and "100959" not in encoded
+
+
+def test_social_cycle_persists_worker_heartbeat_and_is_bounded(engine, monkeypatch):
+    at, _ = engine; value = source(at); source_id = store_source(value)
+    monkeypatch.setattr(social, "refresh_server_source", lambda clock: {"source_id": source_id, "verified_at": at.isoformat()})
+    monkeypatch.setattr(social, "discover_opportunities", lambda clock: {"discovered": 3, "queued": 1, "review": 1, "skipped": 1})
+    monkeypatch.setattr(social, "process_queue", lambda **kwargs: {"processed": 0, "expired": 0, "items": []})
+    result = social.social_cycle(clock=lambda: at, client_factory=lambda: pytest.fail("no publish expected"))
+    assert result["status"] == "SUCCEEDED" and result["result"]["status"] == "NO_DUE_OPPORTUNITY"
+    with social.connection() as connection:
+        cycle = connection.execute("SELECT * FROM social_cycles").fetchone()
+    assert cycle["status"] == "SUCCEEDED" and cycle["candidates_generated"] == 3
+
+
+def test_social_cycle_endpoint_requires_worker_secret(monkeypatch):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from backend.app.api.social_cron import router
+    app = FastAPI(); app.include_router(router); client = TestClient(app)
+    monkeypatch.setenv("NFL_AUTOMATION_SECRET", "worker-secret-at-least-thirty-two-characters")
+    monkeypatch.setenv("SOCIAL_SCHEDULER_ENABLED", "false")
+    assert client.post("/api/cron/social-cycle").status_code == 401
+    response = client.post("/api/cron/social-cycle", headers={"authorization": "Bearer worker-secret-at-least-thirty-two-characters"})
+    assert response.status_code == 200 and response.json()["status"] == "DISABLED"
 
 
 def test_ambiguous_x_delivery_is_never_retried(engine, monkeypatch):

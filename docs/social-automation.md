@@ -1,9 +1,12 @@
-# SmartBets daily social automation
+# SmartBets sports-day social automation
 
-The production API owns publishing. Vercel calls `/api/cron/social-daily` at
-13:00 UTC each day and supplies `CRON_SECRET`. The endpoint refuses requests
-when the scheduler flag is off, the source is stale, the company account does
-not match, the post is duplicated, or either publication safety switch is off.
+The production API owns publishing. Supabase Cron calls the bounded
+`POST /api/cron/social-cycle` worker every 15 minutes with the existing
+`NFL_AUTOMATION_SECRET` stored in Supabase Vault. The worker refreshes the
+canonical signed source, identifies the current sports-day window, discovers
+opportunities, expires stale/post-kickoff work, and processes at most one post.
+The legacy Vercel `/api/cron/social-daily` schedule remains a once-daily backup.
+It is not the primary game-day scheduler.
 
 The laptop never publishes. At 08:30 local time, the `SmartBets Social Source
 Sync` task reads the frozen Week 1 experiment in read-only mode, verifies the
@@ -59,10 +62,28 @@ evidence tables. This removes the local-worker dependency in production.
 | `/api/cron/social-discover` | Store grounded events, scores, queued and skipped opportunities | `SOCIAL_AUTOMATION_ENABLED` |
 | `/api/cron/social-process` | Materialize/process at most two due opportunities | `SOCIAL_SCHEDULER_ENABLED` plus all publishing gates |
 | `/api/cron/social-metrics` | Collect available X metrics for recent published posts | `SOCIAL_METRICS_ENABLED` |
+| `POST /api/cron/social-cycle` | Refresh evidence, discover, recover the current window, and process one item | `SOCIAL_SCHEDULER_ENABLED` plus all publishing gates |
+| `POST /api/cron/social-cycle/install` | Idempotently install/update the 15-minute Supabase Cron worker | `NFL_AUTOMATION_SECRET` |
 
-Every endpoint requires `Authorization: Bearer <CRON_SECRET>`. Add extra Vercel
-cron entries only after confirming plan limits and function duration. Queue work
-is intentionally resumable; a single invocation never generates unlimited media.
+The dedicated cycle endpoints use `NFL_AUTOMATION_SECRET`; legacy endpoints use
+`CRON_SECRET`. Install endpoints never return either secret. Queue work is
+intentionally resumable; a single invocation never generates unlimited media.
+
+The Sunday windows are broad (opening, slate, top picks, value, countdown, late,
+and Sunday night). If the worker misses an earlier window, it creates only the
+best current catch-up opportunity rather than replaying every missed slot. A
+media-provider failure falls back to validated text and remains visible in the
+media/activity ledger.
+
+Install or repair the recurring worker after deployment:
+
+```text
+POST https://smartbetsports-api.vercel.app/api/cron/social-cycle/install
+Authorization: Bearer <NFL_AUTOMATION_SECRET>
+```
+
+The Command Center reports the latest persisted worker heartbeat. A heartbeat
+older than 35 minutes is marked `STALE`.
 
 Deploy with discovery enabled, `SOCIAL_DRY_RUN=true`, videos and replies off.
 Review the Social Operations screen before enabling any public-write setting.

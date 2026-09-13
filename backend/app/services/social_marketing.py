@@ -13,7 +13,8 @@ import os
 from pathlib import Path
 import re
 import sqlite3
-from urllib.parse import urlsplit
+import uuid
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 import requests
 from database_safety import assert_postgres_allowed, assert_sqlite_target, PRODUCTION_DATABASE
@@ -30,6 +31,8 @@ from backend.app.services.social.storage import decoded, initialize_schema
 logger = logging.getLogger(__name__)
 SOCIAL_SCHEMA_LOCK_ID = 734120
 WEEK3_EXPECTED_HASH = 'a8a405ba262ef59bedb1b7bfcdf1ca4a7c0bf78cafe4b0ff0c1268b7d8b2412a'
+SOCIAL_CRON_JOB_NAME = 'smartbets-social-active-season'
+SOCIAL_CRON_VAULT_SECRET = 'smartbets_social_worker_secret'
 
 
 def now(): return datetime.now(timezone.utc)
@@ -275,7 +278,7 @@ SOCIAL_MARKET_LABELS={
 }
 
 
-def cta():
+def cta(context=None):
     value=os.getenv('SOCIAL_CTA_URL','')
     if not value: return ''
     parsed=urlsplit(value)
@@ -283,7 +286,14 @@ def cta():
         raise ValueError('CTA must be a plain HTTPS company URL without credentials/query/fragment')
     expected=os.getenv('SOCIAL_COMPANY_DOMAIN','')
     if not expected or parsed.hostname!=expected: raise ValueError('CTA must match SOCIAL_COMPANY_DOMAIN')
-    return ' Explore SmartBets: '+value
+    context=context or {}
+    params={'utm_source':'x','utm_medium':'social'}
+    if context.get('week') is not None:
+        params['utm_campaign']=f"nfl_week_{int(context['week'])}"
+    if context.get('window_key'):
+        params['utm_content']=str(context['window_key']).lower()
+    tracked=urlunsplit((parsed.scheme,parsed.netloc,parsed.path,urlencode(params),'')).rstrip('?')
+    return ' Explore SmartBets: '+tracked
 
 
 def _require(context, *fields):
@@ -509,6 +519,7 @@ def publish_one(post_id,clock=now,client_factory=OfficialX):
     else:
         try:
             store=storage_factory() if media else None
+            logger.info('X_UPLOAD_STARTED',extra={'postId':post_id,'mediaCount':len(media)})
             for asset in media:
                 payload=store.get(asset['storage_key'])
                 content_type='video/mp4' if asset['media_type']=='video' else 'image/png'
@@ -542,18 +553,19 @@ def publish_one(post_id,clock=now,client_factory=OfficialX):
                               (reason,clock().isoformat(),local_id))
     logger.info("social_publish_result", extra={"postId": post_id, "status": status,
                                                 "mediaCount": len(remote_media), "failureCode": reason})
+    if status=='PUBLISHED':
+        logger.info('X_POST_PUBLISHED',extra={'postId':post_id,'xPostId':x_id,'mediaCount':len(remote_media)})
     return dict(status=status,post_id=post_id,published=status=='PUBLISHED',x_post_id=x_id,failure_reason=reason)
 
 
 def daily(clock=now):
+    # Preserve the legacy Vercel daily response contract. The high-frequency
+    # production worker uses social_cycle(), which also persists heartbeats.
     initialize()
     discovered=discover_opportunities(clock)
     processed=process_queue(clock=clock,limit=2)
     if processed['processed']:
         return dict(discovery=discovered,queue=processed,post=processed['items'][0].get('post'),result=processed['items'][0].get('result'))
-    # The compatibility generate() entry point remains available for explicit
-    # legacy callers, but the automated worker never manufactures a generic
-    # daily post when no verified opportunity is due.
     return dict(discovery=discovered,queue=processed,post=None,
                 result={'status':'NO_DUE_OPPORTUNITY','published':False})
 
@@ -577,9 +589,24 @@ def process_queue(clock=now,limit=2,client_factory=OfficialX):
     initialize();items=[]
     with connection() as c:
         settings=social_settings.load_settings(c)
+        expired=queue_scheduler.expire_stale(c,clock)
         queued=queue_scheduler.due(c,settings,clock,limit)
         for opportunity in queued:
-            post=queue_scheduler.materialize(c,opportunity['opportunity_id'],sha=sha,sign=sign,cta=cta(),clock=clock)
+            logger.info('POST_SELECTED',extra={'opportunityId':opportunity['opportunity_id'],
+                'postType':opportunity.get('content_type'),'gameId':opportunity.get('game_id'),
+                'score':opportunity.get('score')})
+            try:
+                post=queue_scheduler.materialize(c,opportunity['opportunity_id'],sha=sha,sign=sign,
+                                                  cta_builder=cta,clock=clock)
+            except Exception as error:
+                code='MATERIALIZATION_'+type(error).__name__.upper()
+                c.execute("UPDATE social_opportunities SET status='REVIEW',skip_reason=?,updated_at=? WHERE opportunity_id=?",
+                          (code[:160],clock().isoformat(),opportunity['opportunity_id']))
+                logger.exception('SOCIAL_POST_FAILED',extra={'postType':opportunity.get('content_type'),
+                    'gameId':opportunity.get('game_id'),'retryable':False,'errorCategory':code})
+                items.append({'opportunity_id':opportunity['opportunity_id'],'post':None,
+                              'status':'REVIEW','result':None,'error_code':code})
+                continue
             context=post.pop('context',None)
             graphics_enabled=os.getenv('SOCIAL_DETERMINISTIC_GRAPHICS_ENABLED','true').lower()=='true'
             if context and (settings['ai_images_enabled'] or graphics_enabled):
@@ -590,18 +617,116 @@ def process_queue(clock=now,limit=2,client_factory=OfficialX):
                     if asset:
                         c.execute('UPDATE social_post_details SET media_asset_ids_json=?,media_type=?,alt_text=?,updated_at=? WHERE post_id=?',
                                   (encode([asset['media_asset_id']]),asset['media_type'],asset['alt_text'],clock().isoformat(),post['post_id']))
-                except Exception:
-                    c.execute("UPDATE social_opportunities SET status='REVIEW',skip_reason='MEDIA_GENERATION_FAILED',updated_at=? WHERE opportunity_id=?",
-                              (clock().isoformat(),opportunity['opportunity_id']))
-                    items.append({'opportunity_id':opportunity['opportunity_id'],'post':post,'status':'REVIEW','result':None})
-                    continue
+                        logger.info('MEDIA_GENERATED',extra={'postId':post['post_id'],
+                            'mediaAssetId':asset['media_asset_id'],'mediaType':asset['media_type']})
+                except Exception as error:
+                    # Timely, source-grounded text is preferable to missing the
+                    # sports window. The failed media version remains in the
+                    # durable asset ledger for owner review.
+                    c.execute("UPDATE social_post_details SET media_asset_ids_json='[]',media_type='text',updated_at=? WHERE post_id=?",
+                              (clock().isoformat(),post['post_id']))
+                    logger.exception('SOCIAL_POST_FAILED',extra={'postType':opportunity.get('content_type'),
+                        'gameId':opportunity.get('game_id'),'retryable':True,
+                        'errorCategory':'MEDIA_GENERATION_FAILED','fallback':'text'})
             items.append({'opportunity_id':opportunity['opportunity_id'],'post':post})
     for item in items:
         if item.get('status')=='REVIEW':continue
-        item['result']=publish_one(item['post']['post_id'],clock,client_factory)
-        item['status']=item['result']['status']
-    logger.info("social_queue_processed", extra={"processed":len(items),"statuses":[item.get('status') for item in items]})
-    return {'processed':len(items),'items':items}
+        try:
+            item['result']=publish_one(item['post']['post_id'],clock,client_factory)
+            item['status']=item['result']['status']
+        except Exception as error:
+            code='PUBLISH_'+type(error).__name__.upper()
+            item.update(status='FAILED_PRECHECK',result=None,error_code=code)
+            logger.exception('SOCIAL_POST_FAILED',extra={'postType':item['post'].get('category'),
+                'retryable':True,'errorCategory':code})
+    logger.info("social_queue_processed", extra={"processed":len(items),"expired":expired['expired'],
+                                                   "statuses":[item.get('status') for item in items]})
+    return {'processed':len(items),'expired':expired['expired'],'items':items}
+
+
+def social_cycle(clock=now,trigger_name='supabase_cron',client_factory=OfficialX):
+    """Run one bounded, recoverable social cycle and persist its heartbeat."""
+    initialize();started=clock().astimezone(timezone.utc);cycle_id=uuid.uuid4().hex
+    with connection() as c:
+        c.execute("""INSERT INTO social_cycles(cycle_id,trigger_name,status,started_at,details_json)
+            VALUES(?,?,'RUNNING',?,'{}')""",(cycle_id,trigger_name,started.isoformat()))
+    logger.info('SOCIAL_CYCLE_STARTED',extra={'cycleId':cycle_id,'trigger':trigger_name})
+    try:
+        refreshed=refresh_server_source(clock)
+        with connection() as c:
+            source_id,source=load_source(c,refreshed['source_id'],clock)
+        from backend.app.services.social.events import sports_day_context
+        day=sports_day_context(source,clock)
+        logger.info('NFL_CONTEXT_LOADED',extra={'cycleId':cycle_id,'season':day.get('season'),
+            'week':day.get('week'),'window':day.get('window_key'),'gamesFound':day.get('games_found'),
+            'predictionsFound':day.get('predictions_found')})
+        logger.info('GAMES_FOUND',extra={'cycleId':cycle_id,'count':day.get('games_found',0)})
+        logger.info('PREDICTIONS_FOUND',extra={'cycleId':cycle_id,'count':day.get('predictions_found',0)})
+        discovered=discover_opportunities(clock)
+        logger.info('CANDIDATES_GENERATED',extra={'cycleId':cycle_id,
+            'discovered':discovered.get('discovered',0),'queued':discovered.get('queued',0),
+            'review':discovered.get('review',0),'skipped':discovered.get('skipped',0)})
+        logger.info('CANDIDATES_FILTERED',extra={'cycleId':cycle_id,'queued':discovered.get('queued',0),
+            'blocked':discovered.get('review',0)+discovered.get('skipped',0)})
+        processed=process_queue(clock=clock,limit=1,client_factory=client_factory)
+        selected=processed['items'][0] if processed.get('items') else {}
+        publish_status=selected.get('status') or 'NO_DUE_OPPORTUNITY'
+        completed=clock().astimezone(timezone.utc)
+        with connection() as c:
+            c.execute("""UPDATE social_cycles SET status='SUCCEEDED',completed_at=?,source_id=?,source_verified_at=?,
+                season=?,week=?,window_key=?,games_found=?,predictions_found=?,candidates_generated=?,queued_count=?,
+                blocked_count=?,selected_post_id=?,publish_status=?,details_json=? WHERE cycle_id=?""",(
+                completed.isoformat(),source_id,source.get('verified_at'),day.get('season'),day.get('week'),
+                day.get('window_key'),day.get('games_found',0),day.get('predictions_found',0),
+                discovered.get('discovered',0),discovered.get('queued',0),
+                discovered.get('review',0)+discovered.get('skipped',0),
+                (selected.get('post') or {}).get('post_id'),publish_status,
+                encode({'expired':processed.get('expired',0)}),cycle_id))
+        logger.info('SOCIAL_CYCLE_COMPLETE',extra={'cycleId':cycle_id,'status':publish_status})
+        return {'cycleId':cycle_id,'status':'SUCCEEDED','context':{key:day.get(key) for key in
+                ('season','week','window_key','next_kickoff','games_found','predictions_found')},
+                'discovery':discovered,'queue':processed,'result':selected.get('result') or
+                {'status':publish_status,'published':False}}
+    except Exception as error:
+        completed=clock().astimezone(timezone.utc);code=type(error).__name__.upper()
+        with connection() as c:
+            c.execute("UPDATE social_cycles SET status='FAILED',completed_at=?,error_code=? WHERE cycle_id=?",
+                      (completed.isoformat(),code,cycle_id))
+        logger.exception('SOCIAL_POST_FAILED',extra={'cycleId':cycle_id,'retryable':True,'errorCategory':code})
+        raise
+
+
+def install_supabase_social_cron(*,base_url,secret):
+    """Install the bounded fifteen-minute worker without exposing its bearer."""
+    parsed=urlsplit(base_url)
+    if parsed.scheme!='https' or not parsed.netloc or parsed.path not in ('','/') or parsed.query or parsed.fragment:
+        raise ValueError('NFL_AUTOMATION_BASE_URL must be an HTTPS origin')
+    if len(secret)<32:
+        raise ValueError('NFL_AUTOMATION_SECRET must contain at least 32 characters')
+    target=base_url.rstrip('/')+'/api/cron/social-cycle'
+    with connection() as c:
+        if not c.postgres: raise RuntimeError('Supabase social cron installation requires PostgreSQL')
+        c.execute('CREATE EXTENSION IF NOT EXISTS pg_cron')
+        c.execute('CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions')
+        c.execute('CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault')
+        existing=c.execute('SELECT id FROM vault.secrets WHERE name=?',(SOCIAL_CRON_VAULT_SECRET,)).fetchone()
+        if existing:
+            c.execute('SELECT vault.update_secret(?,?,?,?)',(existing['id'],secret,SOCIAL_CRON_VAULT_SECRET,
+                      'Bearer for SmartBetSports bounded social worker'))
+        else:
+            c.execute('SELECT vault.create_secret(?,?,?)',(secret,SOCIAL_CRON_VAULT_SECRET,
+                      'Bearer for SmartBetSports bounded social worker'))
+        command="""SELECT net.http_post(
+            url := '{target}',
+            headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' ||
+              (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='{vault_name}')),
+            body := '{{}}'::jsonb, timeout_milliseconds := 25000);""".format(
+                target=target.replace("'","''"),vault_name=SOCIAL_CRON_VAULT_SECRET)
+        c.execute('SELECT cron.schedule(?,?,?)',(SOCIAL_CRON_JOB_NAME,'*/15 * * * *',command))
+        job=c.execute('SELECT jobid,jobname,schedule,active FROM cron.job WHERE jobname=?',
+                      (SOCIAL_CRON_JOB_NAME,)).fetchone()
+    return {'installed':True,'job':dict(job) if job else None,'target':target,
+            'secret_storage':'supabase_vault','secret_exposed':False}
 
 
 def reconcile_published(post_id,x_post_id,clock=now,client_factory=OfficialX):

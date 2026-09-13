@@ -26,6 +26,32 @@ def social_daily(request:Request):
         raise HTTPException(503,'Social job blocked; check configuration and verified-source freshness') from None
 
 
+@router.post('/api/cron/social-cycle')
+def social_cycle(request:Request):
+    """Bounded production worker invoked by Supabase Cron."""
+    if not authorized(request,'NFL_AUTOMATION_SECRET'):
+        raise HTTPException(401,'Social automation authentication required')
+    if os.getenv('SOCIAL_SCHEDULER_ENABLED','false').lower()!='true':
+        return {'status':'DISABLED','published':False}
+    try:
+        return social_marketing.social_cycle()
+    except Exception:
+        raise HTTPException(503,'Social cycle failed; inspect the protected Command Center') from None
+
+
+@router.post('/api/cron/social-cycle/install')
+def install_social_cycle(request:Request):
+    if not authorized(request,'NFL_AUTOMATION_SECRET'):
+        raise HTTPException(401,'Social automation authentication required')
+    try:
+        return social_marketing.install_supabase_social_cron(
+            base_url=os.getenv('NFL_AUTOMATION_BASE_URL',''),
+            secret=os.getenv('NFL_AUTOMATION_SECRET',''),
+        )
+    except Exception:
+        raise HTTPException(503,'Supabase social Cron installation failed') from None
+
+
 @router.get('/api/cron/social-discover')
 def social_discover(request:Request):
     if not authorized(request):

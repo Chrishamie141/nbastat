@@ -66,6 +66,7 @@ export const api = {
       opportunities: (status = '') => request(`/api/internal/operations/social/opportunities${status ? `?status=${encodeURIComponent(status)}` : ''}`),
       skipped: () => request('/api/internal/operations/social/skipped'),
       post: (postId) => request(`/api/internal/operations/social/posts/${encodeURIComponent(postId)}`),
+      generatePreview: (opportunityId) => request(`/api/internal/operations/social/opportunities/${encodeURIComponent(opportunityId)}/preview`, { method: 'POST', timeoutMs: 30000 }),
       media: () => request('/api/internal/operations/social/media'),
       analytics: () => request('/api/internal/operations/social/analytics'),
       engagement: () => request('/api/internal/operations/social/engagement'),

@@ -85,7 +85,15 @@ def deterministic_caption(context: dict[str, Any]) -> str:
     if kind == "AI_PICK":
         text = f"SMARTBETS AI PICK\n{matchup}\nModel lean: {winner} ({_pct(probability)})\nA projection, not a promise."
     elif kind == "TODAYS_CARD":
-        text = f"TODAY'S CARD\n{context['predictions_count']} verified predictions across {context['games_count']} games. Every lean is frozen before kickoff."
+        if context.get("window_key"):
+            headline = context.get("window_label") or "NFL SUNDAY"
+            top = ""
+            if winner and probability is not None:
+                top = f"\nHighest model confidence: {winner} ({_pct(probability)})."
+            text = (f"{headline}\n{context['predictions_count']} verified pregame predictions remain on the Week "
+                    f"{context['week']} board.{top}\nEvery model lean was frozen before kickoff.")
+        else:
+            text = f"TODAY'S CARD\n{context['predictions_count']} verified predictions across {context['games_count']} games. Every lean is frozen before kickoff."
     elif kind == "MODEL_VS_MARKET":
         if market is None or edge is None:
             raise ValueError("Market comparison requires verified market data")
@@ -135,6 +143,9 @@ def context_from_event(event: dict[str, Any], post_type: str, cta: str = "") -> 
         "finals_count": evidence.get("finals_count"), "record": evidence.get("record"),
         "streak_count": evidence.get("streak_count"), "streak_result": evidence.get("streak_result"),
         "kickoff_time": evidence.get("kickoff_time"), "kickoff_label": evidence.get("kickoff_label"),
+        "season": evidence.get("season"), "week": evidence.get("week"),
+        "window_key": evidence.get("window_key"), "window_label": evidence.get("window_label"),
+        "next_kickoff": evidence.get("next_kickoff"),
         "stored_wager_evidence": bool((evidence.get("grade") or {}).get("qualified_wager")),
         "source_timestamp": evidence.get("source_timestamp"), "cta": cta,
         "source_entities": [value for value in (evidence.get("away_team"), evidence.get("home_team"), prediction.get("winner")) if value],

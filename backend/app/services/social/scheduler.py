@@ -21,7 +21,7 @@ def _load_opportunity(connection, opportunity_id: str) -> dict[str, Any]:
     return value
 
 
-def materialize(connection, opportunity_id: str, *, sha, sign, cta: str = "", clock=None,
+def materialize(connection, opportunity_id: str, *, sha, sign, cta: str = "", cta_builder=None, clock=None,
                 writer_factory=content.OpenAICopyWriter) -> dict[str, Any]:
     at = (clock or (lambda: datetime.now(timezone.utc)))().astimezone(timezone.utc)
     opportunity = _load_opportunity(connection, opportunity_id)
@@ -32,6 +32,8 @@ def materialize(connection, opportunity_id: str, *, sha, sign, cta: str = "", cl
         return dict(connection.execute("SELECT * FROM social_posts WHERE post_id=?", (existing["post_id"],)).fetchone())
     event = {"event_id": opportunity["event_id"], "event_type": opportunity["event_type"], "evidence": opportunity["evidence"]}
     context = content.context_from_event(event, opportunity["content_type"], cta)
+    if cta_builder:
+        context["cta"] = cta_builder(context)
     caption, writer = content.compose(context, writer_factory)
     normalized = re.sub(r"\s+", " ", re.sub(r"https://\S+|\d+(?:\.\d+)?", "", caption.lower())).strip()
     for prior in connection.execute("SELECT content FROM social_posts ORDER BY scheduled_at DESC LIMIT 12").fetchall():
@@ -62,6 +64,40 @@ def materialize(connection, opportunity_id: str, *, sha, sign, cta: str = "", cl
                        (at.isoformat(), opportunity_id))
     post = dict(connection.execute("SELECT * FROM social_posts WHERE post_id=?", (post_id,)).fetchone())
     return {**post, "writer": writer, "context": context}
+
+
+PREGAME_CONTENT = frozenset({
+    "AI_PICK", "TODAYS_CARD", "MODEL_VS_MARKET", "UPSET_WATCH", "LINE_MOVEMENT",
+    "GAME_PREVIEW", "ENGAGEMENT_QUESTION",
+})
+
+
+def expire_stale(connection, clock=None) -> dict[str, int]:
+    """Remove stale-source and post-kickoff work before selecting a queue item."""
+    at = (clock or (lambda: datetime.now(timezone.utc)))().astimezone(timezone.utc)
+    rows = connection.execute("""SELECT o.opportunity_id,o.content_type,e.evidence_json,s.verified_at
+        FROM social_opportunities o JOIN social_events e USING(event_id)
+        JOIN social_sources s ON s.source_id=e.source_id WHERE o.status='QUEUED'""").fetchall()
+    expired = 0
+    for row in rows:
+        evidence = decoded(row["evidence_json"], {})
+        reason = None
+        try:
+            source_at = datetime.fromisoformat(str(row["verified_at"]).replace("Z", "+00:00")).astimezone(timezone.utc)
+            if at - source_at > timedelta(hours=36):
+                reason = "SOURCE_STALE"
+        except (TypeError, ValueError):
+            reason = "SOURCE_TIMESTAMP_INVALID"
+        kickoff_raw = evidence.get("kickoff_time")
+        if not reason and row["content_type"] in PREGAME_CONTENT and kickoff_raw:
+            kickoff = datetime.fromisoformat(str(kickoff_raw).replace("Z", "+00:00")).astimezone(timezone.utc)
+            if at >= kickoff:
+                reason = "GAME_STARTED"
+        if reason:
+            connection.execute("""UPDATE social_opportunities SET status='SKIPPED',skip_reason=?,updated_at=?
+                WHERE opportunity_id=? AND status='QUEUED'""", (reason, at.isoformat(), row["opportunity_id"]))
+            expired += 1
+    return {"expired": expired}
 
 
 def schedule(connection, opportunity_id: str, scheduled_at: str, clock=None) -> dict[str, Any]:

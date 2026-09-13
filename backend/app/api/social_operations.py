@@ -72,6 +72,12 @@ def social_post(post_id: str):
         raise HTTPException(404, str(exc)) from None
 
 
+@router.post("/opportunities/{opportunity_id}/preview")
+def social_generate_preview(opportunity_id: str, user=Depends(require_internal_access)):
+    return _write("SOCIAL_GENERATE_PREVIEW", opportunity_id, user,
+                  lambda: operations.generate_preview(opportunity_id))
+
+
 @router.get("/media")
 def social_media(limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)):
     return operations.media_library(limit, offset)

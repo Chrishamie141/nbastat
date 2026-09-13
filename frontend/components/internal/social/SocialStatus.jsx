@@ -12,15 +12,22 @@ export function StatusPill({ status }) {
 
 export default function SocialStatus({ summary }) {
   const metrics = [
-    ["Posts today", summary.postsToday, Send], ["Queued", summary.queued, Clock3],
+    ["Posts today", summary.postsToday, Send], ["Posts this week", summary.postsThisWeek, Send],
+    ["Queued", summary.queued, Clock3],
     ["Generating", summary.generating, Clock3], ["Review", summary.reviewRequired, ShieldCheck],
-    ["Published", summary.published, Send], ["Images today", summary.imagesGeneratedToday, ImageIcon],
+    ["Images today", summary.imagesGeneratedToday, ImageIcon],
     ["Videos today", summary.videosGeneratedToday, Video], ["Failed", summary.failed, ShieldCheck],
   ];
   return <>
     <div className="flex flex-wrap items-center gap-3">
+      <span className="text-xs font-black uppercase tracking-wider text-slate-500">X Automation</span>
       <StatusPill status={summary.engineState} />
+      <span className="text-xs font-black uppercase tracking-wider text-slate-500">X API</span>
       <StatusPill status={summary.xAccountState} />
+      <span className="text-xs font-black uppercase tracking-wider text-slate-500">Scheduler</span>
+      <StatusPill status={summary.schedulerState} />
+      <span className="text-xs font-black uppercase tracking-wider text-slate-500">Worker</span>
+      <StatusPill status={summary.workerState} />
       {summary.publicWritesBlocked && <span className="text-sm font-bold text-amber-200">Public writes are blocked</span>}
     </div>
     <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">

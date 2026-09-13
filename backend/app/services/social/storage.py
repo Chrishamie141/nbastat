@@ -66,7 +66,7 @@ def initialize_schema(connection) -> None:
     applied = connection.execute(
         "SELECT MAX(version) AS version FROM social_schema_migrations"
     ).fetchone()
-    if applied and int(applied["version"] or 0) >= 3:
+    if applied and int(applied["version"] or 0) >= 4:
         return
     _remove_day_key_uniqueness(connection)
     connection.execute("CREATE INDEX IF NOT EXISTS social_posts_status_schedule ON social_posts(status,scheduled_at)")
@@ -125,6 +125,14 @@ def initialize_schema(connection) -> None:
         remote_post_id TEXT,last_error_code TEXT,attempt_count INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL)""")
     _ensure_delivery_attempt_count(connection)
     connection.execute("CREATE INDEX IF NOT EXISTS social_delivery_claims_post ON social_delivery_claims(post_id)")
+    connection.execute("""CREATE TABLE IF NOT EXISTS social_cycles(
+        cycle_id TEXT PRIMARY KEY,trigger_name TEXT NOT NULL,status TEXT NOT NULL,
+        started_at TEXT NOT NULL,completed_at TEXT,source_id TEXT,source_verified_at TEXT,
+        season INTEGER,week INTEGER,window_key TEXT,games_found INTEGER NOT NULL DEFAULT 0,
+        predictions_found INTEGER NOT NULL DEFAULT 0,candidates_generated INTEGER NOT NULL DEFAULT 0,
+        queued_count INTEGER NOT NULL DEFAULT 0,blocked_count INTEGER NOT NULL DEFAULT 0,
+        selected_post_id TEXT,publish_status TEXT,error_code TEXT,details_json TEXT NOT NULL DEFAULT '{}')""")
+    connection.execute("CREATE INDEX IF NOT EXISTS social_cycles_started ON social_cycles(started_at,status)")
     connection.execute(
         "INSERT INTO social_schema_migrations(version,description,applied_at) VALUES(2,?,?) ON CONFLICT(version) DO NOTHING",
         ("multi-post event engine and durable media ledger", utc_now()),
@@ -133,11 +141,16 @@ def initialize_schema(connection) -> None:
         "INSERT INTO social_schema_migrations(version,description,applied_at) VALUES(3,?,?) ON CONFLICT(version) DO NOTHING",
         ("bounded retry accounting for safe pre-delivery failures", utc_now()),
     )
+    connection.execute(
+        "INSERT INTO social_schema_migrations(version,description,applied_at) VALUES(4,?,?) ON CONFLICT(version) DO NOTHING",
+        ("sports-day worker heartbeat and cycle audit", utc_now()),
+    )
     if connection.postgres:
         tables = (
             "social_sources", "social_posts", "social_publish_days", "social_schema_migrations",
             "social_settings", "social_events", "social_opportunities", "social_post_details",
             "social_media_assets", "social_metrics", "social_engagement_queue", "social_delivery_claims",
+            "social_cycles",
         )
         for table in tables:
             connection.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")

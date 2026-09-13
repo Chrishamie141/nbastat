@@ -3,7 +3,7 @@ import { StatusPill } from "./SocialStatus";
 
 const fmt = (value) => value ? new Date(value).toLocaleString() : "Not scheduled";
 
-export default function SocialQueue({ items, busy, onPreview, onCaption, onMedia, onPublish, onReschedule, onCancel }) {
+export default function SocialQueue({ items, busy, onPreview, onGeneratePreview, onCaption, onMedia, onPublish, onReschedule, onCancel }) {
   if (!items.length) return <p className="rounded-2xl bg-white/[.04] p-5 text-sm text-slate-400">No posts are waiting. Skipped opportunities remain available below for an explanation.</p>;
   return <div className="grid gap-4 lg:grid-cols-2">
     {items.map((item) => <article key={item.opportunity_id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[.035]">
@@ -16,6 +16,7 @@ export default function SocialQueue({ items, busy, onPreview, onCaption, onMedia
         <details className="mt-3 text-xs text-slate-400"><summary className="cursor-pointer font-bold">Why this score</summary><ul className="mt-2 list-disc space-y-1 pl-4">{item.score_reasons?.map((reason) => <li key={reason}>{reason}</li>)}</ul></details>
         <div className="mt-4 flex flex-wrap gap-2">
           {item.post_id && <button onClick={() => onPreview(item.post_id)} className="btn btn-glass px-3 py-2 text-xs">Preview</button>}
+          {!item.post_id && <button onClick={() => onGeneratePreview(item.opportunity_id)} disabled={busy} className="btn btn-primary px-3 py-2 text-xs">Generate Preview</button>}
           {item.post_id && <button onClick={() => onCaption(item.post_id)} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Regenerate caption</button>}
           {item.post_id && <button onClick={() => onMedia(item.post_id, "image")} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Regenerate image</button>}
           {item.post_id && <button onClick={() => onMedia(item.post_id, "video")} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Regenerate video</button>}
