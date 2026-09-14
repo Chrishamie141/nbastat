@@ -203,6 +203,42 @@ def test_current_context_prefers_persisted_automation_state(monkeypatch):
     assert service.current_week_context(2026) == persisted
 
 
+def test_monday_planning_context_advances_without_changing_grading_context(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    monday = datetime(2026, 9, 14, 16, 0, tzinfo=timezone.utc)
+    operational = {
+        "season": 2026, "seasonType": "regular", "week": 1,
+        "displayWeek": 1, "providerWeek": 1, "weekKey": "REG1",
+        "weekLabel": "Week 1", "hasUpcoming": True, "source": "automation_state",
+    }
+    monkeypatch.setattr(service, "current_week_context", lambda season, at=None: operational)
+    monkeypatch.setattr(service, "_schedule", lambda season, week, season_type="regular": [
+        {"status": "scheduled", "provider_week": 2}
+    ] if week == 2 else [])
+
+    display = service.planning_week_context(2026, at=monday)
+
+    assert display["week"] == 2
+    assert display["gradingWeek"] == 1
+    assert operational["week"] == 1
+
+
+def test_sunday_planning_context_stays_on_current_week(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    sunday = datetime(2026, 9, 13, 16, 0, tzinfo=timezone.utc)
+    operational = {
+        "season": 2026, "seasonType": "regular", "week": 1,
+        "displayWeek": 1, "providerWeek": 1, "weekKey": "REG1",
+        "weekLabel": "Week 1", "hasUpcoming": True, "source": "automation_state",
+    }
+    monkeypatch.setattr(service, "current_week_context", lambda season, at=None: operational)
+    monkeypatch.setattr(service, "_schedule", lambda *args: (_ for _ in ()).throw(AssertionError("no next-week probe on Sunday")))
+
+    assert service.planning_week_context(2026, at=sunday)["week"] == 1
+
+
 def test_persisted_context_reads_active_automation_slate(monkeypatch):
     import backend.app.services.nfl_product_service as service
 
@@ -550,6 +586,37 @@ def test_multi_game_parlay_rejects_mock_stale_and_pass_legs(monkeypatch):
     assert {row["reason"] for row in rejected} == {
         "verified_price_unavailable", "stale_price", "model_decision_is_pass",
     }
+
+
+def test_manual_multi_game_parlay_keeps_verified_prices_without_lowering_model_policy(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    fresh = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    items = []
+    for index, (home, away) in enumerate((("BUF", "MIA"), ("KC", "DEN")), 1):
+        items.append({
+            "game_id": f"manual-{index}", "status": "scheduled", "predictionStatus": "available",
+            "winner": home, "winProbability": .58, "homeWinProbability": .58,
+            "awayWinProbability": .42, "home_team": home, "away_team": away,
+            "recommendedBet": False,
+            "market": {"homeOdds": -120, "awayOdds": 110, "homeImpliedProbability": .54,
+                       "awayImpliedProbability": .46, "sportsbook": "Verified Book",
+                       "provider": "the-odds-api", "marketTimestamp": fresh},
+        })
+    monkeypatch.setattr(service, "weekly_board", lambda *args, **kwargs: {"items": items})
+
+    manual, rejected = service.build_multi_game_parlay(
+        season=2026, week=2, season_type="regular", profile="SAFE", user_id=7,
+        selections=[{"gameId": row["game_id"], "team": row["home_team"]} for row in items], manual=True,
+    )
+    recommended, _ = service.build_multi_game_parlay(
+        season=2026, week=2, season_type="regular", profile="SAFE", user_id=7,
+        selections=[{"gameId": row["game_id"], "team": row["home_team"]} for row in items], manual=False,
+    )
+
+    assert len(manual.parlay.legs) == 2
+    assert rejected == []
+    assert recommended.parlay.legs == []
 
 
 def test_prediction_snapshot_insert_is_atomic_and_preserves_preseason_model(monkeypatch, tmp_path):

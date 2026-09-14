@@ -190,6 +190,7 @@ function Builder() {
             gameId: game.game_id,
             team,
           })),
+          manual: true,
         }),
       );
     } catch (exc) {
@@ -420,8 +421,9 @@ function SelectionPanel({
         </>
       )}
       <p className="mt-4 border-t border-white/10 pt-4 text-xs text-slate-500">
-        A parlay is withheld when prices, model support, or enough eligible legs
-        are unavailable.
+        Automated recommendations keep the selected profile thresholds. You can
+        still build a manual ticket from two or more upcoming games when fresh,
+        verified prices exist; unavailable prices are never substituted.
       </p>
     </GlowCard>
   );
@@ -555,12 +557,13 @@ function GameCard({ game, mode, picked, selected, choose, selectGame }) {
             ].map(([team, odds]) => (
               <button
                 key={team}
-                disabled={final || !available}
+                disabled={final || !available || odds == null}
+                title={final ? "Final games are read-only" : !available ? "Model support is unavailable" : odds == null ? "Verified price unavailable" : picked === team ? "Remove this leg" : "Add this leg"}
                 aria-pressed={picked === team}
                 onClick={() => choose(game, team)}
                 className={`rounded-2xl border p-3 font-bold disabled:cursor-not-allowed disabled:opacity-50 ${picked === team ? "border-cyan-300 bg-cyan-300/20" : "border-white/10 bg-white/5"}`}
               >
-                {team}
+                <span className="mr-2" aria-hidden="true">{picked === team ? "−" : "+"}</span>{team}
                 <span className="block text-xs font-normal text-slate-400">
                   {odds == null
                     ? "Price unavailable"

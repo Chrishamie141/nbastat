@@ -9,12 +9,13 @@ from pathlib import Path
 import sqlite3
 from typing import Any, Callable
 
-from backend.app.database import using_postgres
+from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.services import social_marketing
 from backend.app.services import social_operations_service
 from backend.app.services import nfl_server_automation
 from backend.app.services.operator_action_service import recent as recent_actions
 from backend.app.services.readiness_service import database_health, prediction_store_health
+from backend.app.services.nfl_product_service import nfl_season_year, planning_week_context, _schedule
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_WEEK1_DB = ROOT / "backtesting" / "market_capture" / "nfl_2026_reg1_v1.db"
@@ -198,6 +199,71 @@ def _week1(at: datetime) -> dict:
         connection.close()
 
 
+def _active_nfl_week(at: datetime) -> dict:
+    """Build the owner slate from production tables, never a local archive."""
+    context = planning_week_context(nfl_season_year(at), at=at)
+    season, season_type, week = int(context["season"]), str(context["seasonType"]), int(context["week"])
+    schedule = _schedule(season, week, season_type)
+    histories: dict[str, dict] = {}
+    results: dict[str, dict] = {}
+    with get_db_connection() as connection:
+        if table_exists(connection, "nfl_prediction_history"):
+            rows = connection.execute(
+                "SELECT * FROM nfl_prediction_history WHERE season=? AND season_type=? AND week=? ORDER BY user_id,id",
+                (season, season_type, week),
+            ).fetchall()
+            for row in rows:
+                histories.setdefault(str(row["game_id"]), dict(row))
+                if row["user_id"] == 0:
+                    histories[str(row["game_id"])] = dict(row)
+        if table_exists(connection, "nfl_game_result_snapshots"):
+            results = {str(row["game_id"]): dict(row) for row in connection.execute(
+                "SELECT * FROM nfl_game_result_snapshots WHERE season=? AND season_type=? AND week=?",
+                (season, season_type, week),
+            ).fetchall()}
+    games = []
+    for source in schedule:
+        game_id = str(source.get("game_id") or source.get("id") or "")
+        canonical_id = game_id if game_id.startswith("espn-") else f"espn-{game_id}"
+        prediction, final = histories.get(canonical_id), results.get(canonical_id)
+        raw_status = str(source.get("status") or "scheduled").upper()
+        status = "FINAL" if final or raw_status in {"FINAL", "FINAL-OT", "COMPLETED"} else "LIVE" if raw_status in {"LIVE", "HALFTIME", "IN_PROGRESS"} else raw_status
+        warnings = []
+        if status == "FINAL" and prediction and prediction.get("settlement_status") == "PENDING":
+            warnings.append("Final game is awaiting idempotent prediction settlement.")
+        games.append({
+            "id": canonical_id, "awayTeam": source.get("away_team"), "homeTeam": source.get("home_team"),
+            "kickoff": source.get("kickoff_time"), "season": season, "seasonType": season_type, "week": week,
+            "status": status, "awayScore": (final or {}).get("away_score", source.get("away_score")),
+            "homeScore": (final or {}).get("home_score", source.get("home_score")),
+            "predictionStatus": ("READY" if prediction and prediction.get("settlement_status") == "PENDING"
+                                 else "GRADED" if prediction else "MISSING"),
+            "statsStatus": "READY" if final else "PENDING", "lastRefresh": (final or {}).get("retrieved_at"),
+            "freshness": "STALE" if warnings else "CURRENT", "warnings": warnings,
+            "prediction": ({"winner": prediction.get("predicted_winner"), "probability": prediction.get("model_probability"),
+                            "modelVersion": prediction.get("model_version"), "generatedAt": prediction.get("generated_at"),
+                            "artifactHash": prediction.get("frozen_prediction_hash")} if prediction else None),
+            "grade": prediction.get("settlement_status") if prediction else None,
+        })
+    final_count = sum(game["status"] == "FINAL" for game in games)
+    graded_count = sum(game.get("grade") in {"WON", "LOST", "PUSH", "VOID"} for game in games)
+    return {
+        "season": season, "seasonType": season_type, "week": week, "games": games,
+        "scheduledGames": len(games), "predictions": len(histories), "finals": final_count,
+        "graded": graded_count, "failedPredictions": 0, "issues": [
+            {"severity": "WARNING", "category": "GAME_STATUS", "entityId": game["id"],
+             "summary": game["warnings"][0], "source": "production_database", "detectedAt": at.isoformat(),
+             "lastAttemptAt": game.get("lastRefresh"), "recommendedAction": "Run production lifecycle", "action": "RECONCILE"}
+            for game in games if game["warnings"]
+        ],
+        "checkpoints": {}, "marketCoverage": 0, "provider": {"status": "HEALTHY"},
+        "latestPredictionRun": max((row.get("generated_at") for row in histories.values()), default=None),
+        "latestFinalIngested": max((row.get("retrieved_at") for row in results.values()), default=None),
+        "modelVersion": next((row.get("model_version") for row in histories.values()), None), "events": [],
+        "context": context,
+    }
+
+
 def _worker(at: datetime) -> dict:
     if using_postgres():
         automation = nfl_server_automation.status()
@@ -274,7 +340,8 @@ def _fallback(social_panel: dict) -> dict:
 def command_center(clock: Callable[[], datetime] = _now) -> dict:
     at = clock()
     db_panel, prediction_panel = _safe_panel(database_health), _safe_panel(prediction_store_health)
-    social_panel, week_panel = _safe_panel(lambda: _social(at)), _safe_panel(lambda: _week1(at))
+    week_loader = (lambda: _week1(at)) if (os.getenv("WEEK1_EXPERIMENT_DB") or "").strip() else (lambda: _active_nfl_week(at))
+    social_panel, week_panel = _safe_panel(lambda: _social(at)), _safe_panel(week_loader)
     worker_panel, actions_panel = _safe_panel(lambda: _worker(at)), _safe_panel(recent_actions)
     week, database = week_panel["data"] or _fallback(social_panel), db_panel.get("data") or {}
     issues = list(week.get("issues") or [])
@@ -290,7 +357,7 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
                        "recommendedAction": "Review schema compatibility", "action": "RETRY_PANEL"})
     if week_panel["status"] != "HEALTHY":
         issues.append({"severity": "WARNING", "category": "DATA", "entityId": "current-slate",
-                       "summary": week_panel["error"]["message"], "source": "week1_store", "detectedAt": at.isoformat(),
+                       "summary": week_panel["error"]["message"], "source": "production_database", "detectedAt": at.isoformat(),
                        "ownerSummary": "Some live game data is not updating yet.",
                        "lastAttemptAt": at.isoformat(), "recommendedAction": "Refresh game data",
                        "action": "RETRY_PANEL"})
@@ -326,8 +393,8 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
                        "recommendedAction": "No action required", "action": None})
     critical = any(row["severity"] == "CRITICAL" for row in issues)
     checks = {
-        "scheduleLoaded": "PASS" if week.get("scheduledGames") == 16 else "FAIL",
-        "gameIdentitiesValid": "PASS" if len(week.get("games") or []) == 16 and all(g.get("id") for g in week["games"]) else "UNKNOWN",
+        "scheduleLoaded": "PASS" if week.get("scheduledGames", 0) > 0 else "FAIL",
+        "gameIdentitiesValid": "PASS" if len(week.get("games") or []) == week.get("scheduledGames") and all(g.get("id") for g in week["games"]) else "UNKNOWN",
         "databaseHealthy": "PASS" if database.get("status") == "healthy" else "WARN" if database.get("status") == "degraded" else "FAIL",
         "week1SlateAvailable": "PASS" if week.get("scheduledGames") else "FAIL",
         "predictionsComplete": "PASS" if week.get("predictions") == week.get("scheduledGames") and week.get("scheduledGames") else "FAIL",
@@ -347,7 +414,7 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
                     "actualIngestionOperational": checks["actualIngestionOperational"], "searchOperational": checks["searchOperational"]}
     return {
         "generatedAt": at.isoformat(), "environment": os.getenv("VERCEL_ENV", "local"), "version": _git_version(),
-        "context": {"league": "NFL", "season": 2026, "seasonType": "regular", "week": 1},
+        "context": {"league": "NFL", "season": week.get("season"), "seasonType": week.get("seasonType"), "week": week.get("week")},
         "availableSports": ["ALL", "NFL", "NBA"], "overallStatus": readiness,
         "systemReadiness": {"status": readiness, "checks": owner_checks},
         "week1Readiness": {"status": readiness, "checks": checks},

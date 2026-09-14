@@ -18,7 +18,7 @@ export default function PremiumNavbar() {
   ];
   const ownerPortal = Boolean(user?.isInternal && (path.startsWith("/internal") || path.startsWith("/command-center")));
   const links = ownerPortal
-    ? ["command-center", "internal/experiments/week3"]
+    ? ["dashboard", "command-center"]
     : user?.isInternal
       ? [...authed, "command-center"]
       : authed;
@@ -43,11 +43,7 @@ export default function PremiumNavbar() {
                 href={`/${l}`}
                 className={`rounded-xl px-2 py-2 text-sm capitalize transition ${path.includes(l) ? "bg-cyan-400/12 text-white" : "text-slate-300 hover:text-white"}`}
               >
-                {l === "command-center"
-                  ? "Command Center"
-                  : l.startsWith("internal")
-                    ? "Week 3 Archive"
-                    : l}
+                {l === "command-center" ? "Command Center" : l === "dashboard" && ownerPortal ? "User Dashboard" : l}
               </Link>
             ))}
           </div>

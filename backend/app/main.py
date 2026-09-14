@@ -35,7 +35,7 @@ from backend.app.services.readiness_service import readiness_report, startup_sel
 from backend.app.services.search_service import search_catalog
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
 from backend.app.services.nfl_product_service import (
-    build_multi_game_parlay, current_week_context, delete_depth_chart, fantasy_depth_chart_data,
+    build_multi_game_parlay, current_week_context, planning_week_context, delete_depth_chart, fantasy_depth_chart_data,
     historical_games, list_depth_charts, nfl_season_year, prediction_performance, save_depth_chart, weekly_board,
     _schedule,
 )
@@ -185,7 +185,9 @@ def api_nfl_week(season: int|None=Query(None, ge=2025, le=2100), week: int=Query
 @app.get("/api/nfl/context")
 def api_nfl_context(season: int|None=Query(None, ge=2025, le=2100), user=Depends(require_full_access)):
     try:
-        return current_week_context(season or nfl_season_year())
+        resolved_season = season or nfl_season_year()
+        operational = current_week_context(resolved_season)
+        return planning_week_context(resolved_season, operational=operational)
     except Exception as exc:
         logger.exception("NFL current week context unavailable")
         raise HTTPException(503, "The verified NFL schedule context is temporarily unavailable.") from exc
@@ -199,7 +201,9 @@ def api_nfl_current_week(
 ):
     """Return the current context and board without a client-side waterfall."""
     try:
-        context = current_week_context(season or nfl_season_year())
+        resolved_season = season or nfl_season_year()
+        operational = current_week_context(resolved_season)
+        context = planning_week_context(resolved_season, operational=operational)
         board = weekly_board(
             int(context["season"]), int(context["week"]), profile, int(user["id"]), day,
             str(context["seasonType"]),
@@ -591,7 +595,7 @@ def nfl_multi_game_parlay(payload: dict, user=Depends(require_full_access)):
             season=int(payload.get("season") or nfl_season_year()), week=int(payload.get("week") or 1),
             season_type=str(payload.get("seasonType") or "regular"),
             profile=str(payload.get("profile") or "BALANCED"), selections=selections,
-            user_id=int(user["id"]),
+            user_id=int(user["id"]), manual=bool(payload.get("manual")),
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -692,7 +696,7 @@ def history(tab: str=Query("All"), user=Depends(require_full_access)):
     if t=="parlays": rows=parlay_rows
     return {"items":rows[:50]}
 @app.get("/api/performance")
-def performance(user=Depends(require_full_access)): return {"metrics":_metrics(),"series":[]}
+def performance(user=Depends(require_full_access)): return {"metrics":_metrics(int(user["id"])),"series":[]}
 
 def _history_rows(sport=None,difficulty=None,user_id=None):
     rows=load_web_parlays(sport=sport,difficulty=difficulty,user_id=user_id)
@@ -702,10 +706,22 @@ def _history_rows(sport=None,difficulty=None,user_id=None):
         out.append({"date":r.get("created_at"),"sport":r.get("sport"),"action":"Parlay","summary":f"{r.get('difficulty')} parlay with {len(legs)} legs","resultStatus":r.get("result_status"),"dataMode":mode()})
     return out
 
-def _metrics():
+def _metrics(user_id: int | None = None):
     if not using_postgres(): initialize_database()
     m={}
     with get_db_connection() as conn:
         row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets").fetchone() if table_exists(conn,"graded_bets") else {"c":0,"h":0}
         if row["c"]: m["Overall graded prediction accuracy"]=f"{round((row['h'] or 0)*100/row['c'],1)}%"
+    lifecycle = nfl_prediction_history(user_id=user_id or 0, limit=500)
+    settled = [row for row in lifecycle if row["resultStatus"] in {"WON", "LOST", "PUSH"}]
+    wins = sum(row["resultStatus"] == "WON" for row in settled)
+    losses = sum(row["resultStatus"] == "LOST" for row in settled)
+    pushes = sum(row["resultStatus"] == "PUSH" for row in settled)
+    decisions = wins + losses
+    if decisions:
+        accuracy = round(wins * 100 / decisions, 1)
+        m["Overall graded prediction accuracy"] = f"{accuracy}%"
+        m["NFL accuracy"] = f"{accuracy}%"
+        m["NFL record"] = f"{wins}-{losses}" + (f"-{pushes}" if pushes else "")
+        m["NFL graded predictions"] = len(settled)
     return m

@@ -12,6 +12,7 @@ from pathlib import Path
 from time import perf_counter, time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 from backend.app.database import column_exists, database_url, get_db_connection, table_exists, using_postgres
 from backtesting.nfl_game_predictor import NFLGameMarketPredictorV2, V2_MODEL_VERSION, no_vig_probabilities
@@ -933,6 +934,7 @@ def _persisted_current_week_context(season: int, now: datetime) -> dict | None:
 
 
 def current_week_context(season: int, at: datetime | None = None) -> dict:
+    """Resolve the operational slate used by ingestion and grading jobs."""
     now = at or datetime.now(timezone.utc)
     persisted = _persisted_current_week_context(season, now)
     if persisted:
@@ -947,6 +949,36 @@ def current_week_context(season: int, at: datetime | None = None) -> dict:
     }
 
 
+def planning_week_context(season: int, at: datetime | None = None, operational: dict | None = None) -> dict:
+    """Resolve the customer-facing slate independently of settlement work."""
+    now = (at or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    operational = operational or current_week_context(season, at=now)
+    if not operational.get("source"):
+        return operational
+    if operational.get("seasonType") != "regular":
+        return {**operational, "contextRole": "planning"}
+    eastern = now.astimezone(ZoneInfo("America/New_York"))
+    week = int(operational["week"])
+    if eastern.weekday() != 0 or week >= 18:
+        return {**operational, "contextRole": "planning"}
+    try:
+        next_games = _schedule(season, week + 1, "regular")
+    except Exception as exc:
+        logger.warning("nfl_planning_week_probe_failed code=%s", type(exc).__name__)
+        next_games = []
+    if not next_games:
+        return {**operational, "contextRole": "planning"}
+    provider_week = int(next_games[0].get("provider_week") or week + 1)
+    return {
+        "season": season, "seasonType": "regular", "week": week + 1,
+        "displayWeek": week + 1, "providerWeek": provider_week,
+        "weekKey": f"REG{week + 1}", "weekLabel": f"Week {week + 1}",
+        "hasUpcoming": any(row.get("status") == "scheduled" for row in next_games),
+        "source": f"{operational.get('source', 'schedule')}:monday_planning_rollover",
+        "contextRole": "planning", "gradingWeek": week,
+    }
+
+
 MULTI_GAME_POLICY = {
     "SAFE": {"min_legs": 2, "max_legs": 3, "minimum_probability": .60, "minimum_edge": .01},
     "BALANCED": {"min_legs": 3, "max_legs": 5, "minimum_probability": .54, "minimum_edge": 0.0},
@@ -955,7 +987,7 @@ MULTI_GAME_POLICY = {
 
 
 def build_multi_game_parlay(*, season: int, week: int, season_type: str, profile: str,
-                            selections: list[dict], user_id: int) -> tuple[ParlayResult, list[dict]]:
+                            selections: list[dict], user_id: int, manual: bool = False) -> tuple[ParlayResult, list[dict]]:
     """Validate user selections against one live weekly board; never invent prices."""
     profile = str(profile or "BALANCED").upper()
     if profile not in MULTI_GAME_POLICY:
@@ -976,13 +1008,17 @@ def build_multi_game_parlay(*, season: int, week: int, season_type: str, profile
             reason = "game_not_upcoming"
         elif game.get("predictionStatus") not in {"available", "pregame_snapshot"}:
             reason = "model_prediction_unavailable"
-        elif team != game.get("winner"):
+        elif not manual and team != game.get("winner"):
             reason = "selection_conflicts_with_model_winner"
         else:
             is_home = team == game["home_team"]
             odds = game["market"]["homeOdds"] if is_home else game["market"]["awayOdds"]
             implied = game["market"]["homeImpliedProbability"] if is_home else game["market"]["awayImpliedProbability"]
-            probability = float(game["winProbability"])
+            team_probability = game.get("homeWinProbability") if is_home else game.get("awayWinProbability")
+            if team_probability is None:
+                winner_probability = float(game["winProbability"])
+                team_probability = winner_probability if team == game.get("winner") else 1 - winner_probability
+            probability = float(team_probability)
             edge = None if implied is None else probability - float(implied)
             market_timestamp = game["market"].get("marketTimestamp")
             market_time = (datetime.fromisoformat(market_timestamp.replace("Z", "+00:00"))
@@ -992,11 +1028,11 @@ def build_multi_game_parlay(*, season: int, week: int, season_type: str, profile
                 reason = "verified_price_unavailable"
             elif datetime.now(timezone.utc) - market_time.astimezone(timezone.utc) > timedelta(minutes=45):
                 reason = "stale_price"
-            elif not game.get("recommendedBet"):
+            elif not manual and not game.get("recommendedBet"):
                 reason = "model_decision_is_pass"
-            elif probability < policy["minimum_probability"]:
+            elif not manual and probability < policy["minimum_probability"]:
                 reason = "probability_below_profile_minimum"
-            elif edge < policy["minimum_edge"]:
+            elif not manual and edge < policy["minimum_edge"]:
                 reason = "edge_below_profile_minimum"
         if reason:
             rejected.append({"gameId": game_id, "team": team or None, "reason": reason})
@@ -1012,7 +1048,8 @@ def build_multi_game_parlay(*, season: int, week: int, season_type: str, profile
         notes=(f"Model win probability {probability * 100:.1f}%; no-vig market edge {edge * 100:+.1f} points. "
                f"{game['away_team']} at {game['home_team']} ({game['market']['sportsbook']})."),
     ) for game, team, odds, probability, edge in accepted]
-    if len(legs) < policy["min_legs"]:
+    minimum_legs = 2 if manual else policy["min_legs"]
+    if len(legs) < minimum_legs:
         rejected.extend({"gameId": game["game_id"], "team": team, "reason": "insufficient_eligible_legs_for_profile"}
                         for game, team, *_ in accepted)
         legs = []
@@ -1028,7 +1065,8 @@ def build_multi_game_parlay(*, season: int, week: int, season_type: str, profile
     notes = (
         f"{profile.title()} multi-game parlay built from distinct scheduled games and verified moneyline prices."
         if legs else
-        f"No {profile.lower()} parlay was built because fewer than {policy['min_legs']} selected games met the probability, edge, and price rules."
+        ("Manual parlays require at least two distinct upcoming games with fresh verified prices."
+         if manual else f"No {profile.lower()} parlay was built because fewer than {policy['min_legs']} selected games met the probability, edge, and price rules.")
     )
     result = ParlayResult(
         parlay=Parlay(sport=SportType.NFL, difficulty=DifficultyLevel.from_input(profile), legs=legs, notes=notes),

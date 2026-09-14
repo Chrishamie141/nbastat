@@ -227,11 +227,6 @@ function PredictionCard({ game, season, week, seasonType }) {
               </ul>
             </div>
           )}
-          {game.mainRisk && (
-            <p className="mt-4 border-t border-white/10 pt-3 text-sm text-amber-100">
-              <b>Main risk:</b> {game.mainRisk}
-            </p>
-          )}
           <p className="mt-3 text-xs text-slate-400">
             Evidence quality: {game.evidenceScore ?? "unavailable"}/100 (not a
             probability)
@@ -255,7 +250,7 @@ function PredictionCard({ game, season, week, seasonType }) {
         </div>
       )}
       <Link
-        href={`/games/${game.game_id}?season=${season}&week=${week}&seasonType=${seasonType}`}
+        href={`/nfl/games/${String(game.game_id).replace("espn-", "")}`}
         className="mt-5 text-sm font-bold text-cyan-200"
       >
         View matchup details →
