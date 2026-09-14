@@ -13,7 +13,7 @@ export function StatusPill({ status }) {
 export default function SocialStatus({ summary }) {
   const metrics = [
     ["Posts today", summary.postsToday, Send], ["Posts this week", summary.postsThisWeek, Send],
-    ["Queued", summary.queued, Clock3],
+    ["Scheduled", summary.scheduled, Clock3],
     ["Generating", summary.generating, Clock3], ["Review", summary.reviewRequired, ShieldCheck],
     ["Images today", summary.imagesGeneratedToday, ImageIcon],
     ["Videos today", summary.videosGeneratedToday, Video], ["Failed", summary.failed, ShieldCheck],

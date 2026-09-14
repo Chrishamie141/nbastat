@@ -78,6 +78,7 @@ def summary(clock=_now) -> dict[str, Any]:
         "currentNflContext": {key:(sports_context or {}).get(key) for key in
             ("season", "week", "window_key", "window_label", "next_kickoff", "games_found", "predictions_found", "future_games")},
         "postsToday": posts_today, "postsThisWeek": posts_this_week, "queued": opportunity_counts.get("QUEUED", 0),
+        "scheduled": opportunity_counts.get("QUEUED", 0),
         "generating": generating, "reviewRequired": opportunity_counts.get("REVIEW", 0),
         "published": post_counts.get("PUBLISHED", 0), "failed": post_counts.get("FAILED", 0),
         "imagesGeneratedToday": media_counts.get("image", 0), "videosGeneratedToday": media_counts.get("video", 0),
@@ -254,6 +255,29 @@ def publish_now(post_id: str, clock=_now) -> dict[str, Any]:
         connection.execute("UPDATE social_opportunities SET scheduled_at=?,status='READY',updated_at=? WHERE opportunity_id=?",
                            (at.isoformat(), at.isoformat(), row["opportunity_id"]))
     return social.publish_one(post_id, clock)
+
+
+def retry_post(post_id: str, clock=_now, client_factory=OfficialX) -> dict[str, Any]:
+    """Retry only failures proven to have occurred before a public X write."""
+    _setup(); at = clock().astimezone(timezone.utc)
+    claim_key = "post:" + post_id
+    with social.connection() as connection:
+        post = connection.execute("SELECT status,failure_reason FROM social_posts WHERE post_id=?", (post_id,)).fetchone()
+        claim = connection.execute("SELECT state,last_error_code,attempt_count FROM social_delivery_claims WHERE idempotency_key=?", (claim_key,)).fetchone()
+        if not post or post["status"] != "FAILED":
+            raise ValueError("Only a failed social post can be retried")
+        retryable = {"ACCOUNT_OR_AUTH_VERIFICATION_FAILED", "MEDIA_OR_DELIVERY_PRECHECK_FAILED"}
+        if not claim or claim["state"] != "FAILED" or claim["last_error_code"] not in retryable:
+            raise ValueError("This failure is not safe to retry automatically; reconcile it manually")
+        if int(claim["attempt_count"] or 0) >= 3:
+            raise ValueError("Retry limit reached; inspect credentials/media before another attempt")
+        detail = connection.execute("SELECT opportunity_id FROM social_post_details WHERE post_id=?", (post_id,)).fetchone()
+        connection.execute("UPDATE social_posts SET scheduled_at=?,day_key=? WHERE post_id=?",
+                           (at.isoformat(), at.date().isoformat(), post_id))
+        if detail:
+            connection.execute("UPDATE social_opportunities SET status='READY',scheduled_at=?,updated_at=? WHERE opportunity_id=?",
+                               (at.isoformat(), at.isoformat(), detail["opportunity_id"]))
+    return social.publish_one(post_id, clock, client_factory)
 
 
 def reschedule(opportunity_id: str, scheduled_at: str) -> dict[str, Any]:

@@ -131,20 +131,21 @@ export default function OperationsPage() {
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialError, setSocialError] = useState("");
   const [sport, setSport] = useState("ALL");
+  const [selectedWeek, setSelectedWeek] = useState(null);
 
   const load = useCallback(async () => {
     const requestId = ++loadRequest.current;
     setLoading(true);
     setError("");
     try {
-      const result = await api.internal.operations();
+      const result = await api.internal.operations({ week: selectedWeek });
       if (requestId === loadRequest.current) setData(result);
     } catch (exception) {
       if (requestId === loadRequest.current) setError(exception.message);
     } finally {
       if (requestId === loadRequest.current) setLoading(false);
     }
-  }, []);
+  }, [selectedWeek]);
 
   useEffect(() => {
     load();
@@ -254,7 +255,6 @@ export default function OperationsPage() {
             <h1 className="text-4xl font-black tracking-[-.055em] md:text-6xl">
               Command Center
             </h1>
-            <Pill value={ownerStatus(data?.systemReadiness?.status)} />
           </div>
           <p className="mt-3 max-w-3xl text-slate-300">
             Live games, predictions, results, system health, and social activity.
@@ -267,6 +267,8 @@ export default function OperationsPage() {
             <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-400">
               {data?.context?.league} · {data?.context?.season} {data?.context?.seasonType} · Week {data?.context?.week}
             </span>
+            <button className="rounded-full bg-white/5 px-3 py-1.5 text-xs font-bold text-cyan-200 disabled:opacity-40" disabled={(selectedWeek ?? data?.context?.week ?? 1) <= 1} onClick={() => setSelectedWeek((selectedWeek ?? data?.context?.week ?? 1) - 1)}>Previous Week</button>
+            <button className="rounded-full bg-white/5 px-3 py-1.5 text-xs font-bold text-cyan-200 disabled:opacity-40" disabled={(selectedWeek ?? data?.context?.week ?? 1) >= 18} onClick={() => setSelectedWeek((selectedWeek ?? data?.context?.week ?? 1) + 1)}>Next Week</button>
           </div>
         </div>
         <button

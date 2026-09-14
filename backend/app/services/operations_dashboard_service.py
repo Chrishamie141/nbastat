@@ -199,9 +199,15 @@ def _week1(at: datetime) -> dict:
         connection.close()
 
 
-def _active_nfl_week(at: datetime) -> dict:
+def _active_nfl_week(at: datetime, selected_week: int | None = None) -> dict:
     """Build the owner slate from production tables, never a local archive."""
     context = planning_week_context(nfl_season_year(at), at=at)
+    if selected_week is not None:
+        if not 1 <= int(selected_week) <= 18:
+            raise ValueError("NFL week must be between 1 and 18")
+        context = {**context, "week": int(selected_week), "displayWeek": int(selected_week),
+                   "providerWeek": int(selected_week), "weekKey": f"REG{int(selected_week)}",
+                   "weekLabel": f"Week {int(selected_week)}", "source": "owner_week_selection"}
     season, season_type, week = int(context["season"]), str(context["seasonType"]), int(context["week"])
     schedule = _schedule(season, week, season_type)
     histories: dict[str, dict] = {}
@@ -237,7 +243,7 @@ def _active_nfl_week(at: datetime) -> dict:
             "status": status, "awayScore": (final or {}).get("away_score", source.get("away_score")),
             "homeScore": (final or {}).get("home_score", source.get("home_score")),
             "predictionStatus": ("READY" if prediction and prediction.get("settlement_status") == "PENDING"
-                                 else "GRADED" if prediction else "MISSING"),
+                                 else prediction.get("settlement_status") if prediction else "MISSING"),
             "statsStatus": "READY" if final else "PENDING", "lastRefresh": (final or {}).get("retrieved_at"),
             "freshness": "STALE" if warnings else "CURRENT", "warnings": warnings,
             "prediction": ({"winner": prediction.get("predicted_winner"), "probability": prediction.get("model_probability"),
@@ -337,10 +343,10 @@ def _fallback(social_panel: dict) -> dict:
             "provider": {"status": operations.get("provider_status", "UNKNOWN"), "quotaState": "UNKNOWN"}, "events": []}
 
 
-def command_center(clock: Callable[[], datetime] = _now) -> dict:
+def command_center(clock: Callable[[], datetime] = _now, selected_week: int | None = None) -> dict:
     at = clock()
     db_panel, prediction_panel = _safe_panel(database_health), _safe_panel(prediction_store_health)
-    week_loader = (lambda: _week1(at)) if (os.getenv("WEEK1_EXPERIMENT_DB") or "").strip() else (lambda: _active_nfl_week(at))
+    week_loader = (lambda: _week1(at)) if (os.getenv("WEEK1_EXPERIMENT_DB") or "").strip() else (lambda: _active_nfl_week(at, selected_week))
     social_panel, week_panel = _safe_panel(lambda: _social(at)), _safe_panel(week_loader)
     worker_panel, actions_panel = _safe_panel(lambda: _worker(at)), _safe_panel(recent_actions)
     week, database = week_panel["data"] or _fallback(social_panel), db_panel.get("data") or {}
@@ -406,7 +412,7 @@ def command_center(clock: Callable[[], datetime] = _now) -> dict:
     readiness = "NOT_READY" if any(checks[k] == "FAIL" for k in required) else (
         "DEGRADED" if any(v in {"WARN", "FAIL", "UNKNOWN"} for v in checks.values()) else "READY")
     games = week.get("games") or []
-    ready_games = sum(g["predictionStatus"] in {"READY", "GRADED"} and not g["warnings"] for g in games)
+    ready_games = sum(g["predictionStatus"] in {"READY", "GRADED", "WON", "LOST", "PUSH", "VOID"} and not g["warnings"] for g in games)
     owner_checks = {"scheduleLoaded": checks["scheduleLoaded"], "databaseHealthy": checks["databaseHealthy"],
                     "gameIdentitiesValid": checks["gameIdentitiesValid"], "predictionsComplete": checks["predictionsComplete"],
                     "gameDetailOperational": checks["gameDetailOperational"],

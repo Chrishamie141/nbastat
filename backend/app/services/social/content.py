@@ -91,6 +91,17 @@ def _numbers(value: Any) -> set[str]:
             result.add(f"{number * 100:.1f}")
         if number.is_integer():
             result.add(str(int(number)))
+    # Percentage aliases can themselves be whole numbers (for example a
+    # stored probability of ``0.64`` permits public copy rendered as
+    # ``64.0%``).  Normalize those derived aliases as well so the validator
+    # does not incorrectly treat the integer portion (``64``) as a new claim.
+    for raw in list(result):
+        try:
+            number = float(raw)
+        except ValueError:
+            continue
+        if number.is_integer():
+            result.add(str(int(number)))
     return result
 
 

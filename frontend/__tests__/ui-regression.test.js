@@ -200,6 +200,9 @@ test("social operations is a responsive owner control room with safety controls"
   assert.match(performance, /Not available from current X API access/);
   assert.match(queue, /Post Now/);
   assert.match(queue, /Regenerate image/);
+  assert.match(queue, /scheduled_at/);
+  assert.match(page, /Safe pre-delivery retry completed/);
+  assert.match(api, /posts\/\$\{encodeURIComponent\(postId\)\}\/retry/);
   assert.match(settings, /External auto replies/);
   assert.match(api, /operations\/social\/queue/);
   assert.match(api, /operations\/social\/metrics\/refresh/);

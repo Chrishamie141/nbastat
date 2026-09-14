@@ -468,6 +468,16 @@ def test_public_quality_gate_blocks_internal_and_guarantee_language(engine):
         content.validate_content_quality("Chargers are the LOCK. 82.1% #SmartBets", context)
 
 
+def test_grounding_accepts_rendered_whole_number_probability(engine):
+    context = {
+        "post_type": "GAME_PREVIEW", "away_team": "BUF", "home_team": "PIT",
+        "winner": "BUF", "model_probability": .64,
+        "source_entities": ["BUF", "Bills", "Buffalo Bills", "PIT", "Steelers", "Pittsburgh Steelers"],
+    }
+    caption = "Bills at Steelers. SmartBets: Bills (64.0%). #SmartBets"
+    assert content.validate_content_quality(caption, context) == caption
+
+
 def test_loss_receipt_is_transparent_and_never_claims_a_wager(engine):
     context = {"post_type": "LOSS_RECEIPT", "away_team": "SF", "home_team": "LAR",
                "winner": "LAR", "model_probability": .604, "away_score": 27, "home_score": 7,
@@ -548,6 +558,31 @@ def test_safe_pre_delivery_failures_retry_at_most_three_times(engine, monkeypatc
 
     assert social.publish_one(post["post_id"], lambda: at, lambda: pytest.fail("retry cap bypassed"))["status"] == "FAILED"
     assert len(attempts) == 3
+
+
+def test_owner_retry_only_replays_proven_pre_delivery_failure(engine, monkeypatch):
+    at, _ = engine; store_source(source(at)); post = social.generate(lambda: at)
+    monkeypatch.setenv("SOCIAL_DRY_RUN", "false"); monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("SOCIAL_AUTO_PUBLISH", "true")
+
+    class FailedClient:
+        def verify_company(self): raise ConnectionError("pre-delivery")
+
+    class Response:
+        status_code = 201
+        def json(self): return {"data": {"id": "x-safe-retry"}}
+
+    class HealthyClient:
+        def verify_company(self): return {"verified": True}
+        def post(self, _text): return Response()
+
+    assert social.publish_one(post["post_id"], lambda: at, FailedClient)["status"] == "FAILED"
+    result = owner.retry_post(post["post_id"], lambda: at, HealthyClient)
+    assert result["status"] == "PUBLISHED"
+    assert result["x_post_id"] == "x-safe-retry"
+
+    with pytest.raises(ValueError, match="Only a failed"):
+        owner.retry_post(post["post_id"], lambda: at, HealthyClient)
 
 
 def test_x_media_upload_and_company_verification_use_official_endpoints(engine, monkeypatch):

@@ -165,6 +165,11 @@ def social_publish(post_id: str, user=Depends(require_internal_access)):
     return _write("SOCIAL_PUBLISH_NOW", post_id, user, lambda: operations.publish_now(post_id))
 
 
+@router.post("/posts/{post_id}/retry")
+def social_retry(post_id: str, user=Depends(require_internal_access)):
+    return _write("SOCIAL_RETRY_POST", post_id, user, lambda: operations.retry_post(post_id))
+
+
 @router.post("/opportunities/{opportunity_id}/reschedule")
 def social_reschedule(opportunity_id: str, payload: dict, user=Depends(require_internal_access)):
     return _write("SOCIAL_RESCHEDULE", opportunity_id, user,

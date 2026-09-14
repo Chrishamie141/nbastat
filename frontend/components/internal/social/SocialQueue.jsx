@@ -21,7 +21,7 @@ export default function SocialQueue({ items, busy, onPreview, onGeneratePreview,
           {item.post_id && <button onClick={() => onMedia(item.post_id, "image")} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Regenerate image</button>}
           {item.post_id && <button onClick={() => onMedia(item.post_id, "video")} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Regenerate video</button>}
           {item.post_id && <button onClick={() => onPublish(item.post_id)} disabled={busy} className="btn btn-primary px-3 py-2 text-xs">Post Now</button>}
-          <button onClick={() => onReschedule(item.opportunity_id)} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Reschedule +1h</button>
+          <button onClick={() => onReschedule(item.opportunity_id, item.scheduled_at)} disabled={busy} className="btn btn-glass px-3 py-2 text-xs">Reschedule +1h</button>
           <button onClick={() => onCancel(item.opportunity_id)} disabled={busy} className="rounded-xl border border-rose-400/30 px-3 py-2 text-xs font-bold text-rose-200">Cancel / Skip</button>
         </div>
       </div>

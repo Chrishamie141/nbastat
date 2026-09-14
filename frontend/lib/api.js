@@ -50,7 +50,7 @@ export const api = {
   config: () => request("/api/config/status"),
   dashboard: () => request("/api/dashboard"),
   internal: {
-    operations: () => request('/api/internal/operations'),
+    operations: ({ week } = {}) => request('/api/internal/operations' + (week ? `?week=${week}` : '')),
     operationsHealth: () => request('/api/internal/operations/health'),
     nflProduction: ({ season, seasonType = 'regular', week }) =>
       request(`/api/internal/operations/nfl-production/${season}/${seasonType}/${week}`),
@@ -81,6 +81,7 @@ export const api = {
       changeTemplate: (postId, template) => request(`/api/internal/operations/social/posts/${encodeURIComponent(postId)}/template`, { method: 'POST', body: { template } }),
       regenerateMedia: (postId, mediaType = 'image') => request(`/api/internal/operations/social/posts/${encodeURIComponent(postId)}/media/regenerate`, { method: 'POST', body: { mediaType }, timeoutMs: 90000 }),
       publish: (postId) => request(`/api/internal/operations/social/posts/${encodeURIComponent(postId)}/publish`, { method: 'POST', timeoutMs: 60000 }),
+      retry: (postId) => request(`/api/internal/operations/social/posts/${encodeURIComponent(postId)}/retry`, { method: 'POST', timeoutMs: 60000 }),
       reschedule: (opportunityId, scheduledAt) => request(`/api/internal/operations/social/opportunities/${encodeURIComponent(opportunityId)}/reschedule`, { method: 'POST', body: { scheduledAt } }),
       cancel: (opportunityId) => request(`/api/internal/operations/social/opportunities/${encodeURIComponent(opportunityId)}/cancel`, { method: 'POST' }),
       refreshMetrics: () => request('/api/internal/operations/social/metrics/refresh', { method: 'POST', timeoutMs: 30000 }),

@@ -264,9 +264,9 @@ def api_grade_nfl_experiment(
 
 
 @app.get("/api/internal/operations")
-def api_internal_operations(user=Depends(require_internal_access)):
+def api_internal_operations(week: int | None = Query(None, ge=1, le=18), user=Depends(require_internal_access)):
     try:
-        return command_center()
+        return command_center(selected_week=week)
     except Exception as exc:
         logger.exception("Internal operations dashboard unavailable")
         raise HTTPException(503, "The SmartBets command center is temporarily unavailable.") from exc
