@@ -1,10 +1,12 @@
 import os
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from models import DifficultyLevel, SportType
 from nfl_parlay_builder import (
+    analyze_nfl_prop_board,
     build_nfl_parlay,
     calculate_edge_score,
     calculate_injury_adjustment,
@@ -234,6 +236,87 @@ def test_same_game_parlay_rejects_cross_game_and_unmapped_players(monkeypatch):
 
     assert [leg.player for leg in result.parlay.legs] == ["Right Team"]
     assert all(leg.team in {"BUF", "MIA"} for leg in result.parlay.legs)
+
+
+def test_prop_analysis_returns_every_verified_side_with_source_backed_rates(monkeypatch):
+    import nfl_parlay_builder as builder
+
+    now = datetime.now(timezone.utc)
+    metadata = {
+        "bookmaker": "Verified Book", "provider": "the-odds-api",
+        "event_id": "odds-event-1", "last_update": now.isoformat(),
+        "commence_time": (now + timedelta(days=1)).isoformat(),
+    }
+    props = {
+        "Josh Allen": {
+            "PASS_YDS": [
+                {**metadata, "line": 249.5, "odds": -110, "side": "Over"},
+                {**metadata, "line": 249.5, "odds": -110, "side": "Under"},
+            ],
+            "PASS_TD": [{**metadata, "line": 1.5, "odds": 105, "side": "Over"}],
+        },
+        "Other Game Player": {
+            "RUSH_YDS": [{**metadata, "line": 60.5, "odds": -115, "side": "Over"}],
+        },
+        "Sample Player": {
+            "REC_YDS": [{"line": 40.5, "odds": -110, "side": "Over", "provider": "sample"}],
+        },
+    }
+    stats = {
+        "Josh Allen": {"team": "BUF", "position": "QB", "PASS_YDS": [260, 240, 280, 250], "PASS_TD": [2, 1, 3, 2]},
+        "Other Game Player": {"team": "DAL", "position": "RB", "RUSH_YDS": [70, 72, 68]},
+    }
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda game_teams=None: props)
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda allow_sample=False: stats)
+
+    result = analyze_nfl_prop_board("balanced", game_teams=("BUF", "MIA"))
+
+    assert len(result["rows"]) == 3
+    assert {row["side"] for row in result["rows"] if row["market"] == "PASS_YDS"} == {"OVER", "UNDER"}
+    over = next(row for row in result["rows"] if row["market"] == "PASS_YDS" and row["side"] == "OVER")
+    assert over["recentHitRate"] == 75.0
+    assert over["recentSample"] == 4
+    assert over["bookmaker"] == "Verified Book"
+    assert over["status"] == "AVAILABLE"
+    assert over["rowId"].startswith("odds-event-1|Josh Allen|PASS_YDS|OVER")
+    assert all(row["team"] == "BUF" for row in result["rows"])
+
+
+def test_prop_analysis_never_substitutes_sample_markets(monkeypatch):
+    import nfl_parlay_builder as builder
+
+    monkeypatch.setattr(
+        builder, "get_nfl_player_props",
+        lambda game_teams=None: {"Sample Player": {"REC_YDS": [{"line": 40.5, "odds": -110, "side": "Over", "provider": "sample"}]}},
+    )
+    monkeypatch.setattr(builder, "get_nfl_player_recent_stats", lambda allow_sample=False: {})
+
+    result = analyze_nfl_prop_board("safe", game_teams=("BUF", "MIA"))
+
+    assert result["rows"] == []
+    assert result["dataMode"] == "unavailable"
+
+
+def test_anytime_touchdown_market_normalizes_to_over_point_five(monkeypatch):
+    import nfl_data_service as service
+
+    monkeypatch.setenv("THE_ODDS_API_KEY", "test-key")
+    monkeypatch.setattr(service, "get_nfl_games", lambda: [{
+        "game_id": "event-1", "home_team": "BUF", "away_team": "MIA",
+        "commence_time": "2030-09-15T20:00:00Z",
+    }])
+    monkeypatch.setattr(service, "_fetch_json", lambda url: {
+        "id": "event-1", "commence_time": "2030-09-15T20:00:00Z",
+        "bookmakers": [{"title": "Verified Book", "last_update": "2030-09-15T18:00:00Z", "markets": [{
+            "key": "player_anytime_td", "last_update": "2030-09-15T18:00:00Z",
+            "outcomes": [{"name": "James Cook", "price": 120}],
+        }]}],
+    })
+
+    props = service.get_nfl_player_props(game_teams=("BUF", "MIA"))
+
+    assert props["James Cook"]["TD"][0]["line"] == 0.5
+    assert props["James Cook"]["TD"][0]["side"] == "Over"
 
 
 @pytest.mark.skipif(os.getenv("SMARTBETS_RUN_LIVE_NFL_TESTS") != "1", reason="live-first NFL provider path is opt-in")

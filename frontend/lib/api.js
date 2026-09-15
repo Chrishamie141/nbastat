@@ -176,6 +176,8 @@ export const api = {
       request("/api/analyze/nfl/parlay", { method: "POST", body }),
     multiGameParlay: (body) =>
       request("/api/nfl/parlays/multi-game", { method: "POST", body }),
+    parlayAnalysis: (body) =>
+      request("/api/nfl/parlays/analysis", { method: "POST", body, timeoutMs: 90000 }),
     fantasy: (body) =>
       request("/api/analyze/nfl/fantasy", { method: "POST", body }),
     depthCharts: (scoring = "PPR") =>

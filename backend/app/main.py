@@ -56,7 +56,7 @@ from backend.app.services.nfl_production_service import (
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
-from nfl_parlay_builder import build_nfl_parlay
+from nfl_parlay_builder import analyze_nfl_prop_board, build_nfl_parlay
 from nfl_fantasy_service import build_fantasy_rankings
 from nfl_performance_report import print_nfl_performance_report
 from prediction_storage import grade_recommendations, summarize_graded_bets, initialize_database, ensure_user_columns
@@ -621,6 +621,70 @@ def nfl_multi_game_parlay(payload: dict, user=Depends(require_full_access)):
         legs=legs, rejectedSelections=rejections, combinedProbability=result.combined_probability,
         estimatedOdds=result.estimated_odds, message=result.notes, saveStatus=save,
         dataMode="live" if legs else "unavailable",
+    )
+
+
+@app.post("/api/nfl/parlays/analysis")
+def nfl_parlay_analysis(payload: dict, user=Depends(require_full_access)):
+    """Read-only decision workspace backed by frozen picks and verified markets."""
+    mode = str(payload.get("mode") or "same_game").lower()
+    if mode not in {"same_game", "multi_game"}:
+        raise HTTPException(400, "Analysis mode must be same_game or multi_game.")
+    selections = payload.get("selections") or []
+    if not isinstance(selections, list) or not selections:
+        raise HTTPException(400, "Choose at least one matchup before continuing.")
+    if mode == "same_game" and len(selections) != 1:
+        raise HTTPException(400, "Same-game analysis requires exactly one matchup.")
+    if len(selections) > 4:
+        raise HTTPException(400, "Analyze up to four matchups at a time to protect provider usage.")
+    season = int(payload.get("season") or nfl_season_year())
+    week = int(payload.get("week") or 1)
+    season_type = str(payload.get("seasonType") or "regular")
+    profile = str(payload.get("profile") or "BALANCED").upper()
+    if profile not in {"SAFE", "BALANCED", "AGGRESSIVE"}:
+        raise HTTPException(400, "Profile must be SAFE, BALANCED, or AGGRESSIVE.")
+    board = weekly_board(season, week, profile, int(user["id"]), season_type=season_type)
+    by_id = {game["game_id"]: game for game in board["items"]}
+    selected_games = []
+    for selection in selections:
+        game = by_id.get(str(selection.get("gameId") or ""))
+        if not game:
+            raise HTTPException(404, "A selected matchup is not part of this weekly board.")
+        kickoff = datetime.fromisoformat(str(game["kickoff_time"]).replace("Z", "+00:00"))
+        if game.get("status") != "scheduled" or kickoff <= datetime.now(timezone.utc):
+            raise HTTPException(409, "Started or completed games are read-only and cannot be analyzed as pregame markets.")
+        team = str(selection.get("team") or "").upper() or None
+        if team and team not in {game["away_team"], game["home_team"]}:
+            raise HTTPException(400, "A selected team does not belong to its matchup.")
+        selected_games.append((game, team))
+    matchup_rows, prop_boards = [], []
+    for game, selected_team in selected_games:
+        selected_is_home = selected_team == game["home_team"]
+        probability = (game.get("homeWinProbability") if selected_is_home else game.get("awayWinProbability")) if selected_team else None
+        odds = (game.get("market") or {}).get("homeOdds" if selected_is_home else "awayOdds") if selected_team else None
+        matchup_rows.append({
+            "gameId": game["game_id"], "awayTeam": game["away_team"], "homeTeam": game["home_team"],
+            "kickoffTime": game["kickoff_time"], "selectedTeam": selected_team,
+            "modelWinner": game.get("winner"), "modelWinProbability": game.get("winProbability"),
+            "selectedTeamProbability": probability, "selectedTeamOdds": odds,
+            "market": game.get("market"), "predictionStatus": game.get("predictionStatus"),
+            "modelVersion": game.get("modelVersion"),
+            "modelGeneratedAt": game.get("frozenModelGeneratedAt") or game.get("generatedAt"),
+        })
+        prop_boards.append({
+            "gameId": game["game_id"], "awayTeam": game["away_team"], "homeTeam": game["home_team"],
+            **analyze_nfl_prop_board(profile, game_teams=(game["home_team"], game["away_team"])),
+        })
+    return envelope(
+        "NFL", "Parlay Analysis Workspace", league="nfl", parlayMode=mode,
+        season=season, seasonType=season_type, week=week, profile=profile,
+        matchups=matchup_rows, propBoards=prop_boards,
+        methodology={
+            "modelLikelihood": "Heuristic model estimate for the offered side; not a guaranteed or calibrated sportsbook probability.",
+            "recentHitRate": "Observed hit percentage across available prior-game values at the current line; pushes excluded from the denominator.",
+            "marketPolicy": "Only current verified sportsbook markets are shown. Missing markets remain unavailable.",
+        },
+        dataMode="verified_decision_support", saveStatus="read-only; no ticket saved",
     )
 @app.get("/api/analyze/nfl/history")
 def nfl_history(difficulty: str|None=None, user=Depends(require_full_access)): return envelope("NFL","View Parlay History",items=_history_rows("NFL", difficulty, int(user["id"])))

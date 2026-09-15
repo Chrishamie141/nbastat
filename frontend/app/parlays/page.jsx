@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import SubscriptionGuard from "@/components/auth/SubscriptionGuard";
-import RiskLevelSelector from "@/components/analyze/RiskLevelSelector";
 import GlowCard from "@/components/ui/GlowCard";
 import NflMatchup from "@/components/games/NflMatchup";
 import { api } from "@/lib/api";
@@ -32,8 +32,9 @@ export default function Parlays() {
   );
 }
 function Builder() {
+  const router = useRouter();
+  const profile = "BALANCED";
   const [mode, setMode] = useState("winners"),
-    [profile, setProfile] = useState("BALANCED"),
     [season, setSeason] = useState(null),
     [week, setWeek] = useState(1),
     [seasonType, setSeasonType] = useState("regular"),
@@ -43,7 +44,6 @@ function Builder() {
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [picks, setPicks] = useState({}),
-    [result, setResult] = useState(null),
     [selectedGame, setSelectedGame] = useState(null);
   const initialBoardLoaded = useRef(false);
   const minWeek = seasonType === "preseason" ? 0 : 1,
@@ -89,7 +89,6 @@ function Builder() {
     }
     setLoading(true);
     setError("");
-    setResult(null);
     api.nfl
       .week({ season, week, profile, day, seasonType })
       .then((board) => {
@@ -133,7 +132,6 @@ function Builder() {
   function switchMode(value) {
     setMode(value);
     setSelectedGame(null);
-    setResult(null);
   }
   function changeSeason(value) {
     setSeasonType(value);
@@ -157,47 +155,21 @@ function Builder() {
       ),
     );
   }
-  async function generateSameGame() {
-    if (!selectedGame) return;
-    setResult(null);
-    setError("");
-    try {
-      setResult(
-        await api.nfl.parlay({
-          mode: "same_game",
-          difficulty: profile,
-          gameId: selectedGame.game_id,
-          season,
-          week,
-          seasonType,
-          homeTeam: selectedGame.home_team,
-          awayTeam: selectedGame.away_team,
-        }),
-      );
-    } catch (exc) {
-      setError(exc.message);
+  function continueToAnalysis() {
+    const chosen =
+      mode === "same_game" && selectedGame
+        ? [{ gameId: selectedGame.game_id }]
+        : selections.map(({ game, team }) => ({ gameId: game.game_id, team }));
+    if (!chosen.length || (mode === "multi_game" && chosen.length < 2)) return;
+    if (chosen.length > 4) {
+      setError("Choose up to four matchups for one analysis workspace.");
+      return;
     }
-  }
-  async function generateMulti() {
-    setResult(null);
-    setError("");
-    try {
-      setResult(
-        await api.nfl.multiGameParlay({
-          season,
-          week,
-          seasonType,
-          profile,
-          selections: selections.map(({ game, team }) => ({
-            gameId: game.game_id,
-            team,
-          })),
-          manual: true,
-        }),
-      );
-    } catch (exc) {
-      setError(exc.message);
-    }
+    sessionStorage.setItem(
+      "smartbets:parlay-analysis",
+      JSON.stringify({ mode, season, week, seasonType, profile, selections: chosen }),
+    );
+    router.push("/parlays/analysis");
   }
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-10 sm:px-6 md:pt-14">
@@ -304,15 +276,11 @@ function Builder() {
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <SelectionPanel
               mode={mode}
-              profile={profile}
-              setProfile={setProfile}
               selectedGame={selectedGame}
               selections={selections}
               recommended={recommended}
-              generateSameGame={generateSameGame}
-              generateMulti={generateMulti}
+              continueToAnalysis={continueToAnalysis}
             />
-            {result && <ParlayResult result={result} />}
           </aside>
         </div>
       ) : (
@@ -339,13 +307,10 @@ function LoadingCards() {
 }
 function SelectionPanel({
   mode,
-  profile,
-  setProfile,
   selectedGame,
   selections,
   recommended,
-  generateSameGame,
-  generateMulti,
+  continueToAnalysis,
 }) {
   if (mode === "same_game")
     return (
@@ -356,15 +321,12 @@ function SelectionPanel({
             <p className="mt-2 rounded-2xl bg-cyan-300/10 p-3 font-bold">
               {selectedGame.away_team} at {selectedGame.home_team}
             </p>
-            <div className="mt-4">
-              <RiskLevelSelector value={profile} onChange={setProfile} />
-            </div>
             <button
               className="btn btn-primary mt-4 w-full"
-              onClick={generateSameGame}
+              onClick={continueToAnalysis}
               disabled={selectedGame.status !== "scheduled"}
             >
-              Build verified same-game parlay
+              Continue to matchup analysis
             </button>
             {selectedGame.status !== "scheduled" && (
               <p className="mt-3 text-sm text-amber-200">This result is final and remains available for review only. New pregame parlays are locked.</p>
@@ -409,86 +371,18 @@ function SelectionPanel({
         </p>
       )}
       {mode === "multi_game" && (
-        <>
-          <div className="mt-5 border-t border-white/10 pt-4">
-            <RiskLevelSelector value={profile} onChange={setProfile} />
-          </div>
-          <button
-            disabled={!selections.length}
-            onClick={generateMulti}
-            className="btn btn-primary mt-4 w-full"
-          >
-            Validate and build parlay
-          </button>
-        </>
+        <button
+          disabled={selections.length < 2}
+          onClick={continueToAnalysis}
+          className="btn btn-primary mt-5 w-full"
+        >
+          Continue to parlay analysis
+        </button>
       )}
       <p className="mt-4 border-t border-white/10 pt-4 text-xs text-slate-500">
-        Automated recommendations keep the selected profile thresholds. You can
-        still build a manual ticket from two or more upcoming games when fresh,
-        verified prices exist; unavailable prices are never substituted.
+        Choose the risk profile on the next screen, then compare every available
+        verified market. Unavailable prices are never substituted.
       </p>
-    </GlowCard>
-  );
-}
-function ParlayResult({ result }) {
-  const scoreLabel =
-    result.parlayMode === "same_game"
-      ? "recommendation score"
-      : "model probability";
-  return (
-    <GlowCard className="mt-4 p-5">
-      <h2 className="font-black">
-        {result.parlayMode === "same_game" ? "Same-game" : "Multi-game"} result
-      </h2>
-      {result.legs?.length ? (
-        <div className="mt-3 grid gap-2">
-          {result.legs.map((leg, index) => (
-            <div
-              key={`${leg.prediction}-${index}`}
-              className="rounded-xl bg-white/5 p-3 text-sm"
-            >
-              <b>{leg.prediction}</b>
-              <p className="mt-1 text-slate-400">
-                {leg.odds == null
-                  ? "Price unavailable"
-                  : `${leg.odds > 0 ? "+" : ""}${leg.odds}`}{" "}
-                · {leg.confidence}% {scoreLabel}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">{leg.notes}</p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-slate-300">
-          {result.message ||
-            "No verified legs met this profile. No sample legs were substituted."}
-        </p>
-      )}
-      {result.estimatedOdds != null && (
-        <p className="mt-3 font-bold">
-          Estimated combined odds: {result.estimatedOdds > 0 ? "+" : ""}
-          {result.estimatedOdds}
-        </p>
-      )}
-      {result.rejectedSelections?.length > 0 && (
-        <details className="mt-3 text-xs text-amber-100">
-          <summary>
-            {result.rejectedSelections.length} rejected selection(s)
-          </summary>
-          <ul className="mt-2 space-y-1">
-            {result.rejectedSelections.map((row, index) => (
-              <li key={`${row.gameId}-${index}`}>
-                {row.team || "Unknown"}: {row.reason.replaceAll("_", " ")}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-      {result.correlationWarning && (
-        <p className="mt-3 text-xs text-amber-200">
-          {result.correlationWarning}
-        </p>
-      )}
     </GlowCard>
   );
 }

@@ -212,10 +212,11 @@ def get_nfl_player_props(team: str | None = None, game_teams: tuple[str, str] | 
                         player = outcome.get("description") or outcome.get("name")
                         if not player:
                             continue
+                        is_anytime_touchdown = stat_type == "TD" and not outcome.get("description")
                         props.setdefault(player, {}).setdefault(stat_type, []).append({
-                            "line": outcome.get("point"),
+                            "line": outcome.get("point") if outcome.get("point") is not None else (0.5 if is_anytime_touchdown else None),
                             "odds": outcome.get("price"),
-                            "side": outcome.get("name"),
+                            "side": "Over" if is_anytime_touchdown else outcome.get("name"),
                             "bookmaker": bookmaker.get("title"),
                             "provider": "the-odds-api",
                             "event_id": event.get("id") or event_id,
@@ -340,8 +341,9 @@ def fetch_nfl_team_lines_live(team: str | None = None) -> tuple[list[dict[str, A
                    "last_market_timestamp": last_market}
 
 
-def get_nfl_player_recent_stats(player: str | None = None, team: str | None = None, games: int = 5) -> dict[str, dict[str, Any]]:
-    """Return ESPN-normalized recent stats when available, otherwise deterministic sample data."""
+def get_nfl_player_recent_stats(player: str | None = None, team: str | None = None, games: int = 5,
+                                allow_sample: bool = True) -> dict[str, dict[str, Any]]:
+    """Return ESPN/runtime recent stats, optionally allowing deterministic samples."""
     def fetch():
         from nfl_providers import EspnNflProvider
         season = date.today().year
@@ -382,6 +384,8 @@ def get_nfl_player_recent_stats(player: str | None = None, team: str | None = No
     if runtime:
         print(f"NFL current-week player stats unavailable: {failure}. Using the versioned local prior-season history artifact.")
         return runtime
+    if not allow_sample:
+        return {}
     _fallback(f"NFL player recent stats {failure}")
     return sample()
 

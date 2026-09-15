@@ -94,14 +94,18 @@ test("weekly NFL board allows the verified server response to complete", () => {
   );
 });
 
-test("multi-game builder has a real generation action and explains rejected legs", () => {
+test("parlays continue into a read-only multi-matchup analysis workspace", () => {
   const page = fs.readFileSync("app/parlays/page.jsx", "utf8");
+  const analysis = fs.readFileSync("app/parlays/analysis/page.jsx", "utf8");
   const api = fs.readFileSync("lib/api.js", "utf8");
-  assert.match(page, /generateMulti/);
-  assert.match(page, /Validate and build parlay/);
-  assert.match(page, /rejectedSelections/);
-  assert.match(page, /No sample legs were substituted/);
-  assert.match(api, /multiGameParlay/);
+  assert.match(page, /Continue to parlay analysis/);
+  assert.match(page, /smartbets:parlay-analysis/);
+  assert.match(page, /router\.push\("\/parlays\/analysis"\)/);
+  assert.match(analysis, /Player and team market spreadsheet/);
+  assert.match(analysis, /Model estimate/);
+  assert.match(analysis, /Recent hit rate/);
+  assert.match(analysis, /Nothing on this page creates a wager/);
+  assert.match(api, /parlayAnalysis/);
 });
 
 test("parlays enforce game identity and explain final read-only state", () => {
@@ -109,7 +113,7 @@ test("parlays enforce game identity and explain final read-only state", () => {
   assert.match(page, /gameId:\s*selectedGame\.game_id/);
   assert.match(page, /seasonType/);
   assert.match(page, /New pregame parlays are locked/);
-  assert.match(page, /No sample legs were substituted/);
+  assert.match(page, /Unavailable prices are never substituted/);
   assert.match(page, /\["available", "pregame_snapshot"\]/);
   assert.match(page, /available = hasPregamePrediction\(game\)/);
 });

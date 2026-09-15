@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta, timezone
 from statistics import mean
 import json
 import math
@@ -38,6 +39,7 @@ STAT_WEIGHTS = {
     "REC_YDS": 1.0,
     "RECEPTIONS": 1.0,
     "TD": 0.8,
+    "PASS_INT": 0.9,
 }
 
 
@@ -490,6 +492,102 @@ def _team_filter_excludes_sample_players(team):
         return False
     team_key = str(team).strip().upper()
     return not any(player.get("team") == team_key for player in NFL_SAMPLE_PLAYERS)
+
+
+def analyze_nfl_prop_board(difficulty, *, game_teams):
+    """Return every verified offered player prop for a matchup without creating a ticket."""
+    difficulty = DifficultyLevel.from_input(difficulty)
+    rules = DIFFICULTY_RULES[difficulty]
+    requested_teams = {_normalize_name(value) for value in game_teams}
+    props = get_nfl_player_props(game_teams=game_teams)
+    recent_stats = get_nfl_player_recent_stats(allow_sample=False)
+    rows = []
+    for player_name, stat_lines in props.items():
+        for stat_type, lines in stat_lines.items():
+            for line_info in lines:
+                if _is_sample_line(line_info):
+                    continue
+                evaluation = _evaluate_candidate(
+                    player_name, stat_type, line_info, recent_stats, [], {}, rules,
+                )
+                team = evaluation.recent_stats_after_merge.get("team")
+                if not team or _normalize_name(team) not in requested_teams:
+                    continue
+                side = str((line_info or {}).get("side") or "").strip().upper()
+                if side not in {"OVER", "UNDER"}:
+                    side = None
+                model_side = None
+                if evaluation.projection is not None and evaluation.sanitized_line is not None:
+                    model_side = "OVER" if evaluation.projection > evaluation.sanitized_line else (
+                        "UNDER" if evaluation.projection < evaluation.sanitized_line else "PUSH"
+                    )
+                likelihood = None
+                if evaluation.confidence is not None and side and model_side in {"OVER", "UNDER"}:
+                    likelihood = evaluation.confidence if side == model_side else 100 - evaluation.confidence
+                values = evaluation.usable_recent_values
+                recent_hits = recent_pushes = 0
+                for value in values:
+                    if evaluation.sanitized_line is None or not side:
+                        continue
+                    if value == evaluation.sanitized_line:
+                        recent_pushes += 1
+                    elif (side == "OVER" and value > evaluation.sanitized_line) or (
+                        side == "UNDER" and value < evaluation.sanitized_line
+                    ):
+                        recent_hits += 1
+                recent_decisions = max(0, len(values) - recent_pushes)
+                market_time = kickoff_time = None
+                try:
+                    market_time = datetime.fromisoformat(str(line_info.get("last_update")).replace("Z", "+00:00"))
+                    kickoff_time = datetime.fromisoformat(str(line_info.get("commence_time")).replace("Z", "+00:00"))
+                    if market_time.tzinfo is None:
+                        market_time = market_time.replace(tzinfo=timezone.utc)
+                    if kickoff_time.tzinfo is None:
+                        kickoff_time = kickoff_time.replace(tzinfo=timezone.utc)
+                except (TypeError, ValueError):
+                    market_time = kickoff_time = None
+                strictly_pregame = bool(market_time and kickoff_time and market_time < kickoff_time)
+                fresh = bool(market_time and datetime.now(timezone.utc) - market_time.astimezone(timezone.utc) <= timedelta(hours=2))
+                verified = bool(
+                    line_info.get("provider") == "the-odds-api"
+                    and line_info.get("bookmaker") and line_info.get("event_id")
+                    and line_info.get("last_update") and evaluation.sanitized_line is not None
+                    and evaluation.sanitized_odds is not None and strictly_pregame
+                )
+                rows.append({
+                    "rowId": "|".join(str(value or "") for value in (
+                        line_info.get("event_id"), player_name, evaluation.normalized_stat_type,
+                        side, evaluation.sanitized_line, line_info.get("bookmaker"),
+                    )),
+                    "player": player_name, "team": team,
+                    "position": evaluation.recent_stats_after_merge.get("position"),
+                    "market": evaluation.normalized_stat_type, "side": side,
+                    "line": evaluation.sanitized_line, "odds": evaluation.sanitized_odds,
+                    "projection": evaluation.projection, "modelSide": model_side,
+                    "modelLikelihood": None if likelihood is None else round(likelihood, 1),
+                    "recentHitRate": round(recent_hits / recent_decisions * 100, 1) if recent_decisions else None,
+                    "recentSample": len(values), "recentPushes": recent_pushes,
+                    "confidenceFloor": rules["min_confidence"],
+                    "profileEligible": bool(verified and fresh and side == model_side and likelihood is not None
+                                            and likelihood >= rules["min_confidence"]
+                                            and not evaluation.rejection_reasons),
+                    "status": ("AVAILABLE" if verified and fresh and evaluation.projection is not None else
+                               "STALE_DATA" if verified and not fresh else "INSUFFICIENT_DATA"),
+                    "reasons": evaluation.rejection_reasons,
+                    "bookmaker": line_info.get("bookmaker"), "provider": line_info.get("provider"),
+                    "eventId": line_info.get("event_id"), "marketTimestamp": line_info.get("last_update"),
+                })
+    rows.sort(key=lambda row: (
+        row["team"], row.get("position") or "ZZ", row["player"], row["market"],
+        -(row["modelLikelihood"] if row["modelLikelihood"] is not None else -1),
+    ))
+    return {
+        "profile": difficulty.value, "rules": dict(rules), "teams": list(game_teams),
+        "rows": rows, "marketCount": len(rows),
+        "dataMode": "verified_market_and_historical_stats" if rows else "unavailable",
+        "message": ("All currently offered verified player markets are shown."
+                    if rows else "No verified player-prop markets with sufficient historical statistics are currently available for this matchup."),
+    }
 
 
 def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True,

@@ -41,6 +41,40 @@ def test_current_week_route_combines_context_and_board(monkeypatch):
     assert observed["args"] == (2030, 2, "SAFE", 17, "SUNDAY", "regular")
 
 
+def test_parlay_analysis_is_authenticated_read_only_and_uses_selected_matchup(monkeypatch):
+    from backend.app import main
+
+    game = {
+        "game_id": "g1", "status": "scheduled", "kickoff_time": "2030-09-15T20:00:00+00:00",
+        "away_team": "MIA", "home_team": "BUF", "winner": "BUF",
+        "winProbability": .64, "homeWinProbability": .64, "awayWinProbability": .36,
+        "predictionStatus": "pregame_snapshot", "modelVersion": "nfl-v2",
+        "frozenModelGeneratedAt": "2030-09-14T12:00:00+00:00",
+        "market": {"homeOdds": -130, "awayOdds": 115, "sportsbook": "Verified Book"},
+    }
+    observed = {}
+    main.app.dependency_overrides[main.require_full_access] = lambda: {"id": 17}
+    monkeypatch.setattr(main, "weekly_board", lambda *args, **kwargs: {"items": [game]})
+    monkeypatch.setattr(
+        main, "analyze_nfl_prop_board",
+        lambda profile, game_teams: observed.update(profile=profile, teams=game_teams) or {"rows": [], "marketCount": 0},
+    )
+    try:
+        response = TestClient(main.app).post("/api/nfl/parlays/analysis", json={
+            "mode": "same_game", "season": 2030, "week": 2, "seasonType": "regular",
+            "profile": "BALANCED", "selections": [{"gameId": "g1"}],
+        })
+    finally:
+        main.app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["saveStatus"] == "read-only; no ticket saved"
+    assert payload["matchups"][0]["modelWinner"] == "BUF"
+    assert payload["matchups"][0]["modelGeneratedAt"] == "2030-09-14T12:00:00+00:00"
+    assert observed == {"profile": "BALANCED", "teams": ("BUF", "MIA")}
+
+
 def test_laptop_and_home_routes_coexist():
     from backend.app.main import app
 
