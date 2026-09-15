@@ -21,6 +21,8 @@ const MODES = [
   ],
 ];
 const DAYS = ["ALL", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY", "MONDAY"];
+const hasPregamePrediction = (game) =>
+  ["available", "pregame_snapshot"].includes(game?.predictionStatus);
 
 export default function Parlays() {
   return (
@@ -492,7 +494,7 @@ function ParlayResult({ result }) {
 }
 function GameCard({ game, mode, picked, selected, choose, selectGame }) {
   const final = game.status === "final",
-    available = game.predictionStatus === "available";
+    available = hasPregamePrediction(game);
   return (
     <article
       className={`flex min-h-[430px] flex-col rounded-3xl border p-5 ${selected ? "border-cyan-300 bg-cyan-300/10" : "border-white/10 bg-white/[.04]"}`}

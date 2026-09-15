@@ -110,6 +110,8 @@ test("parlays enforce game identity and explain final read-only state", () => {
   assert.match(page, /seasonType/);
   assert.match(page, /New pregame parlays are locked/);
   assert.match(page, /No sample legs were substituted/);
+  assert.match(page, /\["available", "pregame_snapshot"\]/);
+  assert.match(page, /available = hasPregamePrediction\(game\)/);
 });
 
 test("history renders durable prediction settlement evidence", () => {
