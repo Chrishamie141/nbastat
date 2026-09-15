@@ -34,6 +34,7 @@ export default function NflProductionHealth({ season = 2026, seasonType = "regul
   }
   const auditReport = data?.latestAudit;
   const performance = data?.performance;
+  const multi = data?.multiGamePerformance;
   return (
     <GlowCard id="nfl-production-health" className="mt-8 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -86,6 +87,25 @@ export default function NflProductionHealth({ season = 2026, seasonType = "regul
               </div>;
             })}
           </div>
+        </div>
+      )}
+      {multi && (
+        <div className="mt-7 border-t border-white/10 pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><h3 className="text-xl font-black">Multi-Game Parlay performance</h3><p className="mt-1 text-sm text-slate-400">Quality-first, distinct-game moneyline benchmark. It records NO BET instead of padding a ticket.</p></div>
+            <span className="text-xs font-bold text-amber-200">{multi.sampleStatus?.replaceAll("_", " ")}</span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Strategy" value={multi.strategy?.replaceAll("_", " ")} />
+            <Stat label="Ticket target" value={multi.targetProbability == null ? "—" : `${(multi.targetProbability * 100).toFixed(0)}%`} />
+            <Stat label="Tickets / NO BET" value={`${value(multi.tickets)} / ${value(multi.noBet)}`} />
+            <Stat label="Won / Lost" value={`${value(multi.won)} / ${value(multi.lost)}`} />
+            <Stat label="Ticket hit rate" value={multi.ticketHitRate == null ? "—" : `${multi.ticketHitRate}%`} />
+            <Stat label="Leg hit rate" value={multi.legHitRate == null ? "—" : `${multi.legHitRate}%`} />
+            <Stat label="Legs graded" value={`${value(multi.legsGraded)} / ${value(multi.totalLegs)}`} />
+            <Stat label="Estimated probability" value={multi.averageEstimatedProbability == null ? "—" : `${(multi.averageEstimatedProbability * 100).toFixed(1)}%`} />
+          </div>
+          <p className="mt-4 text-xs text-slate-500">The 80% figure is an eligibility target, not a guaranteed outcome. Full-ticket and individual-leg results remain separate.</p>
         </div>
       )}
     </GlowCard>

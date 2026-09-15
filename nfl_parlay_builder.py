@@ -24,9 +24,11 @@ from nfl_data_service import (
 from prediction_storage import save_parlay_result
 
 DIFFICULTY_RULES = {
-    DifficultyLevel.SAFE: {"min_legs": 2, "max_legs": 3, "min_confidence": 62},
-    DifficultyLevel.BALANCED: {"min_legs": 4, "max_legs": 5, "min_confidence": 56},
-    DifficultyLevel.AGGRESSIVE: {"min_legs": 6, "max_legs": 8, "min_confidence": 50},
+    # Reliability-first prospective policy. Week 1 history remains immutable;
+    # future tickets become shorter and weak markets resolve to NO_BET.
+    DifficultyLevel.SAFE: {"min_legs": 2, "max_legs": 2, "min_confidence": 70},
+    DifficultyLevel.BALANCED: {"min_legs": 2, "max_legs": 3, "min_confidence": 64},
+    DifficultyLevel.AGGRESSIVE: {"min_legs": 3, "max_legs": 4, "min_confidence": 58},
 }
 
 STAT_WEIGHTS = {
@@ -490,7 +492,8 @@ def _team_filter_excludes_sample_players(team):
     return not any(player.get("team") == team_key for player in NFL_SAMPLE_PLAYERS)
 
 
-def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True):
+def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True,
+                     enforce_minimum_legs=False):
     difficulty = DifficultyLevel.from_input(difficulty)
     rules = DIFFICULTY_RULES[difficulty]
 
@@ -536,6 +539,8 @@ def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True):
     candidates.sort(key=lambda row: _selection_score(row, difficulty), reverse=True)
     target_legs = min(rules["max_legs"], len(candidates))
     legs = [_candidate_to_leg(candidate) for candidate in candidates[:target_legs]]
+    if enforce_minimum_legs and len(legs) < rules["min_legs"]:
+        legs = []
 
     combined_probability = 1.0
     for leg in legs:
@@ -553,8 +558,9 @@ def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True):
     notes = "NFL parlay built from verified provider markets and structured player evidence."
     if game_teams and not legs:
         notes = (
-            "No verified same-game props had both a live market and a confirmed player-to-team mapping for this matchup. "
-            "No sample or cross-game legs were substituted."
+            f"Fewer than {rules['min_legs']} verified same-game props cleared the {rules['min_confidence']}% "
+            "confidence floor with a live market and confirmed player-to-team mapping. "
+            "No sample, weak, or cross-game legs were substituted."
         )
     elif allow_sample:
         notes += " A sample provider fallback may be present only outside production web recommendations."

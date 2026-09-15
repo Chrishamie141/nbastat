@@ -7,7 +7,7 @@ columns after a verified provider final arrives.
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import logging
@@ -26,6 +26,11 @@ from nfl_parlay_grader import _grade_player_leg, _grade_team_leg, _overall_statu
 logger = logging.getLogger(__name__)
 PROFILES = ("SAFE", "BALANCED", "AGGRESSIVE")
 FINAL = {"final", "final-ot", "completed"}
+MULTI_GAME_STRATEGY = "ELITE_80"
+MULTI_GAME_TARGET_PROBABILITY = .80
+MULTI_GAME_MIN_LEG_PROBABILITY = .70
+MULTI_GAME_MIN_LEGS = 2
+MULTI_GAME_MAX_LEGS = 3
 
 
 def _now() -> str:
@@ -91,6 +96,24 @@ def initialize() -> None:
             metadata_json TEXT NOT NULL, result_status TEXT NOT NULL DEFAULT 'PENDING',
             actual_value REAL, graded_at TEXT, UNIQUE(benchmark_id,leg_index))""")
         connection.execute("CREATE INDEX IF NOT EXISTS idx_nfl_sgp_leg_market ON nfl_sgp_benchmark_legs(market_type,result_status)")
+        connection.execute(f"""CREATE TABLE IF NOT EXISTS nfl_multi_game_benchmarks (
+            id {identity}, benchmark_key TEXT NOT NULL UNIQUE, season INTEGER NOT NULL,
+            season_type TEXT NOT NULL, week INTEGER NOT NULL, strategy TEXT NOT NULL,
+            generated_at TEXT NOT NULL, earliest_kickoff TEXT NOT NULL,
+            target_probability REAL NOT NULL, estimated_probability REAL,
+            combined_odds INTEGER, ticket_status TEXT NOT NULL, no_bet_reason TEXT,
+            source_hash TEXT NOT NULL, model_versions_json TEXT NOT NULL,
+            legs_json TEXT NOT NULL, graded_at TEXT,
+            UNIQUE(season,season_type,week,strategy))""")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_nfl_multi_game_week ON nfl_multi_game_benchmarks(season,season_type,week,ticket_status)")
+        connection.execute(f"""CREATE TABLE IF NOT EXISTS nfl_multi_game_benchmark_legs (
+            id {identity}, benchmark_id BIGINT NOT NULL, leg_index INTEGER NOT NULL,
+            game_id TEXT NOT NULL, team TEXT NOT NULL, kickoff_time TEXT NOT NULL,
+            model_probability REAL NOT NULL, betting_edge REAL, odds INTEGER NOT NULL,
+            source_prediction_id BIGINT NOT NULL, result_status TEXT NOT NULL DEFAULT 'PENDING',
+            actual_winner TEXT, graded_at TEXT, UNIQUE(benchmark_id,leg_index),
+            UNIQUE(benchmark_id,game_id))""")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_nfl_multi_game_leg_result ON nfl_multi_game_benchmark_legs(result_status,game_id)")
         connection.execute(f"""CREATE TABLE IF NOT EXISTS nfl_production_audits (
             id {identity}, audit_id TEXT NOT NULL UNIQUE, league TEXT NOT NULL,
             season INTEGER NOT NULL, season_type TEXT NOT NULL, week INTEGER NOT NULL,
@@ -98,7 +121,7 @@ def initialize() -> None:
             report_json TEXT NOT NULL, created_at TEXT NOT NULL)""")
         connection.execute("CREATE INDEX IF NOT EXISTS idx_nfl_production_audit_week ON nfl_production_audits(season,season_type,week,created_at)")
         if using_postgres():
-            for table in ("nfl_prediction_history", "nfl_game_result_snapshots", "nfl_sgp_benchmarks", "nfl_sgp_benchmark_legs", "nfl_production_audits"):
+            for table in ("nfl_prediction_history", "nfl_game_result_snapshots", "nfl_sgp_benchmarks", "nfl_sgp_benchmark_legs", "nfl_multi_game_benchmarks", "nfl_multi_game_benchmark_legs", "nfl_production_audits"):
                 connection.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
                 connection.execute(f"REVOKE ALL ON TABLE {table} FROM anon, authenticated")
 
@@ -274,7 +297,8 @@ def generate_benchmarks(*, season: int, season_type: str, week: int, schedule: l
                 game_started = True
                 break
             try:
-                result = parlay_builder(profile, game_teams=(game["home_team"], game["away_team"]), allow_sample=False)
+                result = parlay_builder(profile, game_teams=(game["home_team"], game["away_team"]),
+                                        allow_sample=False, enforce_minimum_legs=True)
                 legs = [_leg_dict(leg) for leg in result.parlay.legs]
                 market_verified = bool(legs) and all(
                     leg.get("provider") == "the-odds-api" and leg.get("bookmaker") and leg.get("event_id")
@@ -403,6 +427,171 @@ def void_unverifiable_benchmarks(*, season: int, season_type: str, week: int) ->
             voided += 1
             logger.warning("nfl_sgp_benchmark_voided %s", _json({"gameId": ticket["game_id"], "profile": ticket["profile"], "reason": "INCOMPLETE_FROZEN_MARKET_PROVENANCE"}))
     return {"voided": voided}
+
+
+def _american_from_decimal(decimal_odds: float) -> int:
+    profit = decimal_odds - 1
+    return round(profit * 100 if decimal_odds >= 2 else -100 / profit)
+
+
+def generate_multi_game_benchmark(*, season: int, season_type: str, week: int,
+                                  schedule: list[dict] | None = None,
+                                  clock: Callable[[], datetime] | None = None) -> dict:
+    """Freeze the highest-quality distinct-game moneyline ticket, or an honest NO_BET.
+
+    ``ELITE_80`` is a target, never a marketing claim. A ticket is created only
+    when at least two independently modeled winners have verified stored prices
+    and their conservative probability product reaches 80%. Otherwise the
+    worker keeps waiting until the one-hour lock window, then records NO_BET.
+    """
+    initialize()
+    now = (clock or (lambda: datetime.now(timezone.utc)))().astimezone(timezone.utc)
+    schedule = schedule if schedule is not None else _schedule(season, week, season_type)
+    with get_db_connection() as connection:
+        existing = connection.execute("""SELECT * FROM nfl_multi_game_benchmarks
+            WHERE season=? AND season_type=? AND week=? AND strategy=?""",
+            (season, season_type, week, MULTI_GAME_STRATEGY)).fetchone()
+        if existing:
+            return {"created": 0, "status": existing["ticket_status"], "reason": "already_frozen"}
+        rows = [dict(row) for row in connection.execute("""SELECT * FROM nfl_prediction_history
+            WHERE season=? AND season_type=? AND week=? AND generated_at<kickoff_time
+            ORDER BY model_probability DESC,betting_edge DESC,id""", (season, season_type, week)).fetchall()]
+    kickoff_by_game = {
+        _gid(game.get("game_id") or game.get("id")): game.get("kickoff_time") or game.get("startTimeUtc")
+        for game in schedule
+    }
+    future_kickoffs = [_dt(value) for value in kickoff_by_game.values() if value and now < _dt(value)]
+    if not future_kickoffs:
+        return {"created": 0, "status": "EXPIRED", "reason": "week_already_started"}
+    earliest = min(future_kickoffs)
+    candidates = []
+    seen_games = set()
+    for row in rows:
+        game_id = row["game_id"]
+        probability = float(row["model_probability"] or 0)
+        probability = probability / 100 if probability > 1 else probability
+        kickoff = kickoff_by_game.get(game_id) or row["kickoff_time"]
+        if (game_id in seen_games or not kickoff or now >= _dt(kickoff)
+                or row["market_odds"] is None or probability < MULTI_GAME_MIN_LEG_PROBABILITY):
+            continue
+        seen_games.add(game_id)
+        candidates.append({
+            "game_id": game_id, "team": row["predicted_winner"], "kickoff_time": kickoff,
+            "model_probability": probability, "betting_edge": row["betting_edge"],
+            "odds": int(row["market_odds"]), "source_prediction_id": int(row["prediction_id"]),
+            "model_version": row["model_version"],
+        })
+    candidates.sort(key=lambda item: (item["model_probability"], item.get("betting_edge") or -99), reverse=True)
+    selected = candidates[:MULTI_GAME_MAX_LEGS]
+    # Adding a leg can only reduce hit probability. Use the shortest qualifying
+    # ticket and never pad it merely to create a larger payout.
+    selected = selected[:MULTI_GAME_MIN_LEGS]
+    estimated = 1.0
+    decimal_odds = 1.0
+    for leg in selected:
+        estimated *= leg["model_probability"]
+        odds = leg["odds"]
+        decimal_odds *= 1 + (odds / 100 if odds > 0 else 100 / abs(odds))
+    qualifies = len(selected) >= MULTI_GAME_MIN_LEGS and estimated >= MULTI_GAME_TARGET_PROBABILITY
+    if not qualifies and now < earliest - timedelta(hours=1):
+        return {"created": 0, "status": "WAITING", "reason": "target_not_met_before_lock_window",
+                "eligibleLegs": len(candidates), "estimatedProbability": round(estimated, 4) if selected else None}
+    legs = selected if qualifies else []
+    reason = None if qualifies else "No two verified moneyline picks reached the 80% conservative ticket target."
+    generated_at = now.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    frozen_boundary = min((_dt(leg["kickoff_time"]) for leg in legs), default=earliest)
+    payload = {"strategy": MULTI_GAME_STRATEGY, "target": MULTI_GAME_TARGET_PROBABILITY, "legs": legs}
+    key = _hash({"season": season, "seasonType": season_type, "week": week, "strategy": MULTI_GAME_STRATEGY})
+    with get_db_connection() as connection:
+        ticket = connection.execute("""INSERT INTO nfl_multi_game_benchmarks
+            (benchmark_key,season,season_type,week,strategy,generated_at,earliest_kickoff,
+             target_probability,estimated_probability,combined_odds,ticket_status,no_bet_reason,
+             source_hash,model_versions_json,legs_json)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(benchmark_key) DO NOTHING RETURNING id""",
+            (key, season, season_type, week, MULTI_GAME_STRATEGY, generated_at, frozen_boundary.isoformat(),
+             MULTI_GAME_TARGET_PROBABILITY, estimated if qualifies else None,
+             _american_from_decimal(decimal_odds) if qualifies else None,
+             "PENDING" if qualifies else "NO_BET", reason, _hash(payload),
+             _json(sorted({leg["model_version"] for leg in legs})), _json(legs))).fetchone()
+        if not ticket:
+            return {"created": 0, "status": "EXISTS", "reason": "concurrent_freeze"}
+        for index, leg in enumerate(legs):
+            connection.execute("""INSERT INTO nfl_multi_game_benchmark_legs
+                (benchmark_id,leg_index,game_id,team,kickoff_time,model_probability,betting_edge,
+                 odds,source_prediction_id,result_status) VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (ticket["id"], index, leg["game_id"], leg["team"], leg["kickoff_time"],
+                 leg["model_probability"], leg["betting_edge"], leg["odds"],
+                 leg["source_prediction_id"], "PENDING"))
+    status = "PENDING" if qualifies else "NO_BET"
+    logger.info("nfl_multi_game_benchmark_frozen %s", _json({"season": season, "week": week,
+                "strategy": MULTI_GAME_STRATEGY, "status": status, "legs": len(legs),
+                "estimatedProbability": round(estimated, 4) if qualifies else None}))
+    return {"created": 1, "status": status, "legs": len(legs),
+            "estimatedProbability": round(estimated, 4) if qualifies else None, "reason": reason}
+
+
+def grade_multi_game_benchmarks(*, season: int, season_type: str, week: int) -> dict:
+    initialize()
+    graded, partial = 0, 0
+    with get_db_connection() as connection:
+        tickets = connection.execute("""SELECT * FROM nfl_multi_game_benchmarks
+            WHERE season=? AND season_type=? AND week=? AND ticket_status='PENDING'""",
+            (season, season_type, week)).fetchall()
+        for ticket in tickets:
+            legs = connection.execute("""SELECT l.*,r.away_team,r.home_team,r.away_score,r.home_score
+                FROM nfl_multi_game_benchmark_legs l LEFT JOIN nfl_game_result_snapshots r ON r.game_id=l.game_id
+                WHERE l.benchmark_id=? ORDER BY l.leg_index""", (ticket["id"],)).fetchall()
+            statuses = []
+            for leg in legs:
+                if leg["away_score"] is None or leg["home_score"] is None:
+                    statuses.append("PENDING")
+                    continue
+                tied = int(leg["away_score"]) == int(leg["home_score"])
+                actual = None if tied else leg["home_team"] if int(leg["home_score"]) > int(leg["away_score"]) else leg["away_team"]
+                status = "PUSH" if tied else "HIT" if leg["team"] == actual else "MISSED"
+                statuses.append(status)
+                connection.execute("""UPDATE nfl_multi_game_benchmark_legs SET result_status=?,actual_winner=?,graded_at=?
+                    WHERE id=? AND result_status='PENDING'""", (status, actual, _now(), leg["id"]))
+            overall = "LOST" if "MISSED" in statuses else "PENDING" if "PENDING" in statuses else "PUSH" if all(s == "PUSH" for s in statuses) else "WON"
+            if overall != "PENDING":
+                connection.execute("UPDATE nfl_multi_game_benchmarks SET ticket_status=?,graded_at=? WHERE id=? AND ticket_status='PENDING'",
+                                   (overall, _now(), ticket["id"]))
+                graded += 1
+            else:
+                partial += 1
+    return {"graded": graded, "partiallyGraded": partial}
+
+
+def multi_game_benchmark_performance(*, season: int, season_type: str, week: int) -> dict:
+    initialize()
+    with get_db_connection() as connection:
+        tickets = [dict(row) for row in connection.execute("""SELECT * FROM nfl_multi_game_benchmarks
+            WHERE season=? AND season_type=? AND week=? ORDER BY generated_at""", (season, season_type, week)).fetchall()]
+        legs = [dict(row) for row in connection.execute("""SELECT l.* FROM nfl_multi_game_benchmark_legs l
+            JOIN nfl_multi_game_benchmarks b ON b.id=l.benchmark_id
+            WHERE b.season=? AND b.season_type=? AND b.week=?""", (season, season_type, week)).fetchall()]
+    decided_tickets = [row for row in tickets if row["ticket_status"] in {"WON", "LOST"}]
+    decided_legs = [row for row in legs if row["result_status"] in {"HIT", "MISSED"}]
+    live = [row for row in tickets if row["ticket_status"] != "NO_BET"]
+    return {
+        "strategy": MULTI_GAME_STRATEGY, "targetProbability": MULTI_GAME_TARGET_PROBABILITY,
+        "generated": len(tickets), "tickets": len(live),
+        "noBet": sum(row["ticket_status"] == "NO_BET" for row in tickets),
+        "won": sum(row["ticket_status"] == "WON" for row in tickets),
+        "lost": sum(row["ticket_status"] == "LOST" for row in tickets),
+        "pushVoid": sum(row["ticket_status"] in {"PUSH", "VOID"} for row in tickets),
+        "pending": sum(row["ticket_status"] == "PENDING" for row in tickets),
+        "ticketHitRate": round(sum(row["ticket_status"] == "WON" for row in decided_tickets) / len(decided_tickets) * 100, 1) if decided_tickets else None,
+        "totalLegs": len(legs), "legsGraded": len(decided_legs),
+        "legHitRate": round(sum(row["result_status"] == "HIT" for row in decided_legs) / len(decided_legs) * 100, 1) if decided_legs else None,
+        "averageEstimatedProbability": (
+            round(sum(float(row["estimated_probability"]) for row in live if row["estimated_probability"] is not None)
+                  / sum(row["estimated_probability"] is not None for row in live), 4)
+            if any(row["estimated_probability"] is not None for row in live) else None
+        ),
+        "sampleStatus": "REPORTABLE" if len(decided_tickets) >= 20 else "INSUFFICIENT_SAMPLE",
+        "latest": tickets[-1] if tickets else None,
+    }
 
 
 def grade_user_parlays(*, season: int, season_type: str, week: int) -> dict:
@@ -559,6 +748,11 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
         benchmark_legs = [dict(r) for r in connection.execute("""SELECT l.*,b.game_id,b.profile,b.ticket_status
             FROM nfl_sgp_benchmark_legs l JOIN nfl_sgp_benchmarks b ON b.id=l.benchmark_id
             WHERE b.season=? AND b.season_type=? AND b.week=?""", (season, season_type, week)).fetchall()]
+        multi_benchmarks = [dict(r) for r in connection.execute("""SELECT * FROM nfl_multi_game_benchmarks
+            WHERE season=? AND season_type=? AND week=?""", (season, season_type, week)).fetchall()]
+        multi_legs = [dict(r) for r in connection.execute("""SELECT l.*,b.ticket_status,b.generated_at
+            FROM nfl_multi_game_benchmark_legs l JOIN nfl_multi_game_benchmarks b ON b.id=l.benchmark_id
+            WHERE b.season=? AND b.season_type=? AND b.week=?""", (season, season_type, week)).fetchall()]
         provider_attempt = (dict(connection.execute("""SELECT provider,state,attempted_at,completed_at,
             safe_error_code,http_status,market_count,last_market_timestamp FROM nfl_provider_attempts
             WHERE provider='the-odds-api' ORDER BY attempted_at DESC,id DESC LIMIT 1""").fetchone())
@@ -625,7 +819,26 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
             invalid_market_provenance.append(leg["id"])
     check("SGP market provenance", not invalid_market_provenance, "warning",
           f"{len(invalid_market_provenance)} legs lack complete frozen provider provenance")
+    check("Multi-game weekly uniqueness", len(multi_benchmarks) <= 1,
+          detail=f"{len(multi_benchmarks)} {MULTI_GAME_STRATEGY} benchmark rows")
+    invalid_multi = [leg for leg in multi_legs if (
+        _dt(leg["generated_at"]) >= _dt(leg["kickoff_time"])
+        or leg["odds"] is None or float(leg["model_probability"]) < MULTI_GAME_MIN_LEG_PROBABILITY
+    )]
+    duplicate_multi_games = len(multi_legs) != len({leg["game_id"] for leg in multi_legs})
+    below_target = [row for row in multi_benchmarks if row["ticket_status"] != "NO_BET" and (
+        row["estimated_probability"] is None
+        or float(row["estimated_probability"]) < float(row["target_probability"])
+    )]
+    check("Multi-game pregame integrity", not invalid_multi and not duplicate_multi_games,
+          detail=f"{len(invalid_multi)} invalid legs; duplicate games={duplicate_multi_games}")
+    check("Multi-game quality threshold", not below_target,
+          detail=f"{len(below_target)} tickets below their stored eligibility target")
+    multi_pending_final = [leg for leg in multi_legs if leg["game_id"] in final_ids and leg["result_status"] == "PENDING"]
+    check("Multi-game grading", not multi_pending_final, "warning",
+          detail=f"{len(multi_pending_final)} final legs pending settlement")
     performance = benchmark_performance(season=season, season_type=season_type, week=week)
+    multi_performance = multi_game_benchmark_performance(season=season, season_type=season_type, week=week)
     check("Performance aggregation", True, detail=f"{performance['overall']['generated']} benchmark rows")
     root = Path(__file__).resolve().parents[3]
     frontend_paths = [root / "frontend" / "app" / name / "page.jsx" for name in
@@ -646,12 +859,16 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
               "correctPredictions": sum(p["settlement_status"] == "WON" for p in canonical_predictions),
               "incorrectPredictions": sum(p["settlement_status"] == "LOST" for p in canonical_predictions),
               "benchmarkSgps": len(benchmarks), "sgpsGraded": sum(b["ticket_status"] in {"WON", "LOST", "PUSH", "VOID"} for b in benchmarks),
-              "sgpsPending": sum(b["ticket_status"] == "PENDING" for b in benchmarks), "noBet": sum(b["ticket_status"] == "NO_BET" for b in benchmarks)}
+              "sgpsPending": sum(b["ticket_status"] == "PENDING" for b in benchmarks), "noBet": sum(b["ticket_status"] == "NO_BET" for b in benchmarks),
+              "multiGameBenchmarks": len(multi_benchmarks),
+              "multiGameLegs": len(multi_legs),
+              "multiGamePending": sum(b["ticket_status"] == "PENDING" for b in multi_benchmarks)}
     result = "PASS" if not critical else "FAIL"
     report = {"title": f"SMARTBETSPORTS — NFL {season} {season_type.upper()} WEEK {week} PRODUCTION AUDIT",
               "auditId": str(uuid4()), "league": "NFL", "season": season, "seasonType": season_type, "week": week,
               "createdAt": _now(), "result": result, "checks": checks, "counts": counts,
               "criticalErrors": critical, "warnings": warnings, "performance": performance,
+              "multiGamePerformance": multi_performance,
               "providerHealth": {"schedule": "HEALTHY" if schedule else "UNAVAILABLE",
                                  "odds": provider_attempt or {"state": "UNKNOWN"}}}
     # Keep operational output portable across Windows consoles and log collectors.
@@ -699,10 +916,14 @@ def run_lifecycle(*, season: int, season_type: str, week: int, generate: bool = 
     settlement = settle_predictions(season=season, season_type=season_type, week=week)
     benchmarks = generate_benchmarks(season=season, season_type=season_type, week=week, schedule=schedule,
                                      max_games=max_benchmark_games, max_tickets=1) if generate else {"created": 0, "noBet": 0, "retryableSkipped": 0}
+    multi_game = generate_multi_game_benchmark(season=season, season_type=season_type, week=week,
+                                               schedule=schedule) if generate else {"created": 0, "status": "DISABLED"}
     integrity = void_unverifiable_benchmarks(season=season, season_type=season_type, week=week)
     grading = grade_benchmarks(season=season, season_type=season_type, week=week)
+    multi_game_grading = grade_multi_game_benchmarks(season=season, season_type=season_type, week=week)
     user_grading = grade_user_parlays(season=season, season_type=season_type, week=week)
     audit = audit_week(season=season, season_type=season_type, week=week, schedule=schedule)
     return {"history": history, "newFinalResults": new_results, "predictionSettlement": settlement,
-            "benchmarks": benchmarks, "benchmarkIntegrity": integrity, "benchmarkGrading": grading, "userParlayGrading": user_grading,
+            "benchmarks": benchmarks, "benchmarkIntegrity": integrity, "benchmarkGrading": grading,
+            "multiGameBenchmark": multi_game, "multiGameGrading": multi_game_grading, "userParlayGrading": user_grading,
             "providerErrors": provider_errors, "audit": audit}

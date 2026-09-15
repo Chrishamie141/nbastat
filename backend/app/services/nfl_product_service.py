@@ -980,9 +980,9 @@ def planning_week_context(season: int, at: datetime | None = None, operational: 
 
 
 MULTI_GAME_POLICY = {
-    "SAFE": {"min_legs": 2, "max_legs": 3, "minimum_probability": .60, "minimum_edge": .01},
-    "BALANCED": {"min_legs": 3, "max_legs": 5, "minimum_probability": .54, "minimum_edge": 0.0},
-    "AGGRESSIVE": {"min_legs": 4, "max_legs": 8, "minimum_probability": .50, "minimum_edge": .03},
+    "SAFE": {"min_legs": 2, "max_legs": 2, "minimum_probability": .70, "minimum_edge": .01},
+    "BALANCED": {"min_legs": 2, "max_legs": 3, "minimum_probability": .64, "minimum_edge": .01},
+    "AGGRESSIVE": {"min_legs": 3, "max_legs": 4, "minimum_probability": .58, "minimum_edge": .03},
 }
 
 

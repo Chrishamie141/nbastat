@@ -129,6 +129,9 @@ test("command center exposes owner-only NFL audit and SGP lab", () => {
   assert.match(panel, /SAFE/);
   assert.match(panel, /BALANCED/);
   assert.match(panel, /AGGRESSIVE/);
+  assert.match(panel, /Multi-Game Parlay performance/);
+  assert.match(panel, /eligibility target, not a guaranteed outcome/);
+  assert.match(page, /selectedWeek \?\? data\?\.context\?\.week/);
   assert.match(api, /api\/internal\/operations\/nfl-production/);
 });
 

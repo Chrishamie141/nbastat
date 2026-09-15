@@ -48,6 +48,7 @@ from backend.app.services import nfl_server_automation
 from backend.app.services.nfl_production_service import (
     audit_week as audit_nfl_production_week,
     benchmark_performance as nfl_benchmark_performance,
+    multi_game_benchmark_performance as nfl_multi_game_benchmark_performance,
     latest_audit as latest_nfl_production_audit,
     prediction_history as nfl_prediction_history,
     run_lifecycle as run_nfl_production_lifecycle,
@@ -309,6 +310,7 @@ def api_internal_nfl_production(season: int, season_type: str, week: int,
         return {
             "latestAudit": latest_nfl_production_audit(season=season, season_type=season_type, week=week),
             "performance": nfl_benchmark_performance(season=season, season_type=season_type, week=week),
+            "multiGamePerformance": nfl_multi_game_benchmark_performance(season=season, season_type=season_type, week=week),
         }
     except Exception as exc:
         logger.exception("nfl_production_dashboard_failed")
@@ -559,7 +561,7 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
             game_teams=(home,away)
         if game_teams:
             result=build_nfl_parlay(payload.get("difficulty") or "BALANCED", team=team.upper() if team else None,
-                                    game_teams=game_teams, allow_sample=False)
+                                    game_teams=game_teams, allow_sample=False, enforce_minimum_legs=True)
         else:
             result=build_nfl_parlay(payload.get("difficulty") or "BALANCED", team=team.upper() if team else None)
             result.parlay.legs[:]=[leg for leg in result.parlay.legs if "sample/offline" not in str(leg.notes).lower()]

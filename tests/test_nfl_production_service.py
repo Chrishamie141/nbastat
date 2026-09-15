@@ -7,7 +7,8 @@ from backend.app.database import get_db_connection
 from backend.app.services import nfl_product_service
 from backend.app.services.nfl_production_service import (
     audit_week, benchmark_performance, capture_prediction_history, generate_benchmarks,
-    grade_benchmarks, grade_user_parlays, initialize, persist_final, prediction_history, settle_predictions,
+    generate_multi_game_benchmark, grade_benchmarks, grade_multi_game_benchmarks, grade_user_parlays,
+    initialize, multi_game_benchmark_performance, persist_final, prediction_history, settle_predictions,
     void_unverifiable_benchmarks,
 )
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
@@ -22,17 +23,19 @@ def game(status="scheduled", kickoff="2099-09-10T00:20:00Z"):
             "home_score": 13 if status == "final" else None, "status": status, "provider": "espn"}
 
 
-def seed_prediction(generated="2026-09-09T12:00:00Z", winner="SEA", user_id=7):
+def seed_prediction(generated="2026-09-09T12:00:00Z", winner="SEA", user_id=7,
+                    game_id="espn-401872656", probability=.61, odds=-120,
+                    kickoff="2099-09-10T00:20:00Z"):
     nfl_product_service._initialize_predictions.cache_clear()
     nfl_product_service._initialize_predictions()
-    payload = {"winner": winner, "winProbability": .61, "edge": .07, "modelVersion": "nfl-v-test",
-               "dataAsOf": "2026-09-09T11:00:00Z", "market": {"homeOdds": -120, "awayOdds": 110}}
+    payload = {"winner": winner, "winProbability": probability, "edge": .07, "modelVersion": "nfl-v-test",
+               "dataAsOf": "2026-09-09T11:00:00Z", "market": {"homeOdds": odds, "awayOdds": 110}}
     with get_db_connection() as connection:
         row = connection.execute("""INSERT INTO nfl_game_predictions
             (user_id,game_id,season,week,kickoff_time,generated_at,model_version,prediction_json,
              season_type,display_week,provider_week,provider,week_key)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id""",
-            (user_id, "espn-401872656", 2026, 1, "2099-09-10T00:20:00Z", generated,
+            (user_id, game_id, 2026, 1, kickoff, generated,
              "nfl-v-test", json.dumps(payload), "regular", 1, 1, "espn", "REG1")).fetchone()
     return row["id"], payload
 
@@ -159,6 +162,63 @@ def test_pending_benchmarks_never_claim_reportable_sample():
     performance = benchmark_performance(season=2026, season_type="regular", week=1)
     assert performance["overall"]["pending"] == 3
     assert performance["sampleStatus"] == "INSUFFICIENT_SAMPLE"
+
+
+def test_elite_multi_game_benchmark_requires_real_80_percent_ticket_and_grades():
+    first_id, _ = seed_prediction(winner="SEA", probability=.92, odds=-300)
+    second_id, _ = seed_prediction(winner="KC", probability=.90, odds=-250,
+                                   game_id="espn-401872999")
+    schedule = [game(), {**game(), "game_id": "espn-401872999", "id": "espn-401872999",
+                         "away_team": "DEN", "home_team": "KC"}]
+    capture_prediction_history(season=2026, season_type="regular", week=1, schedule=schedule)
+    result = generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
+                                           schedule=schedule,
+                                           clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc))
+    assert result["status"] == "PENDING" and result["legs"] == 2
+    assert result["estimatedProbability"] == .828
+    assert generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
+                                         schedule=schedule)["reason"] == "already_frozen"
+    with get_db_connection() as connection:
+        rows = connection.execute("SELECT * FROM nfl_multi_game_benchmark_legs ORDER BY leg_index").fetchall()
+        assert [row["source_prediction_id"] for row in rows] == [first_id, second_id]
+        for row, away, home, away_score, home_score in (
+            (rows[0], "NE", "SEA", 10, 13), (rows[1], "DEN", "KC", 10, 31)):
+            connection.execute("""INSERT INTO nfl_game_result_snapshots
+                (game_id,season,season_type,week,kickoff_time,away_team,home_team,away_score,home_score,
+                 game_status,team_stats_json,player_stats_json,provider,retrieved_at,source_hash)
+                VALUES (?,?,?,?,?,?,?,?,?,'FINAL','[]','{}','espn',?,?)""",
+                (row["game_id"], 2026, "regular", 1, row["kickoff_time"], away, home,
+                 away_score, home_score, "2099-09-10T04:00:00Z", row["game_id"] + "-hash"))
+    assert grade_multi_game_benchmarks(season=2026, season_type="regular", week=1)["graded"] == 1
+    performance = multi_game_benchmark_performance(season=2026, season_type="regular", week=1)
+    assert performance["won"] == 1 and performance["ticketHitRate"] == 100
+    assert performance["legHitRate"] == 100 and performance["sampleStatus"] == "INSUFFICIENT_SAMPLE"
+
+
+def test_elite_multi_game_benchmark_waits_then_records_no_bet_near_kickoff():
+    seed_prediction(probability=.80, odds=-150)
+    seed_prediction(probability=.75, odds=-140, game_id="espn-401872999")
+    schedule = [game(), {**game(), "game_id": "espn-401872999", "id": "espn-401872999"}]
+    capture_prediction_history(season=2026, season_type="regular", week=1, schedule=schedule)
+    waiting = generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
+                                            schedule=schedule,
+                                            clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc))
+    assert waiting["status"] == "WAITING"
+    no_bet = generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
+                                           schedule=schedule,
+                                           clock=lambda: datetime(2099, 9, 9, 23, 30, tzinfo=timezone.utc))
+    assert no_bet["status"] == "NO_BET"
+    assert multi_game_benchmark_performance(season=2026, season_type="regular", week=1)["noBet"] == 1
+
+
+def test_production_sgp_policy_is_short_and_fails_closed():
+    from nfl_parlay_builder import DIFFICULTY_RULES
+
+    assert DIFFICULTY_RULES[DifficultyLevel.SAFE] == {
+        "min_legs": 2, "max_legs": 2, "min_confidence": 70,
+    }
+    assert DIFFICULTY_RULES[DifficultyLevel.BALANCED]["max_legs"] == 3
+    assert DIFFICULTY_RULES[DifficultyLevel.AGGRESSIVE]["max_legs"] == 4
 
 
 def test_vercel_audit_does_not_require_frontend_source_in_api_bundle(monkeypatch):

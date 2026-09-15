@@ -513,7 +513,7 @@ def test_multi_game_parlay_uses_distinct_verified_model_winners(monkeypatch):
     market_timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     items = []
     for index, (winner, probability, odds, implied) in enumerate([
-        ("BUF", .64, -125, .55), ("KC", .61, 105, .49), ("PHI", .59, 110, .48), ("DAL", .56, 115, .47),
+        ("BUF", .74, -125, .55), ("KC", .71, 105, .49), ("PHI", .68, 110, .48), ("DAL", .66, 115, .47),
     ], 1):
         items.append({
             "game_id": f"g{index}", "status": "scheduled", "predictionStatus": "available",
@@ -530,8 +530,8 @@ def test_multi_game_parlay_uses_distinct_verified_model_winners(monkeypatch):
         selections=[{"gameId": row["game_id"], "team": row["winner"]} for row in items], user_id=7,
     )
 
-    assert len(result.parlay.legs) == 4
-    assert len({leg.team for leg in result.parlay.legs}) == 4
+    assert len(result.parlay.legs) == 3
+    assert len({leg.team for leg in result.parlay.legs}) == 3
     assert result.estimated_odds is not None
     assert 0 < result.combined_probability < 1
     assert rejected == []
