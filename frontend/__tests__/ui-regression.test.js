@@ -104,6 +104,7 @@ test("parlays continue into a read-only multi-matchup analysis workspace", () =>
   assert.match(analysis, /Player and team market spreadsheet/);
   assert.match(analysis, /Model estimate/);
   assert.match(analysis, /Recent hit rate/);
+  assert.match(analysis, /Sportsbook/);
   assert.match(analysis, /Nothing on this page creates a wager/);
   assert.match(api, /parlayAnalysis/);
 });

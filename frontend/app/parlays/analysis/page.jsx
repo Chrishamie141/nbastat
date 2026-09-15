@@ -44,6 +44,7 @@ function AnalysisWorkspace() {
   const [error, setError] = useState("");
   const [team, setTeam] = useState("ALL");
   const [market, setMarket] = useState("ALL");
+  const [book, setBook] = useState("ALL");
   const [query, setQuery] = useState("");
   const [eligibleOnly, setEligibleOnly] = useState(false);
   const [shortlist, setShortlist] = useState({});
@@ -69,6 +70,7 @@ function AnalysisWorkspace() {
       setAnalysis(next);
       setTeam("ALL");
       setMarket("ALL");
+      setBook("ALL");
       setShortlist({});
     } catch (exc) {
       setError(exc.message);
@@ -83,16 +85,18 @@ function AnalysisWorkspace() {
   );
   const teams = useMemo(() => [...new Set(rows.map((row) => row.team))].sort(), [rows]);
   const markets = useMemo(() => [...new Set(rows.map((row) => row.market))].sort(), [rows]);
+  const books = useMemo(() => [...new Set(rows.map((row) => row.bookmaker).filter(Boolean))].sort(), [rows]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return rows.filter(
       (row) =>
         (team === "ALL" || row.team === team) &&
         (market === "ALL" || row.market === market) &&
+        (book === "ALL" || row.bookmaker === book) &&
         (!eligibleOnly || row.profileEligible) &&
         (!needle || `${row.player} ${row.team} ${MARKET_LABELS[row.market] || row.market}`.toLowerCase().includes(needle)),
     );
-  }, [rows, team, market, query, eligibleOnly]);
+  }, [rows, team, market, book, query, eligibleOnly]);
   const shortlisted = rows.filter((row) => shortlist[row.rowId]);
 
   if (!setup)
@@ -150,10 +154,11 @@ function AnalysisWorkspace() {
           <GlowCard className="mt-5 overflow-hidden">
             <div className="border-b border-white/10 p-5">
               <div className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-xl font-black">Player and team market spreadsheet</h2><p className="mt-1 text-sm text-slate-400">Every live, verified prop returned for your selected matchup set.</p></div><span className="tag">{filtered.length} rows shown</span></div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <label className="text-xs font-bold uppercase tracking-wide text-slate-400">Player search<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Josh Allen" className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white" /></label>
                 <Filter label="Team" value={team} onChange={setTeam} options={teams} />
                 <Filter label="Market" value={market} onChange={setMarket} options={markets} render={(value) => MARKET_LABELS[value] || value} />
+                <Filter label="Sportsbook" value={book} onChange={setBook} options={books} />
                 <label className="flex items-end gap-2 rounded-xl border border-white/10 p-3 text-sm"><input type="checkbox" checked={eligibleOnly} onChange={(event) => setEligibleOnly(event.target.checked)} /> Show {profile} eligible only</label>
               </div>
             </div>
