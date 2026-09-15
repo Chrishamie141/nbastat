@@ -212,7 +212,7 @@ def get_nfl_player_props(team: str | None = None, game_teams: tuple[str, str] | 
                         player = outcome.get("description") or outcome.get("name")
                         if not player:
                             continue
-                        is_anytime_touchdown = stat_type == "TD" and not outcome.get("description")
+                        is_anytime_touchdown = stat_type == "TD"
                         props.setdefault(player, {}).setdefault(stat_type, []).append({
                             "line": outcome.get("point") if outcome.get("point") is not None else (0.5 if is_anytime_touchdown else None),
                             "odds": outcome.get("price"),

@@ -309,7 +309,10 @@ def test_anytime_touchdown_market_normalizes_to_over_point_five(monkeypatch):
         "id": "event-1", "commence_time": "2030-09-15T20:00:00Z",
         "bookmakers": [{"title": "Verified Book", "last_update": "2030-09-15T18:00:00Z", "markets": [{
             "key": "player_anytime_td", "last_update": "2030-09-15T18:00:00Z",
-            "outcomes": [{"name": "James Cook", "price": 120}],
+            "outcomes": [
+                {"name": "James Cook", "price": 120},
+                {"name": "Yes", "description": "Josh Allen", "price": 175},
+            ],
         }]}],
     })
 
@@ -317,6 +320,8 @@ def test_anytime_touchdown_market_normalizes_to_over_point_five(monkeypatch):
 
     assert props["James Cook"]["TD"][0]["line"] == 0.5
     assert props["James Cook"]["TD"][0]["side"] == "Over"
+    assert props["Josh Allen"]["TD"][0]["line"] == 0.5
+    assert props["Josh Allen"]["TD"][0]["side"] == "Over"
 
 
 @pytest.mark.skipif(os.getenv("SMARTBETS_RUN_LIVE_NFL_TESTS") != "1", reason="live-first NFL provider path is opt-in")
