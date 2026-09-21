@@ -1,4 +1,4 @@
-import { Clock3, Image as ImageIcon, Send, ShieldCheck, Video } from "lucide-react";
+import { Clock3, Send, ShieldCheck } from "lucide-react";
 import GlowCard from "@/components/ui/GlowCard";
 
 const value = (input) => input ?? "—";
@@ -15,8 +15,7 @@ export default function SocialStatus({ summary }) {
     ["Posts today", summary.postsToday, Send], ["Posts this week", summary.postsThisWeek, Send],
     ["Scheduled", summary.scheduled, Clock3],
     ["Generating", summary.generating, Clock3], ["Review", summary.reviewRequired, ShieldCheck],
-    ["Images today", summary.imagesGeneratedToday, ImageIcon],
-    ["Videos today", summary.videosGeneratedToday, Video], ["Failed", summary.failed, ShieldCheck],
+    ["Failed", summary.failed, ShieldCheck],
   ];
   return <>
     <div className="flex flex-wrap items-center gap-3">
@@ -29,8 +28,9 @@ export default function SocialStatus({ summary }) {
       <span className="text-xs font-black uppercase tracking-wider text-slate-500">Worker</span>
       <StatusPill status={summary.workerState} />
       {summary.publicWritesBlocked && <span className="text-sm font-bold text-amber-200">Public writes are blocked</span>}
+      {!summary.mediaAttachmentsEnabled && <span className="text-sm font-bold text-cyan-200">Text-only posts</span>}
     </div>
-    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
       {metrics.map(([label, metric, Icon]) => <GlowCard key={label} className="p-4">
         <div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-wider text-slate-400">{label}</p><Icon size={16} className="text-cyan-300" /></div>
         <p className="mt-3 text-2xl font-black">{value(metric)}</p>

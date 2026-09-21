@@ -85,7 +85,9 @@ def summary(clock=_now) -> dict[str, Any]:
         "lastPublish": last["published_at"] if last else None, "lastPublishStatus": last["status"] if last else None,
         "nextScheduledPost": dict(next_item) if next_item else None,
         "latestSourceAt": source["verified_at"] if source else None,
-        "settings": configured, "publicWritesBlocked": configured["paused"] or configured["dry_run"] or not configured["auto_publish"],
+        "settings": configured,
+        "mediaAttachmentsEnabled": configured["media_attachments_enabled"],
+        "publicWritesBlocked": configured["paused"] or configured["dry_run"] or not configured["auto_publish"],
     }
 
 
@@ -233,6 +235,9 @@ def change_template(post_id: str, template: str) -> dict[str, Any]:
 def regenerate_post_media(post_id: str, media_type: str = "image") -> dict[str, Any]:
     _setup()
     with social.connection() as connection:
+        configured = settings.load_settings(connection)
+        if not configured["media_attachments_enabled"]:
+            raise ValueError("Visual attachments are disabled; social posts are text-only")
         row = connection.execute("SELECT source_id FROM social_posts WHERE post_id=?", (post_id,)).fetchone()
         if not row:
             raise ValueError("Social post not found")
@@ -240,7 +245,6 @@ def regenerate_post_media(post_id: str, media_type: str = "image") -> dict[str, 
         # signed source behind the post so stale or tampered evidence cannot be
         # turned into fresh-looking media.
         social.load_source(connection, row["source_id"])
-        configured = settings.load_settings(connection)
         return regenerate_media(connection, post_id, configured, social.sha, media_type=media_type)
 
 

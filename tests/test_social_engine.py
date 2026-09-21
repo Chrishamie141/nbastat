@@ -329,11 +329,11 @@ def test_positive_post_interval_limits_each_publish_batch_to_one(engine):
         assert len(due_without_spacing) == 2
 
 
-def test_queue_dry_run_builds_deterministic_media_without_external_writes(engine):
-    pytest.importorskip("PIL")
+def test_queue_dry_run_is_text_only_without_external_writes(engine, monkeypatch):
     at, _ = engine
     store_source(source(at))
     social.discover_opportunities(lambda: at)
+    monkeypatch.setattr(social, "generate_media", lambda *args, **kwargs: pytest.fail("text-only mode generated media"))
     result = social.process_queue(
         clock=lambda: at + timedelta(minutes=16),
         limit=1,
@@ -341,7 +341,101 @@ def test_queue_dry_run_builds_deterministic_media_without_external_writes(engine
     )
     assert result["processed"] == 1 and result["items"][0]["result"]["status"] == "DRY_RUN"
     with social.connection() as connection:
-        assert connection.execute("SELECT COUNT(*) FROM social_media_assets WHERE status='READY'").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM social_media_assets").fetchone()[0] == 0
+        detail = connection.execute("SELECT media_type,media_asset_ids_json,alt_text FROM social_post_details").fetchone()
+    assert detail["media_type"] == "text" and json.loads(detail["media_asset_ids_json"]) == []
+    assert detail["alt_text"] is None
+
+
+def test_media_attachment_kill_switch_is_environment_only(engine, monkeypatch):
+    monkeypatch.setenv("SOCIAL_MEDIA_ATTACHMENTS_ENABLED", "false")
+    with social.connection() as connection:
+        connection.execute(
+            "INSERT INTO social_settings(setting_key,value_json,updated_at,updated_by) VALUES(?,?,?,?)",
+            ("media_attachments_enabled", "true", engine[0].isoformat(), "stale-owner-setting"),
+        )
+        assert settings.load_settings(connection)["media_attachments_enabled"] is False
+        with pytest.raises(ValueError, match="Unsupported social setting"):
+            settings.update_settings(connection, {"media_attachments_enabled": True}, "owner")
+
+
+def test_publish_ignores_historical_media_when_text_only(engine, monkeypatch):
+    at, _ = engine
+    store_source(source(at))
+    social.discover_opportunities(lambda: at)
+    dry_run = social.process_queue(
+        clock=lambda: at + timedelta(minutes=16),
+        limit=1,
+        client_factory=lambda: pytest.fail("dry run created an X client"),
+    )
+    post = dry_run["items"][0]["post"]
+    with social.connection() as connection:
+        # Simulate a queued item created before the text-only policy. A missing
+        # legacy asset would fail closed if publishing still attempted media.
+        connection.execute(
+            "UPDATE social_post_details SET media_asset_ids_json=?,media_type='image' WHERE post_id=?",
+            ('["historical-asset"]', post["post_id"]),
+        )
+    monkeypatch.setenv("SOCIAL_DRY_RUN", "false")
+    monkeypatch.setenv("DRY_RUN", "false")
+    monkeypatch.setenv("SOCIAL_AUTO_PUBLISH", "true")
+    monkeypatch.setenv("SOCIAL_MEDIA_ATTACHMENTS_ENABLED", "false")
+
+    class Response:
+        status_code = 201
+
+        def json(self):
+            return {"data": {"id": "x-text-only"}}
+
+    class Client:
+        def verify_company(self):
+            return {"verified": True}
+
+        def upload(self, *_args, **_kwargs):
+            pytest.fail("text-only policy attempted a media upload")
+
+        def post(self, text):
+            assert text == post["content"]
+            return Response()
+
+    publish_at = at + timedelta(minutes=16)
+    assert social.publish_one(post["post_id"], lambda: publish_at, Client)["status"] == "PUBLISHED"
+
+
+def test_owner_cannot_regenerate_media_while_text_only(engine):
+    at, _ = engine
+    store_source(source(at))
+    post = social.generate(lambda: at)
+    with pytest.raises(ValueError, match="text-only"):
+        owner.regenerate_post_media(post["post_id"])
+
+
+def test_every_supported_post_format_generates_clean_grounded_copy(engine, monkeypatch):
+    monkeypatch.setenv("SOCIAL_HASHTAGS_ENABLED", "true")
+    base = {
+        "away_team": "BUF", "home_team": "PIT", "winner": "BUF",
+        "model_probability": .674, "market_probability": .541,
+        "edge": .133, "movement": .04, "away_score": 24, "home_score": 17,
+        "games_count": 16, "predictions_count": 3, "finals_count": 13,
+        "record": {"WIN": 9, "LOSS": 4, "PUSH": 0}, "week": 1,
+        "window_label": "LATE SLATE", "kickoff_label": "Kickoff ahead",
+        "streak_count": 3, "streak_result": "WIN",
+        "ranked_picks": [
+            {"winner": "BUF", "probability": .674},
+            {"winner": "PIT", "probability": .612},
+        ],
+        "cta": "https://smartbetsports.com/games",
+        "source_entities": [
+            "BUF", "Bills", "Buffalo Bills", "PIT", "Steelers", "Pittsburgh Steelers",
+        ],
+    }
+    malformed = ("Ã", "Â", "â", "ð", "�")
+    for post_type in content.CONTENT_TYPES:
+        caption = content.deterministic_caption({**base, "post_type": post_type})
+        assert 1 <= len(caption) <= 280, post_type
+        assert "#SmartBets" in caption and "smartbetsports.com/games" in caption, post_type
+        assert not any(marker in caption for marker in malformed), post_type
+        assert not any(phrase in caption.casefold() for phrase in content.INTERNAL_PUBLIC_PHRASES), post_type
 
 
 def test_daily_worker_never_falls_back_to_generic_content(engine, monkeypatch):
@@ -386,6 +480,7 @@ def test_sunday_late_and_night_transitions(engine, local_hour, kickoff_hour, exp
 
 def test_failed_media_generation_falls_back_to_text(engine, monkeypatch):
     at, _ = engine; store_source(source(at)); social.discover_opportunities(lambda: at)
+    monkeypatch.setenv("SOCIAL_MEDIA_ATTACHMENTS_ENABLED", "true")
     monkeypatch.setattr(social, "generate_media", lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError("image provider down")))
     result = social.process_queue(clock=lambda: at + timedelta(minutes=16), limit=1,
                                   client_factory=lambda: pytest.fail("dry run created an X client"))

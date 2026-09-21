@@ -53,6 +53,14 @@ or `SOCIAL_DATABASE_URL` to frontend code.
 
 ## Media storage and rendering
 
+Public social delivery is text-only by default. `SOCIAL_MEDIA_ATTACHMENTS_ENABLED=false`
+is the deployment-level kill switch: queued and newly generated posts publish
+without image or video attachments, even if the lower-level image/video feature
+flags are enabled. Existing media rows and files remain immutable audit history.
+The Command Center deliberately cannot override this setting. Re-enable media
+only after the rendering problem has been diagnosed and production previews have
+been explicitly approved.
+
 Local development uses `.runtime/social/media`, which is ignored by Git. Vercel
 rejects local media storage because its filesystem is ephemeral. Production must
 set `SOCIAL_MEDIA_STORAGE_PROVIDER=supabase` and configure a private bucket via
@@ -60,8 +68,9 @@ set `SOCIAL_MEDIA_STORAGE_PROVIDER=supabase` and configure a private bucket via
 `SOCIAL_MEDIA_STORAGE_BUCKET`. The owner API proxies authenticated previews; the
 bucket does not need to be public.
 
-AI image generation is off until `SOCIAL_AI_IMAGES_ENABLED=true` and
-`OPENAI_API_KEY` are configured. `SOCIAL_OPENAI_IMAGE_MODEL` defaults to the
+AI image generation is off until `SOCIAL_MEDIA_ATTACHMENTS_ENABLED=true`,
+`SOCIAL_AI_IMAGES_ENABLED=true`, and `OPENAI_API_KEY` are configured.
+`SOCIAL_OPENAI_IMAGE_MODEL` defaults to the
 current premium `gpt-image-2.5-sunburst` Image API model and remains explicit so
 a deployment can select another supported OpenAI image model. The AI prompt forbids text,
 numbers, marks and logos. Pillow adds the verified overlay at 1600x900 and checks
@@ -70,7 +79,8 @@ format, dimensions and required values before storage.
 Videos are deterministic 10-20 second H.264 MP4s rendered with FFmpeg from the
 validated graphic. The deployment includes a bounded FFmpeg binary through
 `imageio-ffmpeg`; `SOCIAL_FFMPEG_PATH` can still override it. When
-`SOCIAL_VIDEO_ENABLED=true`, daily/weekly recaps and streak milestones may use
+`SOCIAL_MEDIA_ATTACHMENTS_ENABLED=true` and `SOCIAL_VIDEO_ENABLED=true`,
+daily/weekly recaps and streak milestones may use
 video while ordinary picks remain images. A missing renderer holds the item
 safely; it never publishes malformed media. Optional narration is deliberately
 not enabled.

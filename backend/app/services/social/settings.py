@@ -13,6 +13,10 @@ SETTING_SPECS: dict[str, tuple[str, Any, str | None]] = {
     "dry_run": ("bool", True, "SOCIAL_DRY_RUN"),
     "auto_publish": ("bool", False, "SOCIAL_AUTO_PUBLISH"),
     "ai_copy_enabled": ("bool", False, "SOCIAL_AI_COPY_ENABLED"),
+    # Visual attachments are a deployment-level kill switch. Keep this out of
+    # owner-editable settings so a stale database value cannot silently turn
+    # graphics back on after they have been disabled operationally.
+    "media_attachments_enabled": ("bool", False, "SOCIAL_MEDIA_ATTACHMENTS_ENABLED"),
     "ai_images_enabled": ("bool", False, "SOCIAL_AI_IMAGES_ENABLED"),
     "image_quality": ("choice", "high", "SOCIAL_IMAGE_QUALITY"),
     "max_images_per_day": ("int", 3, "SOCIAL_MAX_IMAGES_PER_DAY"),
@@ -31,7 +35,7 @@ SETTING_SPECS: dict[str, tuple[str, Any, str | None]] = {
     "live_reactions_enabled": ("bool", False, "SOCIAL_LIVE_REACTIONS_ENABLED"),
 }
 
-PUBLIC_SETTING_KEYS = frozenset(SETTING_SPECS)
+PUBLIC_SETTING_KEYS = frozenset(SETTING_SPECS) - {"media_attachments_enabled"}
 
 
 def _coerce(kind: str, value: Any) -> Any:
@@ -75,7 +79,10 @@ def load_settings(connection) -> dict[str, Any]:
     rows = connection.execute("SELECT setting_key,value_json FROM social_settings").fetchall()
     for row in rows:
         key = row["setting_key"]
-        if key in SETTING_SPECS:
+        # Deployment-level policy must never be overridden by a stale or
+        # manually inserted database setting.  Only the environment may
+        # re-enable public media attachments.
+        if key in PUBLIC_SETTING_KEYS:
             result[key] = _coerce(SETTING_SPECS[key][0], json.loads(row["value_json"]))
     return result
 

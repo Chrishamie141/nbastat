@@ -480,12 +480,15 @@ def publish_one(post_id,clock=now,client_factory=OfficialX):
             if (sha(content)!=row['content_hash'] or integrity!=details['integrity_hash']
                     or not hmac.compare_digest(sign(signed),row['signature'])):
                 raise ValueError('Post content/stat authenticity check failed')
-            media_ids=decoded(details['media_asset_ids_json'],[])
-            for media_id in media_ids[-4:]:
-                asset=c.execute('SELECT * FROM social_media_assets WHERE media_asset_id=?',(media_id,)).fetchone()
-                if not asset or asset['status']!='READY' or asset['source_hash']!=details['source_hash']:
-                    raise ValueError('Post media authenticity check failed')
-                media.append(dict(asset))
+            # Existing assets remain immutable audit history, but the global
+            # kill switch guarantees queued and future posts are text-only.
+            if settings['media_attachments_enabled']:
+                media_ids=decoded(details['media_asset_ids_json'],[])
+                for media_id in media_ids[-4:]:
+                    asset=c.execute('SELECT * FROM social_media_assets WHERE media_asset_id=?',(media_id,)).fetchone()
+                    if not asset or asset['status']!='READY' or asset['source_hash']!=details['source_hash']:
+                        raise ValueError('Post media authenticity check failed')
+                    media.append(dict(asset))
             reply_to=details['reply_to_x_post_id']
         else:
             category,index=row['category'].rsplit('|',1)
@@ -609,7 +612,8 @@ def process_queue(clock=now,limit=2,client_factory=OfficialX):
                 continue
             context=post.pop('context',None)
             graphics_enabled=os.getenv('SOCIAL_DETERMINISTIC_GRAPHICS_ENABLED','true').lower()=='true'
-            if context and (settings['ai_images_enabled'] or graphics_enabled):
+            if (settings['media_attachments_enabled'] and context
+                    and (settings['ai_images_enabled'] or graphics_enabled)):
                 try:
                     media_type=preferred_media_type(opportunity,settings)
                     asset=generate_media(c,opportunity,post,context,settings,sha,
@@ -628,6 +632,11 @@ def process_queue(clock=now,limit=2,client_factory=OfficialX):
                     logger.exception('SOCIAL_POST_FAILED',extra={'postType':opportunity.get('content_type'),
                         'gameId':opportunity.get('game_id'),'retryable':True,
                         'errorCategory':'MEDIA_GENERATION_FAILED','fallback':'text'})
+            elif context:
+                c.execute("UPDATE social_post_details SET media_asset_ids_json='[]',media_type='text',alt_text=NULL,updated_at=? WHERE post_id=?",
+                          (clock().isoformat(),post['post_id']))
+                logger.info('SOCIAL_TEXT_ONLY_POLICY',extra={'postId':post['post_id'],
+                    'postType':opportunity.get('content_type'),'gameId':opportunity.get('game_id')})
             items.append({'opportunity_id':opportunity['opportunity_id'],'post':post})
     for item in items:
         if item.get('status')=='REVIEW':continue
