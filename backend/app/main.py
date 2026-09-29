@@ -35,7 +35,12 @@ from backend.app.services.team_metadata import teams_for_league
 from backend.app.services.readiness_service import readiness_report, startup_self_check
 from backend.app.services.search_service import search_catalog
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
-from backend.app.services.parlay_ticket_service import create_ticket, get_ticket, list_tickets
+from backend.app.services.parlay_ticket_service import (
+    create_ticket,
+    get_ticket,
+    initialize_parlay_ticket_database,
+    list_tickets,
+)
 from backend.app.services.nfl_product_service import (
     build_multi_game_parlay, current_week_context, planning_week_context, delete_depth_chart, fantasy_depth_chart_data,
     historical_games, list_depth_charts, nfl_season_year, prediction_performance, save_depth_chart, weekly_board,
@@ -83,6 +88,10 @@ def _analyze_nfl_prop_board_with_context(profile: str, *, game_teams: tuple[str,
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Keep production deployments self-contained: the checked-in migration is
+    # authoritative, while this idempotent initializer ensures a newly deployed
+    # backend cannot serve ticket routes against a missing schema.
+    initialize_parlay_ticket_database()
     startup_self_check()
     yield
 
