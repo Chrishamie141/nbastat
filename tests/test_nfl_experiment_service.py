@@ -220,7 +220,7 @@ def test_probability_buckets_are_fixed_and_flag_small_samples():
     assert [row["range"] for row in buckets] == [
         "50.00-54.99%", "55.00-59.99%", "60.00-64.99%", "65.00%+",
     ]
-    assert all(row["sampleStatus"] == "INSUFFICIENT_SAMPLE" for row in buckets)
+    assert all(row["sampleStatus"] == "EARLY_SAMPLE" for row in buckets)
 
 
 def test_odds_provider_quota_and_malformed_response_are_distinct(monkeypatch):

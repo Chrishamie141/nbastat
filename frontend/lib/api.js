@@ -1,36 +1,8 @@
-// Production uses the same-origin Vercel rewrite. A public override remains
-// available for local development against a separately running API.
-const API=process.env.NEXT_PUBLIC_API_BASE_URL||process.env.NEXT_PUBLIC_API_URL||'';
-const REQUEST_TIMEOUT_MS = 12000;
+import { createRequest } from "./request.mjs";
 
-async function request(path, { method = 'GET', body, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  let response;
-  try {
-    response = await fetch(`${API}${path}`, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-      cache: 'no-store',
-      credentials: 'include',
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (error?.name === 'AbortError') throw new Error('The server took too long to respond. Please try again.');
-    throw new Error('Unable to connect to the server.');
-  } finally {
-    clearTimeout(timeout);
-  }
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = data?.error?.message || data?.detail || (typeof data?.error === 'string' ? data.error : '') || response.statusText;
-    const error = new Error(message || `Request failed (${response.status}).`);
-    error.status = response.status;
-    throw error;
-  }
-  return data;
-}
+// Same-origin production API; overrides are for configured deployments.
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
+const request = createRequest(API);
 
 export const api = {
   auth: {
@@ -178,6 +150,10 @@ export const api = {
       request("/api/nfl/parlays/multi-game", { method: "POST", body }),
     parlayAnalysis: (body) =>
       request("/api/nfl/parlays/analysis", { method: "POST", body, timeoutMs: 90000 }),
+    confirmParlayTicket: (body) =>
+      request("/api/nfl/parlay-tickets", { method: "POST", body, timeoutMs: 90000 }),
+    parlayTickets: () => request("/api/nfl/parlay-tickets"),
+    parlayTicket: (ticketId) => request(`/api/nfl/parlay-tickets/${encodeURIComponent(ticketId)}`),
     fantasy: (body) =>
       request("/api/analyze/nfl/fantasy", { method: "POST", body }),
     depthCharts: (scoring = "PPR") =>

@@ -297,6 +297,50 @@ def test_prop_analysis_never_substitutes_sample_markets(monkeypatch):
     assert result["dataMode"] == "unavailable"
 
 
+def test_prop_analysis_passes_selected_week_to_recent_history(monkeypatch):
+    import nfl_parlay_builder as builder
+
+    captured = {}
+    monkeypatch.setattr(builder, "get_nfl_player_props", lambda game_teams=None: {})
+    monkeypatch.setattr(
+        builder,
+        "get_nfl_player_recent_stats",
+        lambda **kwargs: captured.update(kwargs) or {},
+    )
+
+    analyze_nfl_prop_board(
+        "balanced", game_teams=("BUF", "MIA"), season=2026, through_week=4,
+    )
+
+    assert captured["season"] == 2026
+    assert captured["through_week"] == 4
+    assert captured["allow_sample"] is False
+
+
+def test_completed_player_history_uses_every_prior_final_week(monkeypatch):
+    import nfl_data_service as service
+    import nfl_providers
+
+    class FakeEspn:
+        def fetch_games(self, season, week):
+            return [{"game_id": f"g{week}", "status": "STATUS_FINAL"}]
+
+        def fetch_player_stats(self, season, week, games):
+            return [{
+                "player": "Test Quarterback", "team": "BUF", "position": "QB",
+                "stats": {"passing_yards": 200 + week},
+            }]
+
+    service._completed_player_history.cache_clear()
+    monkeypatch.setattr(nfl_providers, "EspnNflProvider", FakeEspn)
+
+    result = service.get_nfl_player_recent_stats(
+        allow_sample=False, season=2026, through_week=4,
+    )
+
+    assert result["Test Quarterback"]["PASSING_YARDS"] == [203, 202, 201]
+
+
 def test_anytime_touchdown_market_normalizes_to_over_point_five(monkeypatch):
     import nfl_data_service as service
 

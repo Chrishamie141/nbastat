@@ -229,7 +229,7 @@ def build_server_source(connection, sha: Callable, clock: Callable[[], datetime]
         "prediction_hash": hashlib.sha256("".join(prediction_bytes).encode()).hexdigest(),
         "predictions": len(predictions), "scheduled": len(games), "graded": len(grades),
         "winner_record": record, "accuracy": record["WIN"] / decided if decided else None,
-        "profiles": {}, "sample_warning": "INSUFFICIENT_SAMPLE",
+        "profiles": {}, "sample_warning": "EARLY_SAMPLE",
     }
     return {
         "verified_at": clock().astimezone(timezone.utc).isoformat(), "preseason": preseason,

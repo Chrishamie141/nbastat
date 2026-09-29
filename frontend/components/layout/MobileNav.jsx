@@ -27,17 +27,18 @@ export default function MobileNav() {
           ["/account", User, "Account"],
         ];
   return (
-    <div className="fixed bottom-4 left-1/2 z-40 flex w-[min(420px,calc(100%-24px))] -translate-x-1/2 justify-around rounded-3xl border border-white/10 bg-black/80 p-2 backdrop-blur md:hidden">
+    <nav aria-label="Quick navigation" className="fixed bottom-4 left-1/2 z-40 flex w-[min(420px,calc(100%-24px))] -translate-x-1/2 justify-around rounded-3xl border border-white/10 bg-black/80 p-2 backdrop-blur md:hidden">
       {links.map(([href, Icon, label]) => (
         <Link
           key={href}
           href={href}
-          className={`flex flex-col items-center rounded-2xl px-3 py-2 text-xs ${path === href ? "bg-white/10 text-white" : "text-gray-400"}`}
+          aria-current={path === href || path.startsWith(`${href}/`) ? "page" : undefined}
+          className={`flex flex-col items-center rounded-2xl px-3 py-2 text-xs ${(path === href || path.startsWith(`${href}/`)) ? "bg-white/10 text-white" : "text-gray-400"}`}
         >
           <Icon size={18} />
           {label}
         </Link>
       ))}
-    </div>
+    </nav>
   );
 }

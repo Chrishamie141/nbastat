@@ -73,6 +73,16 @@ def test_missing_and_incomplete_snapshots_are_explicit(tmp_path: Path):
         evaluate(tmp_path, 2025, 1, 1, MODELS, NFLV3Config(), "DEVELOPMENT RESULT")
 
 
+def test_winner_model_evaluation_does_not_require_historical_odds(tmp_path: Path):
+    _write_week(tmp_path, 1)
+    (tmp_path / "nfl/2025/week_01/odds.json").unlink()
+    report = evaluate(tmp_path, 2025, 1, 1, MODELS, NFLV3Config(), "DEVELOPMENT RESULT")
+    assert report["eligibility"]["weeks_without_historical_odds"] == 1
+    assert report["eligibility"]["weeks_with_historical_odds"] == 0
+    assert all(summary["games"] == 1 for summary in report["models"].values())
+    assert all(summary["markets"]["spread"]["count"] == 0 for summary in report["models"].values())
+
+
 def test_exclusions_are_deterministic_and_machine_readable(tmp_path: Path):
     _write_week(tmp_path, 1, games=2, complete=False)
     report = evaluate(tmp_path, 2025, 1, 1, MODELS, NFLV3Config(), "DEVELOPMENT RESULT")
@@ -84,7 +94,7 @@ def test_exclusions_are_deterministic_and_machine_readable(tmp_path: Path):
 def test_zero_game_evaluation_raises_and_cli_writes_nothing(tmp_path: Path):
     _write_week(tmp_path, 1, complete=False)
     output = tmp_path / "result.json"
-    with pytest.raises(ValueError, match="zero eligible games"):
+    with pytest.raises(ValueError, match="zero common eligible games"):
         main(["--snapshot-root", str(tmp_path), "--season", "2025", "--development-end-week", "1",
               "--output", str(output)])
     assert not output.exists()
@@ -104,7 +114,7 @@ def test_model_universe_mismatch_raises(tmp_path: Path, monkeypatch: pytest.Monk
             return None if self.model == MODELS[2] else self.inner.project(*args)
 
     monkeypatch.setattr(module, "NFLGameMarketPredictor", MissingV3)
-    with pytest.raises(ValueError, match="different eligible game universes"):
+    with pytest.raises(ValueError, match="zero common eligible games"):
         evaluate(tmp_path, 2025, 1, 1, MODELS, NFLV3Config(), "DEVELOPMENT RESULT")
 
 

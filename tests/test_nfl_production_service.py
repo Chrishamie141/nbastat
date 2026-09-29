@@ -161,7 +161,7 @@ def test_pending_benchmarks_never_claim_reportable_sample():
                         clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc), parlay_builder=fake_builder)
     performance = benchmark_performance(season=2026, season_type="regular", week=1)
     assert performance["overall"]["pending"] == 3
-    assert performance["sampleStatus"] == "INSUFFICIENT_SAMPLE"
+    assert performance["sampleStatus"] == "EARLY_SAMPLE"
 
 
 def test_elite_multi_game_benchmark_requires_real_80_percent_ticket_and_grades():
@@ -192,7 +192,7 @@ def test_elite_multi_game_benchmark_requires_real_80_percent_ticket_and_grades()
     assert grade_multi_game_benchmarks(season=2026, season_type="regular", week=1)["graded"] == 1
     performance = multi_game_benchmark_performance(season=2026, season_type="regular", week=1)
     assert performance["won"] == 1 and performance["ticketHitRate"] == 100
-    assert performance["legHitRate"] == 100 and performance["sampleStatus"] == "INSUFFICIENT_SAMPLE"
+    assert performance["legHitRate"] == 100 and performance["sampleStatus"] == "EARLY_SAMPLE"
 
 
 def test_elite_multi_game_benchmark_waits_then_records_no_bet_near_kickoff():

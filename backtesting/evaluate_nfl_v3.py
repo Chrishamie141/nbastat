@@ -25,7 +25,7 @@ from .snapshots import SnapshotError, snapshot_week_dir
 from .team_history import (filter_market_quotes, market_quote_known_at, prediction_cutoff,
                            prediction_cutoff_source)
 
-REQUIRED_EVALUATION_DATASETS = ("games", "outcomes", "team_stats", "odds")
+REQUIRED_EVALUATION_DATASETS = ("games", "outcomes", "team_stats")
 SUPPORTED_MODELS = (V1_MODEL_VERSION, V2_MODEL_VERSION, V3_MODEL_VERSION)
 
 
@@ -156,7 +156,12 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
         games = provider.get_games("nfl", str(season), week)
         outcomes = normalize_outcomes(provider.get_outcomes("nfl", str(season), week), games, "nfl", str(season), week)
         outcome_map = {str(o["game_id"]): o for o in outcomes if o.get("match_success")}
-        odds_by_game = _canonical_odds(games, provider.get_odds("nfl", str(season), week))
+        odds_path = directory / "odds.json"
+        raw_odds = provider.get_odds("nfl", str(season), week) if odds_path.exists() else []
+        odds_by_game = _canonical_odds(games, raw_odds)
+        diagnostics.setdefault("weeks_with_historical_odds", 0)
+        diagnostics.setdefault("weeks_without_historical_odds", 0)
+        diagnostics["weeks_with_historical_odds" if raw_odds else "weeks_without_historical_odds"] += 1
         diagnostics["games_loaded"] += len(games)
         for game in games:
             game_id = str(game.get("game_id"))
@@ -214,12 +219,19 @@ def evaluate(root: Path, season: int, start: int, end: int, models: list[str], c
     for items in rows.values():
         items.sort(key=lambda r: (str(r.get("kickoff") or ""), r["game_id"]))
     universes = {model: {(r["week"], r["game_id"]) for r in items} for model, items in rows.items()}
-    if len({frozenset(value) for value in universes.values()}) != 1:
-        raise ValueError(f"models produced different eligible game universes: {universes}")
-    eligible = next(iter(universes.values()), set())
+    eligible = set.intersection(*(set(value) for value in universes.values())) if universes else set()
     if not eligible:
         reasons = Counter(item["reason"] for item in exclusions)
-        raise ValueError(f"zero eligible games for NFL {season} Weeks {start}-{end}; exclusion_reasons={dict(sorted(reasons.items()))}")
+        raise ValueError(f"zero common eligible games for NFL {season} Weeks {start}-{end}; exclusion_reasons={dict(sorted(reasons.items()))}")
+    diagnostics["model_specific_eligible_games"] = {
+        model: len(universe - eligible) for model, universe in universes.items()
+    }
+    diagnostics["common_eligible_games"] = len(eligible)
+    # All comparative metrics must use the identical paired game universe.
+    # A model's ability to emit earlier is retained above as coverage metadata,
+    # not mixed into accuracy/calibration deltas.
+    rows = {model: [row for row in items if (row["week"], row["game_id"]) in eligible]
+            for model, items in rows.items()}
     diagnostics["games_evaluated_per_model"] = {model: len(items) for model, items in rows.items()}
     diagnostics["excluded_games"] = len({(item["week"], item["game_id"]) for item in exclusions})
     diagnostics["exclusions"] = sorted(exclusions, key=lambda item: (item["week"], item["game_id"], item.get("model", ""), item["reason"]))

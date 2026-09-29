@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from statistics import mean
 import json
+import inspect
 import math
 import os
 import re
@@ -111,6 +112,21 @@ STAT_ALIASES = {
 
 def _normalize_name(value):
     return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+
+def _load_recent_stats(*, player=None, team=None, allow_sample=True, season=None, through_week=None):
+    """Call the stats adapter with week context while retaining adapter compatibility."""
+    candidate_kwargs = {
+        "player": player, "team": team, "allow_sample": allow_sample,
+        "season": season, "through_week": through_week,
+    }
+    parameters = inspect.signature(get_nfl_player_recent_stats).parameters
+    accepts_kwargs = any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters.values())
+    kwargs = {
+        key: value for key, value in candidate_kwargs.items()
+        if value is not None and (accepts_kwargs or key in parameters)
+    }
+    return get_nfl_player_recent_stats(**kwargs)
 
 
 def _normalize_stat_type(value):
@@ -494,13 +510,15 @@ def _team_filter_excludes_sample_players(team):
     return not any(player.get("team") == team_key for player in NFL_SAMPLE_PLAYERS)
 
 
-def analyze_nfl_prop_board(difficulty, *, game_teams):
+def analyze_nfl_prop_board(difficulty, *, game_teams, season=None, through_week=None):
     """Return every verified offered player prop for a matchup without creating a ticket."""
     difficulty = DifficultyLevel.from_input(difficulty)
     rules = DIFFICULTY_RULES[difficulty]
     requested_teams = {_normalize_name(value) for value in game_teams}
     props = get_nfl_player_props(game_teams=game_teams)
-    recent_stats = get_nfl_player_recent_stats(allow_sample=False)
+    recent_stats = _load_recent_stats(
+        allow_sample=False, season=season, through_week=through_week,
+    )
     rows = []
     for player_name, stat_lines in props.items():
         for stat_type, lines in stat_lines.items():
@@ -517,13 +535,16 @@ def analyze_nfl_prop_board(difficulty, *, game_teams):
                 if side not in {"OVER", "UNDER"}:
                     side = None
                 model_side = None
-                if evaluation.projection is not None and evaluation.sanitized_line is not None:
+                has_history = len(evaluation.usable_recent_values) >= 2
+                if has_history and evaluation.projection is not None and evaluation.sanitized_line is not None:
                     model_side = "OVER" if evaluation.projection > evaluation.sanitized_line else (
                         "UNDER" if evaluation.projection < evaluation.sanitized_line else "PUSH"
                     )
                 likelihood = None
-                if evaluation.confidence is not None and side and model_side in {"OVER", "UNDER"}:
-                    likelihood = evaluation.confidence if side == model_side else 100 - evaluation.confidence
+                # A heuristic confidence score is not a probability distribution.
+                # Do not invent an opposite-side score by subtracting it from 100.
+                if has_history and evaluation.confidence is not None and side == model_side and side in {"OVER", "UNDER"}:
+                    likelihood = evaluation.confidence
                 values = evaluation.usable_recent_values
                 recent_hits = recent_pushes = 0
                 for value in values:
@@ -540,22 +561,24 @@ def analyze_nfl_prop_board(difficulty, *, game_teams):
                 try:
                     market_time = datetime.fromisoformat(str(line_info.get("last_update")).replace("Z", "+00:00"))
                     kickoff_time = datetime.fromisoformat(str(line_info.get("commence_time")).replace("Z", "+00:00"))
-                    if market_time.tzinfo is None:
-                        market_time = market_time.replace(tzinfo=timezone.utc)
-                    if kickoff_time.tzinfo is None:
-                        kickoff_time = kickoff_time.replace(tzinfo=timezone.utc)
+                    if market_time.tzinfo is None or kickoff_time.tzinfo is None:
+                        raise ValueError("Market provenance requires timezone-aware timestamps")
                 except (TypeError, ValueError):
                     market_time = kickoff_time = None
-                strictly_pregame = bool(market_time and kickoff_time and market_time < kickoff_time)
-                fresh = bool(market_time and datetime.now(timezone.utc) - market_time.astimezone(timezone.utc) <= timedelta(hours=2))
+                current_time = datetime.now(timezone.utc)
+                strictly_pregame = bool(market_time and kickoff_time and market_time < kickoff_time and current_time < kickoff_time)
+                fresh = bool(market_time and timedelta(0) <= current_time - market_time.astimezone(timezone.utc) <= timedelta(hours=2))
                 verified = bool(
                     line_info.get("provider") == "the-odds-api"
                     and line_info.get("bookmaker") and line_info.get("event_id")
                     and line_info.get("last_update") and evaluation.sanitized_line is not None
-                    and evaluation.sanitized_odds is not None and strictly_pregame
+                    and evaluation.sanitized_odds is not None and abs(evaluation.sanitized_odds) >= 100
+                    and side and strictly_pregame
                 )
+                if not verified or not fresh:
+                    continue
                 rows.append({
-                    "rowId": "|".join(str(value or "") for value in (
+                    "rowId": "|".join(str(value) if value is not None else "" for value in (
                         line_info.get("event_id"), player_name, evaluation.normalized_stat_type,
                         side, evaluation.sanitized_line, line_info.get("bookmaker"),
                     )),
@@ -563,7 +586,7 @@ def analyze_nfl_prop_board(difficulty, *, game_teams):
                     "position": evaluation.recent_stats_after_merge.get("position"),
                     "market": evaluation.normalized_stat_type, "side": side,
                     "line": evaluation.sanitized_line, "odds": evaluation.sanitized_odds,
-                    "projection": evaluation.projection, "modelSide": model_side,
+                    "projection": evaluation.projection if has_history else None, "modelSide": model_side,
                     "modelLikelihood": None if likelihood is None else round(likelihood, 1),
                     "recentHitRate": round(recent_hits / recent_decisions * 100, 1) if recent_decisions else None,
                     "recentSample": len(values), "recentPushes": recent_pushes,
@@ -571,7 +594,7 @@ def analyze_nfl_prop_board(difficulty, *, game_teams):
                     "profileEligible": bool(verified and fresh and side == model_side and likelihood is not None
                                             and likelihood >= rules["min_confidence"]
                                             and not evaluation.rejection_reasons),
-                    "status": ("AVAILABLE" if verified and fresh and evaluation.projection is not None else
+                    "status": ("AVAILABLE" if verified and fresh and has_history and evaluation.projection is not None else
                                "STALE_DATA" if verified and not fresh else "INSUFFICIENT_DATA"),
                     "reasons": evaluation.rejection_reasons,
                     "bookmaker": line_info.get("bookmaker"), "provider": line_info.get("provider"),
@@ -591,14 +614,16 @@ def analyze_nfl_prop_board(difficulty, *, game_teams):
 
 
 def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True,
-                     enforce_minimum_legs=False):
+                     enforce_minimum_legs=False, *, season=None, through_week=None):
     difficulty = DifficultyLevel.from_input(difficulty)
     rules = DIFFICULTY_RULES[difficulty]
 
     games = get_nfl_games()
     props = get_nfl_player_props(team=team, game_teams=game_teams) if game_teams else get_nfl_player_props(team=team)
     team_lines = get_nfl_team_lines(team=team)
-    recent_stats = get_nfl_player_recent_stats(team=team)
+    recent_stats = _load_recent_stats(
+        team=team, allow_sample=allow_sample, season=season, through_week=through_week,
+    )
     injuries = get_nfl_injuries(team=team)
     weather = get_nfl_weather(games[0] if games else None) if games else get_nfl_weather()
 
@@ -640,9 +665,10 @@ def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True,
     if enforce_minimum_legs and len(legs) < rules["min_legs"]:
         legs = []
 
-    combined_probability = 1.0
-    for leg in legs:
-        combined_probability *= max(min(leg.confidence / 100, 0.95), 0.01)
+    # ``confidence`` is a ranking score, not a calibrated marginal
+    # probability.  Same-game legs are also dependent.  Multiplying these
+    # values produces a precise-looking but unsupported joint probability.
+    combined_probability = None
 
     estimated_odds = None
     if all(leg.odds is not None for leg in legs) and legs:
@@ -670,7 +696,7 @@ def build_nfl_parlay(difficulty, team=None, game_teams=None, allow_sample=True,
     return ParlayResult(
         parlay=Parlay(sport=SportType.NFL, difficulty=difficulty, legs=legs, notes=notes),
         estimated_odds=estimated_odds,
-        combined_probability=combined_probability if legs else 0,
+        combined_probability=combined_probability,
         notes=notes,
     )
 
@@ -691,7 +717,10 @@ def print_nfl_parlay_result(result):
         print(f"   {leg.notes}")
     if result.estimated_odds is not None:
         print(f"\nEstimated odds proxy: {result.estimated_odds:+d}")
-    print(f"Combined confidence proxy: {result.combined_probability * 100:.1f}%")
+    if result.combined_probability is not None:
+        print(f"Combined confidence proxy: {result.combined_probability * 100:.1f}%")
+    else:
+        print("Combined probability: unavailable until calibrated dependency evidence exists")
     print(result.notes)
 
 

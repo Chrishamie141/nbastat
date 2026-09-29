@@ -54,7 +54,7 @@ def report(connection) -> dict[str, Any]:
                            "averageImpressions": round(statistics.mean(impressions), 2) if impressions else None,
                            "medianImpressions": round(statistics.median(impressions), 2) if impressions else None,
                            "engagementRate": round(statistics.mean(rates), 6) if rates else None,
-                           "sampleStatus": "SUFFICIENT" if len(group) >= 10 else "INSUFFICIENT_SAMPLE"})
+                           "sampleStatus": "SUFFICIENT" if len(group) >= 10 else "EARLY_SAMPLE"})
         return result
     totals = {}
     for key in METRICS:

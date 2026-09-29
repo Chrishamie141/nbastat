@@ -1,1 +1,1 @@
-module.exports={content:['./app/**/*.{js,jsx}','./components/**/*.{js,jsx}','./lib/**/*.{js,jsx}'],theme:{extend:{fontFamily:{sans:['var(--font-geist)','Inter','system-ui']},colors:{ink:'#07090d',accent:'#8b5cf6'}}},plugins:[]};
+module.exports={content:['./app/**/*.{js,jsx}','./components/**/*.{js,jsx}','./lib/**/*.{js,jsx}'],theme:{extend:{fontFamily:{sans:['var(--font-geist-sans)','Inter','system-ui']},colors:{ink:'#07090d',accent:'#8b5cf6'}}},plugins:[]};

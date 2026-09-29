@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -341,33 +342,74 @@ def fetch_nfl_team_lines_live(team: str | None = None) -> tuple[list[dict[str, A
                    "last_market_timestamp": last_market}
 
 
+@lru_cache(maxsize=32)
+def _completed_player_history(season: int, through_week: int) -> dict[str, dict[str, Any]]:
+    """Load completed ESPN box scores strictly before ``through_week``.
+
+    The former runtime path always requested Week 1.  Once the season advanced,
+    Weeks 2+ could therefore never contribute to a player's recent history and
+    otherwise valid prop markets were rejected for missing history.  This cache
+    keeps the bounded provider work reusable across every matchup on a slate.
+    """
+    from nfl_providers import EspnNflProvider
+
+    provider = EspnNflProvider()
+    grouped: dict[str, dict[str, Any]] = {}
+    for completed_week in range(1, max(1, min(int(through_week), 19))):
+        schedule = provider.fetch_games(season, completed_week)
+        final_games = [game for game in schedule if str(game.get("status") or "").lower() in {
+            "status_final", "final", "post", "status_final_ot", "final-ot",
+        }]
+        if not final_games:
+            continue
+        for row in provider.fetch_player_stats(season, completed_week, final_games):
+            name = row.get("player")
+            if not name:
+                continue
+            item = grouped.setdefault(name, {
+                "team": row.get("team"), "position": row.get("position"), "games": [],
+            })
+            item["team"] = row.get("team") or item.get("team")
+            item["position"] = row.get("position") or item.get("position")
+            item["games"].append((completed_week, row.get("stats", {})))
+
+    normalized: dict[str, dict[str, Any]] = {}
+    for name, item in grouped.items():
+        output = {"team": item.get("team"), "position": item.get("position")}
+        for _week, stats in sorted(item["games"], key=lambda value: value[0], reverse=True):
+            for key, value in stats.items():
+                normalized_key = STAT_ALIASES.get(str(key)) or STAT_ALIASES.get(str(key).replace("_", "")) or str(key).upper()
+                output.setdefault(normalized_key, []).append(value)
+        normalized[name] = output
+    return normalized
+
+
 def get_nfl_player_recent_stats(player: str | None = None, team: str | None = None, games: int = 5,
-                                allow_sample: bool = True) -> dict[str, dict[str, Any]]:
-    """Return ESPN/runtime recent stats, optionally allowing deterministic samples."""
+                                allow_sample: bool = True, *, season: int | None = None,
+                                through_week: int | None = None) -> dict[str, dict[str, Any]]:
+    """Return completed pre-matchup ESPN history, optionally allowing samples.
+
+    ``through_week`` is exclusive: a Week 4 analysis may use completed Weeks
+    1-3, never the target game's box score.  Callers without week context retain
+    the prior runtime-artifact fallback instead of guessing a sports week.
+    """
     def fetch():
-        from nfl_providers import EspnNflProvider
-        season = date.today().year
-        provider = EspnNflProvider()
-        schedule = provider.fetch_games(season, 1)
-        rows = provider.fetch_player_stats(season, 1, schedule)
+        if through_week is None:
+            raise ValueError("NFL week context is required for current-season player history")
+        rows_by_player = _completed_player_history(int(season or date.today().year), int(through_week))
         grouped: dict[str, dict[str, Any]] = {}
         team_key = str(team).strip().upper() if team else None
         player_key = str(player).strip().lower() if player else None
-        for row in rows:
-            name = row.get("player")
+        for name, row in rows_by_player.items():
             if not name or (player_key and player_key not in name.lower()):
                 continue
             if team_key and str(row.get("team", "")).upper() != team_key:
                 continue
-            item = grouped.setdefault(name, {"team": row.get("team"), "position": row.get("position"), "games": []})
-            item["games"].append(row.get("stats", {}))
-        normalized = {}
-        for name, item in grouped.items():
-            normalized[name] = {"team": item.get("team"), "position": item.get("position")}
-            for stat in item["games"][:games]:
-                for key, value in stat.items():
-                    normalized[name].setdefault(key.upper(), []).append(value)
-        return normalized
+            grouped[name] = {
+                key: (value[:games] if isinstance(value, list) else value)
+                for key, value in row.items()
+            }
+        return grouped
     def sample():
         rows = {name: data for name, data in NFL_SAMPLE_RECENT_STATS.items() if (not player or player.lower() in name.lower())}
         if team:

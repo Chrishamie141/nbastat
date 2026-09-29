@@ -166,8 +166,20 @@ class HistoricalSnapshotProvider:
         return [r for r in self._snapshot(league, season, week, "player_stats") if self._is_usable_history(r, season, week)]
 
     def get_team_stats(self, league: str, season: str, week: int) -> list[dict[str, Any]]:
-        """Return team statistics available before kickoff."""
-        return [canonicalize_team_history(r) for r in self._snapshot(league, season, week, "team_stats") if self._is_usable_history(r, season, week)]
+        """Return cumulative team history available before the replayed week.
+
+        Feature-history snapshots store completed games at their natural weekly
+        grain.  Reading only ``week_N/team_stats.json`` therefore selects the
+        target week's postgame rows, which are correctly rejected and leaves
+        the replay with no history.  Build the derived replay view from the
+        immutable cross-week index instead; the week and per-game cutoff
+        filters remain fail-closed against future observations.
+        """
+        # Preserve the provider's strict snapshot contract: a missing target
+        # week is a broken replay input, not an empty-history observation.
+        self._snapshot(league, season, week, "team_stats")
+        return [row for row in self.canonical_team_history(league, season)
+                if self._is_usable_history(row, season, week)]
 
     def get_game_histories(self, league: str, season: str, week: int,
                            game: dict[str, Any]):

@@ -17,15 +17,18 @@ export function AuthProvider({ children }) {
   const router = useRouter();
   const path = usePathname();
 
-  useEffect(() => {
-    api.auth.me()
+  const refreshSession = useCallback(() => {
+    setReady(false);
+    return api.auth.me()
       .then((data) => { setUser(data.user); setAuthError(''); })
       .catch((error) => {
-        if (error?.status === 401) setUser(null);
+        if (error?.status === 401) { setUser(null); setAuthError(''); }
         else setAuthError('Account service is temporarily unavailable. Please try again.');
       })
       .finally(() => setReady(true));
   }, []);
+
+  useEffect(() => { refreshSession(); }, [refreshSession]);
 
   useEffect(() => {
     if (!ready || authError) return;
@@ -42,24 +45,32 @@ export function AuthProvider({ children }) {
     if ((form.password || '').length < 8) throw new Error('Password must contain at least 8 characters.');
     const data = await api.auth.register({ name: form.name, email: form.email, password: form.password });
     setUser(data.user);
+    setAuthError('');
+    setReady(true);
     return data;
   }, []);
 
   const login = useCallback(async (form) => {
     const data = await api.auth.login({ email: form.email, password: form.password });
     setUser(data.user);
+    setAuthError('');
+    setReady(true);
     return data;
   }, []);
 
   const ownerLogin = useCallback(async (form) => {
     const data = await api.auth.ownerLogin({ email: form.email, password: form.password });
     setUser(data.user);
+    setAuthError('');
+    setReady(true);
     return data;
   }, []);
 
   const logout = useCallback(async () => {
-    try { await api.auth.logout(); }
-    finally { setUser(null); router.replace('/login'); }
+    await api.auth.logout();
+    setUser(null);
+    setAuthError('');
+    router.replace('/login');
   }, [router]);
 
   const value = useMemo(() => ({ user, ready, loading: !ready, authError, isAuthenticated: Boolean(user), register, login, ownerLogin, logout }), [authError, login, logout, ownerLogin, ready, register, user]);
@@ -67,7 +78,7 @@ export function AuthProvider({ children }) {
   const ownerPath = matches(path, ownerRoutes);
   let content = children;
   if (protectedPath && !ready) content = <main className="mx-auto min-h-screen max-w-3xl px-6 pt-20 text-slate-200">Checking your session…</main>;
-  else if (protectedPath && authError) content = <main className="mx-auto min-h-screen max-w-3xl px-6 pt-20"><h1 className="text-2xl font-bold">Account service unavailable</h1><p className="mt-3 text-slate-300">We could not verify your session. Please retry shortly.</p></main>;
+  else if (protectedPath && authError) content = <main className="mx-auto min-h-screen max-w-3xl px-6 pt-20"><h1 className="text-2xl font-bold">Account service unavailable</h1><p className="mt-3 text-slate-300">We could not verify your session. Please retry shortly.</p><button className="btn btn-primary mt-4" onClick={refreshSession}>Retry session check</button></main>;
   else if (protectedPath && (!user || (ownerPath && !user.isInternal))) content = <main className="mx-auto min-h-screen max-w-3xl px-6 pt-20 text-slate-200">Redirecting to a safe page…</main>;
   return <AuthContext.Provider value={value}>{content}</AuthContext.Provider>;
 }

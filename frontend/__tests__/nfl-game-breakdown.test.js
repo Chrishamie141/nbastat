@@ -39,8 +39,9 @@ test('canonical NFL route includes loading and error boundaries', () => {
 
 test('game UI labels prior-season context and client requests are bounded', () => {
   assert.match(read('components/games/NflGameBreakdown.jsx'), /game results are never backfilled/);
-  assert.match(read('lib/api.js'), /AbortController/);
-  assert.match(read('lib/api.js'), /error\?\.message/);
+  assert.match(read('lib/api.js'), /createRequest\(API\)/);
+  assert.match(read('lib/request.mjs'), /AbortController/);
+  assert.match(read('lib/request.mjs'), /error\?\.message/);
 });
 
 test('initial weekly screens avoid the context then board request waterfall', () => {

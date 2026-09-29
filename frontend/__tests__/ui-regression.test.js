@@ -154,7 +154,7 @@ test("internal Week 3 experiment dashboard separates predictions from wagers", (
   assert.match(page, /Qualified record/);
   assert.match(page, /Expected SHA-256/);
   assert.match(page, /Frozen game ledger/);
-  assert.match(page, /INSUFFICIENT_SAMPLE|data\.calibration\.status/);
+  assert.match(page, /EARLY_SAMPLE|data\.calibration\.status/);
   assert.match(api, /api\/internal\/nfl\/experiments/);
   assert.match(auth, /['"]\/internal['"]/);
 });

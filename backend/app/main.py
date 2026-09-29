@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
 import json
+import inspect
 import logging
 import requests
 import time
@@ -34,6 +35,7 @@ from backend.app.services.team_metadata import teams_for_league
 from backend.app.services.readiness_service import readiness_report, startup_self_check
 from backend.app.services.search_service import search_catalog
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
+from backend.app.services.parlay_ticket_service import create_ticket, get_ticket, list_tickets
 from backend.app.services.nfl_product_service import (
     build_multi_game_parlay, current_week_context, planning_week_context, delete_depth_chart, fantasy_depth_chart_data,
     historical_games, list_depth_charts, nfl_season_year, prediction_performance, save_depth_chart, weekly_board,
@@ -66,6 +68,18 @@ from team_utils import normalize_team_abbreviation
 
 print_config_status()
 logger = logging.getLogger(__name__)
+
+
+def _analyze_nfl_prop_board_with_context(profile: str, *, game_teams: tuple[str, str],
+                                         season: int, through_week: int) -> dict:
+    """Pass temporal context without breaking compatible injected adapters."""
+    candidate = {
+        "game_teams": game_teams, "season": season, "through_week": through_week,
+    }
+    parameters = inspect.signature(analyze_nfl_prop_board).parameters
+    accepts_kwargs = any(parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters.values())
+    kwargs = {key: value for key, value in candidate.items() if accepts_kwargs or key in parameters}
+    return analyze_nfl_prop_board(profile, **kwargs)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -117,7 +131,9 @@ def provider_status():
     return {"configuredProviders": configured, "status": "live" if configured else "sample"}
 def mode(): return "live" if provider_status()["configuredProviders"] else "sample"
 def envelope(sport, action, **extra): return {"sport":sport,"action":action,"generatedAt":now(),"dataMode":extra.pop("dataMode",mode()),"providerStatus":provider_status(),"saveStatus":extra.pop("saveStatus","not saved"),**extra}
-def safe_error(sport, action, exc): return envelope(sport, action, error=str(exc), providerStatus=provider_status())
+def safe_error(sport, action, exc):
+    logger.warning("analysis_unavailable sport=%s action=%s error_type=%s", sport, action, type(exc).__name__)
+    raise HTTPException(503, "Analysis data is temporarily unavailable. Please try again.") from exc
 
 @app.get("/api/health")
 def health():
@@ -561,7 +577,8 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
             game_teams=(home,away)
         if game_teams:
             result=build_nfl_parlay(payload.get("difficulty") or "BALANCED", team=team.upper() if team else None,
-                                    game_teams=game_teams, allow_sample=False, enforce_minimum_legs=True)
+                                    game_teams=game_teams, allow_sample=False, enforce_minimum_legs=True,
+                                    season=season, through_week=week)
         else:
             result=build_nfl_parlay(payload.get("difficulty") or "BALANCED", team=team.upper() if team else None)
             result.parlay.legs[:]=[leg for leg in result.parlay.legs if "sample/offline" not in str(leg.notes).lower()]
@@ -637,9 +654,18 @@ def nfl_parlay_analysis(payload: dict, user=Depends(require_full_access)):
         raise HTTPException(400, "Same-game analysis requires exactly one matchup.")
     if len(selections) > 4:
         raise HTTPException(400, "Analyze up to four matchups at a time to protect provider usage.")
-    season = int(payload.get("season") or nfl_season_year())
-    week = int(payload.get("week") or 1)
+    if any(not isinstance(selection, dict) or not isinstance(selection.get("gameId"), str) or not selection["gameId"] for selection in selections):
+        raise HTTPException(400, "Every selection must identify a valid matchup.")
+    if len({selection["gameId"] for selection in selections}) != len(selections):
+        raise HTTPException(400, "Choose each matchup only once.")
+    try:
+        season = int(payload.get("season", nfl_season_year()))
+        week = int(payload.get("week", 1))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise HTTPException(400, "Season and week must be valid integers.") from exc
     season_type = str(payload.get("seasonType") or "regular")
+    if season_type not in {"regular", "preseason"} or not 2000 <= season <= 2100 or not (0 <= week <= 3 if season_type == "preseason" else 1 <= week <= 18):
+        raise HTTPException(400, "Choose a valid NFL season, stage, and week.")
     profile = str(payload.get("profile") or "BALANCED").upper()
     if profile not in {"SAFE", "BALANCED", "AGGRESSIVE"}:
         raise HTTPException(400, "Profile must be SAFE, BALANCED, or AGGRESSIVE.")
@@ -671,9 +697,16 @@ def nfl_parlay_analysis(payload: dict, user=Depends(require_full_access)):
             "modelVersion": game.get("modelVersion"),
             "modelGeneratedAt": game.get("frozenModelGeneratedAt") or game.get("generatedAt"),
         })
+        prop_board = _analyze_nfl_prop_board_with_context(
+            profile, game_teams=(game["home_team"], game["away_team"]),
+            season=season, through_week=week,
+        )
+        for row in prop_board.get("rows", []):
+            row["gameId"] = game["game_id"]
+            row["modelVersion"] = NFL_WEB_MODEL_VERSION
         prop_boards.append({
             "gameId": game["game_id"], "awayTeam": game["away_team"], "homeTeam": game["home_team"],
-            **analyze_nfl_prop_board(profile, game_teams=(game["home_team"], game["away_team"])),
+            **prop_board,
         })
     return envelope(
         "NFL", "Parlay Analysis Workspace", league="nfl", parlayMode=mode,
@@ -686,6 +719,129 @@ def nfl_parlay_analysis(payload: dict, user=Depends(require_full_access)):
         },
         dataMode="verified_decision_support", saveStatus="read-only; no ticket saved",
     )
+
+
+def _implied_probability(price):
+    if price in (None, "", 0):
+        return None
+    value = float(price)
+    return round((-value / (-value + 100) if value < 0 else 100 / (value + 100)), 6)
+
+
+def _confirmed_ticket_from_request(payload: dict, user: dict) -> dict:
+    """Rebuild selected rows from authoritative live analysis before snapshotting."""
+    ticket_type = str(payload.get("ticketType") or "").upper()
+    mode = "same_game" if ticket_type == "SAME_GAME_PARLAY" else "multi_game" if ticket_type == "MULTI_GAME_PARLAY" else None
+    if not mode:
+        raise HTTPException(400, "Choose a valid parlay ticket type.")
+    strategy = str(payload.get("strategy") or "BALANCED").upper()
+    sportsbook = str(payload.get("sportsbook") or "").strip()
+    requested = payload.get("legs") or []
+    if not isinstance(requested, list) or not 2 <= len(requested) <= 16:
+        raise HTTPException(400, "A confirmed parlay must contain between 2 and 16 legs.")
+    if any(not isinstance(item, dict) or not item.get("gameId") or not item.get("rowId") for item in requested):
+        raise HTTPException(400, "Every ticket leg must identify a valid game and market row.")
+    try:
+        season, week = int(payload.get("season")), int(payload.get("week"))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise HTTPException(400, "Season and week must be valid integers.") from exc
+    season_type = str(payload.get("seasonType") or "regular")
+    valid_week = 0 <= week <= 3 if season_type == "preseason" else 1 <= week <= 18
+    if (strategy not in {"SAFE", "BALANCED", "AGGRESSIVE"}
+            or season_type not in {"regular", "preseason"}
+            or not 2000 <= season <= 2100 or not valid_week):
+        raise HTTPException(400, "Choose a valid strategy and season stage.")
+    board = weekly_board(season, week, strategy, int(user["id"]), season_type=season_type)
+    games = {str(game["game_id"]): game for game in board["items"]}
+    analysis_rows: dict[tuple[str, str], dict] = {}
+    game_ids = {str(item["gameId"]) for item in requested}
+    if "" in game_ids or (mode == "same_game" and len(game_ids) != 1):
+        raise HTTPException(400, "Same-game tickets must contain selections from exactly one matchup.")
+    for game_id in game_ids:
+        game = games.get(game_id)
+        if not game:
+            raise HTTPException(404, "A selected matchup is no longer on this weekly board.")
+        kickoff = datetime.fromisoformat(str(game["kickoff_time"]).replace("Z", "+00:00"))
+        if game.get("status") != "scheduled" or kickoff <= datetime.now(timezone.utc):
+            raise HTTPException(409, "A selected game has started or finished. Pregame tickets cannot be confirmed after kickoff.")
+        prop_board = _analyze_nfl_prop_board_with_context(
+            strategy, game_teams=(game["home_team"], game["away_team"]), season=season, through_week=week,
+        )
+        for row in prop_board.get("rows", []):
+            analysis_rows[(game_id, str(row.get("rowId") or ""))] = row
+    legs = []
+    for item in requested:
+        game_id, row_id = str(item.get("gameId") or ""), str(item.get("rowId") or "")
+        row = analysis_rows.get((game_id, row_id))
+        if not row:
+            raise HTTPException(409, "A selected market is no longer available. Review the current board before confirming.")
+        if sportsbook.casefold() != str(row.get("bookmaker") or "").casefold():
+            raise HTTPException(409, "Every confirmed leg must match the selected sportsbook.")
+        game = games[game_id]
+        selected_at = str(item.get("selectedAt") or now())
+        try:
+            selected_time = datetime.fromisoformat(selected_at.replace("Z", "+00:00"))
+            kickoff_time = datetime.fromisoformat(str(game["kickoff_time"]).replace("Z", "+00:00"))
+            if (
+                selected_time.tzinfo is None
+                or selected_time > datetime.now(timezone.utc) + timedelta(minutes=1)
+                or selected_time >= kickoff_time
+            ):
+                raise ValueError
+        except ValueError as exc:
+            raise HTTPException(400, "A ticket leg has an invalid selection timestamp.") from exc
+        projection, line = row.get("projection"), row.get("line")
+        edge = None
+        if projection is not None and line is not None and row.get("side") in {"OVER", "UNDER"}:
+            edge = float(projection) - float(line) if row["side"] == "OVER" else float(line) - float(projection)
+        recommendation = (
+            "SMARTBET_RECOMMENDED" if row.get("profileEligible") else
+            "SMARTBET_LEAN" if row.get("modelSide") == row.get("side") and row.get("modelLikelihood") is not None else
+            "MANUAL_SELECTION"
+        )
+        team = str(row.get("team") or "")
+        opponent = game["home_team"] if team == game["away_team"] else game["away_team"] if team == game["home_team"] else None
+        legs.append({
+            "game_id": game_id, "sportsbook": row.get("bookmaker"), "player_id": row.get("playerId"),
+            "player_name": row.get("player"), "team": team or None, "opponent": opponent,
+            "matchup": f"{game['away_team']} @ {game['home_team']}", "market": row.get("market"),
+            "selection": row.get("side"), "line": row.get("line"), "odds": row.get("odds"),
+            "smartbet_projection": projection, "smartbet_probability": None,
+            "market_implied_probability": _implied_probability(row.get("odds")), "edge": edge,
+            "confidence": row.get("modelLikelihood"), "strategy": strategy,
+            "recommendation_state": recommendation, "model_version": NFL_WEB_MODEL_VERSION,
+            "season": season, "week": week, "selected_at": selected_at, "source_row_id": row_id,
+            "status": row.get("status"), "recent_hit_rate": row.get("recentHitRate"),
+            "recent_sample": row.get("recentSample"), "market_timestamp": row.get("marketTimestamp"),
+        })
+    ticket = {
+        "ticket_type": ticket_type, "sportsbook": sportsbook, "strategy": strategy,
+        "season": season, "season_type": season_type, "week": week,
+        "stake": payload.get("stake"), "combined_odds": payload.get("combinedOdds"),
+        "potential_payout": payload.get("potentialPayout"),
+    }
+    try:
+        return create_ticket(user_id=int(user["id"]), ticket=ticket, legs=legs)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/nfl/parlay-tickets")
+def confirm_parlay_ticket(payload: dict, user=Depends(require_full_access)):
+    return _confirmed_ticket_from_request(payload, user)
+
+
+@app.get("/api/nfl/parlay-tickets")
+def parlay_ticket_history(limit: int=Query(100, ge=1, le=200), user=Depends(require_full_access)):
+    return {"items": list_tickets(user_id=int(user["id"]), limit=limit)}
+
+
+@app.get("/api/nfl/parlay-tickets/{ticket_id}")
+def parlay_ticket_detail(ticket_id: str, user=Depends(require_full_access)):
+    try:
+        return get_ticket(user_id=int(user["id"]), ticket_id=ticket_id)
+    except KeyError as exc:
+        raise HTTPException(404, "Ticket was not found.") from exc
 @app.get("/api/analyze/nfl/history")
 def nfl_history(difficulty: str|None=None, user=Depends(require_full_access)): return envelope("NFL","View Parlay History",items=_history_rows("NFL", difficulty, int(user["id"])))
 @app.post("/api/analyze/nfl/grade")
@@ -740,13 +896,13 @@ def nba_best(user=Depends(require_full_access)): return envelope("NBA","Best Bet
 @app.post("/api/analyze/nba/parlay")
 def nba_parlay(payload: dict, user=Depends(require_full_access)): return envelope("NBA","Auto Parlay Builder",message="NBA auto parlay uses the existing interactive betting engine. API prompts are intentionally not invented; use CLI for complete generation until adapter inputs are configured.",items=[])
 @app.post("/api/analyze/nba/grade")
-def nba_grade(payload: dict, user=Depends(require_full_access)):
+def nba_grade(payload: dict, user=Depends(require_internal_access)):
     rows=grade_recommendations(payload.get("actualResults") or [], default_stake=float(payload.get("stake") or 10))
     return envelope("NBA","Grade Predictions",items=rows,summary=summarize_graded_bets(rows),saveStatus=f"graded {len(rows)} rows")
 @app.get("/api/analyze/nba/history")
-def nba_history(user=Depends(require_full_access)): return envelope("NBA","View Parlay History",items=_history_rows("NBA", None))
+def nba_history(user=Depends(require_full_access)): return envelope("NBA","View Parlay History",items=_history_rows("NBA", None, int(user["id"])))
 @app.get("/api/analyze/nba/performance")
-def nba_perf(user=Depends(require_full_access)): return performance()
+def nba_perf(user=Depends(require_full_access)): return performance(user=user)
 
 @app.get("/api/history")
 def history(tab: str=Query("All"), user=Depends(require_full_access)):
@@ -776,7 +932,7 @@ def _metrics(user_id: int | None = None):
     if not using_postgres(): initialize_database()
     m={}
     with get_db_connection() as conn:
-        row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets").fetchone() if table_exists(conn,"graded_bets") else {"c":0,"h":0}
+        row=conn.execute("SELECT COUNT(*) c, SUM(hit) h FROM graded_bets WHERE user_id=?", (user_id or 0,)).fetchone() if table_exists(conn,"graded_bets") else {"c":0,"h":0}
         if row["c"]: m["Overall graded prediction accuracy"]=f"{round((row['h'] or 0)*100/row['c'],1)}%"
     lifecycle = nfl_prediction_history(user_id=user_id or 0, limit=500)
     settled = [row for row in lifecycle if row["resultStatus"] in {"WON", "LOST", "PUSH"}]

@@ -586,7 +586,7 @@ def _segment(rows: list[dict]) -> dict:
     denominator = wins + losses
     return {"predictions": len(rows), "wins": wins, "losses": losses, "pushes": pushes,
             "accuracy": round(wins / denominator * 100, 1) if denominator else None,
-            "sampleStatus": "SUFFICIENT_SAMPLE" if len(rows) >= MINIMUM_CALIBRATION_SAMPLE else "INSUFFICIENT_SAMPLE"}
+            "sampleStatus": "SUFFICIENT_SAMPLE" if len(rows) >= MINIMUM_CALIBRATION_SAMPLE else "EARLY_SAMPLE"}
 
 
 def _calibration(rows: list[dict]) -> list[dict]:
@@ -739,7 +739,7 @@ def experiment_dashboard(season: int = 2026, season_type: str = "preseason",
                        "scheduleRefreshState": last_refresh["state"] if last_refresh else None,
                        "scheduleRefreshError": refresh_error, "gradingError": grading_error},
         "games": games,
-        "calibration": {"status": "SUFFICIENT_SAMPLE" if len(graded_rows) >= MINIMUM_CALIBRATION_SAMPLE else "INSUFFICIENT_SAMPLE",
+        "calibration": {"status": "SUFFICIENT_SAMPLE" if len(graded_rows) >= MINIMUM_CALIBRATION_SAMPLE else "EARLY_SAMPLE",
                         "note": "This experiment is descriptive only; 16 games cannot establish calibration.",
                         "buckets": _calibration(calibration_rows)},
         "segments": {

@@ -20,6 +20,7 @@ from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.services.nfl_game_service import get_nfl_game_detail
 from backend.app.services.nfl_product_service import _initialize_predictions, _schedule
 from backend.app.services.parlay_history_service import initialize_parlay_history_database
+from backend.app.services.parlay_ticket_service import grade_tickets as grade_confirmed_parlay_tickets
 from nfl_parlay_builder import build_nfl_parlay
 from nfl_parlay_grader import _grade_player_leg, _grade_team_leg, _overall_status, TEAM_MARKET_ALIASES
 
@@ -298,7 +299,8 @@ def generate_benchmarks(*, season: int, season_type: str, week: int, schedule: l
                 break
             try:
                 result = parlay_builder(profile, game_teams=(game["home_team"], game["away_team"]),
-                                        allow_sample=False, enforce_minimum_legs=True)
+                                        allow_sample=False, enforce_minimum_legs=True,
+                                        season=season, through_week=week)
                 legs = [_leg_dict(leg) for leg in result.parlay.legs]
                 market_verified = bool(legs) and all(
                     leg.get("provider") == "the-odds-api" and leg.get("bookmaker") and leg.get("event_id")
@@ -589,7 +591,7 @@ def multi_game_benchmark_performance(*, season: int, season_type: str, week: int
                   / sum(row["estimated_probability"] is not None for row in live), 4)
             if any(row["estimated_probability"] is not None for row in live) else None
         ),
-        "sampleStatus": "REPORTABLE" if len(decided_tickets) >= 20 else "INSUFFICIENT_SAMPLE",
+        "sampleStatus": "REPORTABLE" if len(decided_tickets) >= 20 else "EARLY_SAMPLE",
         "latest": tickets[-1] if tickets else None,
     }
 
@@ -725,7 +727,7 @@ def benchmark_performance(*, season: int, season_type: str, week: int) -> dict:
             "byProfile": by_profile, "byMarketType": categories, "byLegCount": by_leg_count,
             "byProbabilityBucket": probability_buckets, "totalLegs": len(legs), "legsGraded": len(leg_graded),
             "individualLegHitRate": round(sum(r["result_status"] == "HIT" for r in leg_graded) / max(1, sum(r["result_status"] in {"HIT", "MISSED"} for r in leg_graded)) * 100, 1) if leg_graded else None,
-            "sampleStatus": "REPORTABLE" if len(decided_tickets) >= 30 else "INSUFFICIENT_SAMPLE"}
+            "sampleStatus": "REPORTABLE" if len(decided_tickets) >= 30 else "EARLY_SAMPLE"}
 
 
 def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict] | None = None,
@@ -922,8 +924,12 @@ def run_lifecycle(*, season: int, season_type: str, week: int, generate: bool = 
     grading = grade_benchmarks(season=season, season_type=season_type, week=week)
     multi_game_grading = grade_multi_game_benchmarks(season=season, season_type=season_type, week=week)
     user_grading = grade_user_parlays(season=season, season_type=season_type, week=week)
+    confirmed_ticket_grading = grade_confirmed_parlay_tickets(
+        season=season, season_type=season_type, week=week,
+    )
     audit = audit_week(season=season, season_type=season_type, week=week, schedule=schedule)
     return {"history": history, "newFinalResults": new_results, "predictionSettlement": settlement,
             "benchmarks": benchmarks, "benchmarkIntegrity": integrity, "benchmarkGrading": grading,
-            "multiGameBenchmark": multi_game, "multiGameGrading": multi_game_grading, "userParlayGrading": user_grading,
+            "multiGameBenchmark": multi_game, "multiGameGrading": multi_game_grading,
+            "userParlayGrading": user_grading, "confirmedTicketGrading": confirmed_ticket_grading,
             "providerErrors": provider_errors, "audit": audit}
