@@ -124,6 +124,37 @@ def test_tick_stays_idle_before_the_weekly_opening_window(monkeypatch):
     assert result["network_contacted"] is False
 
 
+def test_opening_capture_retries_when_sportsbook_market_is_not_posted(monkeypatch):
+    kickoff = NOW + timedelta(days=2)
+    monkeypatch.setenv("NFL_AUTOMATION_ENABLED", "true")
+    monkeypatch.setattr(automation, "_schedule", lambda *_args: [_game(kickoff)])
+    calls = []
+
+    def fetcher(url, timeout):
+        calls.append((url, timeout))
+        payload = [] if len(calls) == 1 else [_event(kickoff, NOW + timedelta(hours=6, minutes=-1))]
+        return HttpJsonResponse(payload, 200,
+                                {"x-requests-remaining": str(100 - len(calls) * 3),
+                                 "x-requests-used": str(len(calls) * 3),
+                                 "x-requests-last": "3"})
+
+    first = automation.tick(clock=lambda: NOW, fetcher=fetcher,
+                            context_resolver=_context, api_key="test-key")
+    early = automation.tick(clock=lambda: NOW + timedelta(hours=5), fetcher=fetcher,
+                            context_resolver=_context, api_key="test-key")
+    retry = automation.tick(clock=lambda: NOW + timedelta(hours=6), fetcher=fetcher,
+                            context_resolver=_context, api_key="test-key")
+
+    assert first["games"] == {"espn-1": "NO_MARKET"}
+    assert early["state"] == "IDLE"
+    assert early["network_contacted"] is False
+    assert retry["games"] == {"espn-1": "COMPLETE"}
+    assert len(calls) == 2
+    report = automation.status()
+    assert report["game_coverage"] == {"total": 1, "covered": 1}
+    assert report["checkpoint_counts"]["COMPLETE"] == 1
+
+
 def test_missing_key_fails_closed_without_network(monkeypatch):
     kickoff = NOW + timedelta(hours=24)
     monkeypatch.setenv("NFL_AUTOMATION_ENABLED", "true")

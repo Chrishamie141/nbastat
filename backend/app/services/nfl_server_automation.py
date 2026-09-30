@@ -27,6 +27,12 @@ from nfl_providers import (
 # league-wide request can populate the customer board early in the week without
 # turning every five-minute cron tick into a paid provider request.
 CHECKPOINTS = ((10080, 8640), (1440, 30), (360, 15), (60, 5))
+OPENING_CHECKPOINT_MINUTES = 10080
+OPENING_RETRY_INTERVAL = timedelta(hours=6)
+OPENING_MAX_ATTEMPTS = 4
+OPENING_RETRYABLE_STATES = {
+    "NO_MARKET", "AMBIGUOUS_EVENT", "STALE_DATA", "MALFORMED_RESPONSE",
+}
 MARKETS = ("h2h", "spreads", "totals")
 REQUEST_COST = 3
 MIN_ACCOUNT_RESERVE = 6
@@ -330,7 +336,7 @@ def _active_experiment(connection, now: datetime, context_resolver=None) -> str 
     return _register_context(connection, context, now)
 
 
-def _ensure_current_checkpoints(connection, experiment_key: str) -> None:
+def _ensure_current_checkpoints(connection, experiment_key: str, now: datetime) -> None:
     """Add newly introduced checkpoint types to an already-active week.
 
     Experiments are immutable, but checkpoint scheduling is operational state.
@@ -350,6 +356,18 @@ def _ensure_current_checkpoints(connection, experiment_key: str) -> None:
                 VALUES(?,?,?,?,?,?,?) ON CONFLICT(experiment_key,game_id,offset_minutes) DO NOTHING""",
                 (experiment_key, game["game_id"], offset, iso(due), due.timestamp(),
                  iso(deadline), deadline.timestamp()))
+    # A sportsbook may not have posted a weekly market when the opening window
+    # first becomes due.  Re-open only the broad, early-week checkpoint on a
+    # bounded cadence; narrow closing checkpoints retain their exact windows.
+    # Captured evidence is never changed and retries always remain pre-kickoff.
+    connection.execute("""UPDATE nfl_capture_checkpoints SET state='PENDING',
+        due_at=?,due_epoch=? WHERE experiment_key=? AND offset_minutes=?
+        AND state IN ('NO_MARKET','AMBIGUOUS_EVENT','STALE_DATA','MALFORMED_RESPONSE')
+        AND attempt_count<? AND deadline_epoch>? AND due_epoch<=?
+        AND game_id NOT IN (SELECT DISTINCT game_id FROM nfl_capture_markets
+                            WHERE experiment_key=?)""",
+        (iso(now), now.timestamp(), experiment_key, OPENING_CHECKPOINT_MINUTES,
+         OPENING_MAX_ATTEMPTS, now.timestamp(), now.timestamp(), experiment_key))
 
 
 def _header_number(headers, name: str) -> int | None:
@@ -486,7 +504,7 @@ def tick(*, clock=utcnow, fetcher=_fetch_json_structured,
                 last_tick_completed_at=?,last_status='OFFSEASON',updated_at=? WHERE singleton=1""",
                 (iso(now), iso(now)))
             return {"state": "OFFSEASON", "network_contacted": False}
-        _ensure_current_checkpoints(connection, key)
+        _ensure_current_checkpoints(connection, key, now)
         connection.execute("""UPDATE nfl_capture_checkpoints SET state='MISSED_CAPTURE'
             WHERE experiment_key=? AND state='PENDING' AND deadline_epoch<=?""", (key, now.timestamp()))
         due = connection.execute("""SELECT c.*,g.home_team,g.away_team,g.kickoff,g.kickoff_epoch
@@ -544,7 +562,8 @@ def tick(*, clock=utcnow, fetcher=_fetch_json_structured,
                    experiment_key=key, at=now)
             return {"state": stop, "due_games": len(due), "network_contacted": False}
         request_key = digest({"experiment": key, "due": sorted(
-            (row["game_id"], int(row["offset_minutes"])) for row in due)})
+            (row["game_id"], int(row["offset_minutes"]), int(row["attempt_count"]))
+            for row in due)})
         params = (request_key, key, iso(now), "IN_FLIGHT", REQUEST_COST)
         if using_postgres():
             request = connection.execute("""INSERT INTO nfl_capture_requests(
@@ -604,9 +623,25 @@ def tick(*, clock=utcnow, fetcher=_fetch_json_structured,
                     result = _store_game(connection, row, response.payload, request_id, retrieved, clock)
                 except Exception as error:
                     result = "KICKOFF_BLOCKED" if "pregame write boundary" in str(error) else "MALFORMED_RESPONSE"
-            connection.execute("""UPDATE nfl_capture_checkpoints SET state=?
-                WHERE experiment_key=? AND game_id=? AND offset_minutes=?""",
-                (result, key, row["game_id"], row["offset_minutes"]))
+            retry_at = retrieved + OPENING_RETRY_INTERVAL
+            attempt_count = int(row.get("attempt_count") or 0) + 1
+            retry_opening = (
+                int(row["offset_minutes"]) == OPENING_CHECKPOINT_MINUTES
+                and result in OPENING_RETRYABLE_STATES
+                and attempt_count < OPENING_MAX_ATTEMPTS
+                and retry_at.timestamp() < float(row["deadline_epoch"])
+                and retry_at.timestamp() < float(row["kickoff_epoch"])
+            )
+            if retry_opening:
+                connection.execute("""UPDATE nfl_capture_checkpoints
+                    SET state='PENDING',due_at=?,due_epoch=?
+                    WHERE experiment_key=? AND game_id=? AND offset_minutes=?""",
+                    (iso(retry_at), retry_at.timestamp(), key, row["game_id"],
+                     row["offset_minutes"]))
+            else:
+                connection.execute("""UPDATE nfl_capture_checkpoints SET state=?
+                    WHERE experiment_key=? AND game_id=? AND offset_minutes=?""",
+                    (result, key, row["game_id"], row["offset_minutes"]))
             states[row["game_id"]] = result
         connection.execute("""UPDATE nfl_automation_state SET last_tick_completed_at=?,last_status=?,
             last_error_code=?,last_provider_contact_at=?,updated_at=? WHERE singleton=1""",
