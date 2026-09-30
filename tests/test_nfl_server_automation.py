@@ -90,12 +90,35 @@ def test_tick_is_bounded_idempotent_and_coverage_first(monkeypatch):
     assert report["model_mutation_enabled"] is False
 
 
-def test_tick_never_contacts_provider_when_not_due(monkeypatch):
+def test_opening_capture_runs_early_in_week_then_remains_idempotent(monkeypatch):
     kickoff = NOW + timedelta(days=2)
     monkeypatch.setenv("NFL_AUTOMATION_ENABLED", "true")
     monkeypatch.setattr(automation, "_schedule", lambda *_args: [_game(kickoff)])
+    calls = []
+
+    def fetcher(url, timeout):
+        calls.append((url, timeout))
+        return HttpJsonResponse([_event(kickoff, NOW - timedelta(minutes=1))], 200,
+                                {"x-requests-remaining": "97", "x-requests-used": "3",
+                                 "x-requests-last": "3"})
+
+    first = automation.tick(clock=lambda: NOW, fetcher=fetcher,
+                            context_resolver=_context, api_key="test-key")
+    second = automation.tick(clock=lambda: NOW, fetcher=fetcher,
+                             context_resolver=_context, api_key="test-key")
+    assert first["state"] == "HEALTHY"
+    assert first["network_contacted"] is True
+    assert second["state"] == "IDLE"
+    assert second["network_contacted"] is False
+    assert len(calls) == 1
+
+
+def test_tick_stays_idle_before_the_weekly_opening_window(monkeypatch):
+    kickoff = NOW + timedelta(days=8)
+    monkeypatch.setenv("NFL_AUTOMATION_ENABLED", "true")
+    monkeypatch.setattr(automation, "_schedule", lambda *_args: [_game(kickoff)])
     result = automation.tick(clock=lambda: NOW,
-        fetcher=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("paid provider called early")),
+        fetcher=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("provider called before opening window")),
         context_resolver=_context, api_key="test-key")
     assert result["state"] == "IDLE"
     assert result["network_contacted"] is False

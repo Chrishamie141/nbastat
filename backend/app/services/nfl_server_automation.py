@@ -22,7 +22,11 @@ from nfl_providers import (
     _fetch_json_structured,
 )
 
-CHECKPOINTS = ((1440, 30), (360, 15), (60, 5))
+# Capture once as soon as the weekly experiment is discovered, then tighten the
+# cadence near kickoff.  The seven-day checkpoint has a six-day window, so one
+# league-wide request can populate the customer board early in the week without
+# turning every five-minute cron tick into a paid provider request.
+CHECKPOINTS = ((10080, 8640), (1440, 30), (360, 15), (60, 5))
 MARKETS = ("h2h", "spreads", "totals")
 REQUEST_COST = 3
 MIN_ACCOUNT_RESERVE = 6
@@ -326,6 +330,28 @@ def _active_experiment(connection, now: datetime, context_resolver=None) -> str 
     return _register_context(connection, context, now)
 
 
+def _ensure_current_checkpoints(connection, experiment_key: str) -> None:
+    """Add newly introduced checkpoint types to an already-active week.
+
+    Experiments are immutable, but checkpoint scheduling is operational state.
+    This idempotent reconciliation lets a deployment repair the current week as
+    well as all future weeks without recreating or mutating captured evidence.
+    """
+    games = connection.execute(
+        "SELECT game_id,kickoff_epoch FROM nfl_capture_games WHERE experiment_key=?",
+        (experiment_key,),
+    ).fetchall()
+    for game in games:
+        for offset, tolerance in CHECKPOINTS:
+            due = datetime.fromtimestamp(float(game["kickoff_epoch"]) - offset * 60, timezone.utc)
+            deadline = due + timedelta(minutes=tolerance)
+            connection.execute("""INSERT INTO nfl_capture_checkpoints(
+                experiment_key,game_id,offset_minutes,due_at,due_epoch,deadline_at,deadline_epoch)
+                VALUES(?,?,?,?,?,?,?) ON CONFLICT(experiment_key,game_id,offset_minutes) DO NOTHING""",
+                (experiment_key, game["game_id"], offset, iso(due), due.timestamp(),
+                 iso(deadline), deadline.timestamp()))
+
+
 def _header_number(headers, name: str) -> int | None:
     lowered = {str(key).lower(): value for key, value in (headers or {}).items()}
     try:
@@ -460,6 +486,7 @@ def tick(*, clock=utcnow, fetcher=_fetch_json_structured,
                 last_tick_completed_at=?,last_status='OFFSEASON',updated_at=? WHERE singleton=1""",
                 (iso(now), iso(now)))
             return {"state": "OFFSEASON", "network_contacted": False}
+        _ensure_current_checkpoints(connection, key)
         connection.execute("""UPDATE nfl_capture_checkpoints SET state='MISSED_CAPTURE'
             WHERE experiment_key=? AND state='PENDING' AND deadline_epoch<=?""", (key, now.timestamp()))
         due = connection.execute("""SELECT c.*,g.home_team,g.away_team,g.kickoff,g.kickoff_epoch

@@ -119,6 +119,54 @@ def test_weekly_board_context_uses_one_connection_for_the_full_slate(monkeypatch
     assert all(value["count"] == 0 for value in contexts.values())
 
 
+def test_weekly_board_reads_immutable_server_automation_moneylines(monkeypatch, tmp_path):
+    from backend.app.services import nfl_experiment_service as experiment
+    from backend.app.services import nfl_server_automation as automation
+    from nfl_providers import HttpJsonResponse
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{(tmp_path / 'durable-capture.db').as_posix()}")
+    monkeypatch.setenv("NFL_AUTOMATION_ENABLED", "true")
+    now = datetime(2030, 8, 30, 23, 0, tzinfo=timezone.utc)
+    game = _game("durable", kickoff="2030-09-01T23:00:00Z")
+    monkeypatch.setattr(automation, "_schedule", lambda *_args: [game])
+    context = lambda _season: {"season": 2030, "seasonType": "regular", "week": 1,
+                               "displayWeek": 1, "providerWeek": 1, "hasUpcoming": True}
+    payload = [{
+        "id": "provider-durable", "home_team": "Buffalo Bills", "away_team": "Miami Dolphins",
+        "commence_time": game["kickoff_time"], "bookmakers": [{
+            "key": "draftkings", "title": "DraftKings", "markets": [
+                {"key": "h2h", "last_update": "2030-08-30T22:59:00Z", "outcomes": [
+                    {"name": "Buffalo Bills", "price": -150},
+                    {"name": "Miami Dolphins", "price": 130},
+                ]},
+                {"key": "spreads", "last_update": "2030-08-30T22:59:00Z", "outcomes": [
+                    {"name": "Buffalo Bills", "price": -110, "point": -3.0},
+                    {"name": "Miami Dolphins", "price": -110, "point": 3.0},
+                ]},
+                {"key": "totals", "last_update": "2030-08-30T22:59:00Z", "outcomes": [
+                    {"name": "Over", "price": -110, "point": 45.5},
+                    {"name": "Under", "price": -110, "point": 45.5},
+                ]},
+            ]
+        }]
+    }]
+    result = automation.tick(
+        clock=lambda: now,
+        fetcher=lambda *_args, **_kwargs: HttpJsonResponse(
+            payload, 200, {"x-requests-remaining": "97", "x-requests-used": "3", "x-requests-last": "3"}),
+        context_resolver=context, api_key="test-key",
+    )
+    assert result["state"] == "HEALTHY"
+
+    history = experiment.weekly_board_context([game])["durable"]
+
+    assert history["count"] == 1
+    assert history["latest"]["market"]["homeOdds"] == -150
+    assert history["latest"]["market"]["awayOdds"] == 130
+    assert history["latest"]["market"]["sportsbook"] == "draftkings"
+    assert history["latest"]["market"]["coverage"]["moneyline"] is True
+
+
 def test_hash_mismatch_fails_closed_before_official_grading(monkeypatch, tmp_path):
     import backend.app.services.nfl_product_service as product
     from backend.app.database import get_db_connection

@@ -380,14 +380,99 @@ def _market_history_payload(rows, state, kickoff_text: str | None, provider: dic
     }
 
 
+def _durable_capture_rows(connection, game_ids: list[str]) -> list[dict]:
+    """Adapt immutable server-automation captures to the consumer market shape.
+
+    The active-season worker deliberately stores auditable evidence in its own
+    immutable tables.  Consumer boards historically read only the older
+    ``nfl_market_observations`` table, which made valid weekly captures invisible
+    and disabled parlay research.  This is a read-only adapter; it does not copy,
+    rewrite, or weaken the captured evidence.
+    """
+    required = ("nfl_capture_markets", "nfl_capture_quotes", "nfl_capture_games")
+    if not game_ids or not all(table_exists(connection, table) for table in required):
+        return []
+    placeholders = ",".join("?" for _ in game_ids)
+    rows = connection.execute(
+        f"""SELECT m.game_id,m.request_id,m.retrieved_at,m.source_time,m.bookmaker,
+            m.market_type,m.capture_key,g.kickoff,g.home_team,g.away_team,
+            q.side,q.line,q.price
+        FROM nfl_capture_markets m
+        JOIN nfl_capture_quotes q ON q.capture_key=m.capture_key
+        JOIN nfl_capture_games g ON g.experiment_key=m.experiment_key AND g.game_id=m.game_id
+        WHERE m.game_id IN ({placeholders})
+          AND m.retrieved_epoch<m.cutoff_epoch AND m.source_epoch<m.cutoff_epoch
+        ORDER BY m.game_id,m.source_epoch,m.retrieved_epoch,m.request_id,m.bookmaker,m.capture_key,q.side""",
+        tuple(game_ids),
+    ).fetchall()
+    grouped: dict[tuple, dict] = {}
+    for row in rows:
+        key = (str(row["game_id"]), row["request_id"], str(row["bookmaker"]))
+        item = grouped.setdefault(key, {
+            "game_id": str(row["game_id"]), "kickoff_time": row["kickoff"],
+            "retrieved_at": row["retrieved_at"], "market_timestamp": row["source_time"],
+            "provider": "the-odds-api", "sportsbook": row["bookmaker"],
+            "home_team": row["home_team"], "away_team": row["away_team"],
+            "quotes": {},
+        })
+        item["market_timestamp"] = max(str(item["market_timestamp"]), str(row["source_time"]))
+        item["quotes"].setdefault(str(row["market_type"]), {})[str(row["side"])] = {
+            "line": row["line"], "price": row["price"],
+        }
+    adapted = []
+    for item in grouped.values():
+        h2h = item["quotes"].get("h2h", {})
+        home = h2h.get(str(item["home_team"]))
+        away = h2h.get(str(item["away_team"]))
+        home_odds = None if not home else home["price"]
+        away_odds = None if not away else away["price"]
+        home_probability = away_probability = None
+        if home_odds not in (None, 0) and away_odds not in (None, 0):
+            raw_home = (-home_odds / (-home_odds + 100) if home_odds < 0 else 100 / (home_odds + 100))
+            raw_away = (-away_odds / (-away_odds + 100) if away_odds < 0 else 100 / (away_odds + 100))
+            total = raw_home + raw_away
+            if total > 0:
+                home_probability, away_probability = raw_home / total, raw_away / total
+        spreads = item["quotes"].get("spreads", {})
+        totals = item["quotes"].get("totals", {})
+        home_spread = spreads.get(str(item["home_team"]))
+        over = totals.get("over")
+        market = {
+            "homeOdds": home_odds, "awayOdds": away_odds,
+            "homeImpliedProbability": None if home_probability is None else round(home_probability, 4),
+            "awayImpliedProbability": None if away_probability is None else round(away_probability, 4),
+            "sportsbook": item["sportsbook"], "provider": "the-odds-api",
+            "homeSpread": None if not home_spread else home_spread["line"],
+            "spreadOdds": None if not home_spread else home_spread["price"],
+            "total": None if not over else over["line"],
+            "overOdds": None if not over else over["price"],
+            "bookmakerCount": 1, "bookmakers": [item["sportsbook"]],
+            "marketTimestamp": item["market_timestamp"],
+            "coverage": {
+                "moneyline": home_odds is not None and away_odds is not None,
+                "spread": bool(spreads), "total": bool(totals), "playerProps": "not_queried",
+            },
+        }
+        adapted.append({
+            "game_id": item["game_id"], "kickoff_time": item["kickoff_time"],
+            "retrieved_at": item["retrieved_at"], "market_timestamp": item["market_timestamp"],
+            "provider": "the-odds-api", "market_json": json.dumps(market, sort_keys=True),
+        })
+    return sorted(adapted, key=lambda row: (
+        str(row["game_id"]), str(row["market_timestamp"]), str(row["retrieved_at"])
+    ))
+
+
 def market_history_for_game(game_id: str, fallback_kickoff: str | None = None) -> dict:
     initialize_experiment_database()
     with get_db_connection() as connection:
-        rows = connection.execute(
+        rows = list(connection.execute(
             """SELECT kickoff_time,retrieved_at,market_timestamp,provider,market_json
             FROM nfl_market_observations WHERE game_id=? ORDER BY market_timestamp,retrieved_at,id""",
             (game_id,),
-        ).fetchall()
+        ).fetchall()) if table_exists(connection, "nfl_market_observations") else []
+        rows.extend(_durable_capture_rows(connection, [game_id]))
+        rows.sort(key=lambda row: (str(row["market_timestamp"]), str(row["retrieved_at"])))
         state = connection.execute(
             "SELECT current_kickoff,status,last_seen_at FROM nfl_game_schedule_state WHERE game_id=?",
             (game_id,),
@@ -412,12 +497,16 @@ def weekly_board_context(games: list[dict]) -> dict[str, dict]:
     with get_db_connection() as connection:
         for game in games:
             _record_schedule_game(connection, game, observed)
-        rows = connection.execute(
+        rows = list(connection.execute(
             f"""SELECT game_id,kickoff_time,retrieved_at,market_timestamp,provider,market_json
             FROM nfl_market_observations WHERE game_id IN ({placeholders})
             ORDER BY game_id,market_timestamp,retrieved_at,id""",
             tuple(game_ids),
-        ).fetchall()
+        ).fetchall()) if table_exists(connection, "nfl_market_observations") else []
+        rows.extend(_durable_capture_rows(connection, game_ids))
+        rows.sort(key=lambda row: (
+            str(row["game_id"]), str(row["market_timestamp"]), str(row["retrieved_at"])
+        ))
         states = connection.execute(
             f"""SELECT game_id,current_kickoff,status,last_seen_at
             FROM nfl_game_schedule_state WHERE game_id IN ({placeholders})""",

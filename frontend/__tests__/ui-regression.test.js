@@ -117,6 +117,9 @@ test("parlays enforce game identity and explain final read-only state", () => {
   assert.match(page, /Unavailable prices are never substituted/);
   assert.match(page, /\["available", "pregame_snapshot"\]/);
   assert.match(page, /available = hasPregamePrediction\(game\)/);
+  assert.doesNotMatch(page, /disabled=\{final \|\| !available \|\| odds == null\}/);
+  assert.match(page, /Price pending · research available/);
+  assert.match(page, /missing price never becomes a\s+fabricated wager/);
 });
 
 test("history renders durable prediction settlement evidence", () => {
