@@ -371,6 +371,7 @@ def _market_history_payload(rows, state, kickoff_text: str | None, provider: dic
     closing = valid[-1] if has_started and valid else None
     return {
         "count": len(valid), "rejectedPostKickoffCount": rejected,
+        "observations": valid,
         "first": valid[0] if valid else None, "latest": valid[-1] if valid else None,
         "closing": closing,
         "closingStatus": "captured" if closing else "pending" if not has_started else "not_captured",

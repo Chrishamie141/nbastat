@@ -19,6 +19,11 @@ from pathlib import Path
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.services.nfl_game_service import get_nfl_game_detail
 from backend.app.services.nfl_product_service import _initialize_predictions, _schedule
+from backend.app.services.nfl_audit_analytics import (
+    canonicalize_prediction_rows, weekly_prediction_metrics,
+)
+from backend.app.services.nfl_experiment_service import weekly_board_context
+from backend.app.services.nfl_model_policy import model_policy, winner_model_is_authorized
 from backend.app.services.parlay_history_service import initialize_parlay_history_database
 from backend.app.services.parlay_ticket_service import grade_tickets as grade_confirmed_parlay_tickets
 from nfl_parlay_builder import build_nfl_parlay
@@ -27,7 +32,7 @@ from nfl_parlay_grader import _grade_player_leg, _grade_team_leg, _overall_statu
 logger = logging.getLogger(__name__)
 PROFILES = ("SAFE", "BALANCED", "AGGRESSIVE")
 FINAL = {"final", "final-ot", "completed"}
-MULTI_GAME_STRATEGY = "ELITE_80"
+MULTI_GAME_STRATEGY = "CORRELATED_RESEARCH"
 MULTI_GAME_TARGET_PROBABILITY = .80
 MULTI_GAME_MIN_LEG_PROBABILITY = .70
 MULTI_GAME_MIN_LEGS = 2
@@ -439,12 +444,11 @@ def _american_from_decimal(decimal_odds: float) -> int:
 def generate_multi_game_benchmark(*, season: int, season_type: str, week: int,
                                   schedule: list[dict] | None = None,
                                   clock: Callable[[], datetime] | None = None) -> dict:
-    """Freeze the highest-quality distinct-game moneyline ticket, or an honest NO_BET.
+    """Freeze a research-only ticket without inventing a joint probability.
 
-    ``ELITE_80`` is a target, never a marketing claim. A ticket is created only
-    when at least two independently modeled winners have verified stored prices
-    and their conservative probability product reaches 80%. Otherwise the
-    worker keeps waiting until the one-hour lock window, then records NO_BET.
+    Individual leg probabilities are useful ranking inputs, but multiplying
+    them assumes independence. Until a validated correlation-aware estimator
+    exists, the benchmark remains experimental and stores no joint estimate.
     """
     initialize()
     now = (clock or (lambda: datetime.now(timezone.utc)))().astimezone(timezone.utc)
@@ -488,18 +492,17 @@ def generate_multi_game_benchmark(*, season: int, season_type: str, week: int,
     # Adding a leg can only reduce hit probability. Use the shortest qualifying
     # ticket and never pad it merely to create a larger payout.
     selected = selected[:MULTI_GAME_MIN_LEGS]
-    estimated = 1.0
     decimal_odds = 1.0
     for leg in selected:
-        estimated *= leg["model_probability"]
         odds = leg["odds"]
         decimal_odds *= 1 + (odds / 100 if odds > 0 else 100 / abs(odds))
-    qualifies = len(selected) >= MULTI_GAME_MIN_LEGS and estimated >= MULTI_GAME_TARGET_PROBABILITY
+    qualifies = len(selected) >= MULTI_GAME_MIN_LEGS
     if not qualifies and now < earliest - timedelta(hours=1):
         return {"created": 0, "status": "WAITING", "reason": "target_not_met_before_lock_window",
-                "eligibleLegs": len(candidates), "estimatedProbability": round(estimated, 4) if selected else None}
+                "eligibleLegs": len(candidates), "estimatedProbability": None,
+                "jointProbabilityStatus": "UNAVAILABLE_CORRELATED_MODEL_REQUIRED"}
     legs = selected if qualifies else []
-    reason = None if qualifies else "No two verified moneyline picks reached the 80% conservative ticket target."
+    reason = None if qualifies else "Fewer than two verified high-confidence moneyline legs were available."
     generated_at = now.replace(microsecond=0).isoformat().replace("+00:00", "Z")
     frozen_boundary = min((_dt(leg["kickoff_time"]) for leg in legs), default=earliest)
     payload = {"strategy": MULTI_GAME_STRATEGY, "target": MULTI_GAME_TARGET_PROBABILITY, "legs": legs}
@@ -511,7 +514,7 @@ def generate_multi_game_benchmark(*, season: int, season_type: str, week: int,
              source_hash,model_versions_json,legs_json)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(benchmark_key) DO NOTHING RETURNING id""",
             (key, season, season_type, week, MULTI_GAME_STRATEGY, generated_at, frozen_boundary.isoformat(),
-             MULTI_GAME_TARGET_PROBABILITY, estimated if qualifies else None,
+             MULTI_GAME_TARGET_PROBABILITY, None,
              _american_from_decimal(decimal_odds) if qualifies else None,
              "PENDING" if qualifies else "NO_BET", reason, _hash(payload),
              _json(sorted({leg["model_version"] for leg in legs})), _json(legs))).fetchone()
@@ -527,9 +530,10 @@ def generate_multi_game_benchmark(*, season: int, season_type: str, week: int,
     status = "PENDING" if qualifies else "NO_BET"
     logger.info("nfl_multi_game_benchmark_frozen %s", _json({"season": season, "week": week,
                 "strategy": MULTI_GAME_STRATEGY, "status": status, "legs": len(legs),
-                "estimatedProbability": round(estimated, 4) if qualifies else None}))
+                "jointProbabilityStatus": "UNAVAILABLE_CORRELATED_MODEL_REQUIRED"}))
     return {"created": 1, "status": status, "legs": len(legs),
-            "estimatedProbability": round(estimated, 4) if qualifies else None, "reason": reason}
+            "estimatedProbability": None,
+            "jointProbabilityStatus": "UNAVAILABLE_CORRELATED_MODEL_REQUIRED", "reason": reason}
 
 
 def grade_multi_game_benchmarks(*, season: int, season_type: str, week: int) -> dict:
@@ -576,7 +580,9 @@ def multi_game_benchmark_performance(*, season: int, season_type: str, week: int
     decided_legs = [row for row in legs if row["result_status"] in {"HIT", "MISSED"}]
     live = [row for row in tickets if row["ticket_status"] != "NO_BET"]
     return {
-        "strategy": MULTI_GAME_STRATEGY, "targetProbability": MULTI_GAME_TARGET_PROBABILITY,
+        "strategy": MULTI_GAME_STRATEGY, "targetProbability": None,
+        "experimental": True,
+        "jointProbabilityStatus": "UNAVAILABLE_CORRELATED_MODEL_REQUIRED",
         "generated": len(tickets), "tickets": len(live),
         "noBet": sum(row["ticket_status"] == "NO_BET" for row in tickets),
         "won": sum(row["ticket_status"] == "WON" for row in tickets),
@@ -767,12 +773,12 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
     result_ids = {r["game_id"] for r in results}
     results_by_game = {r["game_id"]: r for r in results}
     prediction_ids = {p["game_id"] for p in predictions}
-    canonical = {}
-    for p in predictions:
-        canonical.setdefault(p["game_id"], p)
-        if p["user_id"] == 0:
-            canonical[p["game_id"]] = p
-    canonical_predictions = list(canonical.values())
+    canonicalization = canonicalize_prediction_rows(predictions)
+    canonical_predictions = canonicalization["rows"]
+    market_histories = weekly_board_context(schedule)
+    weekly_metrics = weekly_prediction_metrics(
+        rows=predictions, market_histories=market_histories,
+    )
     check("Provider health", bool(schedule), detail=f"{len(schedule)} schedule games")
     odds_healthy = bool(provider_attempt and provider_attempt.get("state") == "HEALTHY")
     check("Odds provider health", odds_healthy, "warning",
@@ -801,8 +807,23 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
         if prediction["settlement_status"] != expected or prediction["away_score"] != final["away_score"] or prediction["home_score"] != final["home_score"]:
             incorrect_settlements.append(prediction["prediction_id"])
     check("Settlement result integrity", not incorrect_settlements, detail=f"{len(incorrect_settlements)} settled rows disagree with provider finals")
-    duplicate_canonical = len(predictions) != len({p["prediction_id"] for p in predictions})
-    check("History synchronization", not duplicate_canonical, detail="prediction IDs are unique")
+    check("History synchronization", not canonicalization["conflicts"],
+          detail=(f"{canonicalization['userScopedRowsCollapsed']} user-scoped rows canonicalized; "
+                  f"{len(canonicalization['conflicts'])} conflicting game snapshots"))
+    unauthorized_models = [p for p in canonical_predictions if not winner_model_is_authorized(
+        p.get("model_version"), season_type=season_type
+    )]
+    check("Production model policy", not unauthorized_models,
+          detail=(f"winner champion={model_policy()['winner']['productionChampion']}; "
+                  f"{len(unauthorized_models)} unauthorized canonical rows"))
+    market_health = weekly_metrics["marketCapture"]
+    check("Market capture coverage", not market_health["missingGameIds"], "warning",
+          detail=(f"{market_health['entryPrices']}/{market_health['predictionCount']} canonical predictions "
+                  "have legitimate pregame entry prices"))
+    check("Market capture freshness", not market_health["staleGameIds"], "warning",
+          detail=f"{len(market_health['staleGameIds'])} upcoming games have stale or missing capture")
+    check("Market timestamp integrity", True,
+          detail=f"{market_health['rejectedPostKickoffObservations']} post-kickoff observations excluded from metrics")
     for profile in PROFILES:
         covered = {b["game_id"] for b in benchmarks if b["profile"] == profile}
         eligible = {_gid(g.get("game_id") or g.get("id")) for g in schedule if _dt(g.get("kickoff_time") or g.get("startTimeUtc")) > datetime.now(timezone.utc)}
@@ -828,14 +849,12 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
         or leg["odds"] is None or float(leg["model_probability"]) < MULTI_GAME_MIN_LEG_PROBABILITY
     )]
     duplicate_multi_games = len(multi_legs) != len({leg["game_id"] for leg in multi_legs})
-    below_target = [row for row in multi_benchmarks if row["ticket_status"] != "NO_BET" and (
-        row["estimated_probability"] is None
-        or float(row["estimated_probability"]) < float(row["target_probability"])
-    )]
     check("Multi-game pregame integrity", not invalid_multi and not duplicate_multi_games,
           detail=f"{len(invalid_multi)} invalid legs; duplicate games={duplicate_multi_games}")
-    check("Multi-game quality threshold", not below_target,
-          detail=f"{len(below_target)} tickets below their stored eligibility target")
+    invalid_joint_claims = [row for row in multi_benchmarks if row["estimated_probability"] is not None]
+    check("Parlay correlation policy", not invalid_joint_claims, "warning",
+          detail=(f"{len(invalid_joint_claims)} legacy tickets store an independence estimate; "
+                  "correlation-aware model required"))
     multi_pending_final = [leg for leg in multi_legs if leg["game_id"] in final_ids and leg["result_status"] == "PENDING"]
     check("Multi-game grading", not multi_pending_final, "warning",
           detail=f"{len(multi_pending_final)} final legs pending settlement")
@@ -871,6 +890,8 @@ def audit_week(*, season: int, season_type: str, week: int, schedule: list[dict]
               "createdAt": _now(), "result": result, "checks": checks, "counts": counts,
               "criticalErrors": critical, "warnings": warnings, "performance": performance,
               "multiGamePerformance": multi_performance,
+              "weeklyMetrics": weekly_metrics,
+              "modelPolicy": model_policy(),
               "providerHealth": {"schedule": "HEALTHY" if schedule else "UNAVAILABLE",
                                  "odds": provider_attempt or {"state": "UNKNOWN"}}}
     # Keep operational output portable across Windows consoles and log collectors.
@@ -889,6 +910,33 @@ def latest_audit(*, season: int, season_type: str, week: int) -> dict | None:
     with get_db_connection() as connection:
         row = connection.execute("SELECT report_json FROM nfl_production_audits WHERE season=? AND season_type=? AND week=? ORDER BY created_at DESC,id DESC LIMIT 1", (season, season_type, week)).fetchone()
     return json.loads(row["report_json"]) if row else None
+
+
+def season_audit_summary(*, season: int, season_type: str = "regular") -> dict:
+    """Return the most recent persisted weekly metrics for an NFL season."""
+    initialize()
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """SELECT week,report_json,created_at FROM nfl_production_audits
+            WHERE season=? AND season_type=? ORDER BY week,created_at DESC,id DESC""",
+            (season, season_type),
+        ).fetchall()
+    latest = {}
+    for row in rows:
+        latest.setdefault(int(row["week"]), json.loads(row["report_json"]))
+    weeks = []
+    for week, report in sorted(latest.items()):
+        metrics = report.get("weeklyMetrics") or {}
+        weeks.append({
+            "week": week, "auditResult": report.get("result"),
+            "createdAt": report.get("createdAt"),
+            "predictionPerformance": metrics.get("predictionPerformance"),
+            "calibration": metrics.get("calibration"),
+            "marketCapture": metrics.get("marketCapture"),
+            "bettingPerformance": metrics.get("bettingPerformance"),
+        })
+    return {"season": season, "seasonType": season_type, "weeks": weeks,
+            "modelPolicy": model_policy()}
 
 
 def run_lifecycle(*, season: int, season_type: str, week: int, generate: bool = True,

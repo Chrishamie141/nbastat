@@ -40,6 +40,7 @@ from prediction_storage import (
     summarize_graded_bets,
 )
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
+from backend.app.services.nba.season import DEFAULT_NBA_SEASON
 from nfl_fantasy_service import show_fantasy_menu
 from nfl_parlay_builder import run_nfl_parlay_flow
 from nfl_parlay_grader import grade_nfl_parlays
@@ -49,7 +50,7 @@ DEFAULT_ROSTER_FILE = "roster.txt"
 BETTING_LINES_FILE = Path("betting_lines.json")
 
 
-def run_prediction(player_name, season="2025-26", opponent=None, home=False, playoff_game=False):
+def run_prediction(player_name, season=DEFAULT_NBA_SEASON, opponent=None, home=False, playoff_game=False):
     predictor = PlayerStatPredictor(player_name=player_name, season=season)
     predictor.load_data()
     return predictor.predict_next_game(opponent=opponent, home=home, playoff_game=playoff_game)
@@ -75,6 +76,8 @@ def prediction_rows_from_result(result, team, context, save_to_db=True):
             "high_range": high_range,
             "confidence_score": confidence_score,
             "confidence_label": confidence_label,
+            "model_version": result.get("model_version"),
+            "season": result.get("season"),
         }
         if save_to_db:
             row["prediction_id"] = save_prediction_record(row)
@@ -137,7 +140,7 @@ def default_context():
     }
 
 
-def run_roster_predictions(roster, team="Unknown", context=None, season="2025-26", emit_output=True):
+def run_roster_predictions(roster, team="Unknown", context=None, season=DEFAULT_NBA_SEASON, emit_output=True):
     context = context or default_context()
 
     results, failed, prediction_rows = [], [], []
@@ -166,7 +169,7 @@ def run_roster_predictions(roster, team="Unknown", context=None, season="2025-26
     return {"results": results, "failed": failed, "prediction_rows": prediction_rows}
 
 
-def run_default_roster_mode(season="2025-26"):
+def run_default_roster_mode(season=DEFAULT_NBA_SEASON):
     try:
         with open(DEFAULT_ROSTER_FILE, "r", encoding="utf-8") as roster_file:
             roster = [line.strip() for line in roster_file if line.strip()]
@@ -187,7 +190,7 @@ def run_default_roster_mode(season="2025-26"):
     run_roster_predictions(roster, team=team, context=context, season=season)
 
 
-def run_team_mode(season="2025-26"):
+def run_team_mode(season=DEFAULT_NBA_SEASON):
     team = normalize_team_abbreviation(input("Enter team abbreviation: "))
     try:
         _, roster, roster_status = get_roster_with_cache(team, season=season)
@@ -219,7 +222,7 @@ def load_betting_lines(path=BETTING_LINES_FILE):
         return None
 
 
-def _load_roster_for_betting(season="2025-26"):
+def _load_roster_for_betting(season=DEFAULT_NBA_SEASON):
     team = normalize_team_abbreviation(input("Enter team abbreviation for betting report: "))
     cache_status = {
         "rosters": {},
@@ -301,7 +304,7 @@ def _load_cached_betting_predictions(team, context, cache_status, include_oppone
     return predictions
 
 
-def collect_betting_predictions(season="2025-26"):
+def collect_betting_predictions(season=DEFAULT_NBA_SEASON):
     roster, team, context, cache_status = _load_roster_for_betting(season=season)
     if not roster:
         predictions = _load_cached_betting_predictions(team, context, cache_status)
@@ -379,7 +382,7 @@ def print_best_bets_report(recommendations, show_all=False):
             print(f"   {note}")
 
 
-def run_best_bets_mode(season="2025-26"):
+def run_best_bets_mode(season=DEFAULT_NBA_SEASON):
     sportsbook_lines = load_betting_lines()
     if sportsbook_lines is None:
         return []
@@ -484,7 +487,7 @@ def _save_nba_parlay_history(parlay):
     return save_parlay_result(result)
 
 
-def run_auto_parlay_mode(season="2025-26"):
+def run_auto_parlay_mode(season=DEFAULT_NBA_SEASON):
     style = input("Choose parlay style (Safe, Balanced, Aggressive): ").strip().upper() or "BALANCED"
     try:
         stake = float(input("Stake amount: $").strip() or "10")
@@ -573,21 +576,21 @@ def run_clear_cache_mode():
     print(f"Removed {removed_count} cache file(s).")
 
 
-def run_debug_roster_lookup_mode(team, season="2025-26"):
+def run_debug_roster_lookup_mode(team, season=DEFAULT_NBA_SEASON):
     if not team:
         print("A team abbreviation is required.")
         return
     debug_roster_lookup(team, season=season)
 
 
-def run_debug_roster_live_lookup_mode(team, season="2025-26"):
+def run_debug_roster_live_lookup_mode(team, season=DEFAULT_NBA_SEASON):
     if not team:
         print("A team abbreviation is required.")
         return
     debug_roster_live_lookup(team, season=season)
 
 
-def run_debug_player_mode(player_name, season="2025-26"):
+def run_debug_player_mode(player_name, season=DEFAULT_NBA_SEASON):
     clean_name = str(player_name or "").strip()
     print("Debug Player Prediction")
     print(f"Player name received: {clean_name}")

@@ -1,7 +1,8 @@
 from nba_api.stats.endpoints import playergamelog
+from backend.app.services.nba.season import DEFAULT_NBA_SEASON
 
 LEBRON_ID = 2544
-SEASON = "2025-26"
+SEASON = DEFAULT_NBA_SEASON
 
 def get_game_logs(season_type):
     logs = playergamelog.PlayerGameLog(

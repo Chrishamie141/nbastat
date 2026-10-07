@@ -21,6 +21,7 @@ from backend.app.api.billing import router as billing_router
 from backend.app.api.social_cron import router as social_cron_router
 from backend.app.api.social_operations import router as social_operations_router
 from backend.app.api.nfl_automation_cron import router as nfl_automation_cron_router
+from backend.app.api.nba_automation_cron import router as nba_automation_cron_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user, owner_account_integrity
 from backend.app.services.sports_mode_service import get_sports_mode
@@ -57,9 +58,13 @@ from backend.app.services.nfl_production_service import (
     benchmark_performance as nfl_benchmark_performance,
     multi_game_benchmark_performance as nfl_multi_game_benchmark_performance,
     latest_audit as latest_nfl_production_audit,
+    season_audit_summary as nfl_season_audit_summary,
     prediction_history as nfl_prediction_history,
     run_lifecycle as run_nfl_production_lifecycle,
 )
+from backend.app.services.nba.automation import run_cycle as run_nba_cycle
+from backend.app.services.nba.lifecycle import foundation_status as nba_foundation_status, initialize as initialize_nba_foundation
+from backend.app.services.nba.season import active_nba_season
 from backend.app.database import get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
@@ -92,6 +97,7 @@ async def lifespan(_app: FastAPI):
     # authoritative, while this idempotent initializer ensures a newly deployed
     # backend cannot serve ticket routes against a missing schema.
     initialize_parlay_ticket_database()
+    initialize_nba_foundation()
     startup_self_check()
     yield
 
@@ -105,6 +111,7 @@ app.include_router(billing_router)
 app.include_router(social_cron_router)
 app.include_router(social_operations_router)
 app.include_router(nfl_automation_cron_router)
+app.include_router(nba_automation_cron_router)
 
 @app.middleware("http")
 async def endpoint_observability(request: Request, call_next):
@@ -357,6 +364,16 @@ def api_internal_run_nfl_production_audit(season: int, season_type: str, week: i
         raise HTTPException(503, "NFL production audit could not complete.") from exc
 
 
+@app.get("/api/internal/operations/nfl-production/weekly-audits/{season}/{season_type}")
+def api_internal_nfl_weekly_audits(season: int, season_type: str,
+                                   user=Depends(require_internal_access)):
+    try:
+        return nfl_season_audit_summary(season=season, season_type=season_type)
+    except Exception as exc:
+        logger.exception("nfl_weekly_audit_summary_failed")
+        raise HTTPException(503, "NFL weekly audit history is temporarily unavailable.") from exc
+
+
 @app.post("/api/internal/operations/nfl-production/{season}/{season_type}/{week}/lifecycle")
 def api_internal_run_nfl_lifecycle(season: int, season_type: str, week: int,
                                    user=Depends(require_internal_access)):
@@ -606,7 +623,7 @@ def nfl_parlay(payload: dict, user=Depends(require_full_access)):
         sample_legs=sum("sample/offline" in str(leg.get("notes","")).lower() for leg in legs)
         result_mode=("unavailable" if not legs else "sample" if sample_legs==len(legs) else "partial_live" if sample_legs else "live")
         correlation_warning=("Same-game legs can be correlated, so an independence-based combined probability is intentionally not shown." if parlay_mode=="same_game" else None)
-        return envelope("NFL","NFL Parlay Builder",league="nfl",parlayMode=parlay_mode,seasonPhase=phase,confidenceContext=("NFL preseason projections carry extra playing-time and roster uncertainty; prop coverage may be limited." if phase=="preseason" else "Regular-season confidence context from established prediction engine."),legs=legs,combinedConfidence=None if parlay_mode=="same_game" else result.combined_probability if legs else 0,estimatedOdds=result.estimated_odds if legs else None,message=result.notes,correlationWarning=correlation_warning,saveStatus=save,dataMode=result_mode,modelVersion=NFL_WEB_MODEL_VERSION,modelStatus={"serving":"LATEST_DEPLOYABLE","researchPolicyId":NFL_RESEARCH_POLICY_ID,"researchPolicyState":"FROZEN_SHADOW_ONLY","productionWageringAuthorized":False})
+        return envelope("NFL","NFL Parlay Builder",league="nfl",parlayMode=parlay_mode,seasonPhase=phase,confidenceContext=("NFL preseason projections carry extra playing-time and roster uncertainty; prop coverage may be limited." if phase=="preseason" else "Regular-season confidence context from established prediction engine."),legs=legs,combinedConfidence=None,estimatedOdds=result.estimated_odds if legs else None,message=result.notes,correlationWarning=correlation_warning,saveStatus=save,dataMode=result_mode,modelVersion=NFL_WEB_MODEL_VERSION,modelStatus={"serving":"LATEST_DEPLOYABLE","researchPolicyId":NFL_RESEARCH_POLICY_ID,"researchPolicyState":"FROZEN_SHADOW_ONLY","productionWageringAuthorized":False},jointProbabilityStatus="UNAVAILABLE_CORRELATED_MODEL_REQUIRED",experimental=True)
     except HTTPException: raise
     except Exception as exc:
         logger.exception("NFL parlay generation failed")
@@ -644,7 +661,9 @@ def nfl_multi_game_parlay(payload: dict, user=Depends(require_full_access)):
     return envelope(
         "NFL", "Multi-Game Parlay", league="nfl", parlayMode="multi_game",
         seasonType=str(payload.get("seasonType") or "regular"), profile=str(payload.get("profile") or "BALANCED").upper(),
-        legs=legs, rejectedSelections=rejections, combinedProbability=result.combined_probability,
+        legs=legs, rejectedSelections=rejections, combinedProbability=None,
+        jointProbabilityStatus="UNAVAILABLE_CORRELATED_MODEL_REQUIRED",
+        experimental=True,
         estimatedOdds=result.estimated_odds, message=result.notes, saveStatus=save,
         dataMode="live" if legs else "unavailable",
     )
@@ -884,7 +903,9 @@ def nba_player(payload: dict, user=Depends(require_full_access)):
     if not player: raise HTTPException(400,"Player name is required.")
     try:
         result=run_prediction(player); rows=prediction_rows_from_result(result,"Unknown",default_context(),save_to_db=True)
-        return envelope("NBA","Single Player Prediction",predictions=rows,saveStatus=f"saved {len(rows)} stat rows")
+        return envelope("NBA","Single Player Prediction",predictions=rows,
+                        modelVersion=result.get("model_version"), season=result.get("season"),
+                        saveStatus=f"saved {len(rows)} stat rows")
     except Exception as exc: return safe_error("NBA","Single Player Prediction",exc)
 @app.post("/api/analyze/nba/roster")
 def nba_roster(payload: dict, user=Depends(require_full_access)):
@@ -912,6 +933,22 @@ def nba_grade(payload: dict, user=Depends(require_internal_access)):
 def nba_history(user=Depends(require_full_access)): return envelope("NBA","View Parlay History",items=_history_rows("NBA", None, int(user["id"])))
 @app.get("/api/analyze/nba/performance")
 def nba_perf(user=Depends(require_full_access)): return performance(user=user)
+
+@app.get("/api/internal/nba/foundation/status")
+def internal_nba_foundation_status(
+    season: str | None=Query(None), user=Depends(require_internal_access),
+):
+    return nba_foundation_status(active_nba_season(season).code)
+
+@app.post("/api/internal/nba/foundation/sync")
+def internal_nba_foundation_sync(payload: dict, user=Depends(require_internal_access)):
+    season = active_nba_season(payload.get("season")).code
+    try:
+        start = datetime.fromisoformat(payload["start"]).date() if payload.get("start") else None
+        end = datetime.fromisoformat(payload["end"]).date() if payload.get("end") else None
+        return run_nba_cycle(season=season, start=start, end=end)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 @app.get("/api/history")
 def history(tab: str=Query("All"), user=Depends(require_full_access)):

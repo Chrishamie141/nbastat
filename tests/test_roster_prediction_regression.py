@@ -116,7 +116,7 @@ def test_debug_player_command_reports_prediction_path(monkeypatch, capsys):
 
     output = capsys.readouterr().out
     assert "Player name received: Jalen Brunson" in output
-    assert "Season: 2025-26" in output
+    assert "Season: 2026-27" in output
     assert "Regular season data found: True" in output
     assert "Regular season games count: 10" in output
     assert "Playoff games count: 2" in output

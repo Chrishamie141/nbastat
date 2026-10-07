@@ -192,3 +192,13 @@ python -m backtesting.model_registry --root backtesting/model_registry best-dist
 ```
 
 The current real run trains on 11,880 samples and evaluates 1,836 Week 1 opportunities. Its Brier, log-loss, and ECE improvements over `nfl_game_baseline_v3` clear zero in the paired 95% intervals, but its ROI interval crosses zero. Calibration remains `INSUFFICIENT_HISTORY` because only one evaluated prop week exists. The registry therefore keeps `nfl_prop_v4_research_v1` experimental and rejects promotion until at least 15 evaluated weeks, 100 independent games, and statistically positive ROI evidence exist.
+
+## NBA replay foundation
+
+NBA prediction and replay code is isolated under `backend/app/services/nba`; it
+does not share NFL V2 model code or version state. The foundation provides
+canonical `YYYY-YY` season handling, batched schedule ingestion, immutable
+prediction and pregame-market evidence, push-aware automatic settlement,
+early-season prior blending, and chronological offline replay. See
+[`docs/nba-replay-foundation.md`](docs/nba-replay-foundation.md) for the schema,
+safe rollout, automation endpoint, and replay command.

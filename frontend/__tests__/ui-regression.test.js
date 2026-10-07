@@ -122,6 +122,24 @@ test("parlays enforce game identity and explain final read-only state", () => {
   assert.match(page, /missing price never becomes a\s+fabricated wager/);
 });
 
+test("dashboard cards show authoritative final scores and safe missing-score state", () => {
+  const card = fs.readFileSync("components/games/UpcomingGameCard.jsx", "utf8");
+  const score = fs.readFileSync("components/games/GameScoreboard.jsx", "utf8");
+  const matchup = fs.readFileSync("components/games/NflMatchup.jsx", "utf8");
+  const dashboard = fs.readFileSync("app/dashboard/page.jsx", "utf8");
+  assert.match(card, /GameScoreboard/);
+  assert.match(dashboard, /showFinalScore/);
+  assert.match(matchup, /matchupResult/);
+  assert.match(matchup, /result\.awayScore/);
+  assert.match(matchup, /result\.homeScore/);
+  assert.match(matchup, /Final score unavailable/);
+  assert.match(score, /Score unavailable/);
+  assert.match(score, /score\.winner === 'away'/);
+  assert.match(score, /score\.winner === 'home'/);
+  assert.match(score, /Model result/);
+  assert.match(score, /if \(!score\.final && !score\.live\) return null/);
+});
+
 test("history renders durable prediction settlement evidence", () => {
   const page = fs.readFileSync("app/history/page.jsx", "utf8");
   assert.match(page, /Original pick/);
@@ -140,7 +158,7 @@ test("command center exposes owner-only NFL audit and SGP lab", () => {
   assert.match(panel, /BALANCED/);
   assert.match(panel, /AGGRESSIVE/);
   assert.match(panel, /Multi-Game Parlay performance/);
-  assert.match(panel, /eligibility target, not a guaranteed outcome/);
+  assert.match(panel, /requires a validated correlation-aware model/);
   assert.match(page, /selectedWeek \?\? data\?\.context\?\.week/);
   assert.match(api, /api\/internal\/operations\/nfl-production/);
 });

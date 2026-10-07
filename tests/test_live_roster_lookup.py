@@ -133,4 +133,4 @@ def test_debug_roster_live_cli_bypasses_cache(monkeypatch, capsys):
 
     app.main(["--debug-roster-live", "NYK"])
 
-    assert "uncached NYK 2025-26" in capsys.readouterr().out
+    assert "uncached NYK 2026-27" in capsys.readouterr().out

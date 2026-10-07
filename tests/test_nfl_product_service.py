@@ -298,9 +298,13 @@ def test_final_games_are_not_retroactively_predicted(monkeypatch):
 
     board = service.weekly_board(2026, 1, "BALANCED", 7)
 
-    assert board["items"][0]["predictionStatus"] == "unavailable"
-    assert "never re-predicted" in board["items"][0]["unavailableReason"]
-    assert "winner" not in board["items"][0]
+    item = board["items"][0]
+    assert item["predictionStatus"] == "unavailable"
+    assert item["status"] == "final"
+    assert item["away_score"] == 20
+    assert item["home_score"] == 27
+    assert "never re-predicted" in item["unavailableReason"]
+    assert "winner" not in item
 
 
 def test_scheduled_game_displays_first_global_snapshot_without_recalculation(monkeypatch):
@@ -491,11 +495,15 @@ def test_week_performance_uses_only_stored_pregame_price_for_roi(monkeypatch):
 
     rows = [
         {"week": 2, "home_team": "BUF", "away_team": "MIA", "predictionResult": "hit",
+         "kickoff_time": "2026-09-10T17:00:00Z",
          "prediction": {"winner": "BUF", "winProbability": .62, "riskLevel": "BALANCED",
-                        "market": {"homeOdds": -125, "awayOdds": 110}}},
+                        "market": {"homeOdds": -125, "awayOdds": 110, "provider": "the-odds-api",
+                                   "sportsbook": "draftkings", "marketTimestamp": "2026-09-10T16:00:00Z"}}},
         {"week": 2, "home_team": "KC", "away_team": "LV", "predictionResult": "miss",
+         "kickoff_time": "2026-09-10T20:00:00Z",
          "prediction": {"winner": "LV", "winProbability": .55, "riskLevel": "AGGRESSIVE",
-                        "market": {"homeOdds": -120, "awayOdds": 105}}},
+                        "market": {"homeOdds": -120, "awayOdds": 105, "provider": "the-odds-api",
+                                   "sportsbook": "draftkings", "marketTimestamp": "2026-09-10T19:00:00Z"}}},
     ]
     monkeypatch.setattr(service, "historical_games", lambda *args: rows)
 
@@ -533,7 +541,8 @@ def test_multi_game_parlay_uses_distinct_verified_model_winners(monkeypatch):
     assert len(result.parlay.legs) == 3
     assert len({leg.team for leg in result.parlay.legs}) == 3
     assert result.estimated_odds is not None
-    assert 0 < result.combined_probability < 1
+    assert result.combined_probability is None
+    assert "correlation-aware" in result.notes
     assert rejected == []
 
 

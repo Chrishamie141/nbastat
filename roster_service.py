@@ -8,6 +8,7 @@ from nba_api.stats.library import http
 from team_utils import normalize_team_abbreviation
 import cache_service
 from cache_service import clear_team_cache, load_roster_cache, safe_cache_key, save_roster_cache
+from backend.app.services.nba.season import DEFAULT_NBA_SEASON
 
 
 PLAYER_NAME_KEYS = (
@@ -58,7 +59,7 @@ def _extract_player_names(roster_df, preferred_columns):
     raise ValueError(f"Roster response missing player-name columns: {list(roster_df.columns)}")
 
 
-def _live_roster_lookup(team_abbreviation, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
+def _live_roster_lookup(team_abbreviation, season=DEFAULT_NBA_SEASON, timeout=ROSTER_LOOKUP_TIMEOUT):
     """Call the original stats.nba.com commonteamroster endpoint."""
     team_id = get_team_id(team_abbreviation)
     roster_df = commonteamroster.CommonTeamRoster(
@@ -74,7 +75,7 @@ def _live_roster_lookup(team_abbreviation, season="2025-26", timeout=ROSTER_LOOK
     return team_id, names
 
 
-def _live_roster_lookup_commonallplayers(team_abbreviation, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
+def _live_roster_lookup_commonallplayers(team_abbreviation, season=DEFAULT_NBA_SEASON, timeout=ROSTER_LOOKUP_TIMEOUT):
     """Fallback live roster lookup using nba_api's current-season all-player endpoint."""
     normalized = normalize_team_abbreviation(team_abbreviation)
     team_id = get_team_id(normalized)
@@ -188,7 +189,7 @@ def get_team_id(team_abbreviation):
     raise ValueError(f"Invalid team abbreviation: {team_abbreviation}")
 
 
-def get_team_roster(team_abbreviation, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
+def get_team_roster(team_abbreviation, season=DEFAULT_NBA_SEASON, timeout=ROSTER_LOOKUP_TIMEOUT):
     """Fetch a team roster from the original stats.nba.com endpoint path."""
     team_abbreviation = normalize_team_abbreviation(team_abbreviation)
     try:
@@ -255,7 +256,7 @@ def _print_roster_lookup_failure_summary(team_abbr, attempts, live_error, cached
         print(f"Roster cache sample players: {', '.join(names[:5]) or 'None'}")
 
 
-def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT, max_age_hours=72):
+def get_roster_with_cache(team_abbr, season=DEFAULT_NBA_SEASON, timeout=ROSTER_LOOKUP_TIMEOUT, max_age_hours=72):
     """Return ``(team_id, roster, status)`` using cache only after live retries fail.
 
     Status is one of LIVE, CACHE, STALE CACHE, INVALID-DELETED, or UNAVAILABLE.
@@ -299,7 +300,7 @@ def get_roster_with_cache(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIM
     return None, [], "UNAVAILABLE"
 
 
-def debug_roster_live_lookup(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_TIMEOUT):
+def debug_roster_live_lookup(team_abbr, season=DEFAULT_NBA_SEASON, timeout=ROSTER_LOOKUP_TIMEOUT):
     """Print uncached live roster diagnostics for one team."""
     normalized = normalize_team_abbreviation(team_abbr)
     headers = _stats_headers()
@@ -377,7 +378,7 @@ def debug_roster_live_lookup(team_abbr, season="2025-26", timeout=ROSTER_LOOKUP_
         "error": str(last_error) if last_error else None,
     }
 
-def debug_roster_lookup(team_abbr, season="2025-26"):
+def debug_roster_lookup(team_abbr, season=DEFAULT_NBA_SEASON):
     """Print diagnostics for one roster lookup without requiring app internals."""
     normalized = normalize_team_abbreviation(team_abbr)
     print("Debug Roster Lookup")

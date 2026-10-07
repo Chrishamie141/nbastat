@@ -828,11 +828,27 @@ def prediction_performance(season: int, week: int, user_id: int, season_type: st
         by_risk[risk] = {"predictions": len(subset), "wins": risk_wins, "losses": risk_losses,
                          "pushes": len(subset) - risk_wins - risk_losses,
                          "accuracy": round(risk_wins / (risk_wins + risk_losses) * 100, 1) if risk_wins + risk_losses else None}
+    def legitimate_price(row: dict) -> float | int | None:
+        prediction = row["prediction"]
+        market, winner = prediction.get("market") or {}, prediction.get("winner")
+        if market.get("provider") != "the-odds-api" or not market.get("sportsbook"):
+            return None
+        market_at = market.get("marketTimestamp")
+        kickoff = row.get("kickoff_time") or row.get("kickoffTime")
+        try:
+            market_time = datetime.fromisoformat(str(market_at).replace("Z", "+00:00")).astimezone(timezone.utc)
+            kickoff_time = datetime.fromisoformat(str(kickoff).replace("Z", "+00:00")).astimezone(timezone.utc)
+            if not market_at or not kickoff or market_time >= kickoff_time:
+                return None
+        except (TypeError, ValueError):
+            return None
+        price = market.get("homeOdds") if winner == row["home_team"] else market.get("awayOdds")
+        return None if price in (None, 0) else price
+
     profit, priced = 0.0, 0
     for row in rows:
-        prediction, result = row["prediction"], row["predictionResult"]
-        market, winner = prediction.get("market") or {}, prediction.get("winner")
-        price = market.get("homeOdds") if winner == row["home_team"] else market.get("awayOdds")
+        result = row["predictionResult"]
+        price = legitimate_price(row)
         if price in (None, 0) or result not in {"hit", "miss", "push"}:
             continue
         priced += 1
@@ -860,8 +876,7 @@ def prediction_performance(season: int, week: int, user_id: int, season_type: st
     favorites, underdogs, positive_edge, nonpositive_edge = [], [], [], []
     for row in rows:
         prediction = row["prediction"]
-        market, winner = prediction.get("market") or {}, prediction.get("winner")
-        price = market.get("homeOdds") if winner == row["home_team"] else market.get("awayOdds")
+        price = legitimate_price(row)
         if price is not None:
             (favorites if float(price) < 0 else underdogs).append(row)
         edge = prediction.get("edge")
@@ -873,6 +888,9 @@ def prediction_performance(season: int, week: int, user_id: int, season_type: st
             "units": round(profit, 3) if priced else None,
             "roi": round(profit / priced * 100, 1) if priced else None,
             "roiCoverage": {"pricedPredictions": priced, "totalPredictions": len(rows)},
+            "pricingProvenancePolicy": "VERIFIED_PROVIDER_AND_SPORTSBOOK_STRICTLY_BEFORE_KICKOFF",
+            "clv": None,
+            "clvStatus": "UNAVAILABLE_WITHOUT_VERIFIED_CLOSING_PRICE_PROVENANCE",
             "roiUnavailableReason": None if priced else "Executable pregame odds were not stored for these predictions." if rows else "No stored pregame predictions exist for this slate.",
             "byRiskLevel": by_risk,
             "byBetType": {"moneyline": {"predictions": len(rows), "wins": wins, "losses": losses, "pushes": pushes}},
@@ -1053,24 +1071,23 @@ def build_multi_game_parlay(*, season: int, week: int, season_type: str, profile
         rejected.extend({"gameId": game["game_id"], "team": team, "reason": "insufficient_eligible_legs_for_profile"}
                         for game, team, *_ in accepted)
         legs = []
-    combined_probability = 1.0
     decimal_odds = 1.0
     for leg in legs:
-        combined_probability *= leg.confidence / 100
         decimal_odds *= 1 + (leg.odds / 100 if leg.odds > 0 else 100 / abs(leg.odds))
     estimated_odds = None
     if legs:
         profit_multiple = decimal_odds - 1
         estimated_odds = round(profit_multiple * 100 if decimal_odds >= 2 else -100 / profit_multiple)
     notes = (
-        f"{profile.title()} multi-game parlay built from distinct scheduled games and verified moneyline prices."
+        f"{profile.title()} experimental multi-game ticket built from distinct scheduled games and verified moneyline prices. "
+        "Individual probabilities are shown; joint probability is unavailable until a correlation-aware model is validated."
         if legs else
         ("Manual parlays require at least two distinct upcoming games with fresh verified prices."
          if manual else f"No {profile.lower()} parlay was built because fewer than {policy['min_legs']} selected games met the probability, edge, and price rules.")
     )
     result = ParlayResult(
         parlay=Parlay(sport=SportType.NFL, difficulty=DifficultyLevel.from_input(profile), legs=legs, notes=notes),
-        estimated_odds=estimated_odds, combined_probability=combined_probability if legs else 0, notes=notes,
+        estimated_odds=estimated_odds, combined_probability=None, notes=notes,
     )
     return result, rejected
 

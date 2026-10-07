@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import TeamLogo from '@/components/teams/TeamLogo';
+import GameScoreboard from '@/components/games/GameScoreboard';
 
 const FINISHED = new Set(['final', 'final-OT']);
-const LIVE_STATUSES = new Set(['live', 'halftime']);
 
 function formatGameTime(iso, status) {
   if (['postponed', 'canceled'].includes(status)) return status[0].toUpperCase() + status.slice(1);
@@ -36,7 +36,6 @@ export default function UpcomingGameCard({ game, featured = false }) {
   if (!game) return null;
   const chips = (game.watchReasons || []).filter(meaningful).slice(0, 3);
   const isNfl = game.league === 'nfl';
-  const showScore = LIVE_STATUSES.has(game.status) || FINISHED.has(game.status);
   const card = (
     <article className={`h-auto min-h-0 rounded-3xl border p-4 transition ${featured ? 'border-cyan-300/50 bg-cyan-300/10' : 'border-white/10 bg-white/[.04]'} ${isNfl ? 'group-hover:border-cyan-300/60 group-hover:bg-white/[.08]' : ''}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -44,10 +43,11 @@ export default function UpcomingGameCard({ game, featured = false }) {
         {game.nationalBroadcast ? <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-200">National broadcast</span> : null}
       </div>
       <div className={`mt-4 grid items-center gap-3 ${featured ? 'md:grid-cols-[1fr_auto_1fr]' : 'sm:grid-cols-[1fr_auto_1fr]'}`}>
-        <TeamBlock label="Away" team={game.awayTeam} score={showScore ? game.awayScore : null} size={featured ? 58 : 46} />
+        <TeamBlock label="Away" team={game.awayTeam} size={featured ? 58 : 46} />
         <span className="text-center text-sm font-semibold uppercase tracking-wide text-slate-500">at</span>
-        <TeamBlock label="Home" team={game.homeTeam} score={showScore ? game.homeScore : null} size={featured ? 58 : 46} />
+        <TeamBlock label="Home" team={game.homeTeam} size={featured ? 58 : 46} />
       </div>
+      <GameScoreboard game={game} modelPick={game.modelPick} predictionResult={game.predictionResult} compact />
       <div className="mt-4 border-t border-white/10 pt-3">
         <div className="flex items-center justify-between gap-3">
           <p className="font-semibold text-cyan-50">{formatGameTime(game.startTimeUtc, game.status)}</p>
@@ -64,6 +64,6 @@ export default function UpcomingGameCard({ game, featured = false }) {
   return <Link className="group block rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" href={`/nfl/games/${game.id}`} aria-label={label}>{card}</Link>;
 }
 
-function TeamBlock({ label, team, score, size }) {
-  return <div className="flex min-w-0 items-center gap-3"><TeamLogo team={team} size={size} /><div className="min-w-0"><div className="flex items-baseline gap-2"><p className="truncate font-bold text-slate-100">{team?.name || team?.abbreviation || 'TBD'}</p>{score != null ? <strong className="text-xl text-white">{score}</strong> : null}</div><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p></div></div>;
+function TeamBlock({ label, team, size }) {
+  return <div className="flex min-w-0 items-center gap-3"><TeamLogo team={team} size={size} /><div className="min-w-0"><p className="truncate font-bold text-slate-100">{team?.name || team?.abbreviation || 'TBD'}</p><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p></div></div>;
 }

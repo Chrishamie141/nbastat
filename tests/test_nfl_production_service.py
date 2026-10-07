@@ -14,6 +14,7 @@ from backend.app.services.nfl_production_service import (
 from backend.app.services.parlay_history_service import load_web_parlays, save_web_parlay
 from models import DifficultyLevel, Parlay, ParlayLeg, ParlayResult, SportType
 from nfl_parlay_grader import _grade_player_leg, _grade_team_leg, _overall_status
+from backtesting.nfl_game_predictor import V2_MODEL_VERSION
 
 
 def game(status="scheduled", kickoff="2099-09-10T00:20:00Z"):
@@ -28,7 +29,7 @@ def seed_prediction(generated="2026-09-09T12:00:00Z", winner="SEA", user_id=7,
                     kickoff="2099-09-10T00:20:00Z"):
     nfl_product_service._initialize_predictions.cache_clear()
     nfl_product_service._initialize_predictions()
-    payload = {"winner": winner, "winProbability": probability, "edge": .07, "modelVersion": "nfl-v-test",
+    payload = {"winner": winner, "winProbability": probability, "edge": .07, "modelVersion": V2_MODEL_VERSION,
                "dataAsOf": "2026-09-09T11:00:00Z", "market": {"homeOdds": odds, "awayOdds": 110}}
     with get_db_connection() as connection:
         row = connection.execute("""INSERT INTO nfl_game_predictions
@@ -36,7 +37,7 @@ def seed_prediction(generated="2026-09-09T12:00:00Z", winner="SEA", user_id=7,
              season_type,display_week,provider_week,provider,week_key)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id""",
             (user_id, game_id, 2026, 1, kickoff, generated,
-             "nfl-v-test", json.dumps(payload), "regular", 1, 1, "espn", "REG1")).fetchone()
+             V2_MODEL_VERSION, json.dumps(payload), "regular", 1, 1, "espn", "REG1")).fetchone()
     return row["id"], payload
 
 
@@ -164,7 +165,7 @@ def test_pending_benchmarks_never_claim_reportable_sample():
     assert performance["sampleStatus"] == "EARLY_SAMPLE"
 
 
-def test_elite_multi_game_benchmark_requires_real_80_percent_ticket_and_grades():
+def test_multi_game_benchmark_is_experimental_without_fake_joint_probability_and_grades():
     first_id, _ = seed_prediction(winner="SEA", probability=.92, odds=-300)
     second_id, _ = seed_prediction(winner="KC", probability=.90, odds=-250,
                                    game_id="espn-401872999")
@@ -175,7 +176,8 @@ def test_elite_multi_game_benchmark_requires_real_80_percent_ticket_and_grades()
                                            schedule=schedule,
                                            clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc))
     assert result["status"] == "PENDING" and result["legs"] == 2
-    assert result["estimatedProbability"] == .828
+    assert result["estimatedProbability"] is None
+    assert result["jointProbabilityStatus"] == "UNAVAILABLE_CORRELATED_MODEL_REQUIRED"
     assert generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
                                          schedule=schedule)["reason"] == "already_frozen"
     with get_db_connection() as connection:
@@ -195,20 +197,18 @@ def test_elite_multi_game_benchmark_requires_real_80_percent_ticket_and_grades()
     assert performance["legHitRate"] == 100 and performance["sampleStatus"] == "EARLY_SAMPLE"
 
 
-def test_elite_multi_game_benchmark_waits_then_records_no_bet_near_kickoff():
+def test_experimental_multi_game_benchmark_freezes_eligible_legs_without_joint_claim():
     seed_prediction(probability=.80, odds=-150)
     seed_prediction(probability=.75, odds=-140, game_id="espn-401872999")
     schedule = [game(), {**game(), "game_id": "espn-401872999", "id": "espn-401872999"}]
     capture_prediction_history(season=2026, season_type="regular", week=1, schedule=schedule)
-    waiting = generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
-                                            schedule=schedule,
-                                            clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc))
-    assert waiting["status"] == "WAITING"
-    no_bet = generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
+    result = generate_multi_game_benchmark(season=2026, season_type="regular", week=1,
                                            schedule=schedule,
-                                           clock=lambda: datetime(2099, 9, 9, 23, 30, tzinfo=timezone.utc))
-    assert no_bet["status"] == "NO_BET"
-    assert multi_game_benchmark_performance(season=2026, season_type="regular", week=1)["noBet"] == 1
+                                           clock=lambda: datetime(2026, 9, 9, tzinfo=timezone.utc))
+    assert result["status"] == "PENDING"
+    assert result["estimatedProbability"] is None
+    assert result["jointProbabilityStatus"] == "UNAVAILABLE_CORRELATED_MODEL_REQUIRED"
+    assert multi_game_benchmark_performance(season=2026, season_type="regular", week=1)["pending"] == 1
 
 
 def test_production_sgp_policy_is_short_and_fails_closed():

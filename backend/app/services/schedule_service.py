@@ -1,5 +1,5 @@
 from __future__ import annotations
-import time, os, requests, threading
+import time, os, requests, threading, logging
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from backend.app.schemas.common import UpcomingGame, TeamSummary
@@ -11,6 +11,7 @@ from backend.app.services.game_status_service import lifecycle_cache_ttl
 _CACHE={}
 _REFRESH_LOCK=threading.Lock()
 _LAST_MANUAL_REFRESH=0.0
+logger=logging.getLogger(__name__)
 ESPN={'nfl':'football/nfl','nba':'basketball/nba'}
 
 def _phase(league, dt):
@@ -78,6 +79,8 @@ def upcoming_games(leagues, limit=10, start=None, end=None, include_completed=Fa
             week_number=week.get('number') if isinstance(week,dict) else week
             address=(comp.get('venue') or {}).get('address') or {}
             d={'id':str(ev.get('id')), 'league':lg, 'seasonPhase':phase, 'season':season.get('year'), 'week':week_number, 'phaseWeekKey':f"{season.get('year') or dt.year}:{phase}:w{week_number or 0}", 'awayTeam':_team(away, lg), 'homeTeam':_team(home, lg), 'startTimeUtc':dt, 'status':status, 'statusDetail':status_type.get('detail') or status_type.get('shortDetail'), 'statusUpdatedAt':datetime.now(timezone.utc), 'awayScore':_score(away), 'homeScore':_score(home), 'venue':(comp.get('venue') or {}).get('fullName'), 'city':', '.join(filter(None,[address.get('city'),address.get('state')])), 'broadcast':broadcasts, 'nationalBroadcast':bool(broadcasts), 'dataProvider':provider, 'dataMode':'live'}
+            if status in {'final','final-OT'} and (d['awayScore'] is None or d['homeScore'] is None):
+                logger.warning('final_game_score_missing league=%s game_id=%s provider=%s', lg, d['id'], provider)
             d.update(score_game(d)); games.append(UpcomingGame(**d))
     if leagues and not successful_fetches:
         raise requests.RequestException('All configured schedule providers failed.')

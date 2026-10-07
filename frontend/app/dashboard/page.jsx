@@ -184,7 +184,7 @@ function WeeklyNflBoard() {
                 <p className="text-xs text-slate-400">
                   {new Date(game.kickoff_time).toLocaleString()}
                 </p>
-                <NflMatchup game={game} size={40} className="mt-4" />
+                <NflMatchup game={game} size={40} showFinalScore className="mt-4" />
                 <p className="mt-auto pt-4 text-sm font-semibold text-cyan-100">
                   {game.winner
                     ? `Model pick: ${game.winner} · ${(game.winProbability * 100).toFixed(1)}%`

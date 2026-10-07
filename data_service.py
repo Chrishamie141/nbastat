@@ -1,8 +1,9 @@
 import pandas as pd
 from nba_api.stats.static import players
 from nba_api.stats.endpoints import playergamelog
+from backend.app.services.nba.season import DEFAULT_NBA_SEASON
 
-SEASON = "2025-26"
+SEASON = DEFAULT_NBA_SEASON
 STAT_COLUMNS = ["PTS", "REB", "AST", "STL", "BLK", "MIN"]
 
 

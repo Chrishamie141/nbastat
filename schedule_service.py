@@ -5,6 +5,7 @@ from nba_api.stats.static import teams
 from nba_api.stats.endpoints import leaguegamefinder, scoreboardv2
 
 from team_utils import normalize_team_abbreviation
+from backend.app.services.nba.season import DEFAULT_NBA_SEASON
 
 
 ESPN_TEAM_MAP = {
@@ -234,7 +235,7 @@ def _find_with_league_gamefinder(team_id, season, timeout=8):
         return None
 
 
-def get_next_game_context(team_abbreviation, season="2025-26", timeout=8):
+def get_next_game_context(team_abbreviation, season=DEFAULT_NBA_SEASON, timeout=8):
     team_abbreviation = normalize_team_abbreviation(team_abbreviation)
     team_map = _abbr_to_id_map()
 
