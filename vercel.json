@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "fluid": true,
   "crons": [{"path": "/api/cron/social-daily", "schedule": "30 17 * * *"}],
   "functions": {
     "api/index.py": {
