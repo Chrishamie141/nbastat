@@ -22,7 +22,6 @@ export default function PremiumNavbar() {
     "dashboard",
     "games",
     "parlays",
-    "fantasy",
     "history",
     "performance",
     "account",

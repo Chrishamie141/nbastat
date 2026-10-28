@@ -257,6 +257,7 @@ test("internal command center is a plain-language multi-sport owner dashboard", 
   assert.match(api, /internal\/nba\/foundation\/activation/);
   assert.match(nav, /command-center/);
   assert.match(nav, /ownerPortal/);
+  assert.doesNotMatch(nav, /^\s*["']fantasy["'],?\s*$/m);
 });
 
 test("social operations is a responsive owner control room with safety controls", () => {
