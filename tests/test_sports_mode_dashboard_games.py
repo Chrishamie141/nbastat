@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
+
 import pytest
-from backend.app.services.sports_mode_service import get_sports_mode
-from backend.app.services.game_watchability_service import score_game
+
 from backend.app.services import schedule_service
+from backend.app.services.game_watchability_service import score_game
+from backend.app.services.sports_mode_service import get_sports_mode
+
 
 def test_manual_override(monkeypatch):
     monkeypatch.setenv('SPORTS_MODE_OVERRIDE','nfl')
@@ -63,3 +66,43 @@ def test_dashboard_schedule_lifecycle_does_not_invent_final_score(monkeypatch, s
     monkeypatch.setattr(schedule_service, "_fetch_espn", lambda *_args: [_event(state, detail=detail)])
     row = schedule_service.upcoming_games(["nba"], include_completed=True)[0]
     assert row.status == expected and row.homeScore is None and row.awayScore is None
+
+
+def test_dashboard_schedule_uses_month_batches_and_filters_requested_window(monkeypatch):
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"events": [
+                {"id": "inside", "date": "2026-10-20T23:30:00Z"},
+                {"id": "outside", "date": "2026-11-01T00:00:00Z"},
+            ]}
+
+    def get(url, params, timeout):
+        calls.append((url, params, timeout))
+        return Response()
+
+    monkeypatch.setattr(schedule_service.requests, "get", get)
+    rows = schedule_service._fetch_espn(
+        "nba",
+        datetime(2026, 10, 15, tzinfo=timezone.utc),
+        datetime(2026, 10, 31, 23, 59, tzinfo=timezone.utc),
+    )
+    assert [row["id"] for row in rows] == ["inside"]
+    assert calls[0][1] == {"dates": "202610", "limit": 1000}
+
+
+def test_scheduled_nba_score_zero_is_not_presented_as_observed(monkeypatch):
+    schedule_service._CACHE.clear()
+    monkeypatch.setattr(
+        schedule_service,
+        "_fetch_espn",
+        lambda *_args: [_event("pre", home_score="0", away_score="0", detail="Scheduled")],
+    )
+    row = schedule_service.upcoming_games(["nba"], include_completed=True)[0]
+    assert row.status == "scheduled"
+    assert row.homeScore is None
+    assert row.awayScore is None

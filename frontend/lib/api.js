@@ -30,6 +30,12 @@ export const api = {
       request(`/api/internal/operations/nfl-production/${season}/${seasonType}/${week}/audit`, { method: 'POST', timeoutMs: 30000 }),
     runNflProductionLifecycle: ({ season, seasonType = 'regular', week }) =>
       request(`/api/internal/operations/nfl-production/${season}/${seasonType}/${week}/lifecycle`, { method: 'POST', timeoutMs: 90000 }),
+    runNbaCycle: (body = {}) =>
+      request('/api/internal/nba/foundation/sync', { method: 'POST', body, timeoutMs: 90000 }),
+    refreshNbaPersonnel: () =>
+      request('/api/internal/nba/personnel/refresh', { method: 'POST', timeoutMs: 90000 }),
+    updateNbaActivation: (body) =>
+      request('/api/internal/nba/foundation/activation', { method: 'PATCH', body }),
     socialPosts: ({ limit = 25, offset = 0, status = 'ALL' } = {}) =>
       request(`/api/internal/operations/social-posts?limit=${limit}&offset=${offset}${status === 'ALL' ? '' : `&status=${encodeURIComponent(status)}`}`),
     social: {
@@ -170,6 +176,12 @@ export const api = {
     performance: () => request("/api/analyze/nfl/performance"),
   },
   nba: {
+    games: ({ season = '', limit = 100 } = {}) =>
+      request(`/api/nba/games?limit=${limit}${season ? `&season=${encodeURIComponent(season)}` : ''}`),
+    game: (gameId, season = '') =>
+      request(`/api/nba/games/${encodeURIComponent(gameId)}${season ? `?season=${encodeURIComponent(season)}` : ''}`),
+    predictions: ({ season = '', limit = 100 } = {}) =>
+      request(`/api/nba/predictions?limit=${limit}${season ? `&season=${encodeURIComponent(season)}` : ''}`),
     player: (body) =>
       request("/api/analyze/nba/player", { method: "POST", body }),
     roster: (body) =>

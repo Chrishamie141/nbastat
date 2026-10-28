@@ -1,7 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "fluid": true,
-  "crons": [{"path": "/api/cron/social-daily", "schedule": "30 17 * * *"}],
+  "crons": [
+    {"path": "/api/cron/social-daily", "schedule": "30 17 * * *"},
+    {"path": "/api/cron/nba-active-season", "schedule": "17 10 * * *"}
+  ],
   "functions": {
     "api/index.py": {
       "includeFiles": "{data/*.json,backtesting/game_matching.py,backtesting/markets.py}"

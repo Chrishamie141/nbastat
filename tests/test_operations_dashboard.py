@@ -152,6 +152,39 @@ def test_production_worker_health_fails_closed_for_failed_cron(monkeypatch):
     assert result["running"] is True
 
 
+def test_nba_personnel_warning_uses_personnel_only_retry(monkeypatch):
+    from backend.app.services import operations_dashboard_service as operations
+
+    at = datetime(2026, 10, 28, 4, 45, tzinfo=timezone.utc)
+    season = type("Season", (), {"code": "2026-27"})()
+    monkeypatch.setattr(operations, "active_nba_season", lambda: season)
+    monkeypatch.setattr(operations, "nba_foundation_status", lambda _season: {
+        "automation": {"settings": {"enabled": False}, "latestRun": {}, "stale": False},
+        "personnel": {
+            "roster": {"status": "STALE", "items": [{"lastAttemptAt": "2026-10-27T22:00:00Z"}]},
+            "availability": {"status": "FRESH", "items": []},
+        },
+        "predictionModels": {"nba-game-elo-baseline-v1": 1},
+    })
+    monkeypatch.setattr(operations, "nba_performance", lambda **_kwargs: {})
+    monkeypatch.setattr(operations, "nba_games_board", lambda **_kwargs: {"items": [{
+        "gameId": "espn-1", "kickoffTime": "2026-10-28T23:00:00Z", "status": "SCHEDULED",
+        "awayTeam": "BOS", "homeTeam": "NY", "seasonPhase": "regular_season",
+        "awayScore": None, "homeScore": None, "dataTimestamp": "2026-10-28T04:00:00Z",
+        "prediction": {"settlementStatus": "UNRESOLVED", "predictedWinner": "BOS",
+                       "modelProbability": .6, "modelVersion": "nba-game-elo-baseline-v1",
+                       "modelStatus": "RESEARCH_ONLY", "createdAt": "2026-10-28T04:00:00Z",
+                       "id": "nba-pred-1"},
+    }]})
+
+    result = operations._nba_operations(at)
+
+    assert len(result["issues"]) == 1
+    assert result["issues"][0]["entityId"] == "nba-roster-freshness"
+    assert result["issues"][0]["action"] == "NBA_PERSONNEL_RETRY"
+    assert result["issues"][0]["recommendedAction"] == "Refresh NBA personnel data"
+
+
 def test_operator_action_history_records_lifecycle():
     from backend.app.services.operator_action_service import finish, recent, start
     action_id = start("REFRESH_GAME", "operator@example.com", "espn-1")

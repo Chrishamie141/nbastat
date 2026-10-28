@@ -99,6 +99,21 @@ def test_app_lifespan_and_readiness_start_with_isolated_database():
         assert client.get("/api/readiness").status_code == 200
 
 
+def test_app_lifespan_skips_schema_ddl_when_migrations_are_present(monkeypatch):
+    from backend.app import main
+
+    calls = []
+    monkeypatch.setattr(main, "_startup_schema_state", lambda: {"parlay": True, "nba": True})
+    monkeypatch.setattr(main, "initialize_parlay_ticket_database", lambda: calls.append("parlay"))
+    monkeypatch.setattr(main, "initialize_nba_foundation", lambda: calls.append("nba"))
+    monkeypatch.setattr(main, "startup_self_check", lambda: None)
+
+    with TestClient(main.app):
+        pass
+
+    assert calls == []
+
+
 def test_week3_expected_hash_is_preserved_and_missing_evidence_fails_closed():
     from backend.app.services import nfl_experiment_service as experiment
     from backend.app.services.nfl_product_service import _initialize_predictions
@@ -110,3 +125,29 @@ def test_week3_expected_hash_is_preserved_and_missing_evidence_fails_closed():
     assert result["expectedHash"] == expected
     assert result["frozenPredictionCount"] == 0
     assert result["verified"] is False  # Never fabricate the missing authoritative rows.
+
+
+def test_performance_metrics_include_nba_record_beside_accuracy(monkeypatch):
+    from backend.app import main
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    monkeypatch.setattr(main, "using_postgres", lambda: True)
+    monkeypatch.setattr(main, "get_db_connection", lambda: Connection())
+    monkeypatch.setattr(main, "table_exists", lambda *args: False)
+    monkeypatch.setattr(main, "nfl_prediction_history", lambda **kwargs: [])
+    monkeypatch.setattr(main, "nba_prediction_performance", lambda: {
+        "settled": 8, "wins": 5, "losses": 2, "pushes": 1, "accuracy": 5 / 7,
+    })
+
+    metrics = main._metrics(17)
+
+    assert metrics["NBA record"] == "5-2-1"
+    assert metrics["NBA accuracy"] == "71.4%"
+    assert metrics["NBA graded predictions"] == 8
+    assert "NBA model status" not in metrics

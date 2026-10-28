@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
-from typing import Callable, Iterable
 import logging
+from collections.abc import Callable, Iterable
+from datetime import date, datetime, timezone
 
 import requests
 
@@ -45,14 +45,29 @@ def normalize_espn_event(event: dict, season: str | int) -> dict:
     else:
         status = "SCHEDULED"
     season_id = normalize_nba_season(season)
+    provider_season = event.get("season") or {}
+    phase_value = provider_season.get("type") or provider_season.get("slug")
+    if isinstance(phase_value, int) or str(phase_value or "").isdigit():
+        season_phase = {1: "preseason", 2: "regular_season", 3: "postseason"}.get(
+            int(phase_value), "unknown"
+        )
+    else:
+        phase_text = str(phase_value or "").casefold()
+        season_phase = (
+            "preseason" if "pre" in phase_text else
+            "postseason" if "post" in phase_text else
+            "regular_season" if "regular" in phase_text else "unknown"
+        )
+    score_available = status in {"LIVE", "FINAL"}
     return {
         "game_id": f"espn-{event['id']}", "provider_event_id": str(event["id"]),
         "league": "nba", "season": season_id.code,
+        "season_phase": season_phase,
         "kickoff_time": _iso(event["date"]), "status": status,
         "home_team": (home.get("team") or {}).get("abbreviation"),
         "away_team": (away.get("team") or {}).get("abbreviation"),
-        "home_score": int(home["score"]) if str(home.get("score", "")).isdigit() else None,
-        "away_score": int(away["score"]) if str(away.get("score", "")).isdigit() else None,
+        "home_score": int(home["score"]) if score_available and str(home.get("score", "")).isdigit() else None,
+        "away_score": int(away["score"]) if score_available and str(away.get("score", "")).isdigit() else None,
         "provider": "espn", "provider_timestamp": _iso(event["date"]),
     }
 

@@ -25,7 +25,7 @@ from backend.app.api.nba_automation_cron import router as nba_automation_cron_ro
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user, owner_account_integrity
 from backend.app.services.sports_mode_service import get_sports_mode
-from backend.app.services.schedule_service import refresh_games, upcoming_games
+from backend.app.services.schedule_service import provider_health_snapshot, refresh_games, upcoming_games
 from backend.app.services.nfl_game_service import (
     GameNotFoundError,
     InvalidGameIdError,
@@ -62,10 +62,25 @@ from backend.app.services.nfl_production_service import (
     prediction_history as nfl_prediction_history,
     run_lifecycle as run_nfl_production_lifecycle,
 )
-from backend.app.services.nba.automation import run_cycle as run_nba_cycle
-from backend.app.services.nba.lifecycle import foundation_status as nba_foundation_status, initialize as initialize_nba_foundation
+from backend.app.services.nba.automation import (
+    maybe_reconcile_recent_results,
+    run_cycle as run_nba_cycle,
+)
+from backend.app.services.nba.lifecycle import (
+    foundation_status as nba_foundation_status,
+    initialize as initialize_nba_foundation,
+    operational_settings as nba_operational_settings,
+    update_operational_settings as update_nba_operational_settings,
+)
+from backend.app.services.nba.production import (
+    game_detail as nba_game_detail,
+    games_board as nba_games_board,
+    performance as nba_prediction_performance,
+    prediction_history as nba_prediction_history,
+)
+from backend.app.services.nba.availability import personnel_refresh_guard, refresh_personnel
 from backend.app.services.nba.season import active_nba_season
-from backend.app.database import get_db_connection, table_exists, using_postgres
+from backend.app.database import column_exists, get_db_connection, table_exists, using_postgres
 from backend.app.schemas.common import DashboardMetrics, FeaturedGame
 import os
 from nfl_parlay_builder import analyze_nfl_prop_board, build_nfl_parlay
@@ -78,6 +93,22 @@ from team_utils import normalize_team_abbreviation
 
 print_config_status()
 logger = logging.getLogger(__name__)
+
+
+def _startup_schema_state() -> dict[str, bool]:
+    """Avoid concurrent cold-start DDL once reviewed migrations are present."""
+    parlay_tables = ("parlay_tickets", "parlay_ticket_legs")
+    nba_tables = (
+        "nba_games", "nba_prediction_snapshots", "nba_market_observations",
+        "nba_settlements", "nba_replay_runs", "nba_model_registry",
+        "nba_operational_settings", "nba_automation_runs",
+    )
+    with get_db_connection() as connection:
+        parlay_ready = all(table_exists(connection, table) for table in parlay_tables)
+        nba_ready = all(table_exists(connection, table) for table in nba_tables)
+        if nba_ready:
+            nba_ready = column_exists(connection, "nba_games", "season_phase")
+    return {"parlay": parlay_ready, "nba": nba_ready}
 
 
 def _analyze_nfl_prop_board_with_context(profile: str, *, game_teams: tuple[str, str],
@@ -96,8 +127,11 @@ async def lifespan(_app: FastAPI):
     # Keep production deployments self-contained: the checked-in migration is
     # authoritative, while this idempotent initializer ensures a newly deployed
     # backend cannot serve ticket routes against a missing schema.
-    initialize_parlay_ticket_database()
-    initialize_nba_foundation()
+    schema = _startup_schema_state()
+    if not schema["parlay"]:
+        initialize_parlay_ticket_database()
+    if not schema["nba"]:
+        initialize_nba_foundation()
     startup_self_check()
     yield
 
@@ -193,8 +227,34 @@ def api_upcoming_games(league: str|None=None, limit: int=Query(8, ge=1, le=20), 
     sm=get_sports_mode(); leagues=[league.lower()] if league else sm.activeLeagues
     leagues=[l for l in leagues if l in sm.activeLeagues and l in {"nfl","nba"}]
     start=datetime.now(timezone.utc)-timedelta(days=7) if include_completed else None
-    games=upcoming_games(leagues, limit=limit, start=start, include_completed=include_completed) if leagues else []
+    try:
+        games=upcoming_games(leagues, limit=limit, start=start, include_completed=include_completed) if leagues else []
+    except requests.RequestException as exc:
+        raise HTTPException(503, "The verified game schedule is temporarily unavailable.") from exc
     return {"items":[g.model_dump(mode="json") for g in games],"sportsMode":sm.model_dump(mode="json"),"lastUpdated":now(),"source": games[0].dataProvider if games else sm.source}
+
+
+@app.get("/api/nba/games")
+def api_nba_games(season: str | None=Query(None), limit: int=Query(100, ge=1, le=500),
+                  user=Depends(require_full_access)):
+    return nba_games_board(season=active_nba_season(season).code, limit=limit)
+
+
+@app.get("/api/nba/games/{game_id}")
+def api_nba_game(game_id: str, season: str | None=Query(None), user=Depends(require_full_access)):
+    game = nba_game_detail(season=active_nba_season(season).code, game_id=game_id)
+    if not game:
+        raise HTTPException(404, "NBA game was not found in the synchronized season.")
+    return {**game, "productionReady": False, "modelStatus": "RESEARCH_ONLY"}
+
+
+@app.get("/api/nba/predictions")
+def api_nba_predictions(season: str | None=Query(None), limit: int=Query(100, ge=1, le=500),
+                        user=Depends(require_full_access)):
+    code = active_nba_season(season).code
+    return {"league": "NBA", "season": code,
+            "items": nba_prediction_history(season=code, user_id=int(user["id"]), limit=limit),
+            "productionReady": False, "modelStatus": "RESEARCH_ONLY"}
 
 @app.get("/api/games/featured")
 def api_featured_game():
@@ -570,6 +630,9 @@ def dashboard(request: Request, user=Depends(require_full_access)):
     if sm.activeLeagues:
         try:
             games=upcoming_games(sm.activeLeagues, limit=20, start=datetime.now(timezone.utc)-timedelta(days=7), include_completed=True)
+            provider_errors=provider_health_snapshot().get('errors',{})
+            if provider_errors:
+                errors['scheduleWarnings']={league:'Schedule provider unavailable for this league' for league in provider_errors}
         except Exception:
             errors['upcomingGames']='Upcoming schedule unavailable'
     featured_pool=[game for game in games if game.status not in {'final','final-OT','canceled','postponed'}]
@@ -930,7 +993,9 @@ def nba_grade(payload: dict, user=Depends(require_internal_access)):
     rows=grade_recommendations(payload.get("actualResults") or [], default_stake=float(payload.get("stake") or 10))
     return envelope("NBA","Grade Predictions",items=rows,summary=summarize_graded_bets(rows),saveStatus=f"graded {len(rows)} rows")
 @app.get("/api/analyze/nba/history")
-def nba_history(user=Depends(require_full_access)): return envelope("NBA","View Parlay History",items=_history_rows("NBA", None, int(user["id"])))
+def nba_history(user=Depends(require_full_access)):
+    return envelope("NBA","View Prediction History",
+                    items=_nba_history_rows(int(user["id"]))+_history_rows("NBA", None, int(user["id"])))
 @app.get("/api/analyze/nba/performance")
 def nba_perf(user=Depends(require_full_access)): return performance(user=user)
 
@@ -943,28 +1008,121 @@ def internal_nba_foundation_status(
 @app.post("/api/internal/nba/foundation/sync")
 def internal_nba_foundation_sync(payload: dict, user=Depends(require_internal_access)):
     season = active_nba_season(payload.get("season")).code
+    action_id = start_operator_action("RUN_NBA_OPERATIONAL_CYCLE", operator_actor(user), f"NBA-{season}")
     try:
         start = datetime.fromisoformat(payload["start"]).date() if payload.get("start") else None
         end = datetime.fromisoformat(payload["end"]).date() if payload.get("end") else None
-        return run_nba_cycle(season=season, start=start, end=end)
+        result = run_nba_cycle(season=season, start=start, end=end, trigger_source="command_center")
+        finish_operator_action(action_id, result="SUCCEEDED", status_change=f"games={result['gamesFetched']} predictions={result['predictionsCreated']}")
+        return {"actionId": action_id, **result}
     except ValueError as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("nba_operational_cycle_failed")
+        raise HTTPException(503, "NBA operational cycle failed; inspect protected operational status.") from exc
+
+
+@app.post("/api/internal/nba/personnel/refresh")
+def internal_nba_personnel_refresh(user=Depends(require_internal_access)):
+    """Refresh roster and availability evidence without running the NBA lifecycle."""
+    settings = nba_operational_settings()
+    season = active_nba_season(settings.get("seasonOverride")).code
+    action_id = start_operator_action(
+        "REFRESH_NBA_PERSONNEL", operator_actor(user), f"NBA-{season}"
+    )
+    try:
+        with personnel_refresh_guard() as acquired:
+            if not acquired:
+                finish_operator_action(
+                    action_id, result="SUCCEEDED", status_change="skipped=overlap"
+                )
+                return {
+                    "actionId": action_id,
+                    "status": "SKIPPED_OVERLAP",
+                    "season": season,
+                }
+            result = refresh_personnel(season=season)
+        finish_operator_action(
+            action_id,
+            result="SUCCEEDED",
+            status_change=(
+                f"teams={result.get('teamsSucceeded', 0)}/"
+                f"{result.get('teamsAttempted', 0)} players={result.get('playersStored', 0)}"
+            ),
+        )
+        return {"actionId": action_id, **result}
+    except Exception as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
+        logger.exception("nba_personnel_refresh_failed")
+        raise HTTPException(
+            503, "NBA personnel refresh failed; inspect protected operational status."
+        ) from exc
+
+
+@app.patch("/api/internal/nba/foundation/activation")
+def internal_nba_activation(payload: dict, user=Depends(require_internal_access)):
+    current = nba_operational_settings()
+    if "enabled" in payload and not isinstance(payload["enabled"], bool):
+        raise HTTPException(400, "enabled must be a boolean")
+    if "season" in payload and payload["season"] is not None and not isinstance(payload["season"], (str, int)):
+        raise HTTPException(400, "season must be a supported NBA season value or null")
+    enabled = payload.get("enabled") if "enabled" in payload else current["enabled"]
+    season_override = payload.get("season") if "season" in payload else current.get("seasonOverride")
+    action_id = start_operator_action("UPDATE_NBA_ACTIVATION", operator_actor(user), "NBA")
+    try:
+        settings = update_nba_operational_settings(
+            enabled=bool(enabled), season_override=season_override, actor=operator_actor(user),
+        )
+        finish_operator_action(action_id, result="SUCCEEDED",
+                               status_change=f"enabled={settings['enabled']} season={settings['seasonOverride'] or 'auto'}")
+        return {"actionId": action_id, **settings}
+    except ValueError as exc:
+        finish_operator_action(action_id, result="FAILED", error=type(exc).__name__)
         raise HTTPException(400, str(exc)) from exc
 
 @app.get("/api/history")
 def history(tab: str=Query("All"), user=Depends(require_full_access)):
+    if os.getenv("VERCEL"):
+        try:
+            maybe_reconcile_recent_results(season=active_nba_season().code)
+        except Exception:
+            # History remains readable during a provider outage; the persistent
+            # run ledger and Command Center retain the reconciliation failure.
+            logger.exception("nba_history_auto_reconciliation_failed")
     prediction_rows=nfl_prediction_history(user_id=int(user["id"]))
+    nba_rows=_nba_history_rows(int(user["id"]))
     parlay_rows=_history_rows(None,None,int(user["id"]))
-    rows=prediction_rows+parlay_rows
-    rows.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
+    rows=prediction_rows+nba_rows+parlay_rows
     t=tab.lower()
     if t in {"nfl","nba"}: rows=[r for r in rows if r["sport"].lower()==t]
     if t=="graded": rows=[r for r in rows if str(r["resultStatus"]).lower()!="pending"]
     if t=="ungraded": rows=[r for r in rows if str(r["resultStatus"]).lower()=="pending"]
-    if t=="predictions": rows=prediction_rows
+    if t=="predictions": rows=prediction_rows+nba_rows
     if t=="parlays": rows=parlay_rows
+    if t == "ungraded":
+        rows.sort(key=lambda row: str(row.get("date") or ""))
+    else:
+        # History should surface completed evidence first. Previously a single
+        # large prediction batch filled the 50-row response with future games,
+        # hiding already graded picks below the cutoff.
+        rows.sort(
+            key=lambda row: (
+                str(row.get("resultStatus") or "").upper() != "PENDING",
+                str(row.get("date") or ""),
+            ),
+            reverse=True,
+        )
     return {"items":rows[:50]}
 @app.get("/api/performance")
-def performance(user=Depends(require_full_access)): return {"metrics":_metrics(int(user["id"])),"series":[]}
+def performance(user=Depends(require_full_access)):
+    if os.getenv("VERCEL"):
+        try:
+            maybe_reconcile_recent_results(season=active_nba_season().code)
+        except Exception:
+            logger.exception("nba_performance_auto_reconciliation_failed")
+    return {"metrics":_metrics(int(user["id"])),"series":[]}
 
 def _history_rows(sport=None,difficulty=None,user_id=None):
     rows=load_web_parlays(sport=sport,difficulty=difficulty,user_id=user_id)
@@ -973,6 +1131,22 @@ def _history_rows(sport=None,difficulty=None,user_id=None):
         legs=json.loads(r.get("legs_json") or "[]")
         out.append({"date":r.get("created_at"),"sport":r.get("sport"),"action":"Parlay","summary":f"{r.get('difficulty')} parlay with {len(legs)} legs","resultStatus":r.get("result_status"),"dataMode":mode()})
     return out
+
+
+def _nba_history_rows(user_id: int):
+    rows=[]
+    status_map={"WIN":"WON","LOSS":"LOST","PUSH":"PUSH","VOID":"VOID","UNRESOLVED":"PENDING"}
+    for row in nba_prediction_history(user_id=user_id, limit=500):
+        rows.append({"id":row["id"],"date":row["kickoffTime"],"createdAt":row["createdAt"],
+                     "kickoffTime":row["kickoffTime"],"gameStatus":row["gameStatus"],
+                     "sport":"NBA","action":"Prediction",
+                     "summary":f"{row['awayTeam']} at {row['homeTeam']} · {row['predictedWinner']} moneyline",
+                     "resultStatus":status_map.get(row["settlementStatus"],"PENDING"),"dataMode":"live",
+                     "matchup":f"{row['awayTeam']} at {row['homeTeam']}","predictedWinner":row["predictedWinner"],
+                     "modelProbability":row["modelProbability"],"modelVersion":row["modelVersion"],
+                     "modelStatus":row["modelStatus"],"awayScore":row["awayScore"],"homeScore":row["homeScore"],
+                     "settledAt":row["evaluationMetadata"]["settledAt"],"dataTimestamp":row["dataTimestamp"]})
+    return rows
 
 def _metrics(user_id: int | None = None):
     if not using_postgres(): initialize_database()
@@ -992,4 +1166,12 @@ def _metrics(user_id: int | None = None):
         m["NFL accuracy"] = f"{accuracy}%"
         m["NFL record"] = f"{wins}-{losses}" + (f"-{pushes}" if pushes else "")
         m["NFL graded predictions"] = len(settled)
+    nba = nba_prediction_performance()
+    if nba["settled"]:
+        m["NBA record"] = f"{nba['wins']}-{nba['losses']}" + (
+            f"-{nba['pushes']}" if nba["pushes"] else ""
+        )
+    if nba["accuracy"] is not None:
+        m["NBA accuracy"] = f"{round(nba['accuracy']*100,1)}%"
+    m["NBA graded predictions"] = nba["settled"]
     return m

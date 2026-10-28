@@ -18,8 +18,5 @@ const backendApi = configuredApi || (isLocalRuntime ? 'http://127.0.0.1:8000' : 
 const nextConfig = {
   skipTrailingSlashRedirect: true,
   images: { unoptimized: true, remotePatterns: [{ protocol: 'https', hostname: 'a.espncdn.com' }] },
-  async rewrites() {
-    return [{ source: '/api/:path*', destination: `${backendApi}/api/:path*` }];
-  },
 };
 export default nextConfig;

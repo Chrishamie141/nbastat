@@ -6,7 +6,10 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 
-from .data import combine_logs, get_player_logs, opponent_specific_summary, season_summary
+from .data import (
+    combine_logs, get_player_logs, opponent_specific_summary, player_log_health,
+    season_summary,
+)
 from .features import TARGET_STATS, prepare_features
 from .season import active_nba_season
 
@@ -100,4 +103,8 @@ class NBAPlayerStatModel:
             "blended_prediction": blended,
             "model_error": {stat: round(value["mae"], 2) for stat, value in self.models.items()},
             "range": ranges,
+            "data_freshness": {
+                "regularSeason": player_log_health(self.regular_df),
+                "playoffs": player_log_health(self.playoff_df),
+            },
         }

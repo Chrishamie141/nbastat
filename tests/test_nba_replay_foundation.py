@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 import json
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,8 +10,12 @@ from fastapi.testclient import TestClient
 from backend.app.services.nba.cold_start import build_cold_start_features, build_player_cold_start_features
 from backend.app.services.nba.grading import grade_prediction
 from backend.app.services.nba.lifecycle import (
-    append_market_observation, foundation_status, freeze_prediction, settle_game, upsert_game,
+    append_market_observation, automation_status, foundation_status, freeze_prediction,
+    operational_settings, settle_game, update_operational_settings, upsert_game,
 )
+from backend.app.services.nba.automation import maybe_reconcile_recent_results, run_cycle
+from backend.app.services.nba.game_model import NBA_GAME_MODEL_VERSION
+from backend.app.services.nba.production import generate_winner_predictions, performance, prediction_history
 from backend.app.services.nba.model import NBA_MODEL_VERSION, NBAPlayerStatModel
 from backend.app.services.nba.replay import NBAReplayEngine
 from backend.app.services.nba.schedule import ScheduleIngestionError, fetch_schedule
@@ -65,6 +70,7 @@ def test_season_resolution_changes_at_july_boundary(monkeypatch):
 def test_schedule_is_batched_and_deduplicated():
     calls = []
     event = {"id": "1", "date": "2026-10-20T23:00:00Z",
+             "season": {"type": 2, "slug": "regular-season"},
              "status": {"type": {"state": "pre", "detail": "Scheduled"}},
              "competitions": [{"competitors": [
                  {"homeAway": "home", "team": {"abbreviation": "BOS"}},
@@ -79,6 +85,7 @@ def test_schedule_is_batched_and_deduplicated():
                           http_get=get)
     assert calls == ["202609", "202610"]
     assert len(rows) == 1 and rows[0]["season"] == "2026-27"
+    assert rows[0]["season_phase"] == "regular_season"
 
 
 def test_schedule_retries_failed_month_and_never_silently_drops_it():
@@ -202,6 +209,27 @@ def test_migration_keeps_nba_evidence_server_only_and_immutable():
     assert "validation_status" in extension
 
 
+def test_production_reconciliation_is_additive_guarded_and_repeatable():
+    sql = open(
+        "supabase/migrations/20261025083716_production_schema_reconciliation.sql",
+        encoding="utf-8",
+    ).read().lower()
+    assert "existing nba_games rows violate proposed constraints" in sql
+    assert "existing nba prediction rows violate proposed constraints" in sql
+    assert "add column if not exists season_phase" in sql
+    assert "create table if not exists public.nba_operational_settings" in sql
+    assert "create table if not exists public.nba_automation_runs" in sql
+    assert "nba_prediction_snapshots_immutable_update" in sql
+    assert "nba_prediction_snapshots_pregame" in sql
+    assert "validate constraint nba_settlements_status_check" in sql
+    assert "revoke all privileges on table public.%i from %i" in sql
+    assert "on conflict (model_version) do nothing" in sql
+    assert "\nupdate public." not in sql
+    assert "delete from" not in sql
+    assert "truncate " not in sql
+    assert "drop table" not in sql
+
+
 def test_offline_replay_command_writes_a_deterministic_result(tmp_path):
     dataset = tmp_path / "dataset"
     dataset.mkdir()
@@ -243,3 +271,237 @@ def test_nba_foundation_routes_are_not_public(nba_db, monkeypatch):
     client = TestClient(main.app)
     assert client.get("/api/internal/nba/foundation/status").status_code in {401, 403}
     assert client.post("/api/cron/nba-active-season").status_code == 401
+
+
+def test_nba_cron_accepts_only_configured_bearer_secret(monkeypatch):
+    from types import SimpleNamespace
+    from backend.app.api import nba_automation_cron as cron
+    from backend.app import main
+
+    monkeypatch.setenv("CRON_SECRET", "staging-cron-secret")
+    monkeypatch.delenv("NBA_AUTOMATION_SECRET", raising=False)
+    monkeypatch.setattr(cron, "operational_settings", lambda: {"enabled": True, "seasonOverride": None})
+    monkeypatch.setattr(cron, "active_nba_season", lambda _override=None: SimpleNamespace(code="2026-27"))
+    monkeypatch.setattr(cron, "run_cycle", lambda **_kwargs: {
+        "status": "SUCCEEDED", "season": "2026-27", "predictionsCreated": 0
+    })
+    client = TestClient(main.app)
+
+    assert client.get("/api/cron/nba-active-season").status_code == 401
+    assert client.get("/api/cron/nba-active-season", headers={"authorization": "Bearer wrong"}).status_code == 401
+    response = client.get(
+        "/api/cron/nba-active-season", headers={"authorization": "Bearer staging-cron-secret"}
+    )
+    assert response.status_code == 200
+    assert response.json()["enabled"] is True
+    assert response.json()["season"] == "2026-27"
+
+
+def test_nba_personnel_cron_is_separately_authenticated_and_disabled_by_default(monkeypatch):
+    from types import SimpleNamespace
+    from backend.app.api import nba_automation_cron as cron
+    from backend.app import main
+
+    monkeypatch.setenv("NBA_PERSONNEL_REFRESH_SECRET", "personnel-only-secret")
+    monkeypatch.delenv("NBA_PERSONNEL_REFRESH_ENABLED", raising=False)
+    monkeypatch.setattr(cron, "operational_settings", lambda: {"seasonOverride": None})
+    monkeypatch.setattr(cron, "active_nba_season", lambda _override=None: SimpleNamespace(code="2026-27"))
+    client = TestClient(main.app)
+
+    assert client.post("/api/cron/nba-personnel").status_code == 401
+    assert client.post(
+        "/api/cron/nba-personnel", headers={"authorization": "Bearer wrong"}
+    ).status_code == 401
+    response = client.post(
+        "/api/cron/nba-personnel",
+        headers={"authorization": "Bearer personnel-only-secret"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"status": "DISABLED", "season": "2026-27"}
+
+
+def test_nba_personnel_cron_runs_only_personnel_refresh(monkeypatch):
+    from types import SimpleNamespace
+    from backend.app.api import nba_automation_cron as cron
+    from backend.app import main
+
+    monkeypatch.setenv("NBA_PERSONNEL_REFRESH_SECRET", "personnel-only-secret")
+    monkeypatch.setenv("NBA_PERSONNEL_REFRESH_ENABLED", "true")
+    monkeypatch.setattr(cron, "operational_settings", lambda: {"seasonOverride": "2026-27"})
+    monkeypatch.setattr(cron, "active_nba_season", lambda _override=None: SimpleNamespace(code="2026-27"))
+    calls = []
+    monkeypatch.setattr(cron, "refresh_personnel", lambda **kwargs: calls.append(kwargs) or {
+        "status": "FRESH", "season": "2026-27", "teamsAttempted": 30,
+        "teamsSucceeded": 30, "playersStored": 518, "errors": [],
+    })
+    response = TestClient(main.app).post(
+        "/api/cron/nba-personnel",
+        headers={"authorization": "Bearer personnel-only-secret"},
+    )
+    assert response.status_code == 200
+    assert response.json()["teamsSucceeded"] == 30
+    assert calls == [{"season": "2026-27"}]
+
+
+def test_nba_personnel_cron_skips_overlapping_refresh(monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    from backend.app.api import nba_automation_cron as cron
+    from backend.app import main
+
+    @contextmanager
+    def already_running():
+        yield False
+
+    monkeypatch.setenv("NBA_PERSONNEL_REFRESH_SECRET", "personnel-only-secret")
+    monkeypatch.setenv("NBA_PERSONNEL_REFRESH_ENABLED", "true")
+    monkeypatch.setattr(cron, "operational_settings", lambda: {"seasonOverride": None})
+    monkeypatch.setattr(cron, "active_nba_season", lambda _override=None: SimpleNamespace(code="2026-27"))
+    monkeypatch.setattr(cron, "personnel_refresh_guard", already_running)
+    monkeypatch.setattr(
+        cron, "refresh_personnel",
+        lambda **_kwargs: pytest.fail("overlapping refresh must not execute"),
+    )
+
+    response = TestClient(main.app).post(
+        "/api/cron/nba-personnel",
+        headers={"authorization": "Bearer personnel-only-secret"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"status": "SKIPPED_OVERLAP", "season": "2026-27"}
+
+
+def test_owner_personnel_refresh_does_not_run_prediction_lifecycle(monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    from backend.app import main
+
+    @contextmanager
+    def acquired():
+        yield True
+
+    calls = []
+    monkeypatch.setattr(main, "nba_operational_settings", lambda: {"seasonOverride": None})
+    monkeypatch.setattr(main, "active_nba_season", lambda _override=None: SimpleNamespace(code="2026-27"))
+    monkeypatch.setattr(main, "personnel_refresh_guard", acquired)
+    monkeypatch.setattr(main, "refresh_personnel", lambda **kwargs: calls.append(kwargs) or {
+        "status": "FRESH", "season": "2026-27", "teamsAttempted": 30,
+        "teamsSucceeded": 30, "playersStored": 519, "errors": [],
+    })
+    monkeypatch.setattr(main, "start_operator_action", lambda *_args: "action-1")
+    monkeypatch.setattr(main, "finish_operator_action", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        main,
+        "run_nba_cycle",
+        lambda **_kwargs: pytest.fail("personnel refresh must not run predictions or settlement"),
+    )
+
+    result = main.internal_nba_personnel_refresh(user={"id": 1, "email": "owner@example.com"})
+
+    assert result["status"] == "FRESH"
+    assert result["teamsSucceeded"] == 30
+    assert calls == [{"season": "2026-27"}]
+
+
+def test_operational_cycle_generates_once_and_settles_final(nba_db):
+    scheduled = game("SCHEDULED", None, None) | {
+        "kickoff_time": "2026-10-25T23:00:00Z", "season_phase": "regular_season",
+    }
+    clock = datetime(2026, 10, 24, 12, tzinfo=timezone.utc)
+    generator = lambda *, season: generate_winner_predictions(season=season, at=clock)
+    personnel = lambda **_kwargs: {"status": "FRESH", "teamsAttempted": 30,
+                                   "teamsSucceeded": 30, "playersStored": 450, "errors": []}
+    first = run_cycle(season="2026-27", schedule_fetcher=lambda **_kwargs: [scheduled],
+                      prediction_generator=generator, personnel_refresher=personnel,
+                      trigger_source="test")
+    second = run_cycle(season="2026-27", schedule_fetcher=lambda **_kwargs: [scheduled],
+                       prediction_generator=generator, personnel_refresher=personnel,
+                       trigger_source="test")
+    assert first["predictionsCreated"] == 1
+    assert second["predictionsCreated"] == 0
+    assert second["predictionsAlreadyPresent"] == 1
+    rows = prediction_history(season="2026-27")
+    assert len(rows) == 1 and rows[0]["modelVersion"] == NBA_GAME_MODEL_VERSION
+    assert rows[0]["createdAt"] < rows[0]["kickoffTime"]
+    assert rows[0]["modelStatus"] == "RESEARCH_ONLY"
+    final = scheduled | {"status": "FINAL", "home_score": 110, "away_score": 100}
+    settled = run_cycle(season="2026-27", schedule_fetcher=lambda **_kwargs: [final],
+                        prediction_generator=generator, personnel_refresher=personnel,
+                        trigger_source="test")
+    assert settled["predictionsSettled"] == 1
+    assert performance(season="2026-27")["settled"] == 1
+    assert automation_status()["latestRun"]["status"] == "SUCCEEDED"
+
+
+def test_history_reconciliation_self_heals_only_past_unresolved_predictions(nba_db):
+    scheduled = game("SCHEDULED", None, None)
+    upsert_game(scheduled)
+    snapshot_id = freeze_prediction(prediction(model_version=NBA_GAME_MODEL_VERSION))
+    final = scheduled | {"status": "FINAL", "home_score": 110, "away_score": 100}
+    clock = datetime(2026, 10, 21, 12, tzinfo=timezone.utc)
+
+    first = maybe_reconcile_recent_results(
+        season="2026-27",
+        schedule_fetcher=lambda **_kwargs: [final],
+        at=clock,
+        minimum_interval_minutes=15,
+    )
+    second = maybe_reconcile_recent_results(
+        season="2026-27",
+        schedule_fetcher=lambda **_kwargs: pytest.fail("settled rows must not refetch"),
+        at=clock,
+        minimum_interval_minutes=15,
+    )
+
+    assert first["status"] == "SUCCEEDED"
+    assert first["predictionsSettled"] == 1
+    assert second == {"status": "CURRENT", "unresolvedPast": 0}
+    row = prediction_history(season="2026-27")[0]
+    assert row["id"] == snapshot_id
+    assert row["settlementStatus"] == "WIN"
+    assert row["actualOutcome"] == "BOS"
+
+
+def test_runtime_snapshot_triggers_prevent_retroactive_changes(nba_db):
+    upsert_game(game("SCHEDULED", None, None))
+    snapshot_id = freeze_prediction(prediction())
+    from backend.app.database import get_db_connection
+    with pytest.raises(sqlite3.IntegrityError, match="immutable"):
+        with get_db_connection() as connection:
+            connection.execute(
+                "UPDATE nba_prediction_snapshots SET selection='NYK' WHERE snapshot_id=?",
+                (snapshot_id,),
+            )
+
+
+def test_activation_override_is_persistent_and_validated(nba_db, monkeypatch):
+    monkeypatch.delenv("NBA_AUTOMATION_ENABLED", raising=False)
+    settings = update_operational_settings(enabled=False, season_override="2027-28", actor="test-admin")
+    assert settings == operational_settings()
+    assert settings["enabled"] is False
+    assert settings["seasonOverride"] == "2027-28"
+    assert settings["updatedBy"] == "test-admin"
+    with pytest.raises(ValueError):
+        update_operational_settings(enabled=True, season_override="bad-season", actor="test-admin")
+
+
+def test_nba_game_api_reads_exact_game_and_history(nba_db):
+    from backend.app import main
+    upsert_game(game("SCHEDULED", None, None))
+    freeze_prediction(prediction(model_version=NBA_GAME_MODEL_VERSION))
+    main.app.dependency_overrides[main.require_full_access] = lambda: {"id": 17}
+    try:
+        response = TestClient(main.app).get("/api/nba/games/espn-1?season=2026-27")
+        history = TestClient(main.app).get("/api/history?tab=NBA")
+    finally:
+        main.app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json()["prediction"]["modelVersion"] == NBA_GAME_MODEL_VERSION
+    assert history.status_code == 200
+    assert history.json()["items"][0]["sport"] == "NBA"
+
+
+def test_vercel_scheduler_registers_nba_cycle():
+    config = json.loads(open("vercel.json", encoding="utf-8").read())
+    jobs = {row["path"]: row["schedule"] for row in config["crons"]}
+    assert jobs["/api/cron/nba-active-season"] == "17 10 * * *"

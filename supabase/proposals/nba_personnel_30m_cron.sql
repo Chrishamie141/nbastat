@@ -1,0 +1,44 @@
+-- PROPOSAL ONLY. This file is intentionally outside supabase/migrations.
+-- It must not be executed until the founder separately approves the scheduler,
+-- the dedicated Vercel secret, and the matching Vault secret.
+--
+-- Required activation inputs:
+--   1. Vercel Production config: NBA_PERSONNEL_REFRESH_ENABLED=true
+--   2. Vercel Production secret: NBA_PERSONNEL_REFRESH_SECRET=<random value>
+--   3. Supabase Vault secret named nba_personnel_cron_bearer with the same value
+--   4. A deployed /api/cron/nba-personnel endpoint from the reviewed source
+--
+-- Proposed activation SQL (kept commented so repository tooling cannot schedule it):
+--
+-- select cron.schedule(
+--   'smartbets-nba-personnel-refresh-30m',
+--   '*/30 * * * *',
+--   $job$
+--   select net.http_post(
+--     url := 'https://smartbetsports-api.vercel.app/api/cron/nba-personnel',
+--     headers := jsonb_build_object(
+--       'Content-Type', 'application/json',
+--       'Authorization', 'Bearer ' || (
+--         select decrypted_secret
+--         from vault.decrypted_secrets
+--         where name = 'nba_personnel_cron_bearer'
+--       )
+--     ),
+--     body := '{}'::jsonb,
+--     timeout_milliseconds := 120000
+--   );
+--   $job$
+-- );
+--
+-- Verification after separately approved activation:
+-- select jobid, jobname, schedule, active
+-- from cron.job
+-- where jobname = 'smartbets-nba-personnel-refresh-30m';
+--
+-- select status_code, timed_out, error_msg, created
+-- from net._http_response
+-- order by created desc
+-- limit 10;
+--
+-- Rollback is independent of application rollback:
+-- select cron.unschedule('smartbets-nba-personnel-refresh-30m');

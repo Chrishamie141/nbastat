@@ -42,8 +42,8 @@ export function matchupResult(game) {
   return {status, final, live, available, awayScore, homeScore, actualWinner};
 }
 
-function TeamSide({abbreviation,name,label,probability,score,winner,reverse,size}) {
-  const team = {league: 'nfl', abbreviation, name: name || abbreviation};
+function TeamSide({abbreviation,name,label,probability,score,winner,reverse,size,league='nfl'}) {
+  const team = {league, abbreviation, name: name || abbreviation};
   return <div className={`flex min-w-0 items-center gap-3 ${reverse ? 'flex-row-reverse text-right' : ''}`}>
     <TeamLogo team={team} size={size}/>
     <div className="min-w-0">
@@ -59,6 +59,7 @@ function TeamSide({abbreviation,name,label,probability,score,winner,reverse,size
 }
 
 export default function NflMatchup({game,size=46,showProbabilities=true,showFinalScore=false,className=''}) {
+  const league = String(game?.league || 'nfl').toLowerCase();
   const result = matchupResult(game);
   const showScore = showFinalScore && (result.final || result.live);
   const probabilities = showProbabilities && !showScore ? matchupProbabilities(game) : null;
@@ -69,9 +70,9 @@ export default function NflMatchup({game,size=46,showProbabilities=true,showFina
       {result.final ? 'FINAL' : result.status}
     </p> : null}
     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-      <TeamSide abbreviation={game.away_team} name={game.away_name} label="Away" probability={probabilities?.away} score={showScore ? result.awayScore : null} winner={awayWinner} size={size}/>
+      <TeamSide abbreviation={game.away_team} name={game.away_name} label="Away" probability={probabilities?.away} score={showScore ? result.awayScore : null} winner={awayWinner} size={size} league={league}/>
       <span className="text-xs font-bold uppercase tracking-[.18em] text-slate-300">at</span>
-      <TeamSide abbreviation={game.home_team} name={game.home_name} label="Home" probability={probabilities?.home} score={showScore ? result.homeScore : null} winner={homeWinner} reverse size={size}/>
+      <TeamSide abbreviation={game.home_team} name={game.home_name} label="Home" probability={probabilities?.home} score={showScore ? result.homeScore : null} winner={homeWinner} reverse size={size} league={league}/>
     </div>
     {showFinalScore && result.final && !result.available
       ? <p className="mt-3 text-center text-sm font-semibold text-amber-100">Final score unavailable</p>

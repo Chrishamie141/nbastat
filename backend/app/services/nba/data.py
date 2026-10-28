@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import logging
+
 import pandas as pd
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.static import players
 
 from .season import active_nba_season
+logger = logging.getLogger(__name__)
 STAT_COLUMNS = ["PTS", "REB", "AST", "STL", "BLK", "MIN"]
 PLAYER_NAME_ALIASES = {
     "karl-anthony towns": ["Karl Anthony Towns"], "karl anthony towns": ["Karl-Anthony Towns"],
@@ -35,15 +39,40 @@ def find_player(player_name):
 
 
 def safe_player_log(player_id, season, season_type, timeout=30):
+    retrieved_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    error_code = None
     try:
         frame = playergamelog.PlayerGameLog(
             player_id=player_id, season=season, season_type_all_star=season_type, timeout=timeout,
         ).get_data_frames()[0]
-    except Exception:
+    except Exception as exc:
+        error_code = type(exc).__name__
+        logger.warning("nba_player_log_failed player_id=%s season=%s season_type=%s error=%s",
+                       player_id, season, season_type, error_code)
         frame = pd.DataFrame()
     if not frame.empty:
         frame["SEASON_TYPE"] = season_type
+    observed_at = None
+    if not frame.empty and "GAME_DATE" in frame:
+        parsed = pd.to_datetime(frame["GAME_DATE"], errors="coerce", utc=True).dropna()
+        if not parsed.empty:
+            observed_at = parsed.max().isoformat().replace("+00:00", "Z")
+    frame.attrs["source_health"] = {
+        "provider": "nba_stats", "status": "ERROR" if error_code else "FRESH" if not frame.empty else "MISSING",
+        "retrievedAt": retrieved_at, "dataObservedAt": observed_at,
+        "rowCount": int(len(frame)), "errorCode": error_code,
+        "missingMeansAvailable": False,
+    }
     return frame
+
+
+def player_log_health(frame):
+    """Return explicit provider health without changing the legacy DataFrame API."""
+    return dict(getattr(frame, "attrs", {}).get("source_health") or {
+        "provider": "nba_stats", "status": "MISSING", "retrievedAt": None,
+        "dataObservedAt": None, "rowCount": int(len(frame)) if frame is not None else 0,
+        "errorCode": "MISSING_SOURCE_METADATA", "missingMeansAvailable": False,
+    })
 
 
 def get_player_logs(player_name, season=None):
@@ -52,7 +81,11 @@ def get_player_logs(player_name, season=None):
     regular = safe_player_log(player["id"], season, "Regular Season")
     playoffs = safe_player_log(player["id"], season, "Playoffs")
     if regular.empty:
-        raise ValueError(f"No regular season data found for {player['full_name']} in {season}")
+        health = player_log_health(regular)
+        raise ValueError(
+            f"No verified regular season data found for {player['full_name']} in {season} "
+            f"(provider_status={health['status']}, error_code={health.get('errorCode') or 'none'})"
+        )
     return player, regular, playoffs
 
 

@@ -11,6 +11,8 @@ def test_database_health_opens_reads_and_reports_schema_without_secrets():
     assert result["readSucceeded"] is True
     assert result["status"] in {"healthy", "degraded"}
     assert result["latencyMs"] >= 0
+    assert result["stores"]["legacySqlite"]["status"] == "healthy"
+    assert result["stores"]["legacySqlite"]["requiredForRuntime"] is False
     assert "password" not in str(result).lower()
 
 
@@ -21,6 +23,38 @@ def test_readiness_endpoint_reports_real_dependencies():
     assert payload["database"]["readSucceeded"] is True
     assert payload["predictionStore"]["readableArtifacts"] > 0
     assert payload["gameStatusSource"]["liveProbePerformed"] is False
+
+
+def test_postgres_readiness_checks_current_league_stores_not_legacy_tables(monkeypatch, tmp_path):
+    from contextlib import contextmanager
+    from backend.app.services import readiness_service as readiness
+
+    class Connection:
+        def execute(self, _query, _params=None):
+            return self
+
+        def fetchone(self):
+            return {"ok": 1}
+
+    @contextmanager
+    def connection():
+        yield Connection()
+
+    current = set(readiness.POSTGRES_CORE_TABLES + readiness.POSTGRES_NFL_TABLES + readiness.POSTGRES_NBA_TABLES)
+    monkeypatch.setattr(readiness, "using_postgres", lambda: True)
+    monkeypatch.setattr(readiness, "get_db_connection", connection)
+    monkeypatch.setattr(readiness, "table_exists", lambda _connection, table: table in current)
+    monkeypatch.setattr(readiness, "BASE_DIR", tmp_path)
+    monkeypatch.setenv("SMARTBETS_TEST_SQLITE_PATH", str(tmp_path / "missing.db"))
+
+    result = readiness.database_health()
+
+    assert result["status"] == "healthy"
+    assert "predictions" not in result["requiredTables"]
+    assert "graded_bets" not in result["requiredTables"]
+    assert result["stores"]["nflPostgres"]["status"] == "healthy"
+    assert result["stores"]["nbaPostgres"]["status"] == "healthy"
+    assert result["stores"]["legacySqlite"]["status"] == "not_present"
 
 
 def test_search_handles_team_abbreviation_full_name_case_and_partial_player():

@@ -207,9 +207,9 @@ def initialize_auth_database():
             # These tables are server-only.  RLS without browser policies plus
             # explicit privilege revocation keeps password-reset and bootstrap
             # state unreachable through Supabase's exposed Data API.
-            for table in ("password_reset_tokens", "auth_bootstrap"):
+            for table in ("users", "password_reset_tokens", "auth_bootstrap"):
                 connection.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-                connection.execute(f"REVOKE ALL ON TABLE {table} FROM anon, authenticated")
+                connection.execute(f"REVOKE ALL ON TABLE {table} FROM anon, authenticated, service_role")
 
 
 def initialize_billing_database():
@@ -238,3 +238,8 @@ def initialize_billing_database():
                 processed_at TEXT NOT NULL
             )
         """)
+        if using_postgres():
+            connection.execute("ALTER TABLE stripe_webhook_events ENABLE ROW LEVEL SECURITY")
+            connection.execute(
+                "REVOKE ALL ON TABLE stripe_webhook_events FROM anon, authenticated, service_role"
+            )

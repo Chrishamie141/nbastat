@@ -40,6 +40,13 @@ def initialize_parlay_history_database() -> None:
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_parlay_history_user_created ON parlay_history(user_id, created_at)"
         )
+        if using_postgres():
+            # The web API enforces account ownership and uses a dedicated direct
+            # database role. This table is not a browser-facing Supabase API.
+            connection.execute("ALTER TABLE parlay_history ENABLE ROW LEVEL SECURITY")
+            connection.execute(
+                "REVOKE ALL ON TABLE parlay_history FROM anon, authenticated, service_role"
+            )
 
 
 def _legs(parlay_result) -> list[dict]:

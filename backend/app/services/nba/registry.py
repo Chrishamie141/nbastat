@@ -7,6 +7,8 @@ import json
 from backend.app.database import get_db_connection, using_postgres
 
 NBA_BASELINE_VERSION = "nba-player-stat-v1"
+NBA_GAME_BASELINE_VERSION = "nba-game-elo-baseline-v1"
+NBA_GAME_RESEARCH_CANDIDATE_VERSION = "nba-game-logit-form-rest-research-v2"
 MIN_VALIDATION_PREDICTIONS = 500
 
 
@@ -22,14 +24,20 @@ def initialize_registry() -> None:
             sample_size INTEGER NOT NULL DEFAULT 0, metrics_json TEXT NOT NULL DEFAULT '{}',
             production_eligible INTEGER NOT NULL DEFAULT 0,
             promotion_blockers_json TEXT NOT NULL DEFAULT '[]', notes TEXT)""")
-        connection.execute("""INSERT INTO nba_model_registry
-            (model_version,status,created_at,sample_size,metrics_json,production_eligible,
-             promotion_blockers_json,notes) VALUES (?,?,?,?,?,?,?,?)
-            ON CONFLICT(model_version) DO NOTHING""",
-            (NBA_BASELINE_VERSION, "RESEARCH_ONLY", _now(), 0, "{}", 0,
-             json.dumps(["chronological_validation_required", "minimum_sample_not_met",
-                         "calibration_not_established", "profitability_not_established"]),
-             "Infrastructure baseline; not an approved production model."))
+        for version, notes in (
+            (NBA_BASELINE_VERSION, "Player-stat infrastructure baseline; not an approved production model."),
+            (NBA_GAME_BASELINE_VERSION, "Game-winner Elo baseline; research-only until independently validated."),
+            (NBA_GAME_RESEARCH_CANDIDATE_VERSION,
+             "Offline form/rest candidate; retrospective evidence only and not wired to prediction generation."),
+        ):
+            connection.execute("""INSERT INTO nba_model_registry
+                (model_version,status,created_at,sample_size,metrics_json,production_eligible,
+                 promotion_blockers_json,notes) VALUES (?,?,?,?,?,?,?,?)
+                ON CONFLICT(model_version) DO NOTHING""",
+                (version, "RESEARCH_ONLY", _now(), 0, "{}", 0,
+                 json.dumps(["chronological_validation_required", "minimum_sample_not_met",
+                             "calibration_not_established", "profitability_not_established",
+                             "manual_promotion_review_required"]), notes))
         if using_postgres():
             connection.execute("ALTER TABLE nba_model_registry ENABLE ROW LEVEL SECURITY")
             connection.execute("REVOKE ALL ON TABLE nba_model_registry FROM anon, authenticated")

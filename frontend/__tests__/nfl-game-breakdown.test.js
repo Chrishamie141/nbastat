@@ -17,6 +17,8 @@ test('NFL game cards use a whole-card canonical game ID link', () => {
 test('dashboard provides lifecycle filters and server-side manual refresh', () => {
   const source = read('app/dashboard/page.jsx');
   for (const label of ['All', 'Upcoming', 'Live', 'Final']) assert.ok(source.includes(label));
+  assert.match(source, /League <select value=\{league\}/);
+  assert.match(source, /Partial schedule availability/);
   assert.match(source, /api\.refreshGames\(\)/);
   assert.match(source, /No change/);
   assert.match(source, /Refresh failed/);
@@ -27,7 +29,8 @@ test('game detail separates pregame context, actual result, and final comparison
   assert.match(source, /PREGAME CONTEXT/);
   assert.match(source, /ACTUAL GAME RESULT/);
   assert.match(source, /Prediction versus actual/);
-  assert.match(source, /api\.nfl\.refreshGame/);
+  assert.match(source, /api\.nfl\.game/);
+  assert.doesNotMatch(source, /Refresh game/);
   assert.match(source, /sources\.paidProviderContacted/);
 });
 
@@ -37,8 +40,10 @@ test('canonical NFL route includes loading and error boundaries', () => {
   }
 });
 
-test('game UI labels prior-season context and client requests are bounded', () => {
-  assert.match(read('components/games/NflGameBreakdown.jsx'), /game results are never backfilled/);
+test('game UI keeps customer context concise and client requests are bounded', () => {
+  const source = read('components/games/NflGameBreakdown.jsx');
+  assert.doesNotMatch(source, /game results are never backfilled|Last successful refresh|Data freshness/);
+  assert.match(source, /teamContext\.source/);
   assert.match(read('lib/api.js'), /createRequest\(API\)/);
   assert.match(read('lib/request.mjs'), /AbortController/);
   assert.match(read('lib/request.mjs'), /error\?\.message/);

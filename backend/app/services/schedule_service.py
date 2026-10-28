@@ -1,16 +1,26 @@
 from __future__ import annotations
-import time, os, requests, threading, logging
-from datetime import datetime, timezone, timedelta
+
+import logging
+import os
+import threading
+import time
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-from backend.app.schemas.common import UpcomingGame, TeamSummary
+
+import requests
+
+from backend.app.schemas.common import TeamSummary, UpcomingGame
+from backend.app.services.game_status_service import (
+    lifecycle_cache_ttl,
+    normalize_game_status,
+)
 from backend.app.services.game_watchability_service import score_game
 from backend.app.services.team_metadata import team_by_abbreviation
-from backend.app.services.game_status_service import normalize_game_status
-from backend.app.services.game_status_service import lifecycle_cache_ttl
 
 _CACHE={}
 _REFRESH_LOCK=threading.Lock()
 _LAST_MANUAL_REFRESH=0.0
+_LAST_PROVIDER_ERRORS={}
 logger=logging.getLogger(__name__)
 ESPN={'nfl':'football/nfl','nba':'basketball/nba'}
 
@@ -45,9 +55,43 @@ def _team(comp, league):
     name=t.get('displayName') or t.get('name') or abbr
     return TeamSummary(id=str(t.get('id') or abbr.lower()), league=league, name=name, city=None, nickname=None, abbreviation=abbr, logoUrl=(logos[0].get('href') if logos else None), record=record)
 
+def _month_keys(start, end):
+    year, month = start.year, start.month
+    while (year, month) <= (end.year, end.month):
+        yield f"{year:04d}{month:02d}"
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+
 def _fetch_espn(league, start, end):
-    dates=f"{start:%Y%m%d}-{end:%Y%m%d}"; url=f"https://site.api.espn.com/apis/site/v2/sports/{ESPN[league]}/scoreboard?dates={dates}&limit=100"
-    r=requests.get(url,timeout=8); r.raise_for_status(); return r.json().get('events') or []
+    """Fetch ESPN schedules using its supported monthly scoreboard window."""
+    url=f"https://site.api.espn.com/apis/site/v2/sports/{ESPN[league]}/scoreboard"
+    events={}
+    start_date, end_date = start.date(), end.date()
+    for month in _month_keys(start, end):
+        r=requests.get(url,params={'dates':month,'limit':1000},timeout=8)
+        r.raise_for_status()
+        for event in r.json().get('events') or []:
+            try:
+                event_date=datetime.fromisoformat(str(event.get('date')).replace('Z','+00:00')).date()
+            except (TypeError, ValueError):
+                logger.warning('schedule_event_invalid_date league=%s event_id=%s', league, event.get('id'))
+                continue
+            if start_date <= event_date <= end_date:
+                events[str(event.get('id'))]=event
+    return list(events.values())
+
+def provider_health_snapshot():
+    """Return bounded, non-sensitive provider failures from the last fetch."""
+    return {'errors': dict(_LAST_PROVIDER_ERRORS)}
+
+def _limit_fairly(games, leagues, limit):
+    """Avoid letting the first league exhaust a shared dashboard limit."""
+    ordered={league:sorted((game for game in games if game.league==league),key=lambda game:game.startTimeUtc) for league in leagues}
+    selected=[]
+    while len(selected)<limit and any(ordered.values()):
+        for league in leagues:
+            if ordered[league] and len(selected)<limit:
+                selected.append(ordered[league].pop(0))
+    return sorted(selected,key=lambda game:game.startTimeUtc)
 
 def _score(competitor):
     value=competitor.get('score')
@@ -56,14 +100,18 @@ def _score(competitor):
     except (TypeError, ValueError): return None
 
 def upcoming_games(leagues, limit=10, start=None, end=None, include_completed=False):
+    global _LAST_PROVIDER_ERRORS
     now=datetime.now(timezone.utc); start=start or now; end=end or now+timedelta(days=int(os.getenv('SCHEDULE_LOOKAHEAD_DAYS','30')))
     key=(tuple(sorted(leagues)), limit, start.date().isoformat(), end.date().isoformat(), include_completed); cached=_CACHE.get(key)
     if cached and cached['exp']>time.time(): return cached['data']
-    games=[]; provider='espn_scoreboard'; successful_fetches=0
+    games=[]; provider='espn_scoreboard'; successful_fetches=0; provider_errors={}
     for lg in leagues:
         try:
             events=_fetch_espn(lg,start,end); successful_fetches+=1
-        except Exception: continue
+        except requests.RequestException as exc:
+            provider_errors[lg]=type(exc).__name__
+            logger.warning('schedule_provider_failed league=%s error=%s',lg,type(exc).__name__)
+            continue
         for ev in events:
             comp=(ev.get('competitions') or [{}])[0]; comps=comp.get('competitors') or []
             if len(comps)<2: continue
@@ -78,13 +126,17 @@ def upcoming_games(leagues, limit=10, start=None, end=None, include_completed=Fa
             phase=_provider_phase(phase,lg,dt)
             week_number=week.get('number') if isinstance(week,dict) else week
             address=(comp.get('venue') or {}).get('address') or {}
-            d={'id':str(ev.get('id')), 'league':lg, 'seasonPhase':phase, 'season':season.get('year'), 'week':week_number, 'phaseWeekKey':f"{season.get('year') or dt.year}:{phase}:w{week_number or 0}", 'awayTeam':_team(away, lg), 'homeTeam':_team(home, lg), 'startTimeUtc':dt, 'status':status, 'statusDetail':status_type.get('detail') or status_type.get('shortDetail'), 'statusUpdatedAt':datetime.now(timezone.utc), 'awayScore':_score(away), 'homeScore':_score(home), 'venue':(comp.get('venue') or {}).get('fullName'), 'city':', '.join(filter(None,[address.get('city'),address.get('state')])), 'broadcast':broadcasts, 'nationalBroadcast':bool(broadcasts), 'dataProvider':provider, 'dataMode':'live'}
+            away_score=_score(away) if status in {'live','halftime','final','final-OT'} else None
+            home_score=_score(home) if status in {'live','halftime','final','final-OT'} else None
+            d={'id':str(ev.get('id')), 'league':lg, 'seasonPhase':phase, 'season':season.get('year'), 'week':week_number, 'phaseWeekKey':f"{season.get('year') or dt.year}:{phase}:w{week_number or 0}", 'awayTeam':_team(away, lg), 'homeTeam':_team(home, lg), 'startTimeUtc':dt, 'status':status, 'statusDetail':status_type.get('detail') or status_type.get('shortDetail'), 'statusUpdatedAt':datetime.now(timezone.utc), 'awayScore':away_score, 'homeScore':home_score, 'venue':(comp.get('venue') or {}).get('fullName'), 'city':', '.join(filter(None,[address.get('city'),address.get('state')])), 'broadcast':broadcasts, 'nationalBroadcast':bool(broadcasts), 'dataProvider':provider, 'dataMode':'live'}
             if status in {'final','final-OT'} and (d['awayScore'] is None or d['homeScore'] is None):
                 logger.warning('final_game_score_missing league=%s game_id=%s provider=%s', lg, d['id'], provider)
             d.update(score_game(d)); games.append(UpcomingGame(**d))
     if leagues and not successful_fetches:
+        _LAST_PROVIDER_ERRORS=provider_errors
         raise requests.RequestException('All configured schedule providers failed.')
-    games=sorted(games,key=lambda g:g.startTimeUtc)[:limit]
+    _LAST_PROVIDER_ERRORS=provider_errors
+    games=_limit_fairly(games, list(dict.fromkeys(leagues)), limit)
     ttl=min((lifecycle_cache_ttl(game.status,game.startTimeUtc,now,stats_complete=(game.status not in {'final','final-OT'} or now-game.startTimeUtc>=timedelta(hours=24))) for game in games),default=300)
     _CACHE[key]={'data':games,'exp':time.time()+ttl}; return games
 

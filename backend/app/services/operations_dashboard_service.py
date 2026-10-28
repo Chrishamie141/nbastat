@@ -16,6 +16,9 @@ from backend.app.services import nfl_server_automation
 from backend.app.services.operator_action_service import recent as recent_actions
 from backend.app.services.readiness_service import database_health, prediction_store_health
 from backend.app.services.nfl_product_service import nfl_season_year, planning_week_context, _schedule
+from backend.app.services.nba.lifecycle import foundation_status as nba_foundation_status
+from backend.app.services.nba.production import games_board as nba_games_board, performance as nba_performance
+from backend.app.services.nba.season import active_nba_season
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_WEEK1_DB = ROOT / "backtesting" / "market_capture" / "nfl_2026_reg1_v1.db"
@@ -238,7 +241,7 @@ def _active_nfl_week(at: datetime, selected_week: int | None = None) -> dict:
         if status == "FINAL" and prediction and prediction.get("settlement_status") == "PENDING":
             warnings.append("Final game is awaiting idempotent prediction settlement.")
         games.append({
-            "id": canonical_id, "awayTeam": source.get("away_team"), "homeTeam": source.get("home_team"),
+            "id": canonical_id, "league": "NFL", "awayTeam": source.get("away_team"), "homeTeam": source.get("home_team"),
             "kickoff": source.get("kickoff_time"), "season": season, "seasonType": season_type, "week": week,
             "status": status, "awayScore": (final or {}).get("away_score", source.get("away_score")),
             "homeScore": (final or {}).get("home_score", source.get("home_score")),
@@ -268,6 +271,102 @@ def _active_nfl_week(at: datetime, selected_week: int | None = None) -> dict:
         "modelVersion": next((row.get("model_version") for row in histories.values()), None), "events": [],
         "context": context,
     }
+
+
+def _nba_operations(at: datetime) -> dict:
+    """Build NBA operational state from the durable lifecycle tables."""
+    season = active_nba_season().code
+    foundation = nba_foundation_status(season)
+    board = nba_games_board(season=season, limit=500)
+    performance = nba_performance(season=season)
+    shadow = performance.get("shadowComparison") or {}
+    window_start, window_end = at - timedelta(days=7), at + timedelta(days=14)
+    games, issues = [], []
+    for row in board["items"]:
+        kickoff = datetime.fromisoformat(str(row["kickoffTime"]).replace("Z", "+00:00"))
+        if kickoff.tzinfo is None:
+            kickoff = kickoff.replace(tzinfo=timezone.utc)
+        if not window_start <= kickoff.astimezone(timezone.utc) <= window_end:
+            continue
+        prediction = row.get("prediction")
+        status = str(row.get("status") or "SCHEDULED").upper()
+        settlement = (prediction or {}).get("settlementStatus")
+        warnings = []
+        if status == "SCHEDULED" and not prediction:
+            warnings.append("Research prediction is missing for this synchronized pregame.")
+        if status == "FINAL" and prediction and settlement == "UNRESOLVED":
+            warnings.append("Final game is awaiting idempotent prediction settlement.")
+        if status == "FINAL" and (row.get("homeScore") is None or row.get("awayScore") is None):
+            warnings.append("Final score is missing from the verified provider record.")
+        for warning in warnings:
+            issues.append({"severity": "WARNING", "category": "PREDICTION" if "prediction" in warning.casefold() else "GAME_STATUS",
+                           "league": "NBA",
+                           "entityId": row["gameId"], "summary": warning, "source": "nba_lifecycle",
+                           "detectedAt": at.isoformat(), "lastAttemptAt": row.get("dataTimestamp"),
+                           "recommendedAction": "Retry NBA operational cycle", "action": "NBA_RETRY"})
+        games.append({
+            "id": row["gameId"], "league": "NBA", "awayTeam": row["awayTeam"], "homeTeam": row["homeTeam"],
+            "kickoff": row["kickoffTime"], "season": season, "seasonType": row.get("seasonPhase"), "week": None,
+            "status": status, "awayScore": row.get("awayScore"), "homeScore": row.get("homeScore"),
+            "predictionStatus": (settlement if settlement not in {None, "UNRESOLVED"} else "READY" if prediction else "MISSING"),
+            "statsStatus": "READY" if status == "FINAL" and row.get("homeScore") is not None and row.get("awayScore") is not None else "PENDING",
+            "lastRefresh": row.get("dataTimestamp"), "freshness": "STALE" if warnings else "CURRENT", "warnings": warnings,
+            "prediction": ({"winner": prediction.get("predictedWinner"), "probability": prediction.get("modelProbability"),
+                            "modelVersion": prediction.get("modelVersion"), "modelStatus": prediction.get("modelStatus"),
+                            "generatedAt": prediction.get("createdAt"), "artifactHash": prediction.get("id")}
+                           if prediction else None), "grade": settlement,
+        })
+    automation = foundation.get("automation") or {}
+    personnel = foundation.get("personnel") or {}
+    latest = automation.get("latestRun") or {}
+    settings = automation.get("settings") or {}
+    if settings.get("enabled") and not automation.get("configured"):
+        issues.append({"severity": "WARNING", "category": "AUTOMATION", "entityId": "nba-scheduler-config",
+                       "league": "NBA", "summary": "NBA automation is enabled but no scheduler credential is configured.",
+                       "source": "environment", "detectedAt": at.isoformat(), "lastAttemptAt": None,
+                       "recommendedAction": "Configure the existing cron credential before deployment", "action": None})
+    if settings.get("enabled") and not board["items"]:
+        issues.append({"severity": "WARNING", "category": "DATA", "entityId": "nba-schedule",
+                       "league": "NBA", "summary": "No NBA schedule has been synchronized for the active season.",
+                       "source": "nba_games", "detectedAt": at.isoformat(), "lastAttemptAt": latest.get("completed_at"),
+                       "recommendedAction": "Run the NBA operational cycle", "action": "NBA_RETRY"})
+    if latest.get("status") == "FAILED":
+        issues.append({"severity": "CRITICAL", "category": "AUTOMATION", "entityId": "nba-scheduler", "league": "NBA",
+                       "summary": "The latest NBA automation cycle failed.", "source": "nba_automation_runs",
+                       "detectedAt": at.isoformat(), "lastAttemptAt": latest.get("completed_at") or latest.get("started_at"),
+                       "recommendedAction": "Retry NBA operational cycle", "action": "NBA_RETRY"})
+    elif automation.get("stale"):
+        issues.append({"severity": "CRITICAL", "category": "AUTOMATION", "entityId": "nba-scheduler-stale", "league": "NBA",
+                       "summary": "The NBA daily automation has not completed inside the expected 27-hour window.",
+                       "source": "nba_automation_runs", "detectedAt": at.isoformat(),
+                       "lastAttemptAt": latest.get("completed_at") or latest.get("started_at"),
+                       "recommendedAction": "Inspect the Vercel cron invocation and retry the NBA cycle", "action": "NBA_RETRY"})
+    for kind, label in (("roster", "roster"), ("availability", "injury/availability")):
+        health = personnel.get(kind) or {}
+        state = str(health.get("status") or "MISSING").upper()
+        if state != "FRESH":
+            issues.append({
+                "severity": "WARNING" if state in {"STALE", "MISSING"} else "CRITICAL",
+                "category": "DATA", "entityId": f"nba-{kind}-freshness", "league": "NBA",
+                "summary": f"NBA {label} evidence is {state.lower()}; missing information is not treated as player availability.",
+                "source": "nba_data_source_status", "detectedAt": at.isoformat(),
+                "lastAttemptAt": max((item.get("lastAttemptAt") for item in health.get("items", [])
+                                      if item.get("lastAttemptAt")), default=None),
+                "recommendedAction": "Refresh NBA personnel data", "action": "NBA_PERSONNEL_RETRY",
+            })
+    pending = sum(game["predictionStatus"] == "READY" and game["status"] == "FINAL" for game in games)
+    return {"season": season, "games": games, "issues": issues, "foundation": foundation,
+            "performance": performance, "automation": automation, "personnel": personnel,
+            "summary": {"gamesTotal": len(games), "predictionsReady": sum(bool(game["prediction"]) for game in games),
+                        "finalResults": sum(game["status"] == "FINAL" for game in games),
+                        "pendingSettlements": pending, "failedRuns": automation.get("failedRuns", 0)},
+            "modelOperations": {"productionModel": None, "researchModel": "nba-game-elo-baseline-v1",
+                                "researchStatus": "RESEARCH_ONLY", "productionReady": False,
+                                "lastRun": latest.get("completed_at"),
+                                "predictionsGenerated": (foundation.get("predictionModels") or {}).get("nba-game-elo-baseline-v1", 0),
+                                "missingPredictions": sum(game["predictionStatus"] == "MISSING" for game in games),
+                                "failedPredictions": 0,
+                                "shadowCandidate": shadow}}
 
 
 def _worker(at: datetime) -> dict:
@@ -349,8 +448,11 @@ def command_center(clock: Callable[[], datetime] = _now, selected_week: int | No
     week_loader = (lambda: _week1(at)) if (os.getenv("WEEK1_EXPERIMENT_DB") or "").strip() else (lambda: _active_nfl_week(at, selected_week))
     social_panel, week_panel = _safe_panel(lambda: _social(at)), _safe_panel(week_loader)
     worker_panel, actions_panel = _safe_panel(lambda: _worker(at)), _safe_panel(recent_actions)
+    nba_panel = _safe_panel(lambda: _nba_operations(at))
     week, database = week_panel["data"] or _fallback(social_panel), db_panel.get("data") or {}
-    issues = list(week.get("issues") or [])
+    nfl_games = [{**game, "league": game.get("league") or "NFL"} for game in (week.get("games") or [])]
+    nba = nba_panel.get("data") or {"games": [], "issues": [], "summary": {}, "modelOperations": {}, "automation": {}}
+    issues = list(week.get("issues") or []) + list(nba.get("issues") or [])
     if db_panel["status"] != "HEALTHY" or database.get("status") == "unhealthy":
         issues.append({"severity": "CRITICAL", "category": "DATABASE", "entityId": "primary",
                        "summary": "Primary database connection or schema check failed.", "source": "database_health",
@@ -367,6 +469,11 @@ def command_center(clock: Callable[[], datetime] = _now, selected_week: int | No
                        "ownerSummary": "Some live game data is not updating yet.",
                        "lastAttemptAt": at.isoformat(), "recommendedAction": "Refresh game data",
                        "action": "RETRY_PANEL"})
+    if nba_panel["status"] != "HEALTHY":
+        issues.append({"severity": "WARNING", "category": "DATA", "entityId": "nba-operations", "league": "NBA",
+                       "summary": nba_panel["error"]["message"], "source": "nba_lifecycle", "detectedAt": at.isoformat(),
+                       "ownerSummary": "NBA operational data is temporarily unavailable.", "lastAttemptAt": at.isoformat(),
+                       "recommendedAction": "Retry NBA status", "action": "NBA_RETRY"})
     social = social_panel.get("data") or {}
     social_public = {key: value for key, value in social.items() if key != "verifiedAggregate"}
     checkpoint_state = week.get("checkpoints") or {}
@@ -411,7 +518,7 @@ def command_center(clock: Callable[[], datetime] = _now, selected_week: int | No
     required = {"scheduleLoaded", "databaseHealthy", "week1SlateAvailable", "predictionsComplete", "criticalOwnerErrors"}
     readiness = "NOT_READY" if any(checks[k] == "FAIL" for k in required) else (
         "DEGRADED" if any(v in {"WARN", "FAIL", "UNKNOWN"} for v in checks.values()) else "READY")
-    games = week.get("games") or []
+    games = nfl_games + list(nba.get("games") or [])
     ready_games = sum(g["predictionStatus"] in {"READY", "GRADED", "WON", "LOST", "PUSH", "VOID"} and not g["warnings"] for g in games)
     owner_checks = {"scheduleLoaded": checks["scheduleLoaded"], "databaseHealthy": checks["databaseHealthy"],
                     "gameIdentitiesValid": checks["gameIdentitiesValid"], "predictionsComplete": checks["predictionsComplete"],
@@ -424,9 +531,11 @@ def command_center(clock: Callable[[], datetime] = _now, selected_week: int | No
         "availableSports": ["ALL", "NFL", "NBA"], "overallStatus": readiness,
         "systemReadiness": {"status": readiness, "checks": owner_checks},
         "week1Readiness": {"status": readiness, "checks": checks},
-        "summary": {"gamesReady": ready_games if games else week.get("scheduledGames", 0), "gamesTotal": week.get("scheduledGames", 0),
-                    "predictionsReady": week.get("predictions", 0), "predictionsTotal": week.get("scheduledGames", 0),
-                    "finalResults": week.get("finals", 0), "needsAttention": sum(r["severity"] in {"WARNING", "CRITICAL"} for r in issues),
+        "summary": {"gamesReady": ready_games if games else week.get("scheduledGames", 0),
+                    "gamesTotal": len(games) if games else week.get("scheduledGames", 0)+(nba.get("summary") or {}).get("gamesTotal",0),
+                    "predictionsReady": week.get("predictions", 0)+(nba.get("summary") or {}).get("predictionsReady",0),
+                    "predictionsTotal": len(games) if games else week.get("scheduledGames", 0)+(nba.get("summary") or {}).get("gamesTotal",0),
+                    "finalResults": week.get("finals", 0)+(nba.get("summary") or {}).get("finalResults",0), "needsAttention": sum(r["severity"] in {"WARNING", "CRITICAL"} for r in issues),
                     "databaseHealth": database.get("status", "unavailable").upper(),
                     "providerHealth": week.get("provider", {}).get("status", "UNKNOWN")},
         "issues": sorted(issues, key=lambda r: {"CRITICAL": 0, "WARNING": 1, "INFO": 2}.get(r["severity"], 3)), "games": games,
@@ -437,6 +546,11 @@ def command_center(clock: Callable[[], datetime] = _now, selected_week: int | No
                             "missingPredictions": max(0, week.get("scheduledGames", 0) - week.get("predictions", 0)),
                             "failedPredictions": week.get("failedPredictions", 0), "calibrationStatus": "NOT_APPLICABLE",
                             "manifestHash": week.get("manifestHash"), "artifactHash": week.get("predictionHash")},
+        "modelOperationsByLeague": {"NFL": {"productionModel": week.get("modelVersion"), "researchStatus": "PRODUCTION_FROZEN",
+                                                   "lastRun": week.get("latestPredictionRun"), "predictionsGenerated": week.get("predictions",0),
+                                                   "missingPredictions": max(0,week.get("scheduledGames",0)-week.get("predictions",0)),
+                                                   "failedPredictions": week.get("failedPredictions",0)},
+                                      "NBA": nba.get("modelOperations") or {}},
         "dataHealth": {"database": database, "predictionStore": prediction_panel,
                        "scheduleStore": {"status": "HEALTHY" if week.get("scheduledGames") else "UNAVAILABLE", "gameCount": week.get("scheduledGames", 0)},
                        "gameStatusService": {"status": "HEALTHY", "provider": "ESPN"},
@@ -445,10 +559,16 @@ def command_center(clock: Callable[[], datetime] = _now, selected_week: int | No
                        "unresolvedJoins": sum(any("identity" in warning.casefold() for warning in game.get("warnings", [])) for game in games),
                        "nextCheckpoint": (week.get("checkpoints") or {}).get("next"),
                        "latestFinalIngested": week.get("latestFinalIngested"),
-                       "lastSuccessfulRefresh": max([v for v in [week.get("latestFinalIngested"), social.get("latestSourceAt")] if v], default=None)},
+                       "lastSuccessfulRefresh": max([v for v in [week.get("latestFinalIngested"), social.get("latestSourceAt"),
+                                                                  ((nba.get("automation") or {}).get("latestRun") or {}).get("completed_at")] if v], default=None),
+                       "nba": {"status": nba_panel["status"], "games": (nba.get("summary") or {}).get("gamesTotal",0),
+                               "predictions": (nba.get("summary") or {}).get("predictionsReady",0),
+                               "finals": (nba.get("summary") or {}).get("finalResults",0)}},
         "automation": social_public, "actionHistory": actions_panel.get("data") or [],
         "panels": {"week1": week_panel, "database": db_panel, "predictionStore": prediction_panel,
-                   "automation": social_panel, "worker": worker_panel, "actionHistory": actions_panel},
+                    "automation": social_panel, "worker": worker_panel, "nba": nba_panel, "actionHistory": actions_panel},
+        "leagueOperations": {"NFL": {"games": nfl_games, "modelOperations": {"productionModel": week.get("modelVersion")},
+                                      "automation": worker_panel.get("data")}, "NBA": nba},
         "experiments": {"regular": {"season": week.get("season"), "week": week.get("week"), "scheduled": week.get("scheduledGames"),
                                       "predictions": week.get("predictions"), "graded": week.get("graded"),
                                       "winner_record": {"WIN": 0, "LOSS": 0, "PUSH": 0}},

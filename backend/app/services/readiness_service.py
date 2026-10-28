@@ -2,38 +2,122 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import sqlite3
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from backend.app.database import database_path, get_db_connection, table_exists, using_postgres
+from database_safety import isolated_tests
 
 logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parents[3]
-REQUIRED_TABLES = ("users", "predictions", "graded_bets", "parlay_history")
+POSTGRES_CORE_TABLES = ("users", "parlay_history")
+POSTGRES_NFL_TABLES = (
+    "nfl_automation_events", "nfl_automation_state", "nfl_game_predictions",
+    "nfl_game_results", "nfl_game_schedule_state", "nfl_prediction_history",
+)
+POSTGRES_NBA_TABLES = (
+    "nba_automation_runs", "nba_games", "nba_model_registry",
+    "nba_operational_settings", "nba_prediction_snapshots", "nba_settlements",
+)
+SQLITE_APPLICATION_TABLES = ("users", "parlay_history")
+LEGACY_SQLITE_TABLES = ("predictions", "bet_recommendations", "graded_bets", "parlay_history")
 
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def _store_status(required: tuple[str, ...], missing: list[str], *, engine: str,
+                  purpose: str, required_for_runtime: bool = True) -> dict[str, Any]:
+    return {
+        "status": "healthy" if not missing else "degraded",
+        "engine": engine,
+        "purpose": purpose,
+        "requiredForRuntime": required_for_runtime,
+        "requiredTables": list(required),
+        "missingTables": missing,
+    }
+
+
+def legacy_sqlite_health() -> dict[str, Any]:
+    """Inspect the checked-in legacy store without creating or changing it."""
+    started = time.perf_counter()
+    path = (Path(os.environ["SMARTBETS_TEST_SQLITE_PATH"]) if isolated_tests()
+            and os.getenv("SMARTBETS_TEST_SQLITE_PATH") else BASE_DIR / "predictions.db")
+    result: dict[str, Any] = {
+        "status": "not_present",
+        "engine": "sqlite",
+        "purpose": "legacy player predictions and graded bets",
+        "requiredForRuntime": False,
+        "storeExists": path.exists(),
+        "requiredTables": list(LEGACY_SQLITE_TABLES),
+        "missingTables": list(LEGACY_SQLITE_TABLES),
+        "readSucceeded": False,
+    }
+    if not path.exists():
+        result["latencyMs"] = round((time.perf_counter() - started) * 1000, 1)
+        return result
+    try:
+        connection = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=2)
+        try:
+            connection.execute("SELECT 1").fetchone()
+            names = {
+                str(row[0]) for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+        finally:
+            connection.close()
+        result["readSucceeded"] = True
+        result["missingTables"] = [table for table in LEGACY_SQLITE_TABLES if table not in names]
+        result["status"] = "healthy" if not result["missingTables"] else "degraded"
+    except (OSError, sqlite3.Error) as exc:
+        result["status"] = "unhealthy"
+        result["errorCode"] = "LEGACY_SQLITE_UNREADABLE"
+        result["errorType"] = type(exc).__name__
+    result["latencyMs"] = round((time.perf_counter() - started) * 1000, 1)
+    return result
+
+
 def database_health() -> dict[str, Any]:
     started = time.perf_counter()
+    postgres = using_postgres()
+    groups = {
+        "corePostgres": POSTGRES_CORE_TABLES,
+        "nflPostgres": POSTGRES_NFL_TABLES,
+        "nbaPostgres": POSTGRES_NBA_TABLES,
+    } if postgres else {"applicationSqlite": SQLITE_APPLICATION_TABLES}
+    required_tables = tuple(table for tables in groups.values() for table in tables)
     result: dict[str, Any] = {
         "status": "unhealthy",
-        "engine": "postgres" if using_postgres() else "sqlite",
+        "engine": "postgres" if postgres else "sqlite",
         "connectionOpened": False,
         "readSucceeded": False,
-        "requiredTables": list(REQUIRED_TABLES),
+        "requiredTables": list(required_tables),
         "missingTables": [],
+        "stores": {},
     }
     try:
         with get_db_connection() as connection:
             result["connectionOpened"] = True
             connection.execute("SELECT 1").fetchone()
             result["readSucceeded"] = True
-            result["missingTables"] = [table for table in REQUIRED_TABLES if not table_exists(connection, table)]
+            for name, tables in groups.items():
+                missing = [table for table in tables if not table_exists(connection, table)]
+                purpose = {
+                    "corePostgres": "authentication and account-owned application data",
+                    "nflPostgres": "NFL V2 schedule, predictions, results, and automation",
+                    "nbaPostgres": "NBA research predictions, settlement, and automation",
+                    "applicationSqlite": "local application and legacy prediction data",
+                }[name]
+                result["stores"][name] = _store_status(
+                    tables, missing, engine="postgres" if postgres else "sqlite", purpose=purpose
+                )
+                result["missingTables"].extend(missing)
         result["status"] = "healthy" if not result["missingTables"] else "degraded"
     except Exception as exc:
         logger.exception("database_health_failed")
@@ -41,8 +125,9 @@ def database_health() -> dict[str, Any]:
         result["error"] = "Database connection or read check failed."
         result["errorType"] = type(exc).__name__
     result["latencyMs"] = round((time.perf_counter() - started) * 1000, 1)
-    if not using_postgres():
+    if not postgres:
         result["storeExists"] = database_path().exists()
+    result["stores"]["legacySqlite"] = legacy_sqlite_health()
     return result
 
 

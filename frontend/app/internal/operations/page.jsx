@@ -24,9 +24,18 @@ const EMPTY = "—";
 const fmt = (value) => (value ? new Date(value).toLocaleString() : EMPTY);
 const modelName = (value) => value ? value.replace("nfl_game_baseline_v", "NFL Game Model v").replaceAll("_", " ") : EMPTY;
 const issueCopy = (issue) => {
-  if (issue.category === "DATA") return ["Game data needs attention", "Some live game data is not updating yet."];
+  if (issue.entityId === "nba-roster-freshness") {
+    return ["NBA roster data needs attention", issue.ownerSummary || issue.summary];
+  }
+  if (issue.entityId === "nba-availability-freshness") {
+    return ["NBA player availability needs attention", issue.ownerSummary || issue.summary];
+  }
+  if (issue.category === "DATA") return ["Game data needs attention", issue.ownerSummary || issue.summary];
   if (issue.category === "DATABASE") return ["Database needs attention", "Some system data needs attention."];
-  if (issue.category === "AUTOMATION") return ["Social posting is paused", "Posting safeguards are keeping X activity paused."];
+  if (issue.category === "AUTOMATION" && issue.league === "NBA") {
+    return ["NBA automation needs attention", issue.ownerSummary || issue.summary];
+  }
+  if (issue.entityId === "x-publishing") return ["Social posting is paused", "Posting safeguards are keeping X activity paused."];
   return [`${issue.category.replaceAll("_", " ")} issue`, issue.ownerSummary || issue.summary];
 };
 
@@ -132,6 +141,7 @@ export default function OperationsPage() {
   const [socialError, setSocialError] = useState("");
   const [sport, setSport] = useState("ALL");
   const [selectedWeek, setSelectedWeek] = useState(null);
+  const [nbaSeasonOverride, setNbaSeasonOverride] = useState("");
 
   const load = useCallback(async () => {
     const requestId = ++loadRequest.current;
@@ -152,6 +162,10 @@ export default function OperationsPage() {
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
   }, [load]);
+
+  useEffect(() => {
+    setNbaSeasonOverride(data?.leagueOperations?.NBA?.automation?.settings?.seasonOverride || "");
+  }, [data?.leagueOperations?.NBA?.automation?.settings?.seasonOverride]);
 
   const loadSocialPosts = useCallback(async ({ append = false } = {}) => {
     setSocialLoading(true);
@@ -210,14 +224,32 @@ export default function OperationsPage() {
     [query],
   );
 
-  const summary = data?.summary || {};
-  const model = data?.modelOperations || {};
+  const filteredGames = useMemo(
+    () => {
+      const games = data?.games || [];
+      return sport === "ALL" ? games : games.filter((game) => (game.league || "NFL") === sport);
+    },
+    [data?.games, sport],
+  );
+  const leagueModel = data?.modelOperationsByLeague?.[sport];
+  const model = sport === "ALL" ? data?.modelOperations || {} : leagueModel || {};
+  const summary = sport === "ALL" ? data?.summary || {} : {
+    gamesReady: filteredGames.filter((game) => game.predictionStatus !== "MISSING" && !game.warnings?.length).length,
+    predictionsReady: filteredGames.filter((game) => game.prediction).length,
+    finalResults: filteredGames.filter((game) => game.status === "FINAL").length,
+    needsAttention: (data?.issues || []).filter((issue) => (issue.league || "NFL") === sport && ["WARNING", "CRITICAL"].includes(issue.severity)).length,
+    databaseHealth: data?.summary?.databaseHealth,
+    providerHealth: sport === "NBA" ? data?.dataHealth?.nba?.status : data?.summary?.providerHealth,
+  };
   const health = data?.dataHealth || {};
   const automation = data?.automation || {};
-  const filteredGames = useMemo(
-    () => (sport === "NBA" ? [] : data?.games || []),
-    [data, sport],
-  );
+  const nbaOperations = data?.leagueOperations?.NBA || {};
+  const nbaAutomation = nbaOperations.automation || {};
+  const nbaSettings = nbaAutomation.settings || {};
+  const nbaPersonnel = nbaOperations.personnel || {};
+  const nbaShadow = nbaOperations.modelOperations?.shadowCandidate || {};
+  const nbaShadowCandidate = nbaShadow.metricsByModel?.[nbaShadow.candidateModel] || {};
+  const visibleIssues = sport === "ALL" ? data?.issues || [] : (data?.issues || []).filter((issue) => (issue.league || "NFL") === sport);
 
   if (loading && !data)
     return (
@@ -264,15 +296,18 @@ export default function OperationsPage() {
             {["ALL", "NFL", "NBA"].map((value) => (
               <button key={value} onClick={() => setSport(value)} className={`rounded-full px-3 py-1.5 text-xs font-black ${sport === value ? "bg-cyan-300 text-slate-950" : "bg-white/5 text-slate-300"}`}>{value}</button>
             ))}
-            <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-400">
-              {data?.context?.league} · {data?.context?.season} {data?.context?.seasonType} · Week {data?.context?.week}
-            </span>
-            <button className="rounded-full bg-white/5 px-3 py-1.5 text-xs font-bold text-cyan-200 disabled:opacity-40" disabled={(selectedWeek ?? data?.context?.week ?? 1) <= 1} onClick={() => setSelectedWeek((selectedWeek ?? data?.context?.week ?? 1) - 1)}>Previous Week</button>
-            <button className="rounded-full bg-white/5 px-3 py-1.5 text-xs font-bold text-cyan-200 disabled:opacity-40" disabled={(selectedWeek ?? data?.context?.week ?? 1) >= 18} onClick={() => setSelectedWeek((selectedWeek ?? data?.context?.week ?? 1) + 1)}>Next Week</button>
+            {sport !== "NBA" && <>
+              <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-400">
+                NFL · {data?.context?.season} {data?.context?.seasonType} · Week {data?.context?.week}
+              </span>
+              <button className="rounded-full bg-white/5 px-3 py-1.5 text-xs font-bold text-cyan-200 disabled:opacity-40" disabled={(selectedWeek ?? data?.context?.week ?? 1) <= 1} onClick={() => setSelectedWeek((selectedWeek ?? data?.context?.week ?? 1) - 1)}>Previous Week</button>
+              <button className="rounded-full bg-white/5 px-3 py-1.5 text-xs font-bold text-cyan-200 disabled:opacity-40" disabled={(selectedWeek ?? data?.context?.week ?? 1) >= 18} onClick={() => setSelectedWeek((selectedWeek ?? data?.context?.week ?? 1) + 1)}>Next Week</button>
+            </>}
+            {sport === "NBA" && <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-400">NBA · {nbaOperations.season || "automatic season"}</span>}
           </div>
         </div>
         <button
-          onClick={() => runAction("all", api.internal.refreshOperations)}
+          onClick={() => runAction("all", sport === "NBA" ? () => api.internal.runNbaCycle({ season: nbaOperations.season }) : api.internal.refreshOperations)}
           disabled={action.all?.state === "RUNNING"}
           className="btn btn-glass flex items-center gap-2"
         >
@@ -284,7 +319,7 @@ export default function OperationsPage() {
             ? "Refreshing…"
             : action.all?.state === "FAILED"
               ? "Retry refresh"
-            : "Refresh data"}
+            : sport === "NBA" ? "Run NBA cycle" : "Refresh data"}
         </button>
       </header>
 
@@ -374,8 +409,8 @@ export default function OperationsPage() {
             <h2 className="text-2xl font-black">Needs Attention</h2>
           </div>
           <div className="mt-5 space-y-3">
-            {data?.issues?.length ? (
-              data.issues.map((issue, index) => {
+            {visibleIssues.length ? (
+              visibleIssues.map((issue, index) => {
                 const [title, message] = issueCopy(issue);
                 return (
                 <div
@@ -407,10 +442,28 @@ export default function OperationsPage() {
                     {issue.action === "VIEW_PREDICTION" && (
                       <Link
                         className="text-sm font-bold text-cyan-300"
-                        href={`/internal/games/${issue.entityId}`}
+                        href={issue.league === "NBA" ? `/nba/games/${issue.entityId}?season=${nbaOperations.season || ""}` : `/internal/games/${issue.entityId}`}
                       >
                         Inspect prediction
                       </Link>
+                    )}
+                    {issue.action === "NBA_RETRY" && (
+                      <button
+                        disabled={action[issue.entityId]?.state === "RUNNING"}
+                        onClick={() => runAction(issue.entityId, () => api.internal.runNbaCycle({ season: nbaOperations.season }))}
+                        className="text-sm font-bold text-cyan-300 disabled:text-slate-500"
+                      >
+                        {action[issue.entityId]?.state === "RUNNING" ? "Running NBA cycle…" : "Retry NBA cycle"}
+                      </button>
+                    )}
+                    {issue.action === "NBA_PERSONNEL_RETRY" && (
+                      <button
+                        disabled={action[issue.entityId]?.state === "RUNNING"}
+                        onClick={() => runAction(issue.entityId, api.internal.refreshNbaPersonnel)}
+                        className="text-sm font-bold text-cyan-300 disabled:text-slate-500"
+                      >
+                        {action[issue.entityId]?.state === "RUNNING" ? "Refreshing NBA personnel..." : "Refresh NBA personnel"}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -493,7 +546,8 @@ export default function OperationsPage() {
             )}
           </div>
         )}
-        <PanelState panel={data?.panels?.week1} retry={load} />
+        {sport !== "NBA" && <PanelState panel={data?.panels?.week1} retry={load} />}
+        {sport !== "NFL" && <PanelState panel={data?.panels?.nba} retry={load} />}
         <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-white/[.025]">
           <table className="w-full min-w-[1050px] text-left text-sm">
             <thead className="bg-white/[.04] text-xs uppercase tracking-wider text-slate-400">
@@ -551,7 +605,7 @@ export default function OperationsPage() {
                     <td className="p-4">
                       <div className="flex flex-wrap gap-3">
                         <Link
-                          href={`/internal/games/${game.id}`}
+                          href={game.league === "NBA" ? `/nba/games/${game.id}?season=${game.season}` : `/internal/games/${game.id}`}
                           className="font-bold text-cyan-300"
                         >
                           {final
@@ -564,7 +618,9 @@ export default function OperationsPage() {
                           disabled={running}
                           onClick={() =>
                             runAction(game.id, () =>
-                              game.freshness === "STALE"
+                              game.league === "NBA"
+                                ? api.internal.runNbaCycle({ season: game.season })
+                                : game.freshness === "STALE"
                                 ? api.internal.reconcileOperationGame(game.id)
                                 : api.internal.refreshOperationGame(game.id),
                             )
@@ -575,6 +631,8 @@ export default function OperationsPage() {
                             ? "Refreshing…"
                             : action[game.id]?.state === "FAILED"
                               ? "Retry"
+                            : game.league === "NBA"
+                              ? "Run NBA cycle"
                             : game.freshness === "STALE"
                               ? final ? "Sync result" : "Sync game"
                               : final ? "Refresh final stats" : "Refresh"}
@@ -603,13 +661,13 @@ export default function OperationsPage() {
         <GlowCard id="model-operations" className="p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-black">Predictions</h2>
-            <Pill value="ACTIVE" />
+            <Pill value={model.researchStatus || "ACTIVE"} />
           </div>
           <dl className="mt-5 grid gap-4 sm:grid-cols-2">
             {[
-              ["Current Model", modelName(model.productionModel)],
+              ["Current Model", modelName(model.productionModel || model.researchModel)],
               ["Latest Run", fmt(model.lastRun)],
-              ["Games Covered", model.gamesCovered],
+              ["Games Covered", model.gamesCovered ?? model.predictionsGenerated],
               ["Predictions Ready", model.predictionsGenerated],
               ["Missing", model.missingPredictions],
               ["Errors", model.failedPredictions],
@@ -635,6 +693,7 @@ export default function OperationsPage() {
                 Current predictions are ready.
               </span>
             )}
+            {model.productionReady === false && <span className="text-sm text-amber-200">Research-only model; wagering and production promotion remain blocked.</span>}
           </div>
         </GlowCard>
         <GlowCard id="data-health" className="p-6">
@@ -648,8 +707,8 @@ export default function OperationsPage() {
             />
             <HealthRow
               label="Schedule"
-              value={health.scheduleStore?.status}
-              detail={`${health.scheduleStore?.gameCount ?? 0} active games`}
+              value={sport === "NBA" ? data?.panels?.nba?.status : health.scheduleStore?.status}
+              detail={`${sport === "NBA" ? health.nba?.games ?? 0 : health.scheduleStore?.gameCount ?? 0} active games`}
             />
             <HealthRow
               label="Game Updates"
@@ -658,43 +717,110 @@ export default function OperationsPage() {
             <HealthRow
               label="Predictions"
               value={
-                health.predictionStore?.data?.status ||
+                sport === "NBA" ? (nbaOperations.modelOperations?.missingPredictions ? "MISSING" : "HEALTHY") : health.predictionStore?.data?.status ||
                 health.predictionStore?.status
               }
               detail={model.missingPredictions ? `${model.missingPredictions} missing` : "Ready"}
             />
             <HealthRow
               label="Game Stats"
-              value={health.playerStatsStore?.status}
+              value={sport === "NBA" ? (health.nba?.finals ? "HEALTHY" : "PENDING") : health.playerStatsStore?.status}
               detail="Pending is expected before final games"
             />
             <HealthRow
               label="Background Jobs"
-              value={health.worker?.status}
+              value={sport === "NBA" ? (nbaAutomation.latestRun?.status || (nbaAutomation.configured ? "SCHEDULED" : "UNAVAILABLE")) : health.worker?.status}
               detail={
-                health.worker?.heartbeatAt
+                sport === "NBA" ? `${nbaAutomation.scheduler || "Vercel Cron"} · ${nbaSettings.enabled ? "enabled" : "paused"}` : health.worker?.heartbeatAt
                   ? `${health.worker.scheduler === "SUPABASE_CRON" ? "Supabase Cron" : "Local worker"} · Updated ${fmt(health.worker.heartbeatAt)}`
                   : "Not available"
               }
             />
             <HealthRow
               label="Data Provider"
-              value={health.provider?.status === "READY" ? "CONNECTED" : health.provider?.status}
+              value={sport === "NBA" ? data?.panels?.nba?.status : health.provider?.status === "READY" ? "CONNECTED" : health.provider?.status}
             />
             <HealthRow
               label="Next Update"
-              value={health.nextCheckpoint ? "SCHEDULED" : "NONE"}
-              detail={health.nextCheckpoint ? fmt(new Date(health.nextCheckpoint.due * 1000).toISOString()) : "No pending capture"}
+              value={sport === "NBA" ? (nbaAutomation.configured && nbaSettings.enabled ? "SCHEDULED" : "NONE") : health.nextCheckpoint ? "SCHEDULED" : "NONE"}
+              detail={sport === "NBA" ? "Daily at 10:17 UTC on the $0 staging-compatible schedule" : health.nextCheckpoint ? fmt(new Date(health.nextCheckpoint.due * 1000).toISOString()) : "No pending capture"}
             />
           </div>
         </GlowCard>
       </section>
 
-      <NflProductionHealth
+      {sport !== "NFL" && (
+        <GlowCard id="nba-operations" className="mt-8 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-black">NBA Operations</h2>
+              <p className="mt-1 text-sm text-slate-400">Season activation, scheduler health, ingestion, prediction generation, and settlement controls.</p>
+            </div>
+            <Pill value={nbaSettings.enabled ? "ACTIVE" : "PAUSED"} />
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <HealthRow label="Scheduler" value={nbaAutomation.configured ? "CONFIGURED" : "NEEDS SETUP"} detail={nbaAutomation.scheduler || "Vercel Cron"} />
+            <HealthRow label="Latest Run" value={nbaAutomation.latestRun?.status || "NONE"} detail={fmt(nbaAutomation.latestRun?.completed_at || nbaAutomation.latestRun?.started_at)} />
+            <HealthRow label="Run Monitor" value={nbaAutomation.monitorStatus || (nbaAutomation.failedRuns ? "NEEDS ATTENTION" : "CLEAR")} detail={nbaAutomation.stale ? `${nbaAutomation.latestRunAgeHours} hours since the latest run` : `${nbaAutomation.failedRuns ?? 0} recorded failures`} />
+            <HealthRow label="Model Status" value={nbaOperations.modelOperations?.researchStatus || "RESEARCH ONLY"} detail="No production NBA champion is selected" />
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {Object.entries(nbaOperations.foundation?.capabilities || {}).map(([key, value]) => <HealthRow key={key} label={key.replaceAll(/([A-Z])/g, " $1")} value={value} />)}
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <HealthRow label="Roster freshness" value={nbaPersonnel.roster?.status || "MISSING"} detail={`${nbaPersonnel.roster?.teamsReported ?? 0}/${nbaPersonnel.expectedTeams ?? 30} teams reported`} />
+            <HealthRow label="Availability freshness" value={nbaPersonnel.availability?.status || "MISSING"} detail={`${nbaPersonnel.availability?.teamsReported ?? 0}/${nbaPersonnel.expectedTeams ?? 30} teams reported`} />
+            <HealthRow label="Research shadow" value={nbaShadow.enabled ? "ACTIVE" : "DISABLED"} detail={`${nbaShadow.pairedGames ?? 0} paired immutable games`} />
+            <HealthRow label="Model disagreements" value={nbaShadow.disagreements ?? 0} detail={nbaShadow.disagreementRate == null ? "Prospective sample pending" : `${(nbaShadow.disagreementRate * 100).toFixed(1)}% of paired games`} />
+            <HealthRow label="Shadow accuracy" value={nbaShadowCandidate.accuracy == null ? "PENDING" : `${(nbaShadowCandidate.accuracy * 100).toFixed(1)}%`} detail={`${nbaShadowCandidate.settled ?? 0} prospectively settled`} />
+            <HealthRow label="Shadow Brier" value={nbaShadowCandidate.brierScore == null ? "PENDING" : nbaShadowCandidate.brierScore.toFixed(4)} />
+            <HealthRow label="Shadow log loss" value={nbaShadowCandidate.logLoss == null ? "PENDING" : nbaShadowCandidate.logLoss.toFixed(4)} />
+            <HealthRow label="Shadow calibration" value={nbaShadowCandidate.expectedCalibrationError == null ? "PENDING" : nbaShadowCandidate.expectedCalibrationError.toFixed(4)} detail="10-bin expected calibration error" />
+          </div>
+          <div className="mt-6 flex flex-wrap items-end gap-3 border-t border-white/10 pt-5">
+            <label className="text-xs font-black uppercase tracking-wider text-slate-400">
+              Season override
+              <input
+                aria-label="NBA season override"
+                value={nbaSeasonOverride}
+                onChange={(event) => setNbaSeasonOverride(event.target.value)}
+                placeholder="Automatic (or 2026-27)"
+                className="mt-2 block rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm normal-case tracking-normal text-white"
+              />
+            </label>
+            <button
+              disabled={action["nba-activation"]?.state === "RUNNING"}
+              onClick={() => runAction("nba-activation", () => api.internal.updateNbaActivation({ enabled: nbaSettings.enabled !== false, season: nbaSeasonOverride || null }))}
+              className="btn btn-glass px-4 py-2"
+            >
+              Save season override
+            </button>
+            <button
+              disabled={action["nba-toggle"]?.state === "RUNNING"}
+              onClick={() => runAction("nba-toggle", () => api.internal.updateNbaActivation({ enabled: !nbaSettings.enabled, season: nbaSeasonOverride || null }))}
+              className="btn btn-glass px-4 py-2"
+            >
+              {nbaSettings.enabled ? "Pause NBA automation" : "Activate NBA automation"}
+            </button>
+            <button
+              disabled={action["nba-cycle"]?.state === "RUNNING" || !nbaSettings.enabled}
+              onClick={() => runAction("nba-cycle", () => api.internal.runNbaCycle({ season: nbaSeasonOverride || nbaOperations.season }))}
+              className="btn btn-primary px-4 py-2"
+            >
+              {action["nba-cycle"]?.state === "RUNNING" ? "Running cycle…" : "Run NBA cycle now"}
+            </button>
+          </div>
+          {(action["nba-cycle"]?.state === "FAILED" || action["nba-activation"]?.state === "FAILED" || action["nba-toggle"]?.state === "FAILED") && (
+            <p role="alert" className="mt-4 text-sm text-rose-200">NBA control failed. Review the protected activity log and retry after correcting the reported dependency.</p>
+          )}
+        </GlowCard>
+      )}
+
+      {sport !== "NBA" && <NflProductionHealth
         season={data?.context?.season ?? 2026}
         seasonType={data?.context?.seasonType ?? "regular"}
         week={selectedWeek ?? data?.context?.week ?? 1}
-      />
+      />}
 
       <section className="mt-8 grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
         <GlowCard id="automation" className="p-6">

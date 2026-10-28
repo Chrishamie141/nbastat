@@ -22,6 +22,7 @@ node_modules/
 dist/
 build/
 coverage/
+.coverage
 
 # Rebuildable historical provider material.  Reports, schemas, and builders
 # remain versioned; real snapshots are local to avoid a very large repository.
@@ -56,4 +57,9 @@ supabase/.temp/
 
 # Laptop worker logs, locks, backups, local signing configuration and previews
 .runtime/
+artifacts/production-backups/
 *.worker.lock
+
+# Local Agent Core budget attestations and Usage Dashboard exports.
+agents/runtime/attestations/
+agents/runtime/budget-evidence/

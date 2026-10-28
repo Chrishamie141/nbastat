@@ -25,6 +25,7 @@ function DashboardInner() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('All');
+  const [league, setLeague] = useState('all');
   const [phase, setPhase] = useState('all');
   const [refreshState, setRefreshState] = useState('');
   const [refreshingGames, setRefreshingGames] = useState(false);
@@ -36,8 +37,10 @@ function DashboardInner() {
   const summary = data?.summary || {};
   const games = data?.upcomingGames || EMPTY_GAMES;
   const phases = useMemo(() => [...new Set(games.map((game) => game.seasonPhase).filter(Boolean))].sort(), [games]);
+  const leagues = useMemo(() => [...new Set(games.map((game) => game.league).filter(Boolean))].sort(), [games]);
   const visibleGames = useMemo(() => {
     const rows = games.filter((game) => {
+      if (league !== 'all' && game.league !== league) return false;
       if (phase !== 'all' && game.seasonPhase !== phase) return false;
       if (filter === 'Upcoming') return ['scheduled', 'pregame'].includes(game.status);
       if (filter === 'Live') return LIVE.has(game.status);
@@ -51,7 +54,7 @@ function DashboardInner() {
       const direction = leftRank === 2 ? -1 : 1;
       return direction * (new Date(left.startTimeUtc) - new Date(right.startTimeUtc));
     });
-  }, [filter, games, phase]);
+  }, [filter, games, league, phase]);
   const hasActivity = (summary.savedAnalyses || 0) > 0;
   async function refreshDashboardGames() {
     if (refreshingGames) return;
@@ -83,7 +86,8 @@ function DashboardInner() {
     <section className="mt-6 grid items-start gap-4 lg:grid-cols-[.9fr_1.1fr]">
       <GlowCard className="h-auto min-h-0 self-start p-6"><h2 className="text-2xl font-bold">Game to Watch</h2>{data?.errors?.featuredGame ? <p className="mt-4 text-slate-300">Featured game unavailable. <button onClick={() => location.reload()} className="underline">Retry</button></p> : data?.featuredGame ? <div className="mt-4"><UpcomingGameCard game={data.featuredGame} featured /></div> : <p className="mt-4 text-slate-300">No featured matchup is available within the current supported schedule window.</p>}</GlowCard>
       <GlowCard className="p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">NFL & NBA Games</h2>{data?.lastUpdated ? <p className="mt-1 text-xs text-slate-500">Updated {new Date(data.lastUpdated).toLocaleTimeString()}</p> : null}</div><div className="flex items-center gap-2">{phases.length > 1 ? <label className="text-sm text-slate-300">Phase <select value={phase} onChange={(event) => setPhase(event.target.value)} className="ml-2 rounded-xl border border-white/10 bg-slate-900 px-3 py-2"><option value="all">All</option>{phases.map((item) => <option key={item} value={item}>{item.replaceAll('_', ' ')}</option>)}</select></label> : null}<button type="button" onClick={refreshDashboardGames} disabled={refreshingGames} className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-cyan-100 disabled:opacity-60">{refreshingGames ? 'Refreshing…' : 'Refresh'}</button></div></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">NFL & NBA Games</h2>{data?.lastUpdated ? <p className="mt-1 text-xs text-slate-500">Updated {new Date(data.lastUpdated).toLocaleTimeString()}</p> : null}</div><div className="flex flex-wrap items-center gap-2">{leagues.length > 1 ? <label className="text-sm text-slate-300">League <select value={league} onChange={(event) => setLeague(event.target.value)} className="ml-2 rounded-xl border border-white/10 bg-slate-900 px-3 py-2"><option value="all">All</option>{leagues.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label> : null}{phases.length > 1 ? <label className="text-sm text-slate-300">Phase <select value={phase} onChange={(event) => setPhase(event.target.value)} className="ml-2 rounded-xl border border-white/10 bg-slate-900 px-3 py-2"><option value="all">All</option>{phases.map((item) => <option key={item} value={item}>{item.replaceAll('_', ' ')}</option>)}</select></label> : null}<button type="button" onClick={refreshDashboardGames} disabled={refreshingGames} className="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-cyan-100 disabled:opacity-60">{refreshingGames ? 'Refreshing…' : 'Refresh'}</button></div></div>
+        {data?.errors?.scheduleWarnings ? <p role="status" className="mt-3 text-xs text-amber-200">Partial schedule availability: {Object.keys(data.errors.scheduleWarnings).map((item) => item.toUpperCase()).join(', ')}</p> : null}
         {refreshState ? <p role="status" className="mt-3 text-xs text-slate-400">{refreshState}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter games by lifecycle">{GAME_FILTERS.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} aria-pressed={filter === item} className={`rounded-full px-4 py-2 text-sm font-semibold ${filter === item ? 'bg-cyan-300 text-slate-950' : 'bg-white/10 text-slate-200 hover:bg-white/15'}`}>{item}</button>)}</div>
         {data?.errors?.upcomingGames ? <p className="mt-4 text-slate-300">Game schedule unavailable. <button onClick={() => location.reload()} className="underline">Retry</button></p> : !data && !error ? <div className="mt-4 grid gap-3">{[1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-3xl bg-white/10" />)}</div> : visibleGames.length ? <div className="mt-4 grid gap-3">{visibleGames.map((game) => <UpcomingGameCard key={`${game.league}-${game.id}`} game={game} />)}</div> : <p className="mt-4 text-slate-300">No games match the selected lifecycle and phase filters.</p>}

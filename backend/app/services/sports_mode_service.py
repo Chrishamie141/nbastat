@@ -18,7 +18,7 @@ def _calendar_active(league, now):
 def _phase(league, active, now):
     if not active: return 'offseason'
     if league=='nfl' and now.month in [7,8]: return 'preseason'
-    if league=='nba' and now.month==10: return 'preseason'
+    if league=='nba' and now.month==10 and now.day < 15: return 'preseason'
     if league=='nba' and now.month in [5,6]: return 'postseason'
     return 'regular_season'
 
@@ -30,7 +30,7 @@ def get_sports_mode(now=None):
         return SportsModeResponse(mode=override,activeLeagues=active,phaseByLeague={l:_phase(l,l in active,now) for l in ['nfl','nba']},reason='Administrative sports mode override is active.',effectiveAt=datetime.now(timezone.utc),source='manual_override',overrideActive=True)
     key=now.strftime('%Y-%m-%d-%H')
     if key in _CACHE and _CACHE[key]['exp']>time.time(): return _CACHE[key]['data']
-    source='fallback'; active=[]
+    source='fallback'; active=[]; games=[]
     try:
         look=int(os.getenv('SCHEDULE_LOOKAHEAD_DAYS','30'))
         games=upcoming_games(['nfl','nba'], limit=50, start=datetime.now(timezone.utc)-timedelta(days=2), end=datetime.now(timezone.utc)+timedelta(days=look))
@@ -41,7 +41,14 @@ def get_sports_mode(now=None):
     if not active:
         active=[l for l in ['nfl','nba'] if _calendar_active(l, now)]; source='configured_calendar' if active else 'fallback'
     mode='both' if set(active)=={'nfl','nba'} else (active[0] if active else 'offseason')
-    phases={l:_phase(l,l in active,now) for l in ['nfl','nba']}
+    provider_phases={}
+    if source=='schedule':
+        for league in active:
+            candidates=[game for game in games if game.league==league and game.status not in {'postponed','canceled'}]
+            if candidates:
+                chosen=min(candidates,key=lambda game:abs((game.startTimeUtc-now.astimezone(timezone.utc)).total_seconds()))
+                provider_phases[league]=chosen.seasonPhase
+    phases={l:provider_phases.get(l) or _phase(l,l in active,now) for l in ['nfl','nba']}
     reason = 'Schedule provider returned relevant upcoming games.' if source=='schedule' and active else ('Configured season windows activated supported leagues.' if active else 'No supported NFL or NBA games are active within the configured window.')
     resp=SportsModeResponse(mode=mode,activeLeagues=active,phaseByLeague=phases,reason=reason,effectiveAt=datetime.now(timezone.utc),source=source,overrideActive=False)
     _CACHE[key]={'data':resp,'exp':time.time()+900}; return resp

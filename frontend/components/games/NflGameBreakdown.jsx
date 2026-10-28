@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import GlowCard from "@/components/ui/GlowCard";
 import TeamLogo from "@/components/teams/TeamLogo";
@@ -10,7 +9,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const LIVE_STATUSES = new Set(["live", "halftime"]);
 const FINAL_STATUSES = new Set(["final", "final-OT"]);
-const NO_BACKFILL_POLICY = "game results are never backfilled";
 
 function localDate(iso) {
   const value = new Date(iso);
@@ -56,29 +54,18 @@ export default function NflGameBreakdown({ gameId, ownerMode = false }) {
     : "Back to dashboard";
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState("");
-  const [refreshError, setRefreshError] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
-    async ({ manual = false, silent = false } = {}) => {
-      if (!silent) setRefreshing(true);
-      setRefreshError("");
+    async ({ silent = false } = {}) => {
       try {
-        const next = manual
-          ? ownerMode
-            ? await api.internal.refreshOperationGame(gameId).then(() => api.internal.operationGame(gameId))
-            : await api.nfl.refreshGame(gameId)
-          : ownerMode
-            ? await api.internal.operationGame(gameId)
-            : await api.nfl.game(gameId);
+        const next = ownerMode
+          ? await api.internal.operationGame(gameId)
+          : await api.nfl.game(gameId);
         setDetail(next);
         setError("");
       } catch (requestError) {
         const message = requestError.message || "Game breakdown unavailable.";
-        if (manual || silent) setRefreshError(message);
-        else setError(message);
-      } finally {
-        if (!silent) setRefreshing(false);
+        if (!silent) setError(message);
       }
     },
     [gameId, ownerMode],
@@ -86,7 +73,7 @@ export default function NflGameBreakdown({ gameId, ownerMode = false }) {
 
   useEffect(() => {
     load();
-  }, [gameId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [load]);
 
   const status = detail?.game?.status;
   useEffect(() => {
@@ -120,13 +107,11 @@ export default function NflGameBreakdown({ gameId, ownerMode = false }) {
 
   const {
     game,
-    lifecycle,
     teamContext,
     predictions,
     actuals,
     comparison,
     sources,
-    reconciliation,
   } = detail;
   const hasScore =
     (LIVE_STATUSES.has(game.status) || FINAL_STATUSES.has(game.status)) &&
@@ -142,22 +127,11 @@ export default function NflGameBreakdown({ gameId, ownerMode = false }) {
         </Link>
       </div>
       <GlowCard className="overflow-hidden p-6 md:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge status={game.status} />
-            <span className="tag capitalize">
-              NFL {title(game.seasonPhase)} · Week {game.week ?? "TBD"}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => load({ manual: true })}
-            disabled={refreshing}
-            className="btn btn-glass disabled:cursor-wait disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "Refreshing…" : "Refresh game"}
-          </button>
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge status={game.status} />
+          <span className="tag capitalize">
+            NFL {title(game.seasonPhase)} · Week {game.week ?? "TBD"}
+          </span>
         </div>
         <div className="mt-8 grid items-center gap-6 md:grid-cols-[1fr_auto_1fr]">
           <HeaderTeam
@@ -178,48 +152,13 @@ export default function NflGameBreakdown({ gameId, ownerMode = false }) {
             align="right"
           />
         </div>
-        <div className="mt-8 grid gap-3 border-t border-white/10 pt-5 text-sm text-slate-300 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 border-t border-white/10 pt-5 text-sm text-slate-300 md:grid-cols-2">
           <Meta label="Local kickoff" value={localDate(game.startTimeUtc)} />
           <Meta
             label="Venue"
             value={[game.venue, game.city].filter(Boolean).join(" · ") || "TBD"}
           />
-          <Meta
-            label="Last successful refresh"
-            value={
-              lifecycle.fetchedAt
-                ? localDate(lifecycle.fetchedAt)
-                : "Unavailable"
-            }
-          />
-          <Meta
-            label="Data freshness"
-            value={`${title(lifecycle.freshnessState)}${lifecycle.sourceAgeSeconds != null ? ` · source ${lifecycle.sourceAgeSeconds}s old` : ""}`}
-          />
         </div>
-        <p className="mt-4 text-xs text-slate-500">
-          Canonical game ID: {game.canonicalId} · Source:{" "}
-          {sources.scheduleStatusScore}
-        </p>
-        {refreshError ? (
-          <p
-            role="alert"
-            className="mt-4 rounded-xl border border-red-300/20 bg-red-300/10 p-3 text-sm text-red-100"
-          >
-            Refresh failed: {refreshError}. Existing game data remains visible.
-          </p>
-        ) : null}
-        {detail.refresh?.coalesced ? (
-          <p className="mt-4 rounded-xl bg-cyan-300/10 p-3 text-sm text-cyan-100">
-            A recent refresh already completed; this request reused the latest
-            server result.
-          </p>
-        ) : null}
-        {reconciliation?.reasonCodes?.length ? (
-          <p className="mt-4 rounded-xl bg-amber-300/10 p-3 text-sm text-amber-100">
-            Lifecycle audit: {reconciliation.reasonCodes.map(title).join(", ")}
-          </p>
-        ) : null}
       </GlowCard>
 
       {ownerMode && (
@@ -270,13 +209,6 @@ export default function NflGameBreakdown({ gameId, ownerMode = false }) {
           title="Team context entering the game"
           description="Only information available before kickoff belongs here; final-game output is kept separate below."
         />
-        {teamContext.fallbackUsed ? (
-          <p className="mt-4 rounded-xl border border-amber-200/20 bg-amber-200/10 p-3 text-sm text-amber-100">
-            Current {teamContext.requestedSeason} sample is below the{" "}
-            {teamContext.minimumSampleSize}-game minimum. Using completed{" "}
-            {teamContext.contextSeasonUsed} regular-season context; {NO_BACKFILL_POLICY}.
-          </p>
-        ) : null}
         {teamContext.available ? (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {teamContext.teams.map((team) => (

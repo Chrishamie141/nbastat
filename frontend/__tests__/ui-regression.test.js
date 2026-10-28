@@ -16,6 +16,34 @@ test("game card does not duplicate abbreviation before full team name or watch s
   assert.match(card, /National broadcast/);
 });
 
+test("customer NBA surfaces use production-ready prediction language", () => {
+  const board = fs.readFileSync("app/games/page.jsx", "utf8");
+  const detail = fs.readFileSync("components/games/NbaGameBreakdown.jsx", "utf8");
+  const customerCopy = `${board}\n${detail}`;
+
+  assert.match(board, /SmartBetSports pick/);
+  assert.doesNotMatch(customerCopy, /research[- ]only|no wager authorized|Research model pick/i);
+  assert.match(detail, /Win probability/);
+  assert.match(detail, /probability advantage/i);
+  assert.match(detail, /Prediction result/);
+  assert.match(detail, /NBA_TEAM_NAMES/);
+  assert.match(detail, /max-w-7xl/);
+  assert.doesNotMatch(detail, /Frozen pregame pick|Evaluation|Model version|Generated .*data frozen/i);
+});
+
+test("customer game details omit operational controls and diagnostic metadata", () => {
+  const nfl = fs.readFileSync("components/games/NflGameBreakdown.jsx", "utf8");
+  const nba = fs.readFileSync("components/games/NbaGameBreakdown.jsx", "utf8");
+  const customerDetails = `${nfl}\n${nba}`;
+
+  assert.doesNotMatch(customerDetails, /Refresh game|Last successful refresh|Data freshness|Canonical game ID/);
+  assert.doesNotMatch(customerDetails, /sample is below the|game results are never backfilled/);
+  assert.match(nfl, /Local kickoff/);
+  assert.match(nfl, /Venue/);
+  assert.match(nba, /Local tipoff/);
+  assert.match(nba, /MATCHUP OUTLOOK/);
+});
+
 test("analyze page routes NFL winner choices and keeps the NBA team selector", () => {
   const page = fs.readFileSync("app/analyze/page.jsx", "utf8");
   assert.match(page, /Game Winners/);
@@ -25,13 +53,15 @@ test("analyze page routes NFL winner choices and keeps the NBA team selector", (
   assert.doesNotMatch(page, /Optional team abbreviation|<select/);
 });
 
-test("production API requests use the same-origin Vercel backend rewrite", () => {
+test("production API requests use the same-origin server proxy", () => {
   const api = fs.readFileSync("lib/api.js", "utf8");
   const config = fs.readFileSync("next.config.mjs", "utf8");
+  const proxy = fs.readFileSync("app/api/[...path]/route.js", "utf8");
   assert.match(api, /NEXT_PUBLIC_API_URL\s*\|\|\s*["']{2}/);
   assert.doesNotMatch(api, /localhost:8000/);
-  assert.match(config, /source: '\/api\/:path\*'/);
   assert.match(config, /smartbetsports-api\.vercel\.app/);
+  assert.match(proxy, /DEFAULT_BACKEND_API/);
+  assert.match(proxy, /x-vercel-protection-bypass/);
 });
 
 test("local browser automation fails closed instead of targeting production", () => {
@@ -146,6 +176,16 @@ test("history renders durable prediction settlement evidence", () => {
   assert.match(page, /r\.settledAt/);
   assert.match(page, /r\.awayScore/);
   assert.match(page, /r\.resultStatus === "WON"/);
+  assert.match(page, /UPCOMING/);
+  assert.match(page, /SETTLEMENT PENDING/);
+  assert.match(page, /r\.kickoffTime/);
+});
+
+test("performance shows matching NFL and NBA record rows without empty research cards", () => {
+  const page = fs.readFileSync("app/performance/page.jsx", "utf8");
+  assert.match(page, /"NFL record".*"NFL accuracy".*"NFL graded predictions".*"NBA record".*"NBA accuracy".*"NBA graded predictions"/s);
+  assert.doesNotMatch(page, /NBA model status|Safe parlay performance|Balanced parlay performance|Aggressive parlay performance/);
+  assert.doesNotMatch(page, /Accuracy over time|LineChart|recharts/);
 });
 
 test("command center exposes owner-only NFL audit and SGP lab", () => {
@@ -193,6 +233,10 @@ test("internal command center is a plain-language multi-sport owner dashboard", 
   assert.match(page, />Games</);
   assert.match(page, />Predictions</);
   assert.match(page, /System Health/);
+  assert.match(page, /NBA Operations/);
+  assert.match(page, /Run NBA cycle now/);
+  assert.match(page, /nbaOperations\.modelOperations/);
+  assert.doesNotMatch(page, /sport === ["']NBA["'] \? \[\]/);
   assert.match(page, /Social Posting/);
   assert.match(page, /X Post History/);
   assert.match(page, /Posts made manually on X are not imported/);
@@ -208,6 +252,9 @@ test("internal command center is a plain-language multi-sport owner dashboard", 
   assert.match(api, /api\/internal\/operations/);
   assert.match(api, /operations\/search/);
   assert.match(api, /operations\/games/);
+  assert.match(api, /internal\/nba\/foundation\/sync/);
+  assert.match(api, /internal\/nba\/personnel\/refresh/);
+  assert.match(api, /internal\/nba\/foundation\/activation/);
   assert.match(nav, /command-center/);
   assert.match(nav, /ownerPortal/);
 });

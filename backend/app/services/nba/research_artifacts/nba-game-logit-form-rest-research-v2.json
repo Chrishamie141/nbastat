@@ -1,0 +1,51 @@
+{
+  "modelVersion": "nba-game-logit-form-rest-research-v2",
+  "status": "RESEARCH_ONLY",
+  "wageringAuthorized": false,
+  "features": [
+    "elo_difference",
+    "recent_margin_difference",
+    "season_margin_difference",
+    "recent_win_rate_difference",
+    "rest_advantage",
+    "home_games",
+    "away_games"
+  ],
+  "selectedC": 0.1,
+  "scalerMean": [
+    0.3089788986441664,
+    -0.14977257488427245,
+    -0.13150821678409474,
+    -0.0024584800072208718,
+    0.044155609712067924,
+    17.446791226645004,
+    17.435418359057678
+  ],
+  "scalerScale": [
+    117.07889498318205,
+    10.99650004240482,
+    9.016797113762701,
+    0.32358272196236176,
+    0.915801562895176,
+    5.325189960139562,
+    5.337558760060169
+  ],
+  "intercept": 0.20224731286334077,
+  "coefficients": [
+    0.5752962368293812,
+    0.379410298548507,
+    0.2953252155861417,
+    -0.34122977126805293,
+    0.15508391823308063,
+    0.04951364953047393,
+    -0.1019065816181778
+  ],
+  "trainingSeasons": [
+    "2023-24",
+    "2024-25"
+  ],
+  "heldOutSeason": "2025-26",
+  "sourceGamesSha256": "fdb622679018aba6aca61f6c32b31f287bab807c63451dd931a548bfaaafad47",
+  "featurePolicy": "strictly pregame team state; current score applied only after feature emission",
+  "artifactSha256": "399bd1e39c003c06393a6d6ec04dfd841b5b89a379c3ce1c127647740b25c307"
+}

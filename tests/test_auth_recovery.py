@@ -56,9 +56,9 @@ def test_postgres_auth_initialization_locks_down_server_only_tables(monkeypatch)
 
     database.initialize_auth_database()
 
-    for table in ("password_reset_tokens", "auth_bootstrap"):
+    for table in ("users", "password_reset_tokens", "auth_bootstrap"):
         assert f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY" in statements
-        assert f"REVOKE ALL ON TABLE {table} FROM anon, authenticated" in statements
+        assert f"REVOKE ALL ON TABLE {table} FROM anon, authenticated, service_role" in statements
 
 
 def test_password_reset_request_does_not_disclose_unknown_accounts(monkeypatch):

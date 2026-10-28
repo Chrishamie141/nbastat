@@ -100,14 +100,22 @@ function Inner() {
                   <div key={`${r.action}-${r.id || i}`} className="rounded-2xl bg-white/5 p-4">
                     <div className="flex flex-wrap justify-between gap-3">
                       <b>
-                        {r.date} · {r.sport} · {r.action}
+                        {r.date ? new Date(r.date).toLocaleString() : "Date unavailable"} · {r.sport} · {r.action}
                       </b>
-                      <span className={`tag ${r.resultStatus === "WON" ? "text-emerald-300" : r.resultStatus === "LOST" ? "text-red-300" : ""}`}>{r.resultStatus}</span>
+                      <span className={`tag ${r.resultStatus === "WON" ? "text-emerald-300" : r.resultStatus === "LOST" ? "text-red-300" : ""}`}>
+                        {r.resultStatus === "PENDING" && r.gameStatus === "SCHEDULED"
+                          ? "UPCOMING"
+                          : r.resultStatus === "PENDING" && r.gameStatus === "FINAL"
+                            ? "SETTLEMENT PENDING"
+                            : r.resultStatus}
+                      </span>
                     </div>
                     <p className="mt-2 text-gray-400">{r.summary}</p>
                     {r.action === "Prediction" && (
                       <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-slate-300">
                         <p>{r.matchup} · Original pick: <b>{r.predictedWinner}</b>{r.modelProbability != null ? ` · ${(r.modelProbability * 100).toFixed(1)}%` : ""}</p>
+                        {r.kickoffTime && <p className="mt-1 text-xs text-slate-400">Game time {new Date(r.kickoffTime).toLocaleString()}</p>}
+                        {r.modelVersion && <p className="mt-1 text-xs text-slate-400">{r.modelVersion} · {r.modelStatus || "production"} · data cutoff {r.dataTimestamp ? new Date(r.dataTimestamp).toLocaleString() : "not recorded"}</p>}
                         {r.awayScore != null && r.homeScore != null && (
                           <p className="mt-1">Final: {r.awayScore}–{r.homeScore} · Settled {r.settledAt ? new Date(r.settledAt).toLocaleString() : "pending"}</p>
                         )}
