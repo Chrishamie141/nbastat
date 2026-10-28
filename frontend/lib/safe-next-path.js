@@ -1,5 +1,5 @@
 const allowedPrefixes = [
-  '/dashboard', '/games', '/parlays', '/fantasy', '/history', '/performance',
+  '/dashboard', '/games', '/parlays', '/history', '/performance',
   '/account', '/analyze', '/players', '/predictions', '/internal', '/command-center', '/nfl', '/subscribe',
 ];
 

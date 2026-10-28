@@ -111,7 +111,7 @@ if (!["127.0.0.1", "localhost"].includes(new URL(base).hostname)) throw new Erro
     console.log("PASS performance recovery and Geist font:", font);
     await checkAccessibility(page, "performance desktop");
 
-    for (const route of ["/dashboard", "/games", "/analyze", "/analyze/classic", "/parlays", "/fantasy", "/history", "/account", "/nfl/games/401872657"]) {
+    for (const route of ["/dashboard", "/games", "/analyze", "/analyze/classic", "/parlays", "/history", "/account", "/nfl/games/401872657"]) {
       await page.goto(base + route);
       await page.locator("main").first().waitFor();
       await page.waitForLoadState("networkidle");

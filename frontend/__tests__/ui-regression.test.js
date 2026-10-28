@@ -76,14 +76,11 @@ test("local browser automation fails closed instead of targeting production", ()
   assert.doesNotMatch(api, /season = 2026/);
 });
 
-test("fantasy builder loads and persists a dedicated depth chart", () => {
-  const page = fs.readFileSync("app/fantasy/page.jsx", "utf8");
-  const api = fs.readFileSync("lib/api.js", "utf8");
-  assert.match(page, /Build your depth chart/);
-  assert.match(page, /complete 2025 game production/);
-  assert.match(page, /api\.nfl\.depthCharts/);
-  assert.match(page, /api\.nfl\.saveDepthChart/);
-  assert.match(api, /depthCharts:\s*\(scoring\s*=\s*["']PPR["']\)/);
+test("fantasy page and customer entry points are removed", () => {
+  assert.equal(fs.existsSync("app/fantasy/page.jsx"), false);
+  for (const file of ["app/page.jsx", "app/analyze/page.jsx", "app/analyze/classic/page.jsx", "components/layout/PremiumNavbar.jsx", "lib/api.js"]) {
+    assert.doesNotMatch(fs.readFileSync(file, "utf8"), /fantasy/i, `${file} still exposes fantasy functionality`);
+  }
 });
 
 test("NFL game surfaces share logos and complementary probability layout", () => {

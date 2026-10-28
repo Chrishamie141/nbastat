@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
 const AuthContext = createContext(null);
-const protectedRoutes = ['/dashboard', '/analyze', '/history', '/performance', '/account', '/parlays', '/fantasy', '/players', '/games', '/predictions', '/internal', '/command-center', '/nfl'];
+const protectedRoutes = ['/dashboard', '/analyze', '/history', '/performance', '/account', '/parlays', '/players', '/games', '/predictions', '/internal', '/command-center', '/nfl'];
 const ownerRoutes = ['/internal', '/command-center'];
 
 const matches = (path, prefixes) => prefixes.some((route) => path === route || path?.startsWith(`${route}/`));

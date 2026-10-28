@@ -8,7 +8,7 @@ import { brand } from '@/lib/brand';
 import LandingRedirect from '@/components/auth/LandingRedirect';
 
 const LEAGUE_FEATURES = [
-  ['NFL', ['Parlay builder', 'Fantasy tools', 'Grading', 'Performance reports']],
+  ['NFL', ['Game winner predictions', 'Parlay builder', 'Grading', 'Performance reports']],
   ['NBA', ['Game winner research board', 'Player projections', 'Team and roster analysis', 'Prediction history']],
 ];
 

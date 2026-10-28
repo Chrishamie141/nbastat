@@ -160,16 +160,6 @@ export const api = {
       request("/api/nfl/parlay-tickets", { method: "POST", body, timeoutMs: 90000 }),
     parlayTickets: () => request("/api/nfl/parlay-tickets"),
     parlayTicket: (ticketId) => request(`/api/nfl/parlay-tickets/${encodeURIComponent(ticketId)}`),
-    fantasy: (body) =>
-      request("/api/analyze/nfl/fantasy", { method: "POST", body }),
-    depthCharts: (scoring = "PPR") =>
-      request(`/api/nfl/fantasy/depth-charts?scoring=${scoring}`),
-    saveDepthChart: (body) =>
-      request("/api/nfl/fantasy/depth-charts", { method: "POST", body }),
-    updateDepthChart: (id, body) =>
-      request(`/api/nfl/fantasy/depth-charts/${id}`, { method: "PUT", body }),
-    deleteDepthChart: (id) =>
-      request(`/api/nfl/fantasy/depth-charts/${id}`, { method: "DELETE" }),
     history: (q = "") => request(`/api/analyze/nfl/history${q}`),
     grade: (body) =>
       request("/api/analyze/nfl/grade", { method: "POST", body }),

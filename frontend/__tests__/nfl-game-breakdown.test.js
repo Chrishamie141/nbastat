@@ -81,11 +81,10 @@ test('integration keeps weekly picks and laptop lifecycle controls together', ()
   assert.match(detail, /Suspense/);
 });
 
-test('integration retains classic fantasy and authenticated experiment access', () => {
+test('integration retains classic analysis and authenticated experiment access', () => {
   assert.match(read('app/analyze/page.jsx'), /\/analyze\/classic/);
   const classic = read('app/analyze/classic/page.jsx');
-  assert.match(classic, /api\.nfl\.fantasy/);
-  assert.match(classic, /Build Draft Board/);
+  assert.doesNotMatch(classic, /fantasy/i);
   const auth = read('components/auth/AuthProvider.jsx');
   assert.match(auth, /useCallback/);
   assert.match(auth, /'\/internal'/);
