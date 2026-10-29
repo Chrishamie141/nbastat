@@ -58,6 +58,11 @@ def _result_reconciliation_guard():
             (_RESULT_RECONCILIATION_LOCK_ID,),
         ).fetchone()
         acquired = bool(row["acquired"])
+        # Session-level advisory locks survive commits.  End the transaction
+        # before the provider/network work so PostgreSQL's
+        # idle_in_transaction_session_timeout cannot terminate the lock
+        # connection during an otherwise healthy refresh.
+        connection.commit()
         yield acquired
     finally:
         try:

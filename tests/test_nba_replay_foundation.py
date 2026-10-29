@@ -400,6 +400,36 @@ def test_nba_personnel_cron_skips_overlapping_refresh(monkeypatch):
     assert response.json() == {"status": "SKIPPED_OVERLAP", "season": "2026-27"}
 
 
+def test_postgres_reconciliation_guard_ends_transaction_while_work_runs(monkeypatch):
+    from backend.app.services.nba import automation
+
+    events = []
+
+    class Result:
+        def fetchone(self):
+            return {"acquired": True}
+
+    class Connection:
+        def execute(self, query, _values):
+            events.append("lock" if "try_advisory" in query else "unlock")
+            return Result()
+
+        def commit(self):
+            events.append("commit")
+
+        def close(self):
+            events.append("close")
+
+    monkeypatch.setattr(automation, "using_postgres", lambda: True)
+    monkeypatch.setattr(automation, "get_db_connection", lambda: Connection())
+
+    with automation._result_reconciliation_guard() as acquired:
+        assert acquired is True
+        events.append("work")
+
+    assert events == ["lock", "commit", "work", "unlock", "commit", "close"]
+
+
 def test_owner_personnel_refresh_does_not_run_prediction_lifecycle(monkeypatch):
     from contextlib import contextmanager
     from types import SimpleNamespace
