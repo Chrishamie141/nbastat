@@ -48,6 +48,7 @@ def nba_data_refresh_tick(request: Request):
     try:
         return data_refresh.run(trigger_source=_refresh_trigger(request))
     except Exception:
+        logger.exception("nba_data_refresh_failed")
         raise HTTPException(
             503, "NBA data refresh failed; inspect protected operational status"
         ) from None
@@ -60,6 +61,7 @@ def nba_data_refresh_status(request: Request):
     try:
         return data_refresh.status()
     except Exception:
+        logger.exception("nba_data_refresh_status_failed")
         raise HTTPException(503, "NBA data refresh status is unavailable") from None
 
 
@@ -70,6 +72,7 @@ def nba_data_refresh_readiness(request: Request):
     try:
         return data_refresh.readiness()
     except Exception:
+        logger.exception("nba_data_refresh_readiness_failed")
         raise HTTPException(503, "NBA data refresh readiness is unavailable") from None
 
 
@@ -88,6 +91,7 @@ def install_nba_data_refresh(request: Request):
             secret=os.getenv("NBA_DATA_REFRESH_SECRET", ""),
         )
     except Exception:
+        logger.exception("nba_data_refresh_cron_install_failed")
         raise HTTPException(503, "NBA data refresh Cron installation failed") from None
 
 
