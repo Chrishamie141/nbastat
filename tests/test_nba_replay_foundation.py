@@ -79,7 +79,9 @@ def test_schedule_is_batched_and_deduplicated():
     class Response:
         def raise_for_status(self): pass
         def json(self): return {"events": [event]}
-    def get(url, params, timeout):
+    def get(url, params, headers, timeout):
+        assert headers["Accept"] == "application/json"
+        assert "SmartBetSports" in headers["User-Agent"]
         calls.append(params["dates"]); return Response()
     rows = fetch_schedule(season="2026-27", start=date(2026, 9, 20), end=date(2026, 10, 20),
                           http_get=get)
@@ -97,7 +99,7 @@ def test_schedule_retries_failed_month_and_never_silently_drops_it():
         raise requests.Timeout("fixture")
     with pytest.raises(ScheduleIngestionError, match="202610"):
         fetch_schedule(season="2026-27", start=date(2026, 10, 1), end=date(2026, 10, 2),
-                       http_get=fail, max_attempts=2)
+                       http_get=fail, max_attempts=2, sleeper=lambda _seconds: None)
     assert calls == 2
 
 

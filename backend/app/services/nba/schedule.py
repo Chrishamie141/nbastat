@@ -5,12 +5,17 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Iterable
 from datetime import date, datetime, timezone
+import time
 
 import requests
 
 from .season import normalize_nba_season
 
 ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+ESPN_REQUEST_HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (compatible; SmartBetSports/2.0; +https://smartbetsports-api.vercel.app)",
+}
 logger = logging.getLogger(__name__)
 
 
@@ -86,7 +91,8 @@ def month_batches(start: date, end: date) -> Iterable[str]:
 
 def fetch_schedule(
     *, season: str | int, start: date, end: date,
-    timeout: float = 10.0, http_get: Callable = requests.get, max_attempts: int = 2,
+    timeout: float = 10.0, http_get: Callable = requests.get, max_attempts: int = 3,
+    sleeper: Callable[[float], None] = time.sleep,
 ) -> list[dict]:
     """Fetch a date range in bounded batches instead of one request per team/day."""
     normalized = normalize_nba_season(season)
@@ -100,6 +106,7 @@ def fetch_schedule(
                 response = http_get(
                     ESPN_SCOREBOARD,
                     params={"dates": month, "limit": 1000},
+                    headers=ESPN_REQUEST_HEADERS,
                     timeout=timeout,
                 )
                 response.raise_for_status()
@@ -109,6 +116,8 @@ def fetch_schedule(
                 last_error = exc
                 logger.warning("nba_schedule_batch_failed month=%s attempt=%s error=%s",
                                month, attempt, type(exc).__name__)
+                if attempt < max(1, max_attempts):
+                    sleeper(float(2 ** (attempt - 1)))
         if not succeeded or response is None:
             raise ScheduleIngestionError(f"NBA schedule batch {month} could not be verified") from last_error
         for event in response.json().get("events", []):
