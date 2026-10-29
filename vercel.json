@@ -6,7 +6,7 @@
   ],
   "functions": {
     "api/index.py": {
-      "includeFiles": "{data/*.json,backtesting/game_matching.py,backtesting/markets.py,supabase/migrations/20261029173626_nba_daily_eastern_refresh.sql}"
+      "includeFiles": "{data/*.json,backtesting/game_matching.py,backtesting/markets.py}"
     }
   },
   "rewrites": [
