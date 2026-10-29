@@ -154,7 +154,15 @@ def status() -> dict:
                           SUM(CASE WHEN selection=g.home_team THEN 1 ELSE 0 END) AS home_selections,
                           SUM(CASE WHEN selection=g.away_team THEN 1 ELSE 0 END) AS away_selections,
                           MAX(generated_at) AS latest_generated_at,
-                          MAX(feature_cutoff) AS latest_feature_cutoff
+                          MAX(feature_cutoff) AS latest_feature_cutoff,
+                          MIN((payload_json::jsonb->>'evidence_games')::integer)
+                            AS minimum_evidence_games,
+                          MAX((payload_json::jsonb->>'evidence_games')::integer)
+                            AS maximum_evidence_games,
+                          MAX(payload_json::jsonb->>'latest_evidence_game_id')
+                            AS latest_evidence_game_id,
+                          MAX(payload_json::jsonb->>'latest_evidence_kickoff')
+                            AS latest_evidence_kickoff
                    FROM ranked p JOIN nba_games g ON g.game_id=p.game_id
                    WHERE rank=1""",
                 (season, now_iso()),
