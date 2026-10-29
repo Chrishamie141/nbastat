@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -15,6 +16,7 @@ from backend.app.services.nba.lifecycle import foundation_status, operational_se
 from backend.app.services.nba.season import active_nba_season
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 ALLOWED_REFRESH_TRIGGERS = {"supabase_cron", "production_activation"}
 
 
@@ -110,6 +112,7 @@ def migrate_nba_data_refresh(request: Request):
     try:
         return production_migration.apply()
     except Exception:
+        logger.exception("nba_data_refresh_migration_failed")
         raise HTTPException(503, "NBA data refresh migration failed") from None
 
 
