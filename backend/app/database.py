@@ -53,17 +53,24 @@ def database_url() -> str:
     return "sqlite:///./predictions.db"
 
 
+def is_postgres_url(url: str) -> bool:
+    return url.lower().startswith(_POSTGRES_SCHEMES)
+
+
 def using_postgres() -> bool:
-    return database_url().lower().startswith(_POSTGRES_SCHEMES)
+    return is_postgres_url(database_url())
 
 
-def database_path() -> Path:
-    url = database_url()
+def database_path_for_url(url: str) -> Path:
     if url.startswith("sqlite:///"):
         raw = url.replace("sqlite:///", "", 1)
         path = Path(raw)
         return path if path.is_absolute() else BASE_DIR / path
     return BASE_DIR / "predictions.db"
+
+
+def database_path() -> Path:
+    return database_path_for_url(database_url())
 
 
 def _postgres_url(url: str) -> str:
@@ -116,8 +123,9 @@ class PostgresConnection:
         return False
 
 
-def get_db_connection():
-    if using_postgres():
+def get_db_connection_for_url(url: str):
+    """Open a DB-API connection for an explicit, already-selected database URL."""
+    if is_postgres_url(url):
         assert_postgres_allowed()
         try:
             import psycopg
@@ -125,24 +133,29 @@ def get_db_connection():
         except ImportError as exc:  # pragma: no cover - production dependency
             raise RuntimeError("PostgreSQL support is not installed") from exc
         connection = psycopg.connect(
-            _postgres_url(database_url()),
+            _postgres_url(url),
             row_factory=dict_row,
             prepare_threshold=None,
             connect_timeout=5,
         )
         return PostgresConnection(connection)
 
-    target = database_path()
+    target = database_path_for_url(url)
     assert_sqlite_target(target)
     connection = sqlite3.connect(target, timeout=5)
     connection.row_factory = sqlite3.Row
     return connection
 
 
-def table_exists(connection, table: str) -> bool:
+def get_db_connection():
+    return get_db_connection_for_url(database_url())
+
+
+def table_exists(connection, table: str, *, postgres: bool | None = None) -> bool:
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", table):
         raise ValueError("invalid table name")
-    if using_postgres():
+    is_postgres = using_postgres() if postgres is None else postgres
+    if is_postgres:
         return connection.execute(
             "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name=?",
             (table,),

@@ -197,6 +197,19 @@ def test_deployment_environment_rejects_unreviewed_values(monkeypatch):
         pipeline._deployment_environment()
 
 
+def test_pipeline_database_url_prefers_dedicated_credential(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://broad.example/app")
+    monkeypatch.setenv(
+        "NFL_DATA_REFRESH_DATABASE_URL",
+        "postgresql://smartbets_production_app@scoped.example/postgres",
+    )
+
+    assert pipeline._pipeline_database_url() == (
+        "postgresql://smartbets_production_app@scoped.example/postgres"
+    )
+    assert pipeline._pipeline_using_postgres() is True
+
+
 def test_postgres_lock_is_session_scoped_and_explicitly_released(monkeypatch):
     class Cursor:
         def __init__(self, row):
@@ -224,8 +237,8 @@ def test_postgres_lock_is_session_scoped_and_explicitly_released(monkeypatch):
             self.closed = True
 
     connection = Connection()
-    monkeypatch.setattr(pipeline, "using_postgres", lambda: True)
-    monkeypatch.setattr(pipeline, "get_db_connection", lambda: connection)
+    monkeypatch.setattr(pipeline, "_pipeline_using_postgres", lambda: True)
+    monkeypatch.setattr(pipeline, "_pipeline_connection", lambda: connection)
 
     acquired_connection, acquired = pipeline._acquire_pipeline_lock()
     assert acquired is True

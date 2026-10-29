@@ -59,6 +59,9 @@ Required environment variables:
   Production infer the same values, but an explicit value is recommended).
 - `NFL_DATA_REFRESH_SECRET` (secret, 32+ characters)
 - `NFL_DATA_REFRESH_BASE_URL` (the environment's reviewed HTTPS Vercel origin)
+- `NFL_DATA_REFRESH_DATABASE_URL` (a secret direct-Postgres URL for the
+  environment-specific `smartbets_<environment>_app` role; required in
+  production so the worker never inherits the broader application credential)
 
 Protected endpoints:
 

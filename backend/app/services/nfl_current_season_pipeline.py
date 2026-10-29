@@ -14,7 +14,12 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
-from backend.app.database import database_url, get_db_connection, table_exists, using_postgres
+from backend.app.database import (
+    database_url,
+    get_db_connection_for_url,
+    is_postgres_url,
+    table_exists,
+)
 
 logger = logging.getLogger(__name__)
 PIPELINE_LOCK_KEY = 748219411
@@ -60,6 +65,18 @@ def _install_enabled() -> bool:
     return os.getenv("NFL_DATA_REFRESH_INSTALL_ENABLED", "false").strip().lower() == "true"
 
 
+def _pipeline_database_url() -> str:
+    return (os.getenv("NFL_DATA_REFRESH_DATABASE_URL") or "").strip() or database_url()
+
+
+def _pipeline_using_postgres() -> bool:
+    return is_postgres_url(_pipeline_database_url())
+
+
+def _pipeline_connection():
+    return get_db_connection_for_url(_pipeline_database_url())
+
+
 def _deployment_environment() -> str:
     explicit = os.getenv("NFL_DATA_REFRESH_ENVIRONMENT", "").strip().lower()
     if explicit:
@@ -83,9 +100,9 @@ def _job_name(environment: str | None = None) -> str:
 
 def _acquire_pipeline_lock():
     """Hold a dedicated PostgreSQL session lock for the complete cloud run."""
-    if not using_postgres():
+    if not _pipeline_using_postgres():
         return None, True
-    connection = get_db_connection()
+    connection = _pipeline_connection()
     try:
         row = connection.execute(
             f"SELECT pg_try_advisory_lock({PIPELINE_LOCK_KEY}) AS locked"
@@ -115,15 +132,18 @@ def _release_pipeline_lock(connection) -> None:
 
 def initialize() -> None:
     """Provide the additive schema for isolated SQLite tests and local review."""
-    if using_postgres():
+    if _pipeline_using_postgres():
         required = ("nfl_team_game_history", "nfl_data_pipeline_runs",
-                    "nfl_data_pipeline_state", "nfl_forecast_snapshots")
-        with get_db_connection() as connection:
-            missing = [name for name in required if not table_exists(connection, name)]
+                    "nfl_data_pipeline_state", "nfl_forecast_snapshots",
+                    "nfl_game_predictions")
+        with _pipeline_connection() as connection:
+            missing = [name for name in required if not table_exists(
+                connection, name, postgres=True
+            )]
         if missing:
             raise RuntimeError("NFL current-season migration is not installed")
         return
-    with get_db_connection() as connection:
+    with _pipeline_connection() as connection:
         connection.execute("""CREATE TABLE IF NOT EXISTS nfl_team_game_history(
             history_key TEXT PRIMARY KEY,season INTEGER NOT NULL,season_type TEXT NOT NULL,
             week INTEGER NOT NULL,game_id TEXT NOT NULL,team TEXT NOT NULL,opponent TEXT NOT NULL,
@@ -156,6 +176,8 @@ def initialize() -> None:
             UNIQUE(game_id,model_version,history_hash,prediction_hash))""")
         connection.execute("""INSERT INTO nfl_data_pipeline_state(singleton,enabled,last_status,updated_at)
             VALUES(1,1,'BOOTSTRAP',?) ON CONFLICT(singleton) DO NOTHING""", (_iso(_now()),))
+    from backend.app.services.nfl_product_service import _initialize_predictions_for_database
+    _initialize_predictions_for_database(_pipeline_database_url())
 
 
 def _parse_time(value: str) -> datetime:
@@ -262,10 +284,12 @@ def _history_for_kickoff(all_history: list[dict], kickoff: str) -> list[dict]:
 def _refresh_forecasts(connection, *, run_id: str, season: int, weeks: list[int],
                        schedule_loader, generated_at: datetime) -> tuple[int, int, int]:
     from backend.app.services.nfl_product_service import (
-        HISTORY_PATH, _initialize_predictions, _save_prediction_with_connection,
+        HISTORY_PATH, _save_prediction_with_connection,
         build_regular_season_prediction,
     )
-    _initialize_predictions()
+    if not table_exists(connection, "nfl_game_predictions",
+                        postgres=_pipeline_using_postgres()):
+        raise RuntimeError("NFL_PREDICTION_STORAGE_REQUIRED")
     history = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))["items"]
     current_rows = connection.execute("""SELECT season,week,game_id,team,opponent,home_away,
         points_for,points_against,completed_at,data_as_of,record_role,is_pregame,provider
@@ -338,7 +362,7 @@ def run(*, season: int | None = None, trigger_source: str = "supabase_cron",
     if not lock_acquired:
         return {"runId": run_id, "status": "ALREADY_RUNNING", "networkContacted": False}
     try:
-        with get_db_connection() as connection:
+        with _pipeline_connection() as connection:
             connection.execute("""INSERT INTO nfl_data_pipeline_runs(
                 run_id,trigger_source,season,started_at,status,details_json) VALUES(?,?,?,?,?,?)""",
                 (run_id, trigger_source, season, _iso(now), "RUNNING", "{}"))
@@ -348,7 +372,7 @@ def run(*, season: int | None = None, trigger_source: str = "supabase_cron",
         if str(context.get("seasonType")) != "regular":
             raise RuntimeError("NFL_REGULAR_SEASON_INACTIVE")
         active_week = int(context["week"])
-        with get_db_connection() as connection:
+        with _pipeline_connection() as connection:
             found = {int(row["week"]) for row in connection.execute(
                 "SELECT DISTINCT week FROM nfl_team_game_history WHERE season=? AND season_type='regular'",
                 (season,)).fetchall()}
@@ -365,12 +389,12 @@ def run(*, season: int | None = None, trigger_source: str = "supabase_cron",
                     normalized.extend(_normalize_final(game, week, now))
                 elif game.get("kickoff_time") and _parse_time(game["kickoff_time"]) + timedelta(hours=8) < now:
                     raise RuntimeError("NFL_EXPECTED_FINAL_MISSING")
-        with get_db_connection() as connection:
+        with _pipeline_connection() as connection:
             inserted, duplicates, conflicts = _upsert_history(connection, normalized)
             cutoff, latest_game = _history_cutoff(connection)
         planning = planning_week_context(season, at=now, operational=context)
         forecast_weeks = sorted({active_week, int(planning.get("week", active_week))})
-        with get_db_connection() as connection:
+        with _pipeline_connection() as connection:
             forecasts, unchanged, frozen = _refresh_forecasts(
                 connection, run_id=run_id, season=season, weeks=forecast_weeks,
                 schedule_loader=schedule_loader, generated_at=now,
@@ -395,7 +419,7 @@ def run(*, season: int | None = None, trigger_source: str = "supabase_cron",
         code = str(exc) if isinstance(exc, (HistoryConflict, RuntimeError, ValueError)) else type(exc).__name__
         code = code[:80]
         logger.exception("nfl_current_season_pipeline_failed code=%s", code)
-        with get_db_connection() as connection:
+        with _pipeline_connection() as connection:
             connection.execute("""UPDATE nfl_data_pipeline_runs SET completed_at=?,status='FAILED',
                 safe_error_code=? WHERE run_id=?""", (_iso(_now(clock)), code, run_id))
             connection.execute("""UPDATE nfl_data_pipeline_state SET last_status='FAILED',last_error_code=?,
@@ -408,7 +432,7 @@ def run(*, season: int | None = None, trigger_source: str = "supabase_cron",
 
 def status() -> dict:
     initialize()
-    with get_db_connection() as connection:
+    with _pipeline_connection() as connection:
         state = connection.execute("SELECT * FROM nfl_data_pipeline_state WHERE singleton=1").fetchone()
         counts = connection.execute("""SELECT season,COUNT(DISTINCT game_id) AS games,COUNT(*) AS team_rows,
             MAX(completed_at) AS latest_cutoff FROM nfl_team_game_history GROUP BY season ORDER BY season""").fetchall()
@@ -417,7 +441,7 @@ def status() -> dict:
             forecasts_created,forecasts_unchanged,officials_frozen,latest_history_cutoff
             FROM nfl_data_pipeline_runs ORDER BY started_at DESC LIMIT 10""").fetchall()
         job = latest_run = None
-        if using_postgres():
+        if _pipeline_using_postgres():
             cron_state = connection.execute(
                 "SELECT public.nfl_data_refresh_cron_status(?) AS value",
                 (_deployment_environment(),),
@@ -438,24 +462,27 @@ def readiness() -> dict:
         "environment": environment,
         "refreshEnabled": _enabled(),
         "installerEnabled": _install_enabled(),
+        "dedicatedDatabaseUrlConfigured": bool(
+            (os.getenv("NFL_DATA_REFRESH_DATABASE_URL") or "").strip()
+        ),
         "schedulerExpectedName": (
             _job_name(environment) if environment in DEPLOYMENT_ENVIRONMENTS else None
         ),
-        "database": {"kind": "postgres" if using_postgres() else "sqlite"},
+        "database": {"kind": "postgres" if _pipeline_using_postgres() else "sqlite"},
     }
-    if not using_postgres():
+    if not _pipeline_using_postgres():
         result["ready"] = False
         result["blockers"] = ["PERSISTENT_POSTGRES_REQUIRED"]
         return result
 
-    parsed = urlparse(database_url())
+    parsed = urlparse(_pipeline_database_url())
     result["database"]["host"] = parsed.hostname
     supabase_url = os.getenv("SUPABASE_URL", "").strip()
     if supabase_url:
         supabase_host = urlparse(supabase_url).hostname or ""
         if supabase_host.endswith(".supabase.co"):
             result["database"]["supabaseProjectRef"] = supabase_host.split(".", 1)[0]
-    with get_db_connection() as connection:
+    with _pipeline_connection() as connection:
         identity = connection.execute("""SELECT current_user AS current_role,
             current_database() AS database_name,
             current_setting('server_version') AS server_version,
@@ -490,6 +517,8 @@ def readiness() -> dict:
         blockers.append("NFL_PIPELINE_MIGRATIONS_REQUIRED")
     if not result["database"]["leastPrivilegeRole"]:
         blockers.append("DEDICATED_DATABASE_ROLE_REQUIRED")
+    if environment == "production" and not result["dedicatedDatabaseUrlConfigured"]:
+        blockers.append("DEDICATED_DATABASE_URL_REQUIRED")
     if environment == "production" and cron_job:
         blockers.append("PRODUCTION_CRON_ALREADY_PRESENT")
     if environment == "production" and _enabled():
@@ -502,7 +531,7 @@ def readiness() -> dict:
 
 
 def install_supabase_cron(*, base_url: str, secret: str) -> dict:
-    if not using_postgres():
+    if not _pipeline_using_postgres():
         raise RuntimeError("Supabase Cron installation requires PostgreSQL")
     parsed = urlparse(base_url)
     if parsed.scheme != "https" or not parsed.netloc or parsed.path not in {"", "/"}:
@@ -513,7 +542,7 @@ def install_supabase_cron(*, base_url: str, secret: str) -> dict:
     if environment not in DEPLOYMENT_ENVIRONMENTS:
         raise RuntimeError("NFL_DATA_REFRESH_ENVIRONMENT_REQUIRED")
     target = base_url.rstrip("/") + "/api/cron/nfl-data-refresh"
-    with get_db_connection() as connection:
+    with _pipeline_connection() as connection:
         result = connection.execute(
             "SELECT public.install_nfl_data_refresh_cron(?,?,?) AS value",
             (base_url.rstrip("/"), secret, environment),
