@@ -40,7 +40,7 @@ function Detail() {
       </main>
     );
   const hasPick =
-      game && ["available", "pregame_snapshot"].includes(game.predictionStatus),
+      game && ["available", "pregame_snapshot", "latest_forecast"].includes(game.predictionStatus),
     pickOdds =
       game?.winner === game?.home_team
         ? game?.market?.homeOdds
@@ -94,7 +94,9 @@ function Detail() {
             <>
               <div className="mt-5 grid gap-4 sm:grid-cols-3">
                 <GlowCard className="p-6 sm:col-span-2">
-                  <p className="text-sm text-slate-400">SmartBetSports pick</p>
+                  <p className="text-sm text-slate-400">
+                    {game.predictionStatus === "latest_forecast" ? "Latest validated forecast" : "Official evaluated prediction"}
+                  </p>
                   <p className="mt-2 text-4xl font-black text-cyan-100">
                     {game.winner} ML
                   </p>

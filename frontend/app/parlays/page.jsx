@@ -22,7 +22,7 @@ const MODES = [
 ];
 const DAYS = ["ALL", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY", "MONDAY"];
 const hasPregamePrediction = (game) =>
-  ["available", "pregame_snapshot"].includes(game?.predictionStatus);
+  ["available", "pregame_snapshot", "latest_forecast"].includes(game?.predictionStatus);
 
 export default function Parlays() {
   return (

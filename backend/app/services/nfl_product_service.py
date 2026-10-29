@@ -200,7 +200,30 @@ def _schedule(season: int, week: int, season_type: str = "regular") -> list[dict
 
 
 def _history() -> list[dict]:
-    return json.loads(HISTORY_PATH.read_text(encoding="utf-8"))["items"]
+    """Return immutable baseline history plus validated current-season rows.
+
+    The checked-in 2025 file remains the reproducible baseline.  Current-season
+    evidence is additive and server-persisted; a missing migration therefore
+    degrades to the baseline instead of making the product unavailable.
+    """
+    rows = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))["items"]
+    try:
+        with get_db_connection() as connection:
+            if not table_exists(connection, "nfl_team_game_history"):
+                return rows
+            current = connection.execute("""SELECT season,week,game_id,team,opponent,home_away,
+                points_for,points_against,completed_at,data_as_of,record_role,is_pregame,provider
+                FROM nfl_team_game_history ORDER BY completed_at,game_id,team""").fetchall()
+        seen = {(int(row["season"]), str(row["game_id"]), str(row["team"])) for row in rows}
+        for row in current:
+            item = dict(row)
+            identity = (int(item["season"]), str(item["game_id"]), str(item["team"]))
+            if identity not in seen:
+                rows.append(item)
+                seen.add(identity)
+    except Exception:
+        logger.exception("nfl_current_history_read_failed")
+    return rows
 
 
 @lru_cache(maxsize=4)
@@ -350,6 +373,56 @@ def _explanation(*, season_type: str, winner: str, probability: float, projectio
         risk = "Late injuries, lineup changes, and market movement are not included unless a verified provider supplied them."
         missing = ["verified late lineup changes", "game-specific injury impact"]
     return reasons, risk, missing
+
+
+def build_regular_season_prediction(game: dict, history: list[dict], market: dict | None = None) -> dict | None:
+    """Run the unchanged NFL V2 champion against an explicit history snapshot."""
+    market = market or _market_context([], game["home_team"], game["away_team"])
+    projection = NFLGameMarketPredictorV2().project(game, history)
+    if projection is None:
+        return None
+    home_probability = projection.probability(
+        "h2h", game["home_team"], home_team=game["home_team"], away_team=game["away_team"]
+    )
+    winner = game["home_team"] if home_probability >= 0.5 else game["away_team"]
+    probability = home_probability if winner == game["home_team"] else 1 - home_probability
+    implied = market["homeImpliedProbability"] if winner == game["home_team"] else market["awayImpliedProbability"]
+    edge = round(probability - implied, 4) if implied is not None else None
+    evidence_score = round(projection.confidence, 1)
+    projection_data = {
+        "home_probability": home_probability, "home_points": projection.home_points,
+        "away_points": projection.away_points, "evidence_score": projection.confidence,
+        "data_as_of": projection.data_as_of, "model_version": projection.model_version,
+    }
+    reasons, main_risk, missing_data = _explanation(
+        season_type="regular", winner=winner, probability=probability, projection=projection_data,
+    )
+    risk_level = _risk_level(probability, evidence_score, "regular")
+    rating = round(min(9.5, max(5.0, 5.0 + (probability - .5) * 20 + max(edge or 0, 0) * 10)), 1)
+    eligibility = {
+        name: (implied is not None and probability >= policy["minimum_probability"]
+               and edge is not None and edge >= policy["minimum_edge"])
+        for name, policy in PROFILE_POLICY.items()
+    }
+    display_week = int(game.get("display_week", game["week"]))
+    provider_week = int(game.get("provider_week", display_week))
+    return {
+        "winner": winner, "winProbability": round(probability, 4),
+        "homeWinProbability": round(home_probability, 4),
+        "awayWinProbability": round(1 - round(home_probability, 4), 4),
+        "evidenceScore": evidence_score, "confidence": evidence_score,
+        "confidenceMetric": "evidence_score_not_probability",
+        "projectedHomeScore": round(projection.home_points, 1),
+        "projectedAwayScore": round(projection.away_points, 1),
+        "edge": edge, "riskLevel": risk_level, "rating": rating,
+        "reasons": reasons, "mainRisk": main_risk, "missingData": missing_data,
+        "dataAsOf": projection.data_as_of, "modelVersion": projection.model_version,
+        "seasonType": "regular", "displayWeek": display_week,
+        "providerWeek": provider_week, "provider": game.get("provider", "espn"),
+        "weekKey": game.get("week_key", f"REG{display_week}"),
+        "weekLabel": game.get("week_label", f"Week {display_week}"),
+        "profileEligibility": eligibility, "market": market,
+    }
 
 
 @lru_cache(maxsize=16)
@@ -609,6 +682,47 @@ def _canonical_prediction_snapshots(season: int, season_type: str) -> dict[str, 
     return snapshots
 
 
+def _latest_forecast_snapshots(season: int, week: int, season_type: str) -> dict[str, dict]:
+    if _season_type(season_type) != "regular":
+        return {}
+    with get_db_connection() as connection:
+        if not table_exists(connection, "nfl_forecast_snapshots"):
+            return {}
+        rows = connection.execute("""SELECT game_id,generated_at,history_cutoff,prediction_json
+            FROM nfl_forecast_snapshots WHERE season=? AND season_type=? AND display_week=?
+            ORDER BY generated_at DESC,forecast_id DESC""",
+            (season, "regular", week)).fetchall()
+    latest = {}
+    for row in rows:
+        if row["game_id"] not in latest:
+            latest[row["game_id"]] = {
+                **json.loads(row["prediction_json"]), "generatedAt": row["generated_at"],
+                "historyCutoff": row["history_cutoff"],
+            }
+    return latest
+
+
+def _pipeline_freshness() -> dict:
+    with get_db_connection() as connection:
+        if not table_exists(connection, "nfl_data_pipeline_state"):
+            return {"state": "NOT_CONFIGURED", "isCurrent": False, "lastSuccessAt": None}
+        row = connection.execute("SELECT * FROM nfl_data_pipeline_state WHERE singleton=1").fetchone()
+    if not row:
+        return {"state": "NOT_CONFIGURED", "isCurrent": False, "lastSuccessAt": None}
+    last_success = row["last_success_at"]
+    current = False
+    if last_success:
+        observed = datetime.fromisoformat(str(last_success).replace("Z", "+00:00"))
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=timezone.utc)
+        current = datetime.now(timezone.utc) - observed <= timedelta(minutes=90)
+    return {
+        "state": row["last_status"], "isCurrent": current,
+        "lastSuccessAt": last_success, "latestHistoryCutoff": row["latest_history_cutoff"],
+        "lastErrorCode": row["last_error_code"],
+    }
+
+
 def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | None = None,
                  season_type: str = "regular") -> dict:
     started = perf_counter()
@@ -639,6 +753,7 @@ def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | 
     system_snapshots = (user_snapshots if user_id == 0 else
                         _prediction_snapshots(0, season, week, season_type))
     snapshots = {**user_snapshots, **system_snapshots}
+    latest_forecasts = _latest_forecast_snapshots(season, week, season_type)
     snapshot_ms = (perf_counter() - snapshot_started) * 1000
     from backend.app.services.nfl_experiment_service import weekly_board_context
 
@@ -671,6 +786,22 @@ def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | 
                                         "PUSH" if actual is None else "WIN" if snapshot.get("winner") == actual else "LOSS")
             else:
                 item["unavailableReason"] = "No stored pregame prediction exists. Final games are never re-predicted after the outcome is known."
+            if day and day.upper() != "ALL":
+                weekday = datetime.fromisoformat(game["kickoff_time"].replace("Z", "+00:00")).strftime("%A").upper()
+                if weekday != day.upper():
+                    continue
+            items.append(item)
+            continue
+
+        latest_forecast = latest_forecasts.get(game["game_id"])
+        if latest_forecast:
+            item.update(latest_forecast)
+            item["predictionStatus"] = "latest_forecast"
+            item["latestForecastGeneratedAt"] = latest_forecast.get("generatedAt")
+            item["officialEvaluatedPrediction"] = snapshot
+            item["officialEvaluatedGeneratedAt"] = (snapshot or {}).get("generatedAt")
+            item.update(_price_dependent_fields(latest_forecast, game, effective_market, profile))
+            item["marketHistory"] = market_history
             if day and day.upper() != "ALL":
                 weekday = datetime.fromisoformat(game["kickoff_time"].replace("Z", "+00:00")).strftime("%A").upper()
                 if weekday != day.upper():
@@ -772,6 +903,7 @@ def weekly_board(season: int, week: int, profile: str, user_id: int, day: str | 
               "gameCount": len(items), "recommendedCount": sum(bool(row["recommended"]) for row in items),
               "modelVersion": "nfl_preseason_score_v1" if season_type == "preseason" else V2_MODEL_VERSION,
               "generatedAt": _now(),
+              "historyFreshness": _pipeline_freshness(),
               "methodology": (
                   "Current-season completed preseason scores only, shrunk toward league average; personnel uncertainty limits extreme probabilities."
                   if season_type == "preseason" else

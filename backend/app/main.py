@@ -21,6 +21,7 @@ from backend.app.api.billing import router as billing_router
 from backend.app.api.social_cron import router as social_cron_router
 from backend.app.api.social_operations import router as social_operations_router
 from backend.app.api.nfl_automation_cron import router as nfl_automation_cron_router
+from backend.app.api.nfl_data_refresh_cron import router as nfl_data_refresh_cron_router
 from backend.app.api.nba_automation_cron import router as nba_automation_cron_router
 from backend.app.services.entitlement_service import require_full_access, require_internal_access
 from backend.app.services.auth_service import current_user, owner_account_integrity
@@ -145,6 +146,7 @@ app.include_router(billing_router)
 app.include_router(social_cron_router)
 app.include_router(social_operations_router)
 app.include_router(nfl_automation_cron_router)
+app.include_router(nfl_data_refresh_cron_router)
 app.include_router(nba_automation_cron_router)
 
 @app.middleware("http")

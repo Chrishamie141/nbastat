@@ -186,6 +186,12 @@ function NflBoard() {
           Method: {data.methodology}
         </p>
       )}
+      {seasonType === "regular" && data?.historyFreshness && !data.historyFreshness.isCurrent && (
+        <GlowCard className="mt-4 border-amber-300/30 p-4 text-amber-100">
+          Current-season history refresh is {data.historyFreshness.state?.toLowerCase() || "not current"}.
+          Picks are not labeled current until the cloud refresh succeeds.
+        </GlowCard>
+      )}
       {error && (
         <GlowCard className="mt-6 border-red-400/40 p-5 text-red-100">
           <b>Unable to load verified data.</b>
@@ -219,7 +225,7 @@ function NflBoard() {
 
 function PredictionCard({ game, season, week, seasonType }) {
   const final = game.status === "final";
-  const hasPick = ["available", "pregame_snapshot"].includes(
+  const hasPick = ["available", "pregame_snapshot", "latest_forecast"].includes(
     game.predictionStatus,
   );
   const pickOdds =
@@ -253,7 +259,9 @@ function PredictionCard({ game, season, week, seasonType }) {
         <div className="mt-5 rounded-2xl bg-cyan-300/10 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-slate-300">SmartBetSports pick</p>
+              <p className="text-sm text-slate-300">
+                {game.predictionStatus === "latest_forecast" ? "Latest validated forecast" : "Official evaluated prediction"}
+              </p>
               <p className="mt-1 text-2xl font-black text-cyan-100">
                 {game.winner} moneyline
               </p>
@@ -275,6 +283,11 @@ function PredictionCard({ game, season, week, seasonType }) {
               </p>
             </div>
           </div>
+          {game.predictionStatus === "latest_forecast" && game.latestForecastGeneratedAt && (
+            <p className="mt-3 text-xs text-slate-400">
+              Refreshed {new Date(game.latestForecastGeneratedAt).toLocaleString()}. The official evaluated prediction remains immutable.
+            </p>
+          )}
           {game.reasons?.length > 0 && (
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
