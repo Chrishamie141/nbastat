@@ -141,7 +141,8 @@ def status() -> dict:
                 """WITH ranked AS (
                      SELECT p.*,
                             ROW_NUMBER() OVER (
-                              PARTITION BY game_id ORDER BY generated_at DESC,snapshot_id DESC
+                              PARTITION BY p.game_id
+                              ORDER BY p.generated_at DESC,p.snapshot_id DESC
                             ) AS rank
                      FROM nba_prediction_snapshots p
                      JOIN nba_games g ON g.game_id=p.game_id
