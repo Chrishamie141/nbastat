@@ -1,109 +1,146 @@
 # NFL production preparation update
 
-Preparation cutoff: **2026-10-29 05:02 UTC / 2026-10-29 01:02 EDT**.
+Preparation cutoff: **2026-10-29 11:46 UTC / 2026-10-29 07:46 EDT**.
 
 ## Outcome
 
-The implementation is production-shaped and has a disabled, unpromoted Vercel
-Production-target build. Production activation remains blocked by the database
-management boundary described below. No production Cron job was installed, no
-production ingestion cycle ran, and no production prediction was created or
-changed.
+The NFL current-season cloud pipeline is ready for a controlled production
+activation. The production database boundary, migrations, Vercel credentials,
+and protected readiness path have been installed and verified while production
+refresh remains disabled. No production Cron job was installed, no production
+ingestion cycle ran, no live domain was promoted, and no production prediction
+or grading record was created or changed.
 
-## Completed hardening
+NFL V2 model logic and identity were not changed.
 
-- Disabled mode now returns before database initialization or provider access.
-- Staging and production use explicit environment names, independent Cron job
-  names, and independent Supabase Vault secret names.
-- The scheduler installer has a second, default-closed gate and rejects a
-  deployment-environment/database-role mismatch.
-- A protected read-only readiness endpoint reports sanitized database identity,
-  role scope, migrations, scheduler state, and activation blockers.
-- The Cron SQL is environment-neutral and grants only the bounded operations
-  required by `smartbets_staging_app` or `smartbets_production_app`.
-- Superseded staging policies were removed, and the forecast/run foreign key now
-  has a covering index.
-- Staging Cron uses the durable alias
-  `https://smartbetsports-api-staging.vercel.app`, so Preview deployment URLs no
-  longer have to be embedded in the schedule.
-- NFL V2 model logic and identity were not changed.
-
-## Staging evidence
+## Production readiness evidence
 
 | Check | Result |
 |---|---|
-| Supabase project | `reyseyjksdfgcqyrpjtw`, healthy |
-| Vercel Preview | `dpl_BDZjwBa1ddU2Lnbq1ca2F3Z86bAi`, Ready, stable staging alias assigned |
-| Readiness | HTTP 200, `ready=true`, dedicated role confirmed, installer closed |
-| Scheduler | `smartbets-nfl-data-refresh-30m-staging`, job 8, active, `*/30 * * * *` |
-| Controlled refresh | `SUCCEEDED`; 0 history inserts, 28 duplicates, 0 conflicts, 14 unchanged forecasts, 0 official predictions changed |
-| Completed games | 107 games / 214 team-history rows |
-| Week 8 | 14 forecast snapshots and 14 official frozen predictions |
-| Pipeline failures | 0 |
-| Production Cron jobs | 0 |
-| Install gate test | HTTP 409 while the final Preview has the installer disabled |
-| First stable-alias scheduled run | Cron succeeded at 2026-10-29 05:00:00 UTC / 01:00:00 EDT; durable pipeline success at 05:00:10 UTC / 01:00:10 EDT with 0 inserts, 28 duplicates, 0 conflicts, 14 unchanged forecasts, and 0 official prediction changes |
+| Supabase project | `jcjlztdmxdzrbnbrnmmn` (`supabase-aquamarine-kettle`) |
+| Worker database role | `smartbets_production_app`; login only, no superuser, database creation, role creation, replication, or inheritance |
+| Direct Cron/Vault access | Denied; privileged operations are reachable only through the reviewed security-definer boundary |
+| Prediction access | Select/insert only; no update/delete; inserted pipeline predictions must have `user_id=0` |
+| Migrations | Eight reviewed additive NFL migrations installed and recorded in `supabase_migrations.schema_migrations` |
+| Production pipeline data | 0 history rows, 0 run rows, 0 forecast rows (expected before activation) |
+| Production Cron | 0 jobs named `smartbets-nfl-data-refresh-30m-production` |
+| Activation flags | `NFL_DATA_REFRESH_ENABLED=false`; `NFL_DATA_REFRESH_INSTALL_ENABLED=false` |
+| Scoped Vercel secret | `NFL_DATA_REFRESH_DATABASE_URL` exists as a Production Secret |
+| Final readiness deployment | `dpl_7v6KvxHuNABuKrQiPG1tjXVHaLeN` |
+| Deployment URL | `https://smartbetsports-4vfc50um2-chrishamie141s-projects.vercel.app` |
+| Deployment target | Production-target, Ready, unaliased; live production domain unchanged |
+| Commit | `1110c56a2ff18ee4c1d01baff45363c9b413103b` |
+| Protected readiness | `ready=true`, zero blockers |
+| Readiness database identity | PostgreSQL through `aws-0-us-east-1.pooler.supabase.com`; role `smartbets_production_app`; project ref `jcjlztdmxdzrbnbrnmmn` |
+| Readiness migration checks | Pipeline migration and environment boundary both installed |
+| Readiness scheduler check | `cronJob=null` |
 
-The next scheduled execution is 2026-10-29 05:30:00 UTC / 01:30:00 EDT.
+The protected readiness request used the Production bearer only in process
+memory. Vercel does not permit Production Secret values to be exported. No
+secret value was written to this report or committed to the repository.
 
-## Production-target evidence
+## Credential incident and remediation
 
-The final inspected build is Vercel deployment
-`dpl_6dLwzq7vky84La6GaBqDbmkRVLKZ` at
-`https://smartbetsports-7kxg0808l-chrishamie141s-projects.vercel.app`, built
-from commit `37db0bf2a47525a10e00c5cca7a5d7c159fa6859`.
-It was built with `--prod --skip-domain`; `productionUrl` is null and the
-deployment has no aliases. The live production domains still point to the prior
-deployment.
+During a database-connection verification step, the first generated database
+credential appeared in browser diagnostic output. It was immediately treated
+as compromised. The database password was rotated at Supabase, the stored Vault
+secret was replaced, the Vercel Production secret was rotated, and all later
+deployments use only the replacement value. The exposed value is revoked and
+cannot authenticate.
 
-The protected readiness response verified:
+The NFL refresh bearer was also rotated to a new Production Secret before the
+final protected readiness test. It was held only in process memory and was not
+written to disk or an artifact.
 
-- `environment=production`
-- `refreshEnabled=false`
-- `installerEnabled=false`
-- no production Cron job
-- Supabase project ref `jcjlztdmxdzrbnbrnmmn`
-- database role `postgres` (not acceptable for the worker)
-- NFL pipeline migrations absent
+## Historical-data preservation checks
 
-Production has a distinct refresh bearer and explicit disabled configuration.
-The bearer was not printed or persisted in an artifact.
+The following production baselines were captured before the migration and were
+rechecked after installation:
 
-## Remaining blocker
+| Dataset | Before | After |
+|---|---:|---:|
+| Official NFL system predictions | 105 | 105 |
+| NFL prediction history | 258 | 258 |
+| NFL game results | 135 | 135 |
+| NBA prediction snapshots | 262 | 262 |
+| NBA settlements | 58 | 58 |
 
-The connected Supabase management account cannot access project
-`jcjlztdmxdzrbnbrnmmn`; the API returns a permission error. Consequently a
-restorable backup, advisors, migration history, and a dedicated
-`smartbets_production_app` credential cannot be verified or provisioned through
-the approved management plane. The worker must not be activated using the broad
-`postgres` credential, and the application credential must not be used as a
-backdoor around this management boundary.
+The existing production Cron jobs are still exactly:
 
-Required resolution:
+- `smartbets-nfl-active-season`, job 1, active, `*/5 * * * *`
+- `smartbets-social-active-season`, job 3, active, `*/15 * * * *`
 
-1. Grant the connected Supabase account project-level access to
-   `jcjlztdmxdzrbnbrnmmn`, or reconnect the correct Supabase organization.
-2. Verify/obtain a restorable backup and run pre-migration advisors.
-3. Create `smartbets_production_app` with a unique credential and only the
-   reviewed grants.
-4. Apply the additive migrations and rerun advisors.
-5. Point the NFL refresh worker at the scoped credential and verify readiness
-   reports no blockers while both activation switches remain false.
-6. Request a separate activation approval before installing the production Cron
-   job or setting `NFL_DATA_REFRESH_ENABLED=true`.
+No existing NFL, NBA, social, or Agent Core schedule was changed.
 
-## Verification
+## Staging evidence
 
-- NFL pipeline/product/server plus NBA availability/model/replay/shadow tests:
-  **90 passed**.
+The current branch was also validated on staging before production preparation:
+
+| Check | Result |
+|---|---|
+| Supabase project | `reyseyjksdfgcqyrpjtw` |
+| Stable Preview alias | `https://smartbetsports-api-staging.vercel.app` |
+| Latest validated Preview | `dpl_6Xzw7fPm7Y7keA13Mf9ki14qstFv` |
+| Scheduler | `smartbets-nfl-data-refresh-30m-staging`, active, every 30 minutes |
+| Confirmed scheduled start | 2026-10-29 11:00:00.193098 UTC / 07:00:00.193098 EDT |
+| Durable success | 2026-10-29 11:00:10 UTC / 07:00:10 EDT |
+| Scheduled-run result | 0 inserts, 28 duplicates, 0 conflicts, 14 unchanged forecasts, 0 official predictions changed |
+| Completed-game history | 107 games / 214 team-history rows |
+| Week 8 | 14 snapshots and 14 frozen official predictions |
+| Consecutive failures | 0 |
+
+This staging run was initiated by Supabase Cron against the deployed Vercel
+alias. No local computer, local server, manually running Python process, or
+connected Codex session was involved.
+
+## Validation
+
+- Relevant NFL/NBA backend suite: **123 passed**.
+- Full backend suite: **911 passed, 1 skipped, 4 unrelated pre-existing
+  failures** (one stale Fantasy test and three Windows subprocess-handle
+  failures).
 - Frontend tests: **47 passed**.
 - Frontend production build: **passed**.
-- Supabase security advisor: no new warning attributable to this pipeline.
-- Supabase performance advisor: the pipeline's missing foreign-key index and
-  duplicate-policy warnings are resolved; remaining items predate this change.
+- Final unaliased Production-target build: **Ready**.
+- Public application readiness on the Production-target build: **healthy**,
+  PostgreSQL connected, all required NFL/NBA tables present.
+- Protected NFL pipeline readiness: **ready**, zero blockers, dedicated role
+  confirmed, migrations present, production Cron absent, both activation gates
+  closed.
+
+## Residual operational risks
+
+- The production Supabase project is on a Free plan and reports no managed
+  backups. The migrations were additive and preserved all measured baselines,
+  but upgrading to a plan with restorable backups is strongly recommended
+  before or immediately after activation.
+- The source branch is still represented by draft PR #111. Production activation
+  must use the reviewed commit above (or its merged equivalent); the current
+  live domain was deliberately not moved during preparation.
+- No production ingestion has run yet by design. The first controlled run must
+  be observed and compared with the recorded prediction/history baselines.
+
+## Exact activation procedure (requires separate explicit approval)
+
+1. Approve and merge PR #111, or promote the verified commit through the normal
+   release workflow.
+2. Keep `NFL_DATA_REFRESH_ENABLED=false`; temporarily set
+   `NFL_DATA_REFRESH_INSTALL_ENABLED=true`, deploy, and call the protected
+   installer once against `https://smartbetsports-api.vercel.app`.
+3. Verify the new job is named
+   `smartbets-nfl-data-refresh-30m-production`, targets the live HTTPS origin,
+   runs every 30 minutes, and stores its bearer in Supabase Vault.
+4. Return `NFL_DATA_REFRESH_INSTALL_ENABLED=false` and redeploy.
+5. Set `NFL_DATA_REFRESH_ENABLED=true` and deploy only after the activation
+   approval is recorded.
+6. Observe the first scheduled run. Require a successful durable run record,
+   zero conflicts, expected completed-game counts, current upcoming forecasts,
+   and zero changes to frozen official predictions.
+7. If any gate fails, immediately set refresh back to false and unschedule only
+   `smartbets-nfl-data-refresh-30m-production`; do not touch existing jobs.
 
 ## Recommendation
 
-**NOT READY FOR PRODUCTION ACTIVATION.** Application and staging preparation are
-complete, but production database access must be corrected before the scoped
-role, backup, and migrations can be safely completed.
+**READY FOR PRODUCTION.** All technical readiness blockers are resolved and the
+protected Production-target check reports zero blockers. Production remains
+safely inactive pending the founder's explicit activation approval.
