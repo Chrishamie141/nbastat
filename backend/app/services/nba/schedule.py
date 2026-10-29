@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterable
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import time
 
 import requests
@@ -12,6 +12,7 @@ import requests
 from .season import normalize_nba_season
 
 ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+ESPN_CDN_SCOREBOARD = "https://cdn.espn.com/core/nba/scoreboard"
 ESPN_REQUEST_HEADERS = {
     "Accept": "application/json",
     "User-Agent": "Mozilla/5.0 (compatible; SmartBetSports/2.0; +https://smartbetsports-api.vercel.app)",
@@ -121,14 +122,71 @@ def fetch_schedule(
                                month, attempt, type(exc).__name__)
                 if attempt < max(1, max_attempts):
                     sleeper(float(2 ** (attempt - 1)))
-        if not succeeded or response is None:
-            raise ScheduleIngestionError(f"NBA schedule batch {month} could not be verified") from last_error
-        for event in response.json().get("events", []):
+        if succeeded and response is not None:
+            events = response.json().get("events", [])
+        else:
+            logger.warning("nba_schedule_batch_fallback month=%s provider=espn_cdn", month)
+            events = _fetch_daily_cdn_events(
+                month=month,
+                start=start,
+                end=end,
+                timeout=timeout,
+                http_get=http_get,
+                max_attempts=max_attempts,
+                sleeper=sleeper,
+            )
+        for event in events:
             game = normalize_espn_event(event, normalized)
             game_date = _dt_date(game["kickoff_time"])
             if start <= game_date <= end:
                 games[game["game_id"]] = game
     return sorted(games.values(), key=lambda row: (row["kickoff_time"], row["game_id"]))
+
+
+def _fetch_daily_cdn_events(
+    *, month: str, start: date, end: date, timeout: float,
+    http_get: Callable, max_attempts: int, sleeper: Callable[[float], None],
+) -> list[dict]:
+    """Recover a rejected monthly batch through ESPN's daily CDN feed."""
+    year, month_number = int(month[:4]), int(month[4:])
+    month_start = date(year, month_number, 1)
+    next_month = date(year + (month_number == 12), 1 if month_number == 12 else month_number + 1, 1)
+    cursor = max(start, month_start)
+    last_day = min(end, next_month - timedelta(days=1))
+    events: dict[str, dict] = {}
+    while cursor <= last_day:
+        response = None
+        last_error = None
+        for attempt in range(1, max(1, max_attempts) + 1):
+            try:
+                response = http_get(
+                    ESPN_CDN_SCOREBOARD,
+                    params={"xhr": 1, "dates": cursor.strftime("%Y%m%d")},
+                    headers=ESPN_REQUEST_HEADERS,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                break
+            except requests.RequestException as exc:
+                response = None
+                last_error = exc
+                logger.warning(
+                    "nba_schedule_daily_fallback_failed day=%s attempt=%s error=%s",
+                    cursor.isoformat(), attempt, type(exc).__name__,
+                )
+                if attempt < max(1, max_attempts):
+                    sleeper(float(2 ** (attempt - 1)))
+        if response is None:
+            raise ScheduleIngestionError(
+                f"NBA schedule batch {month} and fallback day {cursor.isoformat()} could not be verified"
+            ) from last_error
+        payload = response.json()
+        daily_events = (((payload.get("content") or {}).get("sbData") or {}).get("events") or [])
+        for event in daily_events:
+            if event.get("id") is not None:
+                events[str(event["id"])] = event
+        cursor += timedelta(days=1)
+    return list(events.values())
 
 
 def _dt_date(value: str) -> date:

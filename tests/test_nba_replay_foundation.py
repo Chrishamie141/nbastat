@@ -101,7 +101,47 @@ def test_schedule_retries_failed_month_and_never_silently_drops_it():
     with pytest.raises(ScheduleIngestionError, match="202610"):
         fetch_schedule(season="2026-27", start=date(2026, 10, 1), end=date(2026, 10, 2),
                        http_get=fail, max_attempts=2, sleeper=lambda _seconds: None)
-    assert calls == 2
+    assert calls == 4
+
+
+def test_schedule_recovers_rejected_month_through_daily_cdn():
+    import requests
+
+    event = {"id": "1", "date": "2026-10-02T23:00:00Z",
+             "season": {"type": 2},
+             "status": {"type": {"state": "post", "detail": "Final"}},
+             "competitions": [{"competitors": [
+                 {"homeAway": "home", "score": "110", "team": {"abbreviation": "BOS"}},
+                 {"homeAway": "away", "score": "100", "team": {"abbreviation": "NYK"}},
+             ]}]}
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self.payload
+
+    calls = []
+
+    def get(url, params, **_kwargs):
+        calls.append((url, params))
+        if "site.api.espn.com" in url:
+            raise requests.HTTPError("blocked")
+        daily = [event] if params["dates"] == "20261002" else []
+        return Response({"content": {"sbData": {"events": daily}}})
+
+    rows = fetch_schedule(
+        season="2026-27", start=date(2026, 10, 1), end=date(2026, 10, 2),
+        http_get=get, max_attempts=1, sleeper=lambda _seconds: None,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["status"] == "FINAL"
+    assert [params["dates"] for _url, params in calls] == ["202610", "20261001", "20261002"]
 
 
 def test_immutable_snapshot_and_market_boundary(nba_db):
