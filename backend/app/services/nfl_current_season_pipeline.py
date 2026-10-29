@@ -454,8 +454,22 @@ def status() -> dict:
             weeks_checked,games_observed,history_rows_inserted,duplicate_rows,conflict_rows,
             forecasts_created,forecasts_unchanged,officials_frozen,latest_history_cutoff
             FROM nfl_data_pipeline_runs ORDER BY started_at DESC LIMIT 10""").fetchall()
+        forecast_summary = connection.execute("""SELECT COUNT(*) AS snapshots,
+            COUNT(DISTINCT game_id) AS games,MAX(generated_at) AS latest_generated_at,
+            MAX(history_cutoff) AS latest_history_cutoff
+            FROM nfl_forecast_snapshots""").fetchone()
+        official_integrity = {"count": 0, "maxId": 0, "digest": None}
         job = latest_run = None
         if _pipeline_using_postgres():
+            official = connection.execute("""SELECT COUNT(*) AS count,
+                COALESCE(MAX(id),0) AS max_id,
+                MD5(COALESCE(STRING_AGG(TO_JSONB(t)::text,'' ORDER BY id),'')) AS digest
+                FROM nfl_game_predictions t WHERE user_id=0""").fetchone()
+            official_integrity = {
+                "count": _row_value(official, "count", 0),
+                "maxId": _row_value(official, "max_id", 0),
+                "digest": _row_value(official, "digest"),
+            }
             cron_state = connection.execute(
                 "SELECT public.nfl_data_refresh_cron_status(?) AS value",
                 (_deployment_environment(),),
@@ -466,6 +480,8 @@ def status() -> dict:
             "state": dict(state) if state else None, "history": [dict(row) for row in counts],
             "runs": [dict(row) for row in latest], "cronJob": job,
             "latestCronRun": latest_run,
+            "forecasts": dict(forecast_summary) if forecast_summary else None,
+            "officialPredictionIntegrity": official_integrity,
             "modelVersionChanged": False, "historicalPredictionsMutable": False}
 
 
