@@ -105,7 +105,10 @@ def fetch_schedule(
             try:
                 response = http_get(
                     ESPN_SCOREBOARD,
-                    params={"dates": month, "limit": 1000},
+                    # A calendar month cannot approach 500 NBA events. ESPN's
+                    # edge has intermittently rejected the unnecessarily large
+                    # 1000-row request from serverless egress with HTTP 403.
+                    params={"dates": month, "limit": 500},
                     headers=ESPN_REQUEST_HEADERS,
                     timeout=timeout,
                 )

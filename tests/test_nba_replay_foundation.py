@@ -82,6 +82,7 @@ def test_schedule_is_batched_and_deduplicated():
     def get(url, params, headers, timeout):
         assert headers["Accept"] == "application/json"
         assert "SmartBetSports" in headers["User-Agent"]
+        assert params["limit"] == 500
         calls.append(params["dates"]); return Response()
     rows = fetch_schedule(season="2026-27", start=date(2026, 9, 20), end=date(2026, 10, 20),
                           http_get=get)
