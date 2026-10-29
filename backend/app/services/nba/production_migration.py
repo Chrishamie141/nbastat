@@ -104,7 +104,7 @@ def apply() -> dict:
         raise RuntimeError("NBA_PRODUCTION_MIGRATION_NOT_READY")
     sql = MIGRATION_PATH.read_text(encoding="utf-8")
     with get_db_connection() as connection:
-        connection.execute(sql)
+        connection.execute_script(sql)
         ledger_recorded = False
         if connection.execute(
             "SELECT to_regclass('supabase_migrations.schema_migrations') IS NOT NULL AS present"

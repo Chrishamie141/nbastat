@@ -123,6 +123,10 @@ class PostgresConnection:
         values = tuple(params) if params is not None else None
         return self._connection.execute(normalized, values)
 
+    def execute_script(self, query):
+        """Execute reviewed PostgreSQL DDL without placeholder translation."""
+        return self._connection.execute(str(query), prepare=False)
+
     def commit(self):
         return self._connection.commit()
 
