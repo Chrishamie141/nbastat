@@ -161,7 +161,9 @@ def _fetch_daily_cdn_events(
             try:
                 response = http_get(
                     ESPN_CDN_SCOREBOARD,
-                    params={"xhr": 1, "dates": cursor.strftime("%Y%m%d")},
+                    # The CDN feed uses singular ``date``; ``dates`` is
+                    # silently ignored and would return only the current day.
+                    params={"xhr": 1, "date": cursor.strftime("%Y%m%d")},
                     headers=ESPN_REQUEST_HEADERS,
                     timeout=timeout,
                 )

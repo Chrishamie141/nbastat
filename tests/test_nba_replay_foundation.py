@@ -131,7 +131,7 @@ def test_schedule_recovers_rejected_month_through_daily_cdn():
         calls.append((url, params))
         if "site.api.espn.com" in url:
             raise requests.HTTPError("blocked")
-        daily = [event] if params["dates"] == "20261002" else []
+        daily = [event] if params["date"] == "20261002" else []
         return Response({"content": {"sbData": {"events": daily}}})
 
     rows = fetch_schedule(
@@ -141,7 +141,9 @@ def test_schedule_recovers_rejected_month_through_daily_cdn():
 
     assert len(rows) == 1
     assert rows[0]["status"] == "FINAL"
-    assert [params["dates"] for _url, params in calls] == ["202610", "20261001", "20261002"]
+    assert [
+        params.get("dates") or params.get("date") for _url, params in calls
+    ] == ["202610", "20261001", "20261002"]
 
 
 def test_immutable_snapshot_and_market_boundary(nba_db):
