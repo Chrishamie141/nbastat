@@ -196,7 +196,8 @@ def generate_shadow_predictions(*, season: str | int, at: datetime | None = None
         ).fetchall()]
         existing = {str(row["game_id"]) for row in connection.execute(
             """SELECT game_id FROM nba_prediction_snapshots
-               WHERE season_code=? AND user_id=0 AND market='moneyline' AND model_version=?""",
+               WHERE season_code=? AND user_id=0 AND market='moneyline' AND model_version=?
+                 AND snapshot_kind='OFFICIAL'""",
             (season_code, NBA_GAME_RESEARCH_CANDIDATE_VERSION),
         ).fetchall()}
     ratings: dict[str, float] = {}
@@ -294,6 +295,7 @@ def shadow_comparison(*, season: str | int) -> dict:
                       g.kickoff_time,g.status,g.home_team,g.away_team,g.home_score,g.away_score
                FROM nba_prediction_snapshots p JOIN nba_games g ON g.game_id=p.game_id
                WHERE p.season_code=? AND p.user_id=0 AND p.market='moneyline'
+                 AND p.snapshot_kind='OFFICIAL'
                  AND p.model_version IN (?,?)
                ORDER BY g.kickoff_time,p.model_version""",
             (season_code, "nba-game-elo-baseline-v1", NBA_GAME_RESEARCH_CANDIDATE_VERSION),

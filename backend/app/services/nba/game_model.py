@@ -55,14 +55,26 @@ def winner_prediction(game: dict, *, ratings: dict[str, float], evidence: list[d
     if generated >= kickoff:
         raise ValueError("NBA game-winner predictions must be generated before tipoff")
     home, away = str(game["home_team"]), str(game["away_team"])
-    home_probability = _expected(
-        ratings.get(home, INITIAL_RATING), ratings.get(away, INITIAL_RATING)
-    )
+    home_rating = ratings.get(home, INITIAL_RATING)
+    away_rating = ratings.get(away, INITIAL_RATING)
+    home_probability = _expected(home_rating, away_rating)
     winner = home if home_probability >= 0.5 else away
     evidence_ids = [str(row["source_hash"]) for row in evidence if row.get("source_hash")]
     data_version = hashlib.sha256(
         json.dumps(evidence_ids, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
+    observed_cutoff = max(
+        (str(row.get("retrieved_at")) for row in evidence if row.get("retrieved_at")),
+        default=generated_at,
+    )
+    feature_cutoff = min(_dt(observed_cutoff), generated).replace(
+        microsecond=0
+    ).isoformat().replace("+00:00", "Z")
+    latest_evidence = max(
+        evidence,
+        key=lambda row: (str(row.get("kickoff_time") or ""), str(row.get("game_id") or "")),
+        default=None,
+    )
     return {
         "game_id": str(game["game_id"]), "season": str(game["season_code"]),
         "kickoff_time": str(game["kickoff_time"]), "market": "moneyline",
@@ -70,11 +82,19 @@ def winner_prediction(game: dict, *, ratings: dict[str, float], evidence: list[d
         "model_probability": round(home_probability if winner == home else 1.0 - home_probability, 6),
         "projection": None, "edge": None, "market_odds": None,
         "model_version": NBA_GAME_MODEL_VERSION, "data_version": data_version,
-        "generated_at": generated_at, "feature_cutoff": generated_at,
+        "generated_at": generated_at, "feature_cutoff": feature_cutoff,
         "source_provider": "espn_scoreboard",
         "model_status": "RESEARCH_ONLY", "wager_authorized": False,
         "home_probability": round(home_probability, 6),
         "away_probability": round(1.0 - home_probability, 6),
+        "home_rating": round(home_rating, 6),
+        "away_rating": round(away_rating, 6),
         "evidence_games": len(evidence),
+        "latest_evidence_game_id": (
+            str(latest_evidence.get("game_id")) if latest_evidence else None
+        ),
+        "latest_evidence_kickoff": (
+            str(latest_evidence.get("kickoff_time")) if latest_evidence else None
+        ),
         "methodology": "research-only chronological Elo baseline; not production-approved",
     }

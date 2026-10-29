@@ -297,6 +297,35 @@ def test_nba_cron_accepts_only_configured_bearer_secret(monkeypatch):
     assert response.json()["season"] == "2026-27"
 
 
+def test_nba_data_refresh_uses_dedicated_secret_and_trigger(monkeypatch):
+    from backend.app.api import nba_automation_cron as cron
+    from backend.app import main
+
+    calls = []
+    monkeypatch.setenv("NBA_DATA_REFRESH_SECRET", "dedicated-refresh-secret")
+    monkeypatch.setattr(
+        cron.data_refresh,
+        "run",
+        lambda **kwargs: calls.append(kwargs) or {"status": "SUCCEEDED"},
+    )
+    client = TestClient(main.app)
+
+    assert client.post("/api/cron/nba-data-refresh").status_code == 401
+    assert client.post(
+        "/api/cron/nba-data-refresh",
+        headers={"authorization": "Bearer wrong"},
+    ).status_code == 401
+    response = client.post(
+        "/api/cron/nba-data-refresh",
+        headers={
+            "authorization": "Bearer dedicated-refresh-secret",
+            "x-smartbets-trigger": "production_activation",
+        },
+    )
+    assert response.status_code == 200
+    assert calls == [{"trigger_source": "production_activation"}]
+
+
 def test_nba_personnel_cron_is_separately_authenticated_and_disabled_by_default(monkeypatch):
     from types import SimpleNamespace
     from backend.app.api import nba_automation_cron as cron
@@ -501,7 +530,8 @@ def test_nba_game_api_reads_exact_game_and_history(nba_db):
     assert history.json()["items"][0]["sport"] == "NBA"
 
 
-def test_vercel_scheduler_registers_nba_cycle():
+def test_vercel_scheduler_does_not_duplicate_supabase_nba_cycle():
     config = json.loads(open("vercel.json", encoding="utf-8").read())
     jobs = {row["path"]: row["schedule"] for row in config["crons"]}
-    assert jobs["/api/cron/nba-active-season"] == "17 10 * * *"
+    assert "/api/cron/nba-active-season" not in jobs
+    assert "/api/cron/nba-data-refresh" not in jobs

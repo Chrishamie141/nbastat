@@ -9,10 +9,13 @@ from fastapi import APIRouter, HTTPException, Request
 from backend.app.api.social_cron import authorized
 from backend.app.services.nba.availability import personnel_refresh_guard, refresh_personnel
 from backend.app.services.nba.automation import run_cycle
+from backend.app.services.nba import data_refresh
+from backend.app.services.nba import production_migration
 from backend.app.services.nba.lifecycle import foundation_status, operational_settings
 from backend.app.services.nba.season import active_nba_season
 
 router = APIRouter()
+ALLOWED_REFRESH_TRIGGERS = {"supabase_cron", "production_activation"}
 
 
 def _authorized(request: Request) -> bool:
@@ -25,6 +28,89 @@ def _authorized(request: Request) -> bool:
 
 def _personnel_authorized(request: Request) -> bool:
     return authorized(request, "NBA_PERSONNEL_REFRESH_SECRET")
+
+
+def _refresh_authorized(request: Request) -> bool:
+    return authorized(request, "NBA_DATA_REFRESH_SECRET")
+
+
+def _refresh_trigger(request: Request) -> str:
+    requested = request.headers.get("x-smartbets-trigger", "supabase_cron")
+    return requested if requested in ALLOWED_REFRESH_TRIGGERS else "supabase_cron"
+
+
+@router.post("/api/cron/nba-data-refresh")
+def nba_data_refresh_tick(request: Request):
+    if not _refresh_authorized(request):
+        raise HTTPException(401, "NBA data refresh authentication required")
+    try:
+        return data_refresh.run(trigger_source=_refresh_trigger(request))
+    except Exception:
+        raise HTTPException(
+            503, "NBA data refresh failed; inspect protected operational status"
+        ) from None
+
+
+@router.get("/api/cron/nba-data-refresh/status")
+def nba_data_refresh_status(request: Request):
+    if not _refresh_authorized(request):
+        raise HTTPException(401, "NBA data refresh authentication required")
+    try:
+        return data_refresh.status()
+    except Exception:
+        raise HTTPException(503, "NBA data refresh status is unavailable") from None
+
+
+@router.get("/api/cron/nba-data-refresh/readiness")
+def nba_data_refresh_readiness(request: Request):
+    if not _refresh_authorized(request):
+        raise HTTPException(401, "NBA data refresh authentication required")
+    try:
+        return data_refresh.readiness()
+    except Exception:
+        raise HTTPException(503, "NBA data refresh readiness is unavailable") from None
+
+
+@router.post("/api/cron/nba-data-refresh/install")
+def install_nba_data_refresh(request: Request):
+    if not _refresh_authorized(request):
+        raise HTTPException(401, "NBA data refresh authentication required")
+    if os.getenv("NBA_DATA_REFRESH_INSTALL_ENABLED", "false").strip().lower() != "true":
+        raise HTTPException(409, "NBA data refresh installation is disabled")
+    base_url = os.getenv("NBA_DATA_REFRESH_BASE_URL") or (
+        f"https://{os.getenv('VERCEL_URL')}" if os.getenv("VERCEL_URL") else ""
+    )
+    try:
+        return data_refresh.install_supabase_cron(
+            base_url=base_url,
+            secret=os.getenv("NBA_DATA_REFRESH_SECRET", ""),
+        )
+    except Exception:
+        raise HTTPException(503, "NBA data refresh Cron installation failed") from None
+
+
+@router.get("/api/cron/nba-data-refresh/migration-readiness")
+def nba_data_refresh_migration_readiness(request: Request):
+    if not _refresh_authorized(request):
+        raise HTTPException(401, "NBA data refresh authentication required")
+    if os.getenv("NBA_DATA_REFRESH_INSTALL_ENABLED", "false").strip().lower() != "true":
+        raise HTTPException(409, "NBA data refresh installation is disabled")
+    try:
+        return production_migration.readiness()
+    except Exception:
+        raise HTTPException(503, "NBA migration readiness is unavailable") from None
+
+
+@router.post("/api/cron/nba-data-refresh/migrate")
+def migrate_nba_data_refresh(request: Request):
+    if not _refresh_authorized(request):
+        raise HTTPException(401, "NBA data refresh authentication required")
+    if os.getenv("NBA_DATA_REFRESH_INSTALL_ENABLED", "false").strip().lower() != "true":
+        raise HTTPException(409, "NBA data refresh installation is disabled")
+    try:
+        return production_migration.apply()
+    except Exception:
+        raise HTTPException(503, "NBA data refresh migration failed") from None
 
 
 @router.get("/api/cron/nba-active-season")

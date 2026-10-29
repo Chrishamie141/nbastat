@@ -177,9 +177,11 @@ def run_cycle(
     Missing data is never converted to a loss.
     """
     normalized = normalize_nba_season(season)
-    today = date.today()
+    today = _utcnow().date()
     season_start = date(normalized.start_year, 10, 1)
-    start = start or max(season_start, today - timedelta(days=45))
+    # Always replay from the active season boundary. This is bounded by the
+    # monthly provider adapter and recovers safely after long outages.
+    start = start or season_start
     end = end or (today + timedelta(days=14))
     run_id = start_automation_run(season=normalized.code, trigger_source=trigger_source)
     try:
@@ -209,6 +211,16 @@ def run_cycle(
                   "finals": results["finals"],
                   "predictionsCreated": int(generated.get("created") or 0),
                   "predictionsAlreadyPresent": int(generated.get("alreadyPresent") or 0),
+                  "officialPredictionsCreated": int(
+                      generated.get("officialPredictionsCreated") or 0
+                  ),
+                  "forecastsRefreshed": int(
+                      generated.get("forecastSnapshotsCreated") or 0
+                  ),
+                  "forecastsUnchanged": int(generated.get("forecastsUnchanged") or 0),
+                  "upcomingGamesEvaluated": int(
+                      generated.get("upcomingGamesEvaluated") or 0
+                  ),
                   "predictionModel": generated.get("modelVersion"),
                   "shadowPredictions": shadow,
                   "modelStatus": generated.get("modelStatus"),

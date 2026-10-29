@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 
-from backend.app.database import get_db_connection, using_postgres
+from backend.app.database import get_db_connection, table_exists, using_postgres
 
 NBA_BASELINE_VERSION = "nba-player-stat-v1"
 NBA_GAME_BASELINE_VERSION = "nba-game-elo-baseline-v1"
@@ -17,6 +17,11 @@ def _now() -> str:
 
 
 def initialize_registry() -> None:
+    if using_postgres():
+        with get_db_connection() as connection:
+            if not table_exists(connection, "nba_model_registry", postgres=True):
+                raise RuntimeError("NBA model registry migration is not installed")
+        return
     with get_db_connection() as connection:
         connection.execute("""CREATE TABLE IF NOT EXISTS nba_model_registry (
             model_version TEXT PRIMARY KEY, status TEXT NOT NULL, created_at TEXT NOT NULL,
@@ -38,9 +43,6 @@ def initialize_registry() -> None:
                  json.dumps(["chronological_validation_required", "minimum_sample_not_met",
                              "calibration_not_established", "profitability_not_established",
                              "manual_promotion_review_required"]), notes))
-        if using_postgres():
-            connection.execute("ALTER TABLE nba_model_registry ENABLE ROW LEVEL SECURITY")
-            connection.execute("REVOKE ALL ON TABLE nba_model_registry FROM anon, authenticated")
 
 
 def record_evaluation(*, model_version: str, metrics: dict, evaluation_start: str | None,

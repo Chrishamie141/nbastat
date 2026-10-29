@@ -18,7 +18,7 @@ from typing import Any, Callable
 
 import requests
 
-from backend.app.database import get_db_connection, using_postgres
+from backend.app.database import get_db_connection, table_exists, using_postgres
 from .season import normalize_nba_season
 
 ESPN_TEAMS = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams"
@@ -106,6 +106,16 @@ def _freshness(observed_at: str | None, *, max_age_seconds: int,
 
 
 def initialize() -> None:
+    if using_postgres():
+        required = ("nba_player_availability_snapshots", "nba_data_source_status")
+        with get_db_connection() as connection:
+            missing = [
+                table for table in required
+                if not table_exists(connection, table, postgres=True)
+            ]
+        if missing:
+            raise RuntimeError("NBA personnel migration is not installed")
+        return
     with get_db_connection() as connection:
         connection.execute("""CREATE TABLE IF NOT EXISTS nba_player_availability_snapshots (
             snapshot_id TEXT PRIMARY KEY, season_code TEXT NOT NULL, team_code TEXT NOT NULL,
@@ -124,16 +134,11 @@ def initialize() -> None:
             error_code TEXT, details_json TEXT NOT NULL DEFAULT '{}')""")
         connection.execute("""CREATE INDEX IF NOT EXISTS idx_nba_source_status_kind
             ON nba_data_source_status(season_code,data_kind,state)""")
-        if not using_postgres():
-            for operation in ("UPDATE", "DELETE"):
-                name = f"nba_player_availability_snapshots_immutable_{operation.lower()}"
-                connection.execute(f"""CREATE TRIGGER IF NOT EXISTS {name}
-                    BEFORE {operation} ON nba_player_availability_snapshots
-                    BEGIN SELECT RAISE(ABORT,'immutable NBA personnel evidence'); END""")
-        else:
-            for table in ("nba_player_availability_snapshots", "nba_data_source_status"):
-                connection.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-                connection.execute(f"REVOKE ALL ON TABLE {table} FROM anon, authenticated, service_role")
+        for operation in ("UPDATE", "DELETE"):
+            name = f"nba_player_availability_snapshots_immutable_{operation.lower()}"
+            connection.execute(f"""CREATE TRIGGER IF NOT EXISTS {name}
+                BEFORE {operation} ON nba_player_availability_snapshots
+                BEGIN SELECT RAISE(ABORT,'immutable NBA personnel evidence'); END""")
 
 
 def _injury_state(injuries: list[dict], roster_status: str) -> tuple[str, str, str | None, str | None]:

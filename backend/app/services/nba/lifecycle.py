@@ -10,7 +10,7 @@ import os
 from typing import Any
 import uuid
 
-from backend.app.database import column_exists, get_db_connection, using_postgres
+from backend.app.database import column_exists, get_db_connection, table_exists, using_postgres
 from .grading import grade_prediction
 from .season import normalize_nba_season
 
@@ -37,6 +37,23 @@ def _hash(value: Any) -> str:
 
 
 def initialize() -> None:
+    if using_postgres():
+        required = (
+            "nba_games", "nba_prediction_snapshots", "nba_market_observations",
+            "nba_settlements", "nba_replay_runs", "nba_operational_settings",
+            "nba_automation_runs", "nba_model_registry",
+        )
+        with get_db_connection() as connection:
+            missing = [
+                table for table in required
+                if not table_exists(connection, table, postgres=True)
+            ]
+            snapshot_kind_installed = column_exists(
+                connection, "nba_prediction_snapshots", "snapshot_kind"
+            )
+        if missing or not snapshot_kind_installed:
+            raise RuntimeError("NBA daily refresh migration is not installed")
+        return
     with get_db_connection() as connection:
         connection.execute("""CREATE TABLE IF NOT EXISTS nba_games (
             game_id TEXT PRIMARY KEY, season_code TEXT NOT NULL, kickoff_time TEXT NOT NULL,
@@ -55,7 +72,13 @@ def initialize() -> None:
             market_odds INTEGER, model_version TEXT NOT NULL, data_version TEXT,
             generated_at TEXT NOT NULL, feature_cutoff TEXT NOT NULL,
             source_provider TEXT, payload_json TEXT NOT NULL, snapshot_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL)""")
+            created_at TEXT NOT NULL,
+            snapshot_kind TEXT NOT NULL DEFAULT 'OFFICIAL')""")
+        if not column_exists(connection, "nba_prediction_snapshots", "snapshot_kind"):
+            connection.execute(
+                "ALTER TABLE nba_prediction_snapshots "
+                "ADD COLUMN snapshot_kind TEXT NOT NULL DEFAULT 'OFFICIAL'"
+            )
         connection.execute("CREATE INDEX IF NOT EXISTS idx_nba_predictions_game ON nba_prediction_snapshots(season_code,game_id,generated_at)")
         connection.execute("""CREATE TABLE IF NOT EXISTS nba_market_observations (
             observation_id TEXT PRIMARY KEY, game_id TEXT NOT NULL, season_code TEXT NOT NULL,
@@ -104,11 +127,6 @@ def initialize() -> None:
                     BEFORE UPDATE ON {table} BEGIN SELECT RAISE(ABORT,'immutable NBA evidence'); END""")
                 connection.execute(f"""CREATE TRIGGER IF NOT EXISTS {table}_immutable_delete
                     BEFORE DELETE ON {table} BEGIN SELECT RAISE(ABORT,'immutable NBA evidence'); END""")
-        if using_postgres():
-            for table in ("nba_games", "nba_prediction_snapshots", "nba_market_observations", "nba_settlements", "nba_replay_runs",
-                          "nba_operational_settings", "nba_automation_runs"):
-                connection.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-                connection.execute(f"REVOKE ALL ON TABLE {table} FROM anon, authenticated")
     from .registry import initialize_registry
     initialize_registry()
 
@@ -162,8 +180,14 @@ def freeze_prediction(prediction: dict, *, user_id: int = 0) -> str:
     model_version = str(prediction.get("model_version") or "")
     if not model_version.startswith("nba-"):
         raise ValueError("NBA snapshots require an NBA-owned model version")
+    snapshot_kind = str(prediction.get("snapshot_kind") or "OFFICIAL").upper()
+    if snapshot_kind not in {"OFFICIAL", "LATEST_FORECAST"}:
+        raise ValueError("NBA snapshot kind is invalid")
     season = normalize_nba_season(prediction["season"])
-    payload = {**prediction, "season": season.code, "user_id": int(user_id)}
+    payload = {
+        **prediction, "season": season.code, "user_id": int(user_id),
+        "snapshot_kind": snapshot_kind,
+    }
     snapshot_hash = _hash(payload)
     snapshot_id = f"nba-pred-{snapshot_hash[:32]}"
     values = (
@@ -173,13 +197,16 @@ def freeze_prediction(prediction: dict, *, user_id: int = 0) -> str:
         prediction.get("projection"), prediction.get("edge"), prediction.get("market_odds"),
         model_version, prediction.get("data_version"), generated_at, feature_cutoff,
         prediction.get("source_provider"), _json(payload), snapshot_hash, _now(),
+        snapshot_kind,
     )
     with get_db_connection() as connection:
         connection.execute("""INSERT INTO nba_prediction_snapshots
             (snapshot_id,user_id,game_id,season_code,kickoff_time,market,selection,line,player_id,
              player_name,model_probability,projection,edge,market_odds,model_version,data_version,
-             generated_at,feature_cutoff,source_provider,payload_json,snapshot_hash,created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(snapshot_id) DO NOTHING""", values)
+             generated_at,feature_cutoff,source_provider,payload_json,snapshot_hash,created_at,
+             snapshot_kind)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(snapshot_id) DO NOTHING""", values)
     logger.info("nba_prediction_frozen %s", _json({"snapshotId": snapshot_id, "gameId": prediction["game_id"], "modelVersion": model_version}))
     return snapshot_id
 
@@ -227,7 +254,8 @@ def settle_game(game_id: str, *, player_stats: dict | None = None) -> dict:
         game = dict(game_row)
         game["player_stats"] = player_stats or {}
         predictions = connection.execute("""SELECT p.* FROM nba_prediction_snapshots p
-            WHERE p.game_id=? ORDER BY p.generated_at,p.snapshot_id""", (game_id,)).fetchall()
+            WHERE p.game_id=? AND p.snapshot_kind='OFFICIAL'
+            ORDER BY p.generated_at,p.snapshot_id""", (game_id,)).fetchall()
         for raw in predictions:
             prediction = dict(raw)
             existing = connection.execute("SELECT status FROM nba_settlements WHERE prediction_snapshot_id=?", (prediction["snapshot_id"],)).fetchone()
@@ -270,7 +298,7 @@ def reconcile_persisted_finals(*, season: str | int) -> dict:
                FROM nba_prediction_snapshots p
                JOIN nba_games g ON g.game_id=p.game_id
                LEFT JOIN nba_settlements s ON s.prediction_snapshot_id=p.snapshot_id
-               WHERE p.season_code=? AND g.status='FINAL'
+               WHERE p.season_code=? AND p.snapshot_kind='OFFICIAL' AND g.status='FINAL'
                  AND p.generated_at < p.kickoff_time
                  AND p.feature_cutoff <= p.generated_at
                  AND (s.prediction_snapshot_id IS NULL OR s.status='UNRESOLVED')
@@ -298,7 +326,7 @@ def unresolved_past_predictions(*, season: str | int, at: datetime | None = None
             """SELECT COUNT(*) AS count
                FROM nba_prediction_snapshots p
                LEFT JOIN nba_settlements s ON s.prediction_snapshot_id=p.snapshot_id
-               WHERE p.season_code=? AND p.kickoff_time < ?
+               WHERE p.season_code=? AND p.snapshot_kind='OFFICIAL' AND p.kickoff_time < ?
                  AND p.generated_at < p.kickoff_time
                  AND p.feature_cutoff <= p.generated_at
                  AND (s.prediction_snapshot_id IS NULL OR s.status='UNRESOLVED')""",
@@ -402,7 +430,11 @@ def automation_status() -> dict:
         completed = latest_row.get("completed_at") or latest_row.get("started_at")
         if completed:
             age_hours = round(max(0.0, (datetime.now(timezone.utc) - _dt(completed)).total_seconds()) / 3600, 2)
-    configured = bool(os.getenv("CRON_SECRET") or os.getenv("NBA_AUTOMATION_SECRET"))
+    configured = bool(
+        os.getenv("NBA_DATA_REFRESH_SECRET")
+        or os.getenv("CRON_SECRET")
+        or os.getenv("NBA_AUTOMATION_SECRET")
+    )
     stale = bool(settings["enabled"] and latest_row and age_hours is not None and age_hours > 27)
     if not settings["enabled"]:
         monitor_status = "PAUSED"
@@ -420,9 +452,10 @@ def automation_status() -> dict:
             "failedRuns": int(failed["count"]), "lastFailure": dict(last_failure) if last_failure else None,
             "consecutiveFailures": consecutive_failures, "latestRunAgeHours": age_hours,
             "stale": stale, "monitorStatus": monitor_status,
-            "scheduler": "VERCEL_CRON", "configured": configured,
-            "cadence": {"schedule": "17 10 * * *", "frequency": "DAILY", "timezone": "UTC",
-                        "expectedRunTime": "10:17", "staleAfterHours": 27,
+            "scheduler": "SUPABASE_CRON", "configured": configured,
+            "cadence": {"schedule": "0 7,8 * * *", "frequency": "DAILY",
+                        "timezone": "America/New_York", "expectedRunTime": "03:00",
+                        "utcCandidates": ["07:00", "08:00"], "staleAfterHours": 27,
                         "scheduleIngestionHorizonDays": 14},
             "failureMonitoring": {"persistentRunLedger": True, "commandCenterAlerts": True,
                                   "automaticRetry": False, "externalAlerting": False}}
@@ -452,6 +485,21 @@ def foundation_status(season: str | int) -> dict:
                 (code,),
             ).fetchall()
         }
+        latest_forecasts = connection.execute(
+            """SELECT COUNT(*) AS count,COUNT(DISTINCT game_id) AS games,
+                      MAX(generated_at) AS latest_generated_at,
+                      MAX(feature_cutoff) AS latest_feature_cutoff
+               FROM nba_prediction_snapshots
+               WHERE season_code=? AND snapshot_kind='LATEST_FORECAST'""",
+            (code,),
+        ).fetchone()
+        regular_finals = connection.execute(
+            """SELECT COUNT(*) AS count,MAX(kickoff_time) AS latest_kickoff,
+                      MAX(retrieved_at) AS latest_retrieved
+               FROM nba_games
+               WHERE season_code=? AND season_phase='regular_season' AND status='FINAL'""",
+            (code,),
+        ).fetchone()
     from .availability import personnel_health
     from .registry import registry_status
     personnel = personnel_health(code)
@@ -462,4 +510,6 @@ def foundation_status(season: str | int) -> dict:
                              "playerData": "ON_DEMAND_NBA_STATS_WITH_EXPLICIT_HEALTH",
                              "rosters": personnel["roster"]["status"],
                              "injuries": personnel["availability"]["status"]},
-            "personnel": personnel, "predictionModels": prediction_models, **counts}
+            "personnel": personnel, "predictionModels": prediction_models,
+            "latestForecastSnapshots": dict(latest_forecasts),
+            "regularSeasonFinals": dict(regular_finals), **counts}

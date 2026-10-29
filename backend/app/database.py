@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 import re
 import sqlite3
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -20,6 +22,9 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(BASE_DIR / ".env")
 
 _POSTGRES_SCHEMES = ("postgres://", "postgresql://")
+_DATABASE_URL_OVERRIDE: ContextVar[str | None] = ContextVar(
+    "smartbets_database_url_override", default=None
+)
 _LIBPQ_QUERY_PARAMETERS = {
     "application_name", "channel_binding", "connect_timeout", "dbname",
     "fallback_application_name", "gssencmode", "host", "hostaddr",
@@ -33,6 +38,9 @@ _LIBPQ_QUERY_PARAMETERS = {
 
 
 def database_url() -> str:
+    scoped = _DATABASE_URL_OVERRIDE.get()
+    if scoped:
+        return scoped
     # Vercel's Supabase integration provisions POSTGRES_URL.  Keep
     # DATABASE_URL as the explicit override used by local and non-Vercel
     # deployments, but consume the integration value automatically when it
@@ -51,6 +59,21 @@ def database_url() -> str:
     if configured:
         return configured
     return "sqlite:///./predictions.db"
+
+
+@contextmanager
+def database_url_scope(url: str | None):
+    """Temporarily route database helpers through one already-selected URL.
+
+    Cloud workers use this boundary to operate with a least-privilege role
+    without changing the database used by normal API requests.
+    """
+    selected = str(url or "").strip()
+    token = _DATABASE_URL_OVERRIDE.set(selected or None)
+    try:
+        yield
+    finally:
+        _DATABASE_URL_OVERRIDE.reset(token)
 
 
 def is_postgres_url(url: str) -> bool:

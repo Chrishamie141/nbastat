@@ -106,3 +106,33 @@ def test_settlement_and_metrics_track_models_without_replacing_baseline(shadow_d
     assert summary["modelVersion"] == NBA_GAME_MODEL_VERSION
     assert summary["predictions"] == 1
     assert summary["shadowComparison"]["pairedGames"] == 1
+
+
+def test_completed_games_refresh_latest_forecast_without_rewriting_official(shadow_db):
+    future = nba_game("future", "2026-10-28T23:00:00Z", status="SCHEDULED")
+    upsert_game(future)
+    first = generate_winner_predictions(
+        season="2026-27", at=datetime(2026, 10, 25, 12, tzinfo=timezone.utc)
+    )
+    original = prediction_history(season="2026-27", game_id="future")[0]
+
+    upsert_game(nba_game("prior", "2026-10-26T23:00:00Z", status="FINAL",
+                         home_score=120, away_score=90))
+    second = generate_winner_predictions(
+        season="2026-27", at=datetime(2026, 10, 27, 12, tzinfo=timezone.utc)
+    )
+    official = prediction_history(season="2026-27", game_id="future")
+    all_rows = prediction_history(
+        season="2026-27", game_id="future", include_forecasts=True,
+    )
+
+    assert first["officialPredictionsCreated"] == 1
+    assert first["forecastSnapshotsCreated"] == 1
+    assert second["officialPredictionsCreated"] == 0
+    assert second["forecastSnapshotsCreated"] == 1
+    assert len(official) == 1
+    assert official[0]["id"] == original["id"]
+    assert sum(row["snapshotKind"] == "LATEST_FORECAST" for row in all_rows) == 2
+    latest = next(row for row in all_rows if row["snapshotKind"] == "LATEST_FORECAST")
+    assert latest["dataTimestamp"] <= latest["createdAt"]
+    assert latest["id"] != original["id"]
