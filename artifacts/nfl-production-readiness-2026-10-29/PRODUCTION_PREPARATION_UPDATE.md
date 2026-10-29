@@ -1,6 +1,6 @@
 # NFL production preparation update
 
-Preparation cutoff: **2026-10-29 04:58 UTC / 2026-10-29 00:58 EDT**.
+Preparation cutoff: **2026-10-29 05:02 UTC / 2026-10-29 01:02 EDT**.
 
 ## Outcome
 
@@ -42,15 +42,16 @@ changed.
 | Pipeline failures | 0 |
 | Production Cron jobs | 0 |
 | Install gate test | HTTP 409 while the final Preview has the installer disabled |
+| First stable-alias scheduled run | Cron succeeded at 2026-10-29 05:00:00 UTC / 01:00:00 EDT; durable pipeline success at 05:00:10 UTC / 01:00:10 EDT with 0 inserts, 28 duplicates, 0 conflicts, 14 unchanged forecasts, and 0 official prediction changes |
 
-The first unattended execution of job 8 is recorded separately in the final
-handoff after the next half-hour boundary.
+The next scheduled execution is 2026-10-29 05:30:00 UTC / 01:30:00 EDT.
 
 ## Production-target evidence
 
 The final inspected build is Vercel deployment
-`dpl_2FuESGJ5GX32pfv6zEFexayaXk9r` at
-`https://smartbetsports-ii1uhs3et-chrishamie141s-projects.vercel.app`.
+`dpl_6dLwzq7vky84La6GaBqDbmkRVLKZ` at
+`https://smartbetsports-7kxg0808l-chrishamie141s-projects.vercel.app`, built
+from commit `37db0bf2a47525a10e00c5cca7a5d7c159fa6859`.
 It was built with `--prod --skip-domain`; `productionUrl` is null and the
 deployment has no aliases. The live production domains still point to the prior
 deployment.
