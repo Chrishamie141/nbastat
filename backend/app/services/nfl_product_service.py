@@ -715,7 +715,12 @@ def _pipeline_freshness() -> dict:
         observed = datetime.fromisoformat(str(last_success).replace("Z", "+00:00"))
         if observed.tzinfo is None:
             observed = observed.replace(tzinfo=timezone.utc)
-        current = datetime.now(timezone.utc) - observed <= timedelta(minutes=90)
+        # Production refreshes once per Eastern calendar day. Allow enough time
+        # for the next 03:00 America/New_York cycle to complete, while staging
+        # retains the tighter 30-minute-scheduler freshness boundary.
+        environment = os.getenv("NFL_DATA_REFRESH_ENVIRONMENT", "").strip().lower()
+        max_age = timedelta(hours=26) if environment == "production" else timedelta(minutes=90)
+        current = datetime.now(timezone.utc) - observed <= max_age
     return {
         "state": row["last_status"], "isCurrent": current,
         "lastSuccessAt": last_success, "latestHistoryCutoff": row["latest_history_cutoff"],

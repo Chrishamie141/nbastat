@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
 from backend.app.database import get_db_connection
 from backend.app.services import nfl_current_season_pipeline as pipeline
 from backend.app.services import nfl_product_service as product
+from backend.app.api.nfl_data_refresh_cron import _trigger_source
 
 
 NOW = datetime(2026, 10, 28, 16, 0, tzinfo=timezone.utc)
@@ -187,7 +189,14 @@ def test_deployment_environment_defaults_from_vercel(monkeypatch, vercel_environ
     monkeypatch.setenv("VERCEL_ENV", vercel_environment)
 
     assert pipeline._deployment_environment() == expected
-    assert pipeline._job_name() == f"smartbets-nfl-data-refresh-30m-{expected}"
+    expected_name = (
+        "smartbets-nfl-data-refresh-daily-production"
+        if expected == "production"
+        else "smartbets-nfl-data-refresh-30m-staging"
+    )
+    expected_schedule = "0 7,8 * * *" if expected == "production" else "*/30 * * * *"
+    assert pipeline._job_name() == expected_name
+    assert pipeline._expected_schedule() == expected_schedule
 
 
 def test_deployment_environment_rejects_unreviewed_values(monkeypatch):
@@ -250,3 +259,26 @@ def test_postgres_lock_is_session_scoped_and_explicitly_released(monkeypatch):
     assert any("pg_advisory_unlock" in query for query in connection.queries)
     assert connection.commits == 2
     assert connection.closed is True
+
+
+def test_refresh_trigger_source_is_allowlisted():
+    class Request:
+        def __init__(self, value):
+            self.headers = {"x-smartbets-trigger": value}
+
+    assert _trigger_source(Request("production_activation")) == "production_activation"
+    assert _trigger_source(Request("supabase_cron")) == "supabase_cron"
+    assert _trigger_source(Request("untrusted")) == "supabase_cron"
+
+
+def test_production_cron_migration_is_dst_safe_and_removes_legacy_job():
+    migration = Path(
+        "supabase/migrations/20261029151655_nfl_daily_eastern_schedule.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "smartbets-nfl-data-refresh-daily-production" in migration
+    assert "'0 7,8 * * *'" in migration
+    assert "at time zone 'America/New_York'" in migration
+    assert "time '03:00'" in migration
+    assert "smartbets-nfl-data-refresh-30m-production" in migration
+    assert "x-smartbets-trigger','supabase_cron'" in migration

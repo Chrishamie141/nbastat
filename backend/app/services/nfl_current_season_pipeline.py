@@ -24,6 +24,12 @@ from backend.app.database import (
 logger = logging.getLogger(__name__)
 PIPELINE_LOCK_KEY = 748219411
 DEPLOYMENT_ENVIRONMENTS = {"staging", "production"}
+PRODUCTION_JOB_NAME = "smartbets-nfl-data-refresh-daily-production"
+PRODUCTION_CRON_SCHEDULE = "0 7,8 * * *"
+PRODUCTION_TIME_ZONE = "America/New_York"
+PRODUCTION_LOCAL_TIME = "03:00"
+STAGING_JOB_NAME = "smartbets-nfl-data-refresh-30m-staging"
+STAGING_CRON_SCHEDULE = "*/30 * * * *"
 
 
 class HistoryConflict(RuntimeError):
@@ -95,7 +101,15 @@ def _job_name(environment: str | None = None) -> str:
     selected = environment or _deployment_environment()
     if selected not in DEPLOYMENT_ENVIRONMENTS:
         raise RuntimeError("NFL_DATA_REFRESH_ENVIRONMENT_REQUIRED")
-    return f"smartbets-nfl-data-refresh-30m-{selected}"
+    return PRODUCTION_JOB_NAME if selected == "production" else STAGING_JOB_NAME
+
+
+def _expected_schedule(environment: str | None = None) -> str:
+    selected = environment or _deployment_environment()
+    if selected not in DEPLOYMENT_ENVIRONMENTS:
+        raise RuntimeError("NFL_DATA_REFRESH_ENVIRONMENT_REQUIRED")
+    return (PRODUCTION_CRON_SCHEDULE if selected == "production"
+            else STAGING_CRON_SCHEDULE)
 
 
 def _acquire_pipeline_lock():
@@ -468,6 +482,16 @@ def readiness() -> dict:
         "schedulerExpectedName": (
             _job_name(environment) if environment in DEPLOYMENT_ENVIRONMENTS else None
         ),
+        "schedulerExpectedSchedule": (
+            _expected_schedule(environment)
+            if environment in DEPLOYMENT_ENVIRONMENTS else None
+        ),
+        "schedulerTimeZone": (
+            PRODUCTION_TIME_ZONE if environment == "production" else "UTC"
+        ),
+        "schedulerLocalTime": (
+            PRODUCTION_LOCAL_TIME if environment == "production" else None
+        ),
         "database": {"kind": "postgres" if _pipeline_using_postgres() else "sqlite"},
     }
     if not _pipeline_using_postgres():
@@ -519,12 +543,23 @@ def readiness() -> dict:
         blockers.append("DEDICATED_DATABASE_ROLE_REQUIRED")
     if environment == "production" and not result["dedicatedDatabaseUrlConfigured"]:
         blockers.append("DEDICATED_DATABASE_URL_REQUIRED")
-    if environment == "production" and cron_job:
-        blockers.append("PRODUCTION_CRON_ALREADY_PRESENT")
-    if environment == "production" and _enabled():
-        blockers.append("PRODUCTION_REFRESH_MUST_REMAIN_DISABLED_BEFORE_APPROVAL")
-    if environment == "production" and _install_enabled():
-        blockers.append("PRODUCTION_INSTALLER_MUST_REMAIN_DISABLED_BEFORE_APPROVAL")
+    if environment == "production":
+        if _enabled():
+            if not cron_job:
+                blockers.append("PRODUCTION_CRON_REQUIRED_WHEN_ENABLED")
+            elif cron_job.get("jobname") != PRODUCTION_JOB_NAME:
+                blockers.append("PRODUCTION_CRON_NAME_INVALID")
+            elif cron_job.get("schedule") != PRODUCTION_CRON_SCHEDULE:
+                blockers.append("PRODUCTION_CRON_SCHEDULE_INVALID")
+            elif not cron_job.get("active"):
+                blockers.append("PRODUCTION_CRON_INACTIVE")
+            if _install_enabled():
+                blockers.append("PRODUCTION_INSTALLER_MUST_BE_DISABLED_AFTER_INSTALL")
+        else:
+            if cron_job:
+                blockers.append("PRODUCTION_CRON_PRESENT_WHILE_REFRESH_DISABLED")
+            if _install_enabled():
+                blockers.append("PRODUCTION_INSTALLER_OPEN_BEFORE_ACTIVATION")
     result["blockers"] = blockers
     result["ready"] = not blockers
     return result

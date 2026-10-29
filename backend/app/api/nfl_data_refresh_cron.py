@@ -9,6 +9,12 @@ from backend.app.services import nfl_current_season_pipeline
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+ALLOWED_TRIGGER_SOURCES = {"supabase_cron", "production_activation"}
+
+
+def _trigger_source(request: Request) -> str:
+    requested = request.headers.get("x-smartbets-trigger", "supabase_cron")
+    return requested if requested in ALLOWED_TRIGGER_SOURCES else "supabase_cron"
 
 
 @router.post("/api/cron/nfl-data-refresh")
@@ -16,7 +22,9 @@ def nfl_data_refresh(request: Request):
     if not authorized(request, "NFL_DATA_REFRESH_SECRET"):
         raise HTTPException(401, "NFL data refresh authentication required")
     try:
-        return nfl_current_season_pipeline.run()
+        return nfl_current_season_pipeline.run(
+            trigger_source=_trigger_source(request)
+        )
     except Exception:
         logger.exception("nfl_data_refresh_request_failed")
         raise HTTPException(
