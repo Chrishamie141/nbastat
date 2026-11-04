@@ -160,6 +160,17 @@ def test_schedule_refresh_window_advances_without_restart(monkeypatch):
     assert windows == [3, 4]
 
 
+def test_pipeline_freshness_reads_environment_without_breaking_weekly_board(monkeypatch):
+    import backend.app.services.nfl_product_service as service
+
+    monkeypatch.setenv("NFL_DATA_REFRESH_ENVIRONMENT", "production")
+    monkeypatch.setattr(service, "table_exists", lambda connection, table: False)
+
+    assert service._pipeline_freshness() == {
+        "state": "NOT_CONFIGURED", "isCurrent": False, "lastSuccessAt": None,
+    }
+
+
 def test_current_context_automatically_advances_to_next_provider_slate(monkeypatch):
     import backend.app.services.nfl_product_service as service
 

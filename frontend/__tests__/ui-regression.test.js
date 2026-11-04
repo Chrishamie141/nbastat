@@ -5,6 +5,7 @@ const fs = require("fs");
 test("dashboard hides public mode/disclaimer/watch score UI", () => {
   const page = fs.readFileSync("app/dashboard/page.jsx", "utf8");
   assert.doesNotMatch(page, /modeLabel|Editorial watchability|Watch \{/);
+  assert.doesNotMatch(page, /Account-scoped activity excludes legacy records/);
   assert.match(page, /NFL game board/);
   assert.match(page, /NflMatchup/);
 });

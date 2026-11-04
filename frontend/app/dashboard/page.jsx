@@ -78,7 +78,7 @@ function DashboardInner() {
   }
 
   return <main className="mx-auto min-h-screen max-w-7xl px-6 pt-12 md:pt-16">
-    <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-4xl font-black tracking-[-.06em] md:text-5xl">Welcome back, {user?.name}</h1><p className="mt-2 text-slate-300">Account-scoped activity excludes legacy records without ownership.</p></div><Link href="/analyze" className="btn btn-primary">Start New Analysis</Link></div>
+    <div className="flex flex-wrap items-center justify-between gap-4"><h1 className="text-4xl font-black tracking-[-.06em] md:text-5xl">Welcome back, {user?.name}</h1><Link href="/analyze" className="btn btn-primary">Start New Analysis</Link></div>
     <WeeklyNflBoard />
     <CatalogSearch />
     {error ? <GlowCard className="mt-6 p-4 text-red-100">Dashboard metrics unavailable. <button onClick={() => location.reload()} className="ml-2 underline">Retry</button></GlowCard> : null}
