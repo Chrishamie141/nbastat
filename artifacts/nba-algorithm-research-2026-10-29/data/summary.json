@@ -1,0 +1,243 @@
+{
+  "historicalDataQuality": {
+    "declaredGames": 3693,
+    "observedGames": 3693,
+    "declaredHash": "fdb622679018aba6aca61f6c32b31f287bab807c63451dd931a548bfaaafad47",
+    "observedHash": "fdb622679018aba6aca61f6c32b31f287bab807c63451dd931a548bfaaafad47",
+    "datasetHashMatches": true,
+    "duplicateGameIds": 0,
+    "missingScores": 0,
+    "ties": 0,
+    "teams": 30,
+    "seasonCounts": {
+      "2023-24": 1231,
+      "2024-25": 1231,
+      "2025-26": 1231
+    },
+    "featureCutoffViolations": 0
+  },
+  "modelComparison": [
+    {
+      "key": "always_home",
+      "model": "Always home (development home rate)",
+      "modelVersion": "baseline-always-home",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.5548334687246141,
+      "accuracyWilson95": [
+        0.5269428835399788,
+        0.5823828918748899
+      ],
+      "brierScore": 0.24712263282478567,
+      "logLoss": 0.6873826730493416,
+      "auc": 0.5,
+      "expectedCalibrationError": 0.011372867587327362,
+      "homePickPct": 1.0,
+      "homePickCount": 1231,
+      "awayPickCount": 0,
+      "homePickAccuracy": 0.5548334687246141,
+      "awayPickAccuracy": null,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.5935483870967742,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.5492565055762082
+    },
+    {
+      "key": "current_elo",
+      "model": "Current Elo",
+      "modelVersion": "nba-game-elo-baseline-v1",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.661251015434606,
+      "accuracyWilson95": [
+        0.6343470014647512,
+        0.6871517603108255
+      ],
+      "brierScore": 0.21217547200242873,
+      "logLoss": 0.6126427455251441,
+      "auc": 0.7286165051137639,
+      "expectedCalibrationError": 0.05747061921890273,
+      "homePickPct": 0.7473598700243704,
+      "homePickCount": 920,
+      "awayPickCount": 311,
+      "homePickAccuracy": 0.6445652173913043,
+      "awayPickAccuracy": 0.7106109324758842,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.632258064516129,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.6654275092936803
+    },
+    {
+      "key": "corrected_elo",
+      "model": "Verified/corrected Elo (no math change)",
+      "modelVersion": "nba-game-elo-baseline-v1",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.661251015434606,
+      "accuracyWilson95": [
+        0.6343470014647512,
+        0.6871517603108255
+      ],
+      "brierScore": 0.21217547200242873,
+      "logLoss": 0.6126427455251441,
+      "auc": 0.7286165051137639,
+      "expectedCalibrationError": 0.05747061921890273,
+      "homePickPct": 0.7473598700243704,
+      "homePickCount": 920,
+      "awayPickCount": 311,
+      "homePickAccuracy": 0.6445652173913043,
+      "awayPickAccuracy": 0.7106109324758842,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.632258064516129,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.6654275092936803
+    },
+    {
+      "key": "enhanced_elo",
+      "model": "Enhanced Elo",
+      "modelVersion": "nba-game-enhanced-elo-research-v1",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.6921202274573518,
+      "accuracyWilson95": [
+        0.6657687918187744,
+        0.7172763324125805
+      ],
+      "brierScore": 0.20467291975736843,
+      "logLoss": 0.5960578568352523,
+      "auc": 0.7395266695877997,
+      "expectedCalibrationError": 0.031055560400549728,
+      "homePickPct": 0.5767668562144598,
+      "homePickCount": 710,
+      "awayPickCount": 521,
+      "homePickAccuracy": 0.7140845070422536,
+      "awayPickAccuracy": 0.6621880998080614,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.6709677419354839,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.6951672862453532
+    },
+    {
+      "key": "team_statistics_gbt",
+      "model": "Score/form gradient boost",
+      "modelVersion": "nba-game-score-form-gbt-research-v1",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.6653127538586515,
+      "accuracyWilson95": [
+        0.6384741197467295,
+        0.6911228476151338
+      ],
+      "brierScore": 0.20729496749386803,
+      "logLoss": 0.6017955395307402,
+      "auc": 0.7321258723322397,
+      "expectedCalibrationError": 0.021092020387033564,
+      "homePickPct": 0.587327376116978,
+      "homePickCount": 723,
+      "awayPickCount": 508,
+      "homePickAccuracy": 0.6874135546334716,
+      "awayPickAccuracy": 0.6338582677165354,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.6,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.6747211895910781
+    },
+    {
+      "key": "existing_research_candidate",
+      "model": "Existing form/rest logistic candidate",
+      "modelVersion": "nba-game-logit-form-rest-research-v2",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.685621445978879,
+      "accuracyWilson95": [
+        0.6591428445024253,
+        0.710945150790871
+      ],
+      "brierScore": 0.20460624893244334,
+      "logLoss": 0.5957281016540427,
+      "auc": 0.74038831475564,
+      "expectedCalibrationError": 0.022999443000483136,
+      "homePickPct": 0.5978878960194963,
+      "homePickCount": 736,
+      "awayPickCount": 495,
+      "homePickAccuracy": 0.7010869565217391,
+      "awayPickAccuracy": 0.6626262626262627,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.6709677419354839,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.6877323420074349
+    },
+    {
+      "key": "hybrid_candidate",
+      "model": "Elo + logistic hybrid",
+      "modelVersion": "nba-game-elo-logit-hybrid-research-v1",
+      "evaluationPopulation": "2025-26 untouched test season",
+      "games": 1231,
+      "accuracy": 0.69374492282697,
+      "accuracyWilson95": [
+        0.6674262064273035,
+        0.7188582000385659
+      ],
+      "brierScore": 0.203282584331468,
+      "logLoss": 0.5928399509898046,
+      "auc": 0.7448541749046179,
+      "expectedCalibrationError": 0.03754068360156006,
+      "homePickPct": 0.6043866774979691,
+      "homePickCount": 744,
+      "awayPickCount": 487,
+      "homePickAccuracy": 0.7056451612903226,
+      "awayPickAccuracy": 0.675564681724846,
+      "earlySeasonGames": 155,
+      "earlySeasonAccuracy": 0.6709677419354839,
+      "laterSeasonGames": 1076,
+      "laterSeasonAccuracy": 0.6970260223048327
+    }
+  ],
+  "selectedConfigurations": {
+    "existingResearchCandidate": {
+      "C": 0.1
+    },
+    "enhancedElo": {
+      "homeAdvantage": 35.0,
+      "kFactor": 10.0,
+      "carryoverRetention": 0.5,
+      "marginOfVictory": true
+    },
+    "scoreFormGradientBoost": {
+      "max_depth": 2,
+      "n_estimators": 100,
+      "learning_rate": 0.07,
+      "min_samples_leaf": 20,
+      "subsample": 0.8
+    },
+    "hybrid": {
+      "logitWeight": 0.65,
+      "enhancedEloWeight": 0.35
+    }
+  },
+  "currentChecks": {
+    "recordsFetched": 237,
+    "regularSeasonFinals": 68,
+    "upcomingForecasts": 102,
+    "teams": 30,
+    "homeSelections": 100,
+    "awaySelections": 2,
+    "researchCandidateHomeSelections": 68,
+    "researchCandidateAwaySelections": 34,
+    "ratingRange": [
+      1460.859148,
+      1549.250053
+    ],
+    "awaySelectionThreshold": "away Elo must exceed home Elo by more than 65 points",
+    "equalRatingHomeProbability": 0.5924662305843318
+  },
+  "policy": {
+    "status": "RESEARCH_ONLY",
+    "wageringAuthorized": false,
+    "productionModelChanged": false,
+    "trainSeason": "2023-24",
+    "validationSeason": "2024-25",
+    "testSeason": "2025-26",
+    "heldOutTestUsedForSelection": false
+  }
+}

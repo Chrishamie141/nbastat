@@ -141,6 +141,13 @@ def candidate_prediction(
     evidence_through = max(
         (str(row["kickoff_time"]) for row in evidence), default=None,
     )
+    observed_cutoff = max(
+        (str(row.get("retrieved_at")) for row in evidence if row.get("retrieved_at")),
+        default=generated_at,
+    )
+    feature_cutoff = min(_dt(observed_cutoff), _dt(generated_at)).replace(
+        microsecond=0
+    ).isoformat().replace("+00:00", "Z")
     return {
         "game_id": str(game["game_id"]),
         "season": str(game["season_code"]),
@@ -157,7 +164,7 @@ def candidate_prediction(
         "model_version": NBA_GAME_RESEARCH_CANDIDATE_VERSION,
         "data_version": data_version,
         "generated_at": generated_at,
-        "feature_cutoff": generated_at,
+        "feature_cutoff": feature_cutoff,
         "source_provider": "espn_scoreboard+frozen_research_artifact",
         "model_status": "RESEARCH_ONLY",
         "wager_authorized": False,
@@ -200,11 +207,23 @@ def generate_shadow_predictions(*, season: str | int, at: datetime | None = None
                  AND snapshot_kind='OFFICIAL'""",
             (season_code, NBA_GAME_RESEARCH_CANDIDATE_VERSION),
         ).fetchall()}
+        latest_forecasts: dict[str, dict] = {}
+        for row in connection.execute(
+            """SELECT game_id,snapshot_id,selection,model_probability,data_version,
+                      generated_at,feature_cutoff
+               FROM nba_prediction_snapshots
+               WHERE season_code=? AND user_id=0 AND market='moneyline' AND model_version=?
+                 AND snapshot_kind='LATEST_FORECAST'
+               ORDER BY generated_at DESC,snapshot_id DESC""",
+            (season_code, NBA_GAME_RESEARCH_CANDIDATE_VERSION),
+        ).fetchall():
+            latest_forecasts.setdefault(str(row["game_id"]), dict(row))
     ratings: dict[str, float] = {}
     histories: dict[str, list[dict]] = defaultdict(list)
     evidence: list[dict] = []
     created: list[str] = []
-    started = already = 0
+    forecast_created: list[str] = []
+    started = already = forecasts_unchanged = 0
     for game in games:
         kickoff = _dt(game["kickoff_time"])
         status = str(game.get("status") or "").upper()
@@ -230,15 +249,31 @@ def generate_shadow_predictions(*, season: str | int, at: datetime | None = None
         if kickoff <= clock:
             started += 1
             continue
-        if str(game["game_id"]) in existing:
-            already += 1
-            continue
         prediction = candidate_prediction(
             game, ratings=ratings, histories=histories, evidence=evidence,
             generated_at=generated_at, artifact=artifact,
         )
-        created.append(freeze_prediction(prediction, user_id=0))
-        existing.add(str(game["game_id"]))
+        game_id = str(game["game_id"])
+        if game_id in existing:
+            already += 1
+        else:
+            created.append(freeze_prediction(
+                {**prediction, "snapshot_kind": "OFFICIAL"}, user_id=0
+            ))
+            existing.add(game_id)
+        prior = latest_forecasts.get(game_id)
+        if (
+            prior
+            and str(prior.get("data_version") or "") == str(prediction.get("data_version") or "")
+            and str(prior.get("selection") or "") == str(prediction.get("selection") or "")
+            and float(prior.get("model_probability") or 0.0)
+                == float(prediction.get("model_probability") or 0.0)
+        ):
+            forecasts_unchanged += 1
+            continue
+        forecast_created.append(freeze_prediction(
+            {**prediction, "snapshot_kind": "LATEST_FORECAST"}, user_id=0
+        ))
     return {
         "enabled": True,
         "modelVersion": NBA_GAME_RESEARCH_CANDIDATE_VERSION,
@@ -247,6 +282,11 @@ def generate_shadow_predictions(*, season: str | int, at: datetime | None = None
         "artifactSha256": artifact["artifactSha256"],
         "created": len(created),
         "snapshotIds": created,
+        "officialPredictionsCreated": len(created),
+        "forecastSnapshotsCreated": len(forecast_created),
+        "forecastSnapshotIds": forecast_created,
+        "forecastsUnchanged": forecasts_unchanged,
+        "upcomingGamesEvaluated": len(forecast_created) + forecasts_unchanged,
         "alreadyPresent": already,
         "startedGamesSkipped": started,
     }

@@ -1,0 +1,48 @@
+{
+  "status": "SUCCEEDED",
+  "validationType": "controlled_cloud_staging_execution",
+  "verifiedAt": "2026-11-06T21:21:45Z",
+  "environment": "staging",
+  "vercelPreviewUrl": "https://smartbetsports-qpzyz5xci-chrishamie141s-projects.vercel.app",
+  "supabaseProjectRef": "reyseyjksdfgcqyrpjtw",
+  "databaseRole": "smartbets_staging_app",
+  "runId": "nba-auto-09bcbe5164a24f469f71857e1f4314c2",
+  "runStartedAt": "2026-11-06T21:19:03Z",
+  "runCompletedAt": "2026-11-06T21:20:42Z",
+  "gamesFetched": 293,
+  "gamesChanged": 172,
+  "regularSeasonFinalsAfterRun": 123,
+  "upcomingGamesEvaluated": 103,
+  "baseline": {
+    "modelVersion": "nba-game-elo-baseline-v1",
+    "latestForecastsCreated": 103,
+    "officialPredictionsCreated": 85,
+    "homeSelections": 86,
+    "awaySelections": 17,
+    "latestFeatureCutoff": "2026-11-06T21:19:52Z"
+  },
+  "candidate": {
+    "modelVersion": "nba-game-logit-form-rest-research-v2",
+    "latestForecastsCreated": 103,
+    "officialPredictionsCreated": 85,
+    "homeSelections": 66,
+    "awaySelections": 37,
+    "latestFeatureCutoff": "2026-11-06T21:19:52Z",
+    "modelStatus": "RESEARCH_ONLY",
+    "wagerAuthorized": false
+  },
+  "historicalIntegrity": {
+    "preexistingPredictionSnapshots": 219,
+    "preexistingPredictionSnapshotHash": "dbef6979e1b38f1524733692dfec2609",
+    "preexistingSettlements": 9,
+    "preexistingSettlementHash": "28c9c6d5a12fa43a16aebe12950dfa36",
+    "featureCutoffAfterGenerationViolations": 0,
+    "officialAtOrAfterTipoffViolations": 0
+  },
+  "stagingScheduler": {
+    "installed": false,
+    "reason": "Controlled Preview validation only; Vercel Preview remains protected."
+  },
+  "productionModified": false,
+  "productionHealthAfterRun": "healthy"
+}

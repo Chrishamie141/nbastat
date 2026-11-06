@@ -60,6 +60,8 @@ def test_baseline_and_shadow_are_immutable_independent_and_idempotent(shadow_db)
     assert baseline["created"] == 1
     assert shadow["enabled"] is True and shadow["created"] == 1
     assert repeated["created"] == 0 and repeated["alreadyPresent"] == 1
+    assert repeated["forecastSnapshotsCreated"] == 0
+    assert repeated["forecastsUnchanged"] == 1
 
     rows = prediction_history(
         season="2026-27", user_id=0, game_id="future", include_shadow=True,
@@ -136,3 +138,35 @@ def test_completed_games_refresh_latest_forecast_without_rewriting_official(shad
     latest = next(row for row in all_rows if row["snapshotKind"] == "LATEST_FORECAST")
     assert latest["dataTimestamp"] <= latest["createdAt"]
     assert latest["id"] != original["id"]
+
+
+def test_shadow_candidate_versions_latest_forecasts_without_rewriting_official(shadow_db):
+    upsert_game(nba_game("prior-1", "2026-10-24T23:00:00Z", status="FINAL",
+                         home_score=118, away_score=101))
+    upsert_game(nba_game("future", "2026-10-29T23:00:00Z", status="SCHEDULED"))
+    first = generate_shadow_predictions(
+        season="2026-27", at=datetime(2026, 10, 25, 12, tzinfo=timezone.utc)
+    )
+    official = prediction_history(
+        season="2026-27", game_id="future", include_shadow=True,
+    )
+
+    upsert_game(nba_game("prior-2", "2026-10-26T23:00:00Z", status="FINAL",
+                         home_score=96, away_score=121))
+    second = generate_shadow_predictions(
+        season="2026-27", at=datetime(2026, 10, 27, 12, tzinfo=timezone.utc)
+    )
+    rows = prediction_history(
+        season="2026-27", game_id="future", include_shadow=True,
+        include_forecasts=True,
+    )
+
+    assert first["officialPredictionsCreated"] == 1
+    assert first["forecastSnapshotsCreated"] == 1
+    assert second["officialPredictionsCreated"] == 0
+    assert second["forecastSnapshotsCreated"] == 1
+    assert len(official) == 1
+    assert len([row for row in rows if row["snapshotKind"] == "OFFICIAL"]) == 1
+    forecasts = [row for row in rows if row["snapshotKind"] == "LATEST_FORECAST"]
+    assert len(forecasts) == 2
+    assert all(row["dataTimestamp"] <= row["createdAt"] for row in forecasts)
